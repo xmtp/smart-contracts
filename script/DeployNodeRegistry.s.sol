@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Nodes } from "../src/Nodes.sol";
+import { NodeRegistry } from "../src/NodeRegistry.sol";
 
 import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
-contract DeployXMTPNodeRegistry is Utils, Environment {
-    Nodes nodes;
+contract DeployNodeRegistry is Utils, Environment {
+    NodeRegistry nodes;
 
     address admin;
     address deployer;
@@ -22,8 +22,8 @@ contract DeployXMTPNodeRegistry is Utils, Environment {
         deployer = vm.addr(privateKey);
         vm.startBroadcast(privateKey);
 
-        nodes = new Nodes(admin);
-        require(address(nodes) != address(0), "Nodes deployment failed");
+        nodes = new NodeRegistry(admin);
+        require(address(nodes) != address(0), "NodeRegistry deployment failed");
 
         vm.stopBroadcast();
 

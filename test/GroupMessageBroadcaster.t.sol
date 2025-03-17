@@ -9,32 +9,32 @@ import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol
 import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { IdentityUpdates } from "../src/IdentityUpdates.sol";
+import { GroupMessageBroadcaster } from "../src/GroupMessageBroadcaster.sol";
 
-import { IdentityUpdatesHarness } from "./utils/Harnesses.sol";
+import { GroupMessageBroadcasterHarness } from "./utils/Harnesses.sol";
 import { Utils } from "./utils/Utils.sol";
 
-contract IdentityUpdatesTest is Test, Utils {
+contract GroupMessageBroadcasterTests is Test, Utils {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     uint256 constant ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
     uint256 constant ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
 
-    address identityUpdatesImplementation;
+    address implementation;
 
-    IdentityUpdatesHarness identityUpdates;
+    GroupMessageBroadcasterHarness broadcaster;
 
     address admin = makeAddr("admin");
     address unauthorized = makeAddr("unauthorized");
 
     function setUp() public {
-        identityUpdatesImplementation = address(new IdentityUpdatesHarness());
+        implementation = address(new GroupMessageBroadcasterHarness());
 
-        identityUpdates = IdentityUpdatesHarness(
+        broadcaster = GroupMessageBroadcasterHarness(
             address(
                 new ERC1967Proxy(
-                    identityUpdatesImplementation,
-                    abi.encodeWithSelector(identityUpdates.initialize.selector, admin)
+                    implementation,
+                    abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, admin)
                 )
             )
         );
@@ -43,88 +43,88 @@ contract IdentityUpdatesTest is Test, Utils {
     /* ============ initializer ============ */
 
     function test_initializer_zeroAdminAddress() public {
-        vm.expectRevert(IdentityUpdates.ZeroAdminAddress.selector);
+        vm.expectRevert(GroupMessageBroadcaster.ZeroAdminAddress.selector);
 
         new ERC1967Proxy(
-            identityUpdatesImplementation,
-            abi.encodeWithSelector(IdentityUpdates.initialize.selector, address(0))
+            implementation,
+            abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, address(0))
         );
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() public view {
-        assertEq(_getImplementationFromSlot(address(identityUpdates)), identityUpdatesImplementation);
-        assertEq(identityUpdates.minPayloadSize(), ABSOLUTE_MIN_PAYLOAD_SIZE);
-        assertEq(identityUpdates.maxPayloadSize(), ABSOLUTE_MAX_PAYLOAD_SIZE);
-        assertEq(identityUpdates.__getSequenceId(), 0);
+        assertEq(_getImplementationFromSlot(address(broadcaster)), implementation);
+        assertEq(broadcaster.minPayloadSize(), ABSOLUTE_MIN_PAYLOAD_SIZE);
+        assertEq(broadcaster.maxPayloadSize(), ABSOLUTE_MAX_PAYLOAD_SIZE);
+        assertEq(broadcaster.__getSequenceId(), 0);
     }
 
-    /* ============ addIdentityUpdate ============ */
+    /* ============ addMessage ============ */
 
-    function test_addIdentityUpdate_minPayload() public {
-        bytes memory message = _generatePayload(identityUpdates.minPayloadSize());
+    function test_addMessage_minPayload() public {
+        bytes memory message = _generatePayload(broadcaster.minPayloadSize());
 
-        vm.expectEmit(address(identityUpdates));
-        emit IdentityUpdates.IdentityUpdateCreated(ID, message, 1);
+        vm.expectEmit(address(broadcaster));
+        emit GroupMessageBroadcaster.MessageSent(ID, message, 1);
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
 
-        assertEq(identityUpdates.__getSequenceId(), 1);
+        assertEq(broadcaster.__getSequenceId(), 1);
     }
 
-    function test_addIdentityUpdate_maxPayload() public {
-        bytes memory message = _generatePayload(identityUpdates.maxPayloadSize());
+    function test_addMessage_maxPayload() public {
+        bytes memory message = _generatePayload(broadcaster.maxPayloadSize());
 
-        vm.expectEmit(address(identityUpdates));
-        emit IdentityUpdates.IdentityUpdateCreated(ID, message, 1);
+        vm.expectEmit(address(broadcaster));
+        emit GroupMessageBroadcaster.MessageSent(ID, message, 1);
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
 
-        assertEq(identityUpdates.__getSequenceId(), 1);
+        assertEq(broadcaster.__getSequenceId(), 1);
     }
 
-    function test_addIdentityUpdate_payloadTooSmall() public {
-        bytes memory message = _generatePayload(identityUpdates.minPayloadSize() - 1);
+    function test_addMessage_payloadTooSmall() public {
+        bytes memory message = _generatePayload(broadcaster.minPayloadSize() - 1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IdentityUpdates.InvalidPayloadSize.selector,
+                GroupMessageBroadcaster.InvalidPayloadSize.selector,
                 message.length,
-                identityUpdates.minPayloadSize(),
-                identityUpdates.maxPayloadSize()
+                broadcaster.minPayloadSize(),
+                broadcaster.maxPayloadSize()
             )
         );
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
     }
 
-    function test_addIdentityUpdate_payloadTooLarge() public {
-        bytes memory message = _generatePayload(identityUpdates.maxPayloadSize() + 1);
+    function test_addMessage_payloadTooLarge() public {
+        bytes memory message = _generatePayload(broadcaster.maxPayloadSize() + 1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IdentityUpdates.InvalidPayloadSize.selector,
+                GroupMessageBroadcaster.InvalidPayloadSize.selector,
                 message.length,
-                identityUpdates.minPayloadSize(),
-                identityUpdates.maxPayloadSize()
+                broadcaster.minPayloadSize(),
+                broadcaster.maxPayloadSize()
             )
         );
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
     }
 
-    function test_addIdentityUpdate_whenPaused() public {
-        identityUpdates.__pause();
+    function test_addMessage_whenPaused() public {
+        broadcaster.__pause();
 
-        bytes memory message = _generatePayload(identityUpdates.minPayloadSize());
+        bytes memory message = _generatePayload(broadcaster.minPayloadSize());
 
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
     }
 
-    function testFuzz_addIdentityUpdate(
+    function testFuzz_addMessage(
         uint256 minPayloadSize,
         uint256 maxPayloadSize,
         uint256 payloadSize,
@@ -136,12 +136,12 @@ contract IdentityUpdatesTest is Test, Utils {
         payloadSize = bound(payloadSize, ABSOLUTE_MIN_PAYLOAD_SIZE, ABSOLUTE_MAX_PAYLOAD_SIZE);
         sequenceId = uint64(bound(sequenceId, 0, type(uint64).max - 1));
 
-        identityUpdates.__setSequenceId(sequenceId);
-        identityUpdates.__setMinPayloadSize(minPayloadSize);
-        identityUpdates.__setMaxPayloadSize(maxPayloadSize);
+        broadcaster.__setSequenceId(sequenceId);
+        broadcaster.__setMinPayloadSize(minPayloadSize);
+        broadcaster.__setMaxPayloadSize(maxPayloadSize);
 
         if (paused) {
-            identityUpdates.__pause();
+            broadcaster.__pause();
         }
 
         bytes memory message = _generatePayload(payloadSize);
@@ -151,15 +151,15 @@ contract IdentityUpdatesTest is Test, Utils {
         if (shouldFail) {
             vm.expectRevert();
         } else {
-            vm.expectEmit(address(identityUpdates));
-            emit IdentityUpdates.IdentityUpdateCreated(ID, message, sequenceId + 1);
+            vm.expectEmit(address(broadcaster));
+            emit GroupMessageBroadcaster.MessageSent(ID, message, sequenceId + 1);
         }
 
-        identityUpdates.addIdentityUpdate(ID, message);
+        broadcaster.addMessage(ID, message);
 
         if (shouldFail) return;
 
-        assertEq(identityUpdates.__getSequenceId(), sequenceId + 1);
+        assertEq(broadcaster.__getSequenceId(), sequenceId + 1);
     }
 
     /* ============ setMinPayloadSize ============ */
@@ -174,36 +174,36 @@ contract IdentityUpdatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        identityUpdates.setMinPayloadSize(0);
+        broadcaster.setMinPayloadSize(0);
     }
 
     function test_setMinPayloadSize_requestGreaterThanMax() public {
-        identityUpdates.__setMaxPayloadSize(100);
+        broadcaster.__setMaxPayloadSize(100);
 
-        vm.expectRevert(abi.encodeWithSelector(IdentityUpdates.InvalidMinPayloadSize.selector));
+        vm.expectRevert(abi.encodeWithSelector(GroupMessageBroadcaster.InvalidMinPayloadSize.selector));
 
         vm.prank(admin);
-        identityUpdates.setMinPayloadSize(101);
+        broadcaster.setMinPayloadSize(101);
     }
 
     function test_setMinPayloadSize_requestLessThanOrEqualToAbsoluteMin() public {
-        vm.expectRevert(abi.encodeWithSelector(IdentityUpdates.InvalidMinPayloadSize.selector));
+        vm.expectRevert(abi.encodeWithSelector(GroupMessageBroadcaster.InvalidMinPayloadSize.selector));
 
         vm.prank(admin);
-        identityUpdates.setMinPayloadSize(ABSOLUTE_MIN_PAYLOAD_SIZE - 1);
+        broadcaster.setMinPayloadSize(ABSOLUTE_MIN_PAYLOAD_SIZE - 1);
     }
 
     function test_setMinPayloadSize() public {
-        uint256 initialMinSize = identityUpdates.minPayloadSize();
+        uint256 initialMinSize = broadcaster.minPayloadSize();
         uint256 newMinSize = initialMinSize + 1;
 
-        vm.expectEmit(address(identityUpdates));
-        emit IdentityUpdates.MinPayloadSizeUpdated(initialMinSize, newMinSize);
+        vm.expectEmit(address(broadcaster));
+        emit GroupMessageBroadcaster.MinPayloadSizeUpdated(initialMinSize, newMinSize);
 
         vm.prank(admin);
-        identityUpdates.setMinPayloadSize(newMinSize);
+        broadcaster.setMinPayloadSize(newMinSize);
 
-        assertEq(identityUpdates.minPayloadSize(), newMinSize);
+        assertEq(broadcaster.minPayloadSize(), newMinSize);
     }
 
     /* ============ setMaxPayloadSize ============ */
@@ -218,55 +218,55 @@ contract IdentityUpdatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        identityUpdates.setMaxPayloadSize(0);
+        broadcaster.setMaxPayloadSize(0);
     }
 
     function test_setMaxPayloadSize_requestLessThanMin() public {
-        identityUpdates.__setMinPayloadSize(100);
+        broadcaster.__setMinPayloadSize(100);
 
-        vm.expectRevert(abi.encodeWithSelector(IdentityUpdates.InvalidMaxPayloadSize.selector));
+        vm.expectRevert(abi.encodeWithSelector(GroupMessageBroadcaster.InvalidMaxPayloadSize.selector));
 
         vm.prank(admin);
-        identityUpdates.setMaxPayloadSize(99);
+        broadcaster.setMaxPayloadSize(99);
     }
 
     function test_setMaxPayloadSize_requestGreaterThanOrEqualToAbsoluteMax() public {
-        vm.expectRevert(abi.encodeWithSelector(IdentityUpdates.InvalidMaxPayloadSize.selector));
+        vm.expectRevert(abi.encodeWithSelector(GroupMessageBroadcaster.InvalidMaxPayloadSize.selector));
 
         vm.prank(admin);
-        identityUpdates.setMaxPayloadSize(ABSOLUTE_MAX_PAYLOAD_SIZE + 1);
+        broadcaster.setMaxPayloadSize(ABSOLUTE_MAX_PAYLOAD_SIZE + 1);
     }
 
     function test_setMaxPayloadSize() public {
-        uint256 initialMaxSize = identityUpdates.maxPayloadSize();
+        uint256 initialMaxSize = broadcaster.maxPayloadSize();
         uint256 newMaxSize = initialMaxSize - 1;
 
-        vm.expectEmit(address(identityUpdates));
-        emit IdentityUpdates.MaxPayloadSizeUpdated(initialMaxSize, newMaxSize);
+        vm.expectEmit(address(broadcaster));
+        emit GroupMessageBroadcaster.MaxPayloadSizeUpdated(initialMaxSize, newMaxSize);
 
         vm.prank(admin);
-        identityUpdates.setMaxPayloadSize(newMaxSize);
+        broadcaster.setMaxPayloadSize(newMaxSize);
 
-        assertEq(identityUpdates.maxPayloadSize(), newMaxSize);
+        assertEq(broadcaster.maxPayloadSize(), newMaxSize);
     }
 
     /* ============ initialize ============ */
 
     function test_invalid_reinitialization() public {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        identityUpdates.initialize(admin);
+        broadcaster.initialize(admin);
     }
 
     /* ============ pause ============ */
 
     function test_pause() public {
-        vm.expectEmit(address(identityUpdates));
+        vm.expectEmit(address(broadcaster));
         emit PausableUpgradeable.Paused(admin);
 
         vm.prank(admin);
-        identityUpdates.pause();
+        broadcaster.pause();
 
-        assertTrue(identityUpdates.paused());
+        assertTrue(broadcaster.paused());
     }
 
     function test_pause_notAdmin() public {
@@ -279,30 +279,30 @@ contract IdentityUpdatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        identityUpdates.pause();
+        broadcaster.pause();
     }
 
     function test_pause_whenPaused() public {
-        identityUpdates.__pause();
+        broadcaster.__pause();
 
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         vm.prank(admin);
-        identityUpdates.pause();
+        broadcaster.pause();
     }
 
     /* ============ unpause ============ */
 
     function test_unpause() public {
-        identityUpdates.__pause();
+        broadcaster.__pause();
 
-        vm.expectEmit(address(identityUpdates));
+        vm.expectEmit(address(broadcaster));
         emit PausableUpgradeable.Unpaused(admin);
 
         vm.prank(admin);
-        identityUpdates.unpause();
+        broadcaster.unpause();
 
-        assertFalse(identityUpdates.paused());
+        assertFalse(broadcaster.paused());
     }
 
     function test_unpause_notAdmin() public {
@@ -315,14 +315,14 @@ contract IdentityUpdatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        identityUpdates.unpause();
+        broadcaster.unpause();
     }
 
     function test_unpause_whenNotPaused() public {
         vm.expectRevert(PausableUpgradeable.ExpectedPause.selector);
 
         vm.prank(admin);
-        identityUpdates.unpause();
+        broadcaster.unpause();
     }
 
     /* ============ upgradeToAndCall ============ */
@@ -338,34 +338,34 @@ contract IdentityUpdatesTest is Test, Utils {
             )
         );
 
-        identityUpdates.upgradeToAndCall(address(0), "");
+        broadcaster.upgradeToAndCall(address(0), "");
     }
 
     function test_upgradeToAndCall_zeroImplementationAddress() public {
-        vm.expectRevert(IdentityUpdates.ZeroImplementationAddress.selector);
+        vm.expectRevert(GroupMessageBroadcaster.ZeroImplementationAddress.selector);
 
         vm.prank(admin);
-        identityUpdates.upgradeToAndCall(address(0), "");
+        broadcaster.upgradeToAndCall(address(0), "");
     }
 
     function test_upgradeToAndCall() public {
-        identityUpdates.__setMaxPayloadSize(100);
-        identityUpdates.__setMinPayloadSize(50);
-        identityUpdates.__setSequenceId(10);
+        broadcaster.__setMaxPayloadSize(100);
+        broadcaster.__setMinPayloadSize(50);
+        broadcaster.__setSequenceId(10);
 
-        address newImplementation = address(new IdentityUpdatesHarness());
+        address newImplementation = address(new GroupMessageBroadcasterHarness());
 
         // Authorized upgrade should succeed and emit UpgradeAuthorized event.
-        vm.expectEmit(address(identityUpdates));
-        emit IdentityUpdates.UpgradeAuthorized(admin, newImplementation);
+        vm.expectEmit(address(broadcaster));
+        emit GroupMessageBroadcaster.UpgradeAuthorized(admin, newImplementation);
 
         vm.prank(admin);
-        identityUpdates.upgradeToAndCall(newImplementation, "");
+        broadcaster.upgradeToAndCall(newImplementation, "");
 
-        assertEq(_getImplementationFromSlot(address(identityUpdates)), newImplementation);
-        assertEq(identityUpdates.maxPayloadSize(), 100);
-        assertEq(identityUpdates.minPayloadSize(), 50);
-        assertEq(identityUpdates.__getSequenceId(), 10);
+        assertEq(_getImplementationFromSlot(address(broadcaster)), newImplementation);
+        assertEq(broadcaster.maxPayloadSize(), 100);
+        assertEq(broadcaster.minPayloadSize(), 50);
+        assertEq(broadcaster.__getSequenceId(), 10);
     }
 
     /* ============ helper functions ============ */

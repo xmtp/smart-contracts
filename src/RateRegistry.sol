@@ -9,7 +9,7 @@ import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUP
 // TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
 
-contract RatesManager is Initializable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
+contract RateRegistry is Initializable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
     /* ============ Events ============ */
 
     // Event emitted when new Rates are added

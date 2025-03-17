@@ -5,10 +5,10 @@ pragma solidity 0.8.28;
 import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
 
 /**
- * @title  INodesErrors
+ * @title  INodeRegistryErrors
  * @notice This interface defines the errors emitted by the INodes contract.
  */
-interface INodesErrors {
+interface INodeRegistryErrors {
     /// @notice Error thrown when a node is disabled.
     error NodeIsDisabled();
 
@@ -47,10 +47,10 @@ interface INodesErrors {
 }
 
 /**
- * @title  INodesEvents
+ * @title  INodeRegistryEvents
  * @notice This interface defines the events emitted by the INodes contract.
  */
-interface INodesEvents {
+interface INodeRegistryEvents {
     /**
      * @notice Emitted when a new node is added and its NFT minted.
      * @param  nodeId                    The unique identifier for the node (starts at 100, increments by 100).
@@ -142,13 +142,13 @@ interface INodesEvents {
 }
 
 /**
- * @title  INodes
+ * @title  INodeRegistry
  * @notice This interface defines the ERC721-based registry for “nodes” in the system.
  * Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
  * In addition to the standard ERC721 functionality, the contract supports node-specific features,
  * including node property updates.
  */
-interface INodes is IERC721, INodesErrors, INodesEvents {
+interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     /**
      * @notice Struct representing a node in the registry.
      * @param  signingKeyPub        The public key used for node signing/verification.

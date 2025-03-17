@@ -1,36 +1,34 @@
 # XMTP Contracts
 
 -   [XMTP Contracts](#xmtp-contracts)
-    -   [Messages Contracts](#messages-contracts)
-    -   [XMTP Node Registry](#xmtp-node-registry)
+    -   [Messaging Contracts](#messaging-contracts)
+    -   [Node Registry](#node-registry)
     -   [Usage](#usage)
         -   [Prerequisites](#prerequisites)
         -   [Install](#install)
         -   [Test](#test)
         -   [Run static analysis](#run-static-analysis)
     -   [Scripts](#scripts)
-        -   [Messages contracts](#messages-contracts-1)
+        -   [Messages contracts](#messaging-contracts-1)
         -   [Node registry](#node-registry)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
 This repository contains all the smart contracts that underpin the XMTP decentralized network.
 
-## Messages Contracts
+## Messaging Contracts
 
-The messages contracts manage the blockchain state for `GroupMessages` and `IdentityUpdates` sent by clients to the network.
+The messaging contracts `GroupMessageBroadcaster` and `IdentityUpdateBroadcaster` respectively manage the broadcasting for `GroupMessages` and `IdentityUpdates` sent by clients to the network.
 
-These contracts ensure transparency and provide a historical record of state changes.
+## Node Registry
 
-## XMTP Node Registry
-
-The `XMTP Node Registry` maintains a blockchain-based record of all node operators participating in the XMTP network. This registry serves as a source of truth for the network's active node participants, contributing to the network's integrity.
+The `NodeRegistry` maintains a record of all node operators participating in the XMTP network. This registry serves as a source of truth for the network's active node participants, contributing to the network's integrity.
 
 The registry is currently implemented following the [ERC721](https://eips.ethereum.org/EIPS/eip-721) standard.
 
 ## Usage
 
-The project is built with the `Foundry` framework, and dependency management is handled using `soldeer`.
+The project is built with the `Foundry` framework, and dependency management is handled using native git submodules.
 
 Additionally, it uses `slither` for static analysis.
 
@@ -74,7 +72,7 @@ slither .
 
 The project includes deployer and upgrade scripts.
 
-### Messages contracts
+### Messaging contracts
 
 -   Configure the environment by creating an `.env` file, with this content:
 
@@ -83,8 +81,8 @@ The project includes deployer and upgrade scripts.
 PRIVATE_KEY=0xYourPrivateKey # Private key of the EOA deploying the contracts
 
 ### XMTP deployment configuration
-XMTP_GROUP_MESSAGES_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the GroupMessages contract.
-XMTP_IDENTITY_UPDATES_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the IdentityUpdates contract.
+XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the GroupMessageBroadcaster contract.
+XMTP_IDENTITY_UPDATE_BROADCASTER_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the IdentityUpdateBroadcaster contract.
 ```
 
 -   Run the desired script with:
@@ -108,5 +106,5 @@ The scripts output the deployment and upgrade in the `output` folder.
 -   Deploy with `forge create`:
 
 ```shell
-forge create --broadcast --legacy --json --rpc-url $RPC_URL --private-key $PRIVATE_KEY "src/Nodes.sol:Nodes"
+forge create --broadcast --legacy --json --rpc-url $RPC_URL --private-key $PRIVATE_KEY "src/NodeRegistry.sol:NodeRegistry"
 ```
