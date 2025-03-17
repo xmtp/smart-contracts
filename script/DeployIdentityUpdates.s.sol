@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { ERC1967Proxy } from "../dependencies/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { IdentityUpdates } from "../src/IdentityUpdates.sol";
 
@@ -30,8 +30,10 @@ contract DeployIdentityUpdates is Utils, Environment {
         require(address(idUpdatesImpl) != address(0), "Implementation deployment failed");
 
         // Deploy the proxy contract.
-        proxy =
-            new ERC1967Proxy(address(idUpdatesImpl), abi.encodeWithSelector(IdentityUpdates.initialize.selector, admin));
+        proxy = new ERC1967Proxy(
+            address(idUpdatesImpl),
+            abi.encodeWithSelector(IdentityUpdates.initialize.selector, admin)
+        );
 
         vm.stopBroadcast();
 

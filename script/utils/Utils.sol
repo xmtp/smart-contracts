@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script } from "../../dependencies/forge-std/src/Script.sol";
+import { Script } from "../../lib/forge-std/src/Script.sol";
 
 contract Utils is Script {
     uint256 constant CHAIN_ID_ANVIL_LOCALNET = 31_337;

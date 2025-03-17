@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../dependencies/forge-std/src/Test.sol";
+import { Test } from "../lib/forge-std/src/Test.sol";
 
-import { IAccessControl } from "../dependencies/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
 
-import { ERC1967Proxy } from "../dependencies/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { Initializable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import { RatesManager } from "../src/RatesManager.sol";
 
@@ -40,7 +38,8 @@ contract RatesTest is Test, Utils {
         ratesManager = RatesManagerHarness(
             address(
                 new ERC1967Proxy(
-                    ratesManagerImpImplementation, abi.encodeWithSelector(RatesManager.initialize.selector, admin)
+                    ratesManagerImpImplementation,
+                    abi.encodeWithSelector(RatesManager.initialize.selector, admin)
                 )
             )
         );
@@ -52,7 +51,8 @@ contract RatesTest is Test, Utils {
         vm.expectRevert(RatesManager.ZeroAdminAddress.selector);
 
         new ERC1967Proxy(
-            ratesManagerImpImplementation, abi.encodeWithSelector(RatesManager.initialize.selector, address(0))
+            ratesManagerImpImplementation,
+            abi.encodeWithSelector(RatesManager.initialize.selector, address(0))
         );
     }
 
@@ -68,7 +68,9 @@ contract RatesTest is Test, Utils {
     function test_addRates_notManager() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, RATES_MANAGER_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                RATES_MANAGER_ROLE
             )
         );
 
@@ -200,7 +202,9 @@ contract RatesTest is Test, Utils {
     function test_pause_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -234,7 +238,9 @@ contract RatesTest is Test, Utils {
     function test_unpause_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -256,7 +262,9 @@ contract RatesTest is Test, Utils {
         vm.prank(unauthorized);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 

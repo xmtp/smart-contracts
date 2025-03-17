@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { ERC1967Proxy } from "../dependencies/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { GroupMessages } from "../src/GroupMessages.sol";
 
@@ -31,7 +31,8 @@ contract DeployGroupMessages is Utils, Environment {
 
         // Deploy the proxy contract.
         proxy = new ERC1967Proxy(
-            address(groupMessagesImpl), abi.encodeWithSelector(GroupMessages.initialize.selector, admin)
+            address(groupMessagesImpl),
+            abi.encodeWithSelector(GroupMessages.initialize.selector, admin)
         );
 
         vm.stopBroadcast();

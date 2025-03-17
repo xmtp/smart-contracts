@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../dependencies/forge-std/src/Test.sol";
+import { Test } from "../lib/forge-std/src/Test.sol";
 
-import { IAccessControl } from "../dependencies/openzeppelin-contracts/contracts/access/IAccessControl.sol";
+import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
 
-import { ERC1967Proxy } from "../dependencies/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { Initializable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import { GroupMessages } from "../src/GroupMessages.sol";
 
@@ -35,7 +33,8 @@ contract GroupMessagesTest is Test, Utils {
         groupMessages = GroupMessagesHarness(
             address(
                 new ERC1967Proxy(
-                    groupMessagesImplementation, abi.encodeWithSelector(GroupMessages.initialize.selector, admin)
+                    groupMessagesImplementation,
+                    abi.encodeWithSelector(GroupMessages.initialize.selector, admin)
                 )
             )
         );
@@ -47,7 +46,8 @@ contract GroupMessagesTest is Test, Utils {
         vm.expectRevert(GroupMessages.ZeroAdminAddress.selector);
 
         new ERC1967Proxy(
-            groupMessagesImplementation, abi.encodeWithSelector(GroupMessages.initialize.selector, address(0))
+            groupMessagesImplementation,
+            abi.encodeWithSelector(GroupMessages.initialize.selector, address(0))
         );
     }
 
@@ -167,7 +167,9 @@ contract GroupMessagesTest is Test, Utils {
     function test_setMinPayloadSize_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -209,7 +211,9 @@ contract GroupMessagesTest is Test, Utils {
     function test_setMaxPayloadSize_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -268,7 +272,9 @@ contract GroupMessagesTest is Test, Utils {
     function test_pause_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -302,7 +308,9 @@ contract GroupMessagesTest is Test, Utils {
     function test_unpause_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 
@@ -324,7 +332,9 @@ contract GroupMessagesTest is Test, Utils {
         vm.prank(unauthorized);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                DEFAULT_ADMIN_ROLE
             )
         );
 

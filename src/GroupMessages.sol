@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AccessControlUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import { Initializable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { AccessControlUpgradeable } from "../lib/oz-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 // TODO: IGroupMessages
 // TODO: Abstract PayloadBroadcaster.

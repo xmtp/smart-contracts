@@ -1,0 +1,346 @@
+name: Solidity
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+
+permissions:
+  actions: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  init:
+    name: Initialize
+    runs-on: ubuntu-latest
+
+    outputs:
+      cache-key: ${{ steps.set-cache-key.outputs.cache-key }}
+
+    strategy:
+      fail-fast: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.0.0
+
+      - name: Set cache key
+        id: set-cache-key
+        run: echo "cache-key=ci-${{ hashFiles('**/*') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build contracts
+        run: forge build
+
+      - name: Cache data
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ steps.set-cache-key.outputs.cache-key }}
+
+      - id: forge
+        run: echo "forge_path=$(which forge)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload forge
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge
+          path: ${{ steps.forge.outputs.forge_path }}
+
+  sizes:
+    name: Contacts Sizes
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Run Forge build with sizes
+        run: forge build --sizes
+
+  test:
+    name: Tests
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Run Forge tests
+        run: forge test -vvv
+
+  gas:
+    name: Gas Report
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Run Forge tests with gas report
+        run: forge test --gas-report --gas-limit 2000000000 > gasreport.ansi
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3.21
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}
+
+  coverage:
+    name: Code Coverage
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Install lcov
+        uses: hrishikesh-kadam/setup-lcov@v1
+
+      - name: Run coverage
+        id: coverage
+        run: forge coverage --no-match-coverage "(script|test)" --gas-limit 2000000000 --report lcov && lcov --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage
+
+      - name: Report code coverage
+        uses: zgosalvez/github-actions-report-lcov@v4
+        with:
+          coverage-files: lcov.info
+          artifact-name: code-coverage-report
+          minimum-coverage: 95
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+
+  lint:
+    name: Lint check
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Run Solhint check
+        run: npm run solhint
+
+  prettier:
+    name: Formatting check
+    needs: init
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Run Prettier check
+        run: npm run prettier-check
+
+  slither:
+    name: Slither
+    needs: init
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build
+            cache
+            lib
+            out
+          key: ${{ needs.init.outputs.cache-key }}
+
+      - name: Restore forge
+        uses: actions/download-artifact@v4
+        with:
+          name: forge
+          path: /usr/local/bin
+
+      - run: chmod +x /usr/local/bin/forge
+
+      - name: Install Slither
+        run: pip3 install slither-analyzer
+
+      - name: Run Slither
+        run: slither . --sarif output.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: output.sarif
