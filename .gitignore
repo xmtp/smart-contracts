@@ -5,9 +5,11 @@ out/
 # Ignores development broadcast logs
 broadcast/**/*run*
 
-# Coverage files
+# Report files
 coverage/
 lcov.info
+gasreport.ansi
+output.sarif
 
 # Docs
 docs/
@@ -21,6 +23,5 @@ docs/
 # NPM modules
 node_modules
 
-gasreport.ansi
-
+# User Settings
 .vscode/

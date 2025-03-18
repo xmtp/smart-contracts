@@ -44,9 +44,9 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @inheritdoc INodeRegistry
     uint32 public constant NODE_INCREMENT = 100;
 
-    uint48 internal constant INITIAL_ACCESS_CONTROL_DELAY = 2 days;
+    uint48 internal constant _INITIAL_ACCESS_CONTROL_DELAY = 2 days;
 
-    bytes1 internal constant FORWARD_SLASH = 0x2f;
+    bytes1 internal constant _FORWARD_SLASH = 0x2f;
 
     /// @dev The base URI for the node NFTs.
     string internal _baseTokenURI;
@@ -74,7 +74,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
 
     constructor(
         address initialAdmin
-    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
+    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(_INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
         require(initialAdmin != address(0), InvalidAddress());
 
         _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
@@ -165,7 +165,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @inheritdoc INodeRegistry
     function setBaseURI(string calldata newBaseURI) external onlyRole(ADMIN_ROLE) {
         require(bytes(newBaseURI).length > 0, InvalidURI());
-        require(bytes(newBaseURI)[bytes(newBaseURI).length - 1] == FORWARD_SLASH, InvalidURI());
+        require(bytes(newBaseURI)[bytes(newBaseURI).length - 1] == _FORWARD_SLASH, InvalidURI());
         _baseTokenURI = newBaseURI;
         emit BaseURIUpdated(newBaseURI);
     }
