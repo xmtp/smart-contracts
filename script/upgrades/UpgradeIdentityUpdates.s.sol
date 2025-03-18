@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { stdJson } from "../../dependencies/forge-std/src/StdJson.sol";
-import { ERC1967Proxy } from "../../dependencies/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
+import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { IdentityUpdates } from "../../src/IdentityUpdates.sol";
 
@@ -48,6 +48,10 @@ contract UpgradeIdentityUpdates is Utils, Environment {
             getOutputPath(XMTP_IDENTITY_UPDATES_OUTPUT_JSON),
             ".addresses.implementation"
         );
-        vm.writeJson(vm.toString(block.number), getOutputPath(XMTP_IDENTITY_UPDATES_OUTPUT_JSON), ".latestUpgradeBlock");
+        vm.writeJson(
+            vm.toString(block.number),
+            getOutputPath(XMTP_IDENTITY_UPDATES_OUTPUT_JSON),
+            ".latestUpgradeBlock"
+        );
     }
 }

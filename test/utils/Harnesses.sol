@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { EnumerableSet } from "../../dependencies/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { GroupMessages } from "../../src/GroupMessages.sol";
 import { IdentityUpdates } from "../../src/IdentityUpdates.sol";
@@ -63,7 +63,7 @@ contract IdentityUpdatesHarness is IdentityUpdates {
 contract NodesHarness is Nodes {
     using EnumerableSet for EnumerableSet.UintSet;
 
-    constructor(address initialAdmin) Nodes(initialAdmin) { }
+    constructor(address initialAdmin) Nodes(initialAdmin) {}
 
     function __setNodeCounter(uint256 nodeCounter) external {
         _nodeCounter = uint32(nodeCounter);
@@ -86,8 +86,14 @@ contract NodesHarness is Nodes {
         bool isDisabled,
         uint256 minMonthlyFeeMicroDollars
     ) external {
-        _nodes[nodeId] =
-            Node(signingKeyPub, httpAddress, isReplicationEnabled, isApiEnabled, isDisabled, minMonthlyFeeMicroDollars);
+        _nodes[nodeId] = Node(
+            signingKeyPub,
+            httpAddress,
+            isReplicationEnabled,
+            isApiEnabled,
+            isDisabled,
+            minMonthlyFeeMicroDollars
+        );
     }
 
     function __setApproval(address to, uint256 tokenId, address authorizer) external {

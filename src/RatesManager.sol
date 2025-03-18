@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AccessControlUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import { Initializable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from
-    "../dependencies/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { AccessControlUpgradeable } from "../lib/oz-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 // TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
@@ -18,7 +14,11 @@ contract RatesManager is Initializable, AccessControlUpgradeable, UUPSUpgradeabl
 
     // Event emitted when new Rates are added
     event RatesAdded(
-        uint64 messageFee, uint64 storageFee, uint64 congestionFee, uint64 targetRatePerMinute, uint64 startTime
+        uint64 messageFee,
+        uint64 storageFee,
+        uint64 congestionFee,
+        uint64 targetRatePerMinute,
+        uint64 startTime
     );
 
     /**

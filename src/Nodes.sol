@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IERC165 } from "../dependencies/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+import { IERC165 } from "../lib/oz/contracts/utils/introspection/IERC165.sol";
 
-import { ERC721 } from "../dependencies/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import { AccessControlDefaultAdminRules } from
-    "../dependencies/openzeppelin-contracts/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
-import { EnumerableSet } from "../dependencies/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
+import {
+    AccessControlDefaultAdminRules
+} from "../lib/oz/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
+import { EnumerableSet } from "../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { INodes } from "./interfaces/INodes.sol";
 
@@ -71,10 +72,9 @@ contract Nodes is INodes, AccessControlDefaultAdminRules, ERC721 {
     /// @inheritdoc INodes
     uint256 public nodeOperatorCommissionPercent;
 
-    constructor(address initialAdmin)
-        ERC721("XMTP Node Operator", "XMTP")
-        AccessControlDefaultAdminRules(INITIAL_ACCESS_CONTROL_DELAY, initialAdmin)
-    {
+    constructor(
+        address initialAdmin
+    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
         require(initialAdmin != address(0), InvalidAddress());
 
         _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
@@ -173,11 +173,11 @@ contract Nodes is INodes, AccessControlDefaultAdminRules, ERC721 {
     /* ============ Node Manager Functions ============ */
 
     /// @inheritdoc INodes
-    function transferFrom(address from, address to, uint256 nodeId)
-        public
-        override(INodes, ERC721)
-        onlyRole(NODE_MANAGER_ROLE)
-    {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 nodeId
+    ) public override(INodes, ERC721) onlyRole(NODE_MANAGER_ROLE) {
         /// @dev Disable the node before transferring ownership.
         /// It's NOP responsibility to re-enable the node after transfer.
         _disableApiNode(nodeId);
@@ -365,12 +365,9 @@ contract Nodes is INodes, AccessControlDefaultAdminRules, ERC721 {
     }
 
     /// @dev Override to support INodes, ERC721, IERC165, and AccessControlEnumerable.
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, IERC165, AccessControlDefaultAdminRules)
-        returns (bool supported)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, IERC165, AccessControlDefaultAdminRules) returns (bool supported) {
         return interfaceId == type(INodes).interfaceId || super.supportsInterface(interfaceId);
     }
 

@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../dependencies/forge-std/src/Test.sol";
+import { Test } from "../lib/forge-std/src/Test.sol";
 
-import { IAccessControl } from "../dependencies/openzeppelin-contracts/contracts/access/IAccessControl.sol";
-import { IAccessControlDefaultAdminRules } from
-    "../dependencies/openzeppelin-contracts/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
-import { IERC721 } from "../dependencies/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
-import { IERC721Errors } from "../dependencies/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import { IERC165 } from "../dependencies/openzeppelin-contracts/contracts/interfaces/IERC165.sol";
+import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
+import {
+    IAccessControlDefaultAdminRules
+} from "../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
+import { IERC721 } from "../lib/oz/contracts/token/ERC721/IERC721.sol";
+import { IERC721Errors } from "../lib/oz/contracts/interfaces/draft-IERC6093.sol";
+import { IERC165 } from "../lib/oz/contracts/interfaces/IERC165.sol";
 
-import { ERC721 } from "../dependencies/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
 
 import { INodes, INodesEvents, INodesErrors } from "../src/interfaces/INodes.sol";
 
@@ -57,12 +58,20 @@ contract NodesTest is Test, Utils {
 
         vm.expectEmit(address(nodes));
         emit INodesEvents.NodeAdded(
-            NODE_INCREMENT, operatorAddress, node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars
+            NODE_INCREMENT,
+            operatorAddress,
+            node.signingKeyPub,
+            node.httpAddress,
+            node.minMonthlyFeeMicroDollars
         );
 
         vm.prank(admin);
-        uint256 nodeId =
-            nodes.addNode(operatorAddress, node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars);
+        uint256 nodeId = nodes.addNode(
+            operatorAddress,
+            node.signingKeyPub,
+            node.httpAddress,
+            node.minMonthlyFeeMicroDollars
+        );
 
         assertEq(nodeId, NODE_INCREMENT);
 
@@ -87,12 +96,20 @@ contract NodesTest is Test, Utils {
 
         vm.expectEmit(address(nodes));
         emit INodesEvents.NodeAdded(
-            12 * NODE_INCREMENT, operatorAddress, node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars
+            12 * NODE_INCREMENT,
+            operatorAddress,
+            node.signingKeyPub,
+            node.httpAddress,
+            node.minMonthlyFeeMicroDollars
         );
 
         vm.prank(admin);
-        uint256 nodeId =
-            nodes.addNode(operatorAddress, node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars);
+        uint256 nodeId = nodes.addNode(
+            operatorAddress,
+            node.signingKeyPub,
+            node.httpAddress,
+            node.minMonthlyFeeMicroDollars
+        );
 
         assertEq(nodeId, 12 * NODE_INCREMENT);
 
@@ -328,7 +345,9 @@ contract NodesTest is Test, Utils {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, NODE_MANAGER_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                NODE_MANAGER_ROLE
             )
         );
 
@@ -388,7 +407,9 @@ contract NodesTest is Test, Utils {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, NODE_MANAGER_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                NODE_MANAGER_ROLE
             )
         );
 
@@ -541,7 +562,9 @@ contract NodesTest is Test, Utils {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, NODE_MANAGER_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                unauthorized,
+                NODE_MANAGER_ROLE
             )
         );
 
@@ -893,13 +916,14 @@ contract NodesTest is Test, Utils {
     }
 
     function _getRandomNode() internal view returns (INodes.Node memory) {
-        return INodes.Node({
-            signingKeyPub: _genBytes(32),
-            httpAddress: _genString(32),
-            isReplicationEnabled: false,
-            isApiEnabled: false,
-            isDisabled: false,
-            minMonthlyFeeMicroDollars: _genRandomInt(100, 10_000)
-        });
+        return
+            INodes.Node({
+                signingKeyPub: _genBytes(32),
+                httpAddress: _genString(32),
+                isReplicationEnabled: false,
+                isApiEnabled: false,
+                isDisabled: false,
+                minMonthlyFeeMicroDollars: _genRandomInt(100, 10_000)
+            });
     }
 }
