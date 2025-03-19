@@ -6,11 +6,11 @@ import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initi
 import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-// TODO: IIdentityUpdates
+// TODO: IIdentityUpdateBroadcaster
 // TODO: Abstract PayloadBroadcaster.
 
-/// @title XMTP Identity Updates Contract
-contract IdentityUpdates is Initializable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
+/// @title XMTP Identity Update Broadcaster Contract
+contract IdentityUpdateBroadcaster is Initializable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
     /* ============ Events ============ */
 
     /**

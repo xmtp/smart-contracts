@@ -4,14 +4,14 @@ pragma solidity 0.8.28;
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { IdentityUpdates } from "../../src/IdentityUpdates.sol";
+import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
 
 import { Utils } from "../utils/Utils.sol";
 import { Environment } from "../utils/Environment.sol";
 
-contract UpgradeIdentityUpdates is Utils, Environment {
-    IdentityUpdates newImplementation;
-    IdentityUpdates proxy;
+contract UpgradeIdentityUpdateBroadcaster is Utils, Environment {
+    IdentityUpdateBroadcaster newImplementation;
+    IdentityUpdateBroadcaster proxy;
 
     address upgrader;
 
@@ -24,7 +24,7 @@ contract UpgradeIdentityUpdates is Utils, Environment {
         _initializeProxy();
 
         // Deploy the new implementation contract.
-        newImplementation = new IdentityUpdates();
+        newImplementation = new IdentityUpdateBroadcaster();
         require(address(newImplementation) != address(0), "Implementation deployment failed");
 
         // Upgrade the proxy pointer to the new implementation.
@@ -36,8 +36,8 @@ contract UpgradeIdentityUpdates is Utils, Environment {
     }
 
     function _initializeProxy() internal {
-        string memory fileContent = readOutput(XMTP_IDENTITY_UPDATES_OUTPUT_JSON);
-        proxy = IdentityUpdates(stdJson.readAddress(fileContent, ".addresses.proxy"));
+        string memory fileContent = readOutput(XMTP_IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON);
+        proxy = IdentityUpdateBroadcaster(stdJson.readAddress(fileContent, ".addresses.proxy"));
         require(address(proxy) != address(0), "proxy address not set");
         require(proxy.hasRole(proxy.DEFAULT_ADMIN_ROLE(), upgrader), "Upgrader must have admin role");
     }
@@ -45,12 +45,12 @@ contract UpgradeIdentityUpdates is Utils, Environment {
     function _serializeUpgradeData() internal {
         vm.writeJson(
             vm.toString(address(newImplementation)),
-            getOutputPath(XMTP_IDENTITY_UPDATES_OUTPUT_JSON),
+            getOutputPath(XMTP_IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON),
             ".addresses.implementation"
         );
         vm.writeJson(
             vm.toString(block.number),
-            getOutputPath(XMTP_IDENTITY_UPDATES_OUTPUT_JSON),
+            getOutputPath(XMTP_IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON),
             ".latestUpgradeBlock"
         );
     }

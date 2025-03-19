@@ -9,12 +9,12 @@ import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol
 import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { RatesManager } from "../src/RatesManager.sol";
+import { RateRegistry } from "../src/RateRegistry.sol";
 
-import { RatesManagerHarness } from "./utils/Harnesses.sol";
+import { RateRegistryHarness } from "./utils/Harnesses.sol";
 import { Utils } from "./utils/Utils.sol";
 
-contract RatesTest is Test, Utils {
+contract RateRegistryTests is Test, Utils {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
     bytes32 constant RATES_MANAGER_ROLE = keccak256("RATES_MANAGER_ROLE");
 
@@ -25,42 +25,34 @@ contract RatesTest is Test, Utils {
     uint64 constant CONGESTION_FEE = 300;
     uint64 constant TARGET_RATE_PER_MINUTE = 100 * 60;
 
-    address ratesManagerImpImplementation;
+    address implementation;
 
-    RatesManagerHarness ratesManager;
+    RateRegistryHarness registry;
 
     address admin = makeAddr("admin");
     address unauthorized = makeAddr("unauthorized");
 
     function setUp() public {
-        ratesManagerImpImplementation = address(new RatesManagerHarness());
+        implementation = address(new RateRegistryHarness());
 
-        ratesManager = RatesManagerHarness(
-            address(
-                new ERC1967Proxy(
-                    ratesManagerImpImplementation,
-                    abi.encodeWithSelector(RatesManager.initialize.selector, admin)
-                )
-            )
+        registry = RateRegistryHarness(
+            address(new ERC1967Proxy(implementation, abi.encodeWithSelector(RateRegistry.initialize.selector, admin)))
         );
     }
 
     /* ============ initializer ============ */
 
     function test_initializer_zeroAdminAddress() public {
-        vm.expectRevert(RatesManager.ZeroAdminAddress.selector);
+        vm.expectRevert(RateRegistry.ZeroAdminAddress.selector);
 
-        new ERC1967Proxy(
-            ratesManagerImpImplementation,
-            abi.encodeWithSelector(RatesManager.initialize.selector, address(0))
-        );
+        new ERC1967Proxy(implementation, abi.encodeWithSelector(RateRegistry.initialize.selector, address(0)));
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() public view {
-        assertEq(_getImplementationFromSlot(address(ratesManager)), ratesManagerImpImplementation);
-        assertEq(ratesManager.__getAllRates().length, 0);
+        assertEq(_getImplementationFromSlot(address(registry)), implementation);
+        assertEq(registry.__getAllRates().length, 0);
     }
 
     /* ============ addRates ============ */
@@ -75,19 +67,19 @@ contract RatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        ratesManager.addRates(0, 0, 0, 0, 0);
+        registry.addRates(0, 0, 0, 0, 0);
 
         // TODO: Test where admin is not the manager.
     }
 
     function test_addRates_first() public {
-        vm.expectEmit(address(ratesManager));
-        emit RatesManager.RatesAdded(100, 200, 300, 400, 500);
+        vm.expectEmit(address(registry));
+        emit RateRegistry.RatesAdded(100, 200, 300, 400, 500);
 
         vm.prank(admin);
-        ratesManager.addRates(100, 200, 300, 400, 500);
+        registry.addRates(100, 200, 300, 400, 500);
 
-        RatesManager.Rates[] memory rates = ratesManager.__getAllRates();
+        RateRegistry.Rates[] memory rates = registry.__getAllRates();
 
         assertEq(rates.length, 1);
 
@@ -99,18 +91,18 @@ contract RatesTest is Test, Utils {
     }
 
     function test_addRates_nth() public {
-        ratesManager.__pushRates(0, 0, 0, 0, 0);
-        ratesManager.__pushRates(0, 0, 0, 0, 0);
-        ratesManager.__pushRates(0, 0, 0, 0, 0);
-        ratesManager.__pushRates(0, 0, 0, 0, 0);
+        registry.__pushRates(0, 0, 0, 0, 0);
+        registry.__pushRates(0, 0, 0, 0, 0);
+        registry.__pushRates(0, 0, 0, 0, 0);
+        registry.__pushRates(0, 0, 0, 0, 0);
 
-        vm.expectEmit(address(ratesManager));
-        emit RatesManager.RatesAdded(100, 200, 300, 400, 500);
+        vm.expectEmit(address(registry));
+        emit RateRegistry.RatesAdded(100, 200, 300, 400, 500);
 
         vm.prank(admin);
-        ratesManager.addRates(100, 200, 300, 400, 500);
+        registry.addRates(100, 200, 300, 400, 500);
 
-        RatesManager.Rates[] memory rates = ratesManager.__getAllRates();
+        RateRegistry.Rates[] memory rates = registry.__getAllRates();
 
         assertEq(rates.length, 5);
 
@@ -122,18 +114,18 @@ contract RatesTest is Test, Utils {
     }
 
     function test_addRates_invalidStartTime() public {
-        ratesManager.__pushRates(0, 0, 0, 0, 100);
+        registry.__pushRates(0, 0, 0, 0, 100);
 
-        vm.expectRevert(RatesManager.InvalidStartTime.selector);
+        vm.expectRevert(RateRegistry.InvalidStartTime.selector);
 
         vm.prank(admin);
-        ratesManager.addRates(0, 0, 0, 0, 100);
+        registry.addRates(0, 0, 0, 0, 100);
     }
 
     /* ============ getRates ============ */
 
     function test_getRates_emptyArray() public view {
-        (RatesManager.Rates[] memory rates, bool hasMore) = ratesManager.getRates(0);
+        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates(0);
 
         assertEq(rates.length, 0);
         assertFalse(hasMore);
@@ -141,10 +133,10 @@ contract RatesTest is Test, Utils {
 
     function test_getRates_withinPageSize() public {
         for (uint256 i; i < 3 * PAGE_SIZE; ++i) {
-            ratesManager.__pushRates(i, i, i, i, i);
+            registry.__pushRates(i, i, i, i, i);
         }
 
-        (RatesManager.Rates[] memory rates, bool hasMore) = ratesManager.getRates((3 * PAGE_SIZE) - 10);
+        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates((3 * PAGE_SIZE) - 10);
 
         assertEq(rates.length, 10);
         assertFalse(hasMore);
@@ -159,10 +151,10 @@ contract RatesTest is Test, Utils {
 
     function test_getRates_pagination() public {
         for (uint256 i; i < 3 * PAGE_SIZE; ++i) {
-            ratesManager.__pushRates(i, i, i, i, i);
+            registry.__pushRates(i, i, i, i, i);
         }
 
-        (RatesManager.Rates[] memory rates, bool hasMore) = ratesManager.getRates(0);
+        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates(0);
 
         assertEq(rates.length, PAGE_SIZE);
         assertTrue(hasMore);
@@ -179,24 +171,24 @@ contract RatesTest is Test, Utils {
     /* ============ getRatesCount ============ */
 
     function test_getRatesCount() public {
-        assertEq(ratesManager.getRatesCount(), 0);
+        assertEq(registry.getRatesCount(), 0);
 
         for (uint256 i = 1; i <= 1000; ++i) {
-            ratesManager.__pushRates(0, 0, 0, 0, 0);
-            assertEq(ratesManager.getRatesCount(), i);
+            registry.__pushRates(0, 0, 0, 0, 0);
+            assertEq(registry.getRatesCount(), i);
         }
     }
 
     /* ============ pause ============ */
 
     function test_pause() public {
-        vm.expectEmit(address(ratesManager));
+        vm.expectEmit(address(registry));
         emit PausableUpgradeable.Paused(admin);
 
         vm.prank(admin);
-        ratesManager.pause();
+        registry.pause();
 
-        assertTrue(ratesManager.paused());
+        assertTrue(registry.paused());
     }
 
     function test_pause_notAdmin() public {
@@ -209,30 +201,30 @@ contract RatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        ratesManager.pause();
+        registry.pause();
     }
 
     function test_pause_whenPaused() public {
-        ratesManager.__pause();
+        registry.__pause();
 
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
 
         vm.prank(admin);
-        ratesManager.pause();
+        registry.pause();
     }
 
     /* ============ unpause ============ */
 
     function test_unpause() public {
-        ratesManager.__pause();
+        registry.__pause();
 
-        vm.expectEmit(address(ratesManager));
+        vm.expectEmit(address(registry));
         emit PausableUpgradeable.Unpaused(admin);
 
         vm.prank(admin);
-        ratesManager.unpause();
+        registry.unpause();
 
-        assertFalse(ratesManager.paused());
+        assertFalse(registry.paused());
     }
 
     function test_unpause_notAdmin() public {
@@ -245,14 +237,14 @@ contract RatesTest is Test, Utils {
         );
 
         vm.prank(unauthorized);
-        ratesManager.unpause();
+        registry.unpause();
     }
 
     function test_unpause_whenNotPaused() public {
         vm.expectRevert(PausableUpgradeable.ExpectedPause.selector);
 
         vm.prank(admin);
-        ratesManager.unpause();
+        registry.unpause();
     }
 
     /* ============ upgradeToAndCall ============ */
@@ -268,33 +260,33 @@ contract RatesTest is Test, Utils {
             )
         );
 
-        ratesManager.upgradeToAndCall(address(0), "");
+        registry.upgradeToAndCall(address(0), "");
     }
 
     function test_upgradeToAndCall_zeroImplementationAddress() public {
-        vm.expectRevert(RatesManager.ZeroImplementationAddress.selector);
+        vm.expectRevert(RateRegistry.ZeroImplementationAddress.selector);
 
         vm.prank(admin);
-        ratesManager.upgradeToAndCall(address(0), "");
+        registry.upgradeToAndCall(address(0), "");
     }
 
     function test_upgradeToAndCall() public {
-        ratesManager.__pushRates(0, 0, 0, 0, 0);
-        ratesManager.__pushRates(1, 1, 1, 1, 1);
-        ratesManager.__pushRates(2, 2, 2, 2, 2);
+        registry.__pushRates(0, 0, 0, 0, 0);
+        registry.__pushRates(1, 1, 1, 1, 1);
+        registry.__pushRates(2, 2, 2, 2, 2);
 
-        address newImplementation = address(new RatesManagerHarness());
+        address newImplementation = address(new RateRegistryHarness());
 
         // Authorized upgrade should succeed and emit UpgradeAuthorized event.
-        vm.expectEmit(address(ratesManager));
-        emit RatesManager.UpgradeAuthorized(admin, newImplementation);
+        vm.expectEmit(address(registry));
+        emit RateRegistry.UpgradeAuthorized(admin, newImplementation);
 
         vm.prank(admin);
-        ratesManager.upgradeToAndCall(newImplementation, "");
+        registry.upgradeToAndCall(newImplementation, "");
 
-        assertEq(_getImplementationFromSlot(address(ratesManager)), newImplementation);
+        assertEq(_getImplementationFromSlot(address(registry)), newImplementation);
 
-        RatesManager.Rates[] memory rates = ratesManager.__getAllRates();
+        RateRegistry.Rates[] memory rates = registry.__getAllRates();
 
         assertEq(rates.length, 3);
 

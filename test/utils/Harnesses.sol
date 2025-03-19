@@ -3,12 +3,12 @@ pragma solidity 0.8.28;
 
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
-import { GroupMessages } from "../../src/GroupMessages.sol";
-import { IdentityUpdates } from "../../src/IdentityUpdates.sol";
-import { Nodes } from "../../src/Nodes.sol";
-import { RatesManager } from "../../src/RatesManager.sol";
+import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
+import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
+import { NodeRegistry } from "../../src/NodeRegistry.sol";
+import { RateRegistry } from "../../src/RateRegistry.sol";
 
-contract GroupMessagesHarness is GroupMessages {
+contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
     function __pause() external {
         _pause();
     }
@@ -34,7 +34,7 @@ contract GroupMessagesHarness is GroupMessages {
     }
 }
 
-contract IdentityUpdatesHarness is IdentityUpdates {
+contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
     function __pause() external {
         _pause();
     }
@@ -60,10 +60,10 @@ contract IdentityUpdatesHarness is IdentityUpdates {
     }
 }
 
-contract NodesHarness is Nodes {
+contract NodeRegistryHarness is NodeRegistry {
     using EnumerableSet for EnumerableSet.UintSet;
 
-    constructor(address initialAdmin) Nodes(initialAdmin) {}
+    constructor(address initialAdmin) NodeRegistry(initialAdmin) {}
 
     function __setNodeCounter(uint256 nodeCounter) external {
         _nodeCounter = uint32(nodeCounter);
@@ -137,7 +137,7 @@ contract NodesHarness is Nodes {
     }
 }
 
-contract RatesManagerHarness is RatesManager {
+contract RateRegistryHarness is RateRegistry {
     function __pause() external {
         _pause();
     }
