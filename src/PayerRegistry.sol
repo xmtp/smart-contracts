@@ -48,7 +48,6 @@ contract PayerRegistry is
 
     /// @custom:storage-location erc7201:xmtp.storage.Payer
     struct PayerStorage {
-        // Configuration and state parameters (fits in 2 slots)
         uint64 minimumRegistrationAmountMicroDollars;
         uint64 minimumDepositAmountMicroDollars;
         uint64 pendingFees;
@@ -56,12 +55,10 @@ contract PayerRegistry is
         uint64 lastFeeTransferTimestamp;
         uint32 withdrawalLockPeriod;
         uint32 transferFeesPeriod;
-        // Contract addresses (fits in 3 slots)
         address usdcToken;
         address feeDistributor;
         address nodeRegistry;
         address payerReportManager;
-        // Mappings and dynamic sets (each starts at its own storage slot)
         mapping(address => Payer) payers;
         mapping(address => Withdrawal) withdrawals;
         EnumerableSet.AddressSet activePayers;

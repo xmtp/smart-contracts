@@ -86,9 +86,6 @@ interface IPayerRegistryErrors {
     /// @notice Error thrown when removing a debtor has failed.
     error FailedToRemoveDebtor();
 
-    /// @dev Error thrown when an address is invalid (usually zero address).
-    error InvalidAddress();
-
     /// @dev Error thrown when the amount is insufficient.
     error InsufficientAmount();
 
@@ -97,6 +94,9 @@ interface IPayerRegistryErrors {
 
     /// @dev Error thrown when insufficient time has passed since the last fee transfer.
     error InsufficientTimePassed();
+
+    /// @dev Error thrown when an address is invalid (usually zero address).
+    error InvalidAddress();
 
     /// @dev Error thrown when contract is not the fee distributor.
     error InvalidFeeDistributor();
