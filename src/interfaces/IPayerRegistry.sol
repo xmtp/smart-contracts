@@ -14,9 +14,6 @@ interface IPayerRegistryEvents {
     /// @dev Emitted when fees are transferred to the distribution contract.
     event FeesTransferred(uint64 indexed timestamp, uint64 amount);
 
-    /// @dev Emitted when the maximum tolerable debt amount is updated.
-    event MaxTolerableDebtAmountSet(uint64 oldMaxTolerableDebtAmount, uint64 newMaxTolerableDebtAmount);
-
     /// @dev Emitted when the minimum deposit amount is updated.
     event MinimumDepositSet(uint64 oldMinimumDeposit, uint64 newMinimumDeposit);
 
@@ -27,7 +24,7 @@ interface IPayerRegistryEvents {
     event NodeRegistrySet(address indexed newNodeRegistry);
 
     /// @dev Emitted when a payer balance is updated.
-    event PayerBalanceUpdated(address indexed payer, uint64 newBalance, uint64 newDebtAmount);
+    event PayerBalanceUpdated(address indexed payer, int64 newBalance);
 
     /// @dev Emitted when a payer is deactivated by an owner.
     event PayerDeactivated(uint256 indexed operatorId, address indexed payer);
@@ -103,9 +100,6 @@ interface IPayerRegistryErrors {
 
     /// @dev Error thrown when contract is not the fee distributor.
     error InvalidFeeDistributor();
-
-    /// @dev Error thrown when the maximum tolerable debt amount is invalid.
-    error InvalidMaxTolerableDebtAmount();
 
     /// @dev Error thrown when the minimum deposit is invalid.
     error InvalidMinimumDeposit();
@@ -188,12 +182,10 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
     /**
      * @dev   Struct to store payer information.
      * @param balance                The current USDC balance of the payer.
-     * @param debtAmount             The amount of fees owed but not yet settled.
      * @param latestDepositTimestamp The timestamp of the most recent deposit.
      */
     struct Payer {
-        uint64 balance;
-        uint64 debtAmount;
+        int64 balance;
         uint64 latestDepositTimestamp;
     }
 
@@ -236,16 +228,6 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      * Emits `PayerBalanceUpdated`.
      */
     function deposit(address payer, uint64 amount) external;
-
-    /**
-     * @notice Deactivates a payer, signaling XMTP nodes they should not accept messages from them.
-     *         Only callable by authorized node operators.
-     * @param  operatorId The ID of the operator calling the function.
-     * @param  payer      The address of the payer to deactivate.
-     *
-     * Emits `PayerDeactivated`.
-     */
-    function deactivatePayer(uint256 operatorId, address payer) external;
 
     /* ============ Payer Balance Management ============ */
 
@@ -373,14 +355,6 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
     function setWithdrawalLockPeriod(uint32 newWithdrawalLockPeriod) external;
 
     /**
-     * @notice Sets the maximum tolerable debt amount.
-     * @param  newMaxTolerableDebtAmount The new maximum tolerable debt amount.
-     *
-     * Emits `MaxTolerableDebtAmountUpdated`.
-     */
-    function setMaxTolerableDebtAmount(uint64 newMaxTolerableDebtAmount) external;
-
-    /**
      * @notice Sets the transfer fees period.
      * @param  newTransferFeesPeriod The new transfer fees period.
      *
@@ -443,18 +417,6 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
     function getLastFeeTransferTimestamp() external view returns (uint64 timestamp);
 
     /**
-     * @notice Returns the total value locked in the contract (all payer balances).
-     * @return tvl The total value locked in USDC.
-     */
-    function getTotalValueLocked() external view returns (uint64 tvl);
-
-    /**
-     * @notice Returns the total outstanding debt amount across all payers.
-     * @return totalDebt The total debt amount in USDC.
-     */
-    function getTotalDebt() external view returns (uint64 totalDebt);
-
-    /**
      * @notice Returns the actual USDC balance held by the contract.
      * @dev    This can be used to verify the contract's accounting is accurate.
      * @return balance The USDC token balance of the contract.
@@ -496,7 +458,7 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      * @param  payer   The address of the payer.
      * @return balance The current balance of the payer.
      */
-    function getPayerBalance(address payer) external view returns (uint64 balance);
+    function getPayerBalance(address payer) external view returns (int64 balance);
 
     /**
      * @notice Returns the duration of the lock period required before a withdrawal
