@@ -369,14 +369,38 @@ contract PayerRegistry is
      * @inheritdoc IPayerRegistry
      */
     function setFeeDistributor(address newFeeDistributor) external onlyRole(ADMIN_ROLE) {
-        _setFeeDistributor(newFeeDistributor);
+        PayerStorage storage $ = _getPayerStorage();
+
+        try IFeeDistributor(newFeeDistributor).supportsInterface(type(IFeeDistributor).interfaceId) returns (
+            bool supported
+        ) {
+            require(supported, InvalidFeeDistributor());
+        } catch {
+            revert InvalidFeeDistributor();
+        }
+
+        $.feeDistributor = newFeeDistributor;
+
+        emit FeeDistributorSet(newFeeDistributor);
     }
 
     /**
      * @inheritdoc IPayerRegistry
      */
     function setPayerReportManager(address newPayerReportManager) external onlyRole(ADMIN_ROLE) {
-        _setPayerReportManager(newPayerReportManager);
+        PayerStorage storage $ = _getPayerStorage();
+
+        try
+            IPayerReportManager(newPayerReportManager).supportsInterface(type(IPayerReportManager).interfaceId)
+        returns (bool supported) {
+            require(supported, InvalidPayerReportManager());
+        } catch {
+            revert InvalidPayerReportManager();
+        }
+
+        $.payerReportManager = newPayerReportManager;
+
+        emit PayerReportManagerSet(newPayerReportManager);
     }
 
     /**
@@ -792,46 +816,6 @@ contract PayerRegistry is
         if (!$.debtPayers.contains(payer)) {
             require($.debtPayers.add(payer), FailedToAddDebtor());
         }
-    }
-
-    /**
-     * @notice Sets the FeeDistributor contract.
-     * @param  newFeeDistributor The address of the new FeeDistributor contract.
-     */
-    function _setFeeDistributor(address newFeeDistributor) internal {
-        PayerStorage storage $ = _getPayerStorage();
-
-        try IFeeDistributor(newFeeDistributor).supportsInterface(type(IFeeDistributor).interfaceId) returns (
-            bool supported
-        ) {
-            require(supported, InvalidFeeDistributor());
-        } catch {
-            revert InvalidFeeDistributor();
-        }
-
-        $.feeDistributor = newFeeDistributor;
-
-        emit FeeDistributorSet(newFeeDistributor);
-    }
-
-    /**
-     * @notice Sets the PayerReportManager contract.
-     * @param  newPayerReportManager The address of the new PayerReportManager contract.
-     */
-    function _setPayerReportManager(address newPayerReportManager) internal {
-        PayerStorage storage $ = _getPayerStorage();
-
-        try
-            IPayerReportManager(newPayerReportManager).supportsInterface(type(IPayerReportManager).interfaceId)
-        returns (bool supported) {
-            require(supported, InvalidPayerReportManager());
-        } catch {
-            revert InvalidPayerReportManager();
-        }
-
-        $.payerReportManager = newPayerReportManager;
-
-        emit PayerReportManagerSet(newPayerReportManager);
     }
 
     /**
