@@ -32,9 +32,6 @@ interface IPayerRegistryEvents {
     /// @dev Emitted when a payer is deactivated by an owner.
     event PayerDeactivated(uint256 indexed operatorId, address indexed payer);
 
-    /// @dev Emitted when a payer is permanently deleted from the system.
-    event PayerDeleted(address indexed payer, uint64 timestamp);
-
     /// @dev Emitted when a new payer is registered.
     event PayerRegistered(address indexed payer, uint64 amount);
 
@@ -250,16 +247,6 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      */
     function deactivatePayer(uint256 operatorId, address payer) external;
 
-    /**
-     * @notice Permanently deletes a payer from the system.
-     * @dev    Can only delete payers with zero balance and zero debt who are not in withdrawal.
-     *         Only callable by authorized node operators.
-     * @param  payer The address of the payer to delete.
-     *
-     * Emits `PayerDeleted`.
-     */
-    function deletePayer(address payer) external;
-
     /* ============ Payer Balance Management ============ */
 
     /**
@@ -448,18 +435,6 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      * @return hasMore     True if there are more payers to retrieve.
      */
     function getPayersInDebt(uint32 offset, uint32 limit) external view returns (Payer[] memory payers, bool hasMore);
-
-    /**
-     * @notice Returns the total number of registered payers.
-     * @return count The total number of registered payers.
-     */
-    function getTotalPayerCount() external view returns (uint256 count);
-
-    /**
-     * @notice Returns the number of active payers.
-     * @return count The number of active payers.
-     */
-    function getActivePayerCount() external view returns (uint256 count);
 
     /**
      * @notice Returns the timestamp of the last fee transfer to the rewards contract.

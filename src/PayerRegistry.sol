@@ -13,7 +13,7 @@ import { SafeERC20 } from "../lib/oz/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import { IFeeDistributor } from "./interfaces/IFeeDistributor.sol";
-import { INodes } from "./interfaces/INodes.sol";
+import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
@@ -69,7 +69,6 @@ contract PayerRegistry is
         // Mappings and dynamic sets (each starts at its own storage slot)
         mapping(address => Payer) payers;
         mapping(address => Withdrawal) withdrawals;
-        EnumerableSet.AddressSet totalPayers;
         EnumerableSet.AddressSet activePayers;
         EnumerableSet.AddressSet debtPayers;
     }
@@ -159,7 +158,6 @@ contract PayerRegistry is
 
         // Add new payer to active and total payers sets
         require($.activePayers.add(msg.sender), FailedToRegisterPayer());
-        require($.totalPayers.add(msg.sender), FailedToRegisterPayer());
 
         _increaseTotalDeposited(amount);
 
@@ -186,31 +184,10 @@ contract PayerRegistry is
      * @inheritdoc IPayerRegistry
      */
     function deactivatePayer(uint256 nodeId, address payer) external whenNotPaused {
+        _revertIfNotNodeOperator(nodeId);
         _revertIfPayerDoesNotExist(payer);
 
         _deactivatePayer(nodeId, payer);
-    }
-
-    /**
-     * @inheritdoc IPayerRegistry
-     */
-    function deletePayer(address payer) external whenNotPaused onlyRole(ADMIN_ROLE) {
-        _revertIfPayerDoesNotExist(payer);
-
-        PayerStorage storage $ = _getPayerStorage();
-
-        require($.withdrawals[payer].withdrawableTimestamp == 0, PayerInWithdrawal());
-
-        if ($.payers[payer].balance > 0 || $.payers[payer].debtAmount > 0) {
-            revert PayerHasBalanceOrDebt();
-        }
-
-        // Delete all payer data
-        delete $.payers[payer];
-        require($.totalPayers.remove(payer), FailedToDeletePayer());
-        require($.activePayers.remove(payer), FailedToDeletePayer());
-
-        emit PayerDeleted(payer, uint64(block.timestamp));
     }
 
     /* ========== Payers Balance Management ========= */
@@ -567,20 +544,6 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function getTotalPayerCount() external view returns (uint256 count) {
-        return _getPayerStorage().totalPayers.length();
-    }
-
-    /**
-     * @inheritdoc IPayerRegistry
-     */
-    function getActivePayerCount() external view returns (uint256 count) {
-        return _getPayerStorage().activePayers.length();
-    }
-
-    /**
-     * @inheritdoc IPayerRegistry
-     */
     function getLastFeeTransferTimestamp() external view returns (uint64 timestamp) {
         return _getPayerStorage().lastFeeTransferTimestamp;
     }
@@ -782,12 +745,12 @@ contract PayerRegistry is
     }
 
     function _revertIfNotNodeOperator(uint256 nodeId) internal view {
-        INodes nodes = INodes(_getPayerStorage().nodeRegistry);
+        INodeRegistry nodes = INodeRegistry(_getPayerStorage().nodeRegistry);
 
         require(msg.sender == nodes.ownerOf(nodeId), Unauthorized());
 
-        // TODO: Change for a better filter.
-        return nodes.getReplicationNodeIsActive(nodeId);
+        // TODO(borja): Change for a better filter.
+        require(nodes.getReplicationNodeIsActive(nodeId), Unauthorized());
     }
 
     /**
@@ -878,7 +841,7 @@ contract PayerRegistry is
     function _setNodeRegistry(address newNodeRegistry) internal {
         PayerStorage storage $ = _getPayerStorage();
 
-        try INodes(newNodeRegistry).supportsInterface(type(INodes).interfaceId) returns (bool supported) {
+        try INodeRegistry(newNodeRegistry).supportsInterface(type(INodeRegistry).interfaceId) returns (bool supported) {
             require(supported, InvalidNodeRegistry());
         } catch {
             revert InvalidNodeRegistry();
