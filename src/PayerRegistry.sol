@@ -36,15 +36,15 @@ contract PayerRegistry is
     /* ============ Constants ============ */
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    string internal constant USDC_SYMBOL = "USDC";
-    uint8 private constant PAYER_OPERATOR_ID = 1;
-    uint64 private constant DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS = 10_000_000;
-    uint64 private constant DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS = 10_000_000;
-    uint64 private constant DEFAULT_MAX_TOLERABLE_DEBT_AMOUNT_MICRO_DOLLARS = 50_000_000;
-    uint32 private constant DEFAULT_MINIMUM_TRANSFER_FEES_PERIOD = 6 hours;
-    uint32 private constant ABSOLUTE_MINIMUM_TRANSFER_FEES_PERIOD = 1 hours;
-    uint32 private constant DEFAULT_WITHDRAWAL_LOCK_PERIOD = 3 days;
-    uint32 private constant ABSOLUTE_MINIMUM_WITHDRAWAL_LOCK_PERIOD = 1 days;
+    string internal constant _USDC_SYMBOL = "USDC";
+    uint8 private constant _PAYER_OPERATOR_ID = 1;
+    uint64 private constant _DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS = 10_000_000;
+    uint64 private constant _DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS = 10_000_000;
+    uint64 private constant _DEFAULT_MAX_TOLERABLE_DEBT_AMOUNT_MICRO_DOLLARS = 50_000_000;
+    uint32 private constant _DEFAULT_MINIMUM_TRANSFER_FEES_PERIOD = 6 hours;
+    uint32 private constant _ABSOLUTE_MINIMUM_TRANSFER_FEES_PERIOD = 1 hours;
+    uint32 private constant _DEFAULT_WITHDRAWAL_LOCK_PERIOD = 3 days;
+    uint32 private constant _ABSOLUTE_MINIMUM_WITHDRAWAL_LOCK_PERIOD = 1 days;
 
     /* ============ UUPS Storage ============ */
 
@@ -61,13 +61,11 @@ contract PayerRegistry is
         uint64 collectedFees;
         uint32 withdrawalLockPeriod;
         uint32 transferFeesPeriod;
-
         // Contract addresses (fits in 3 slots)
         address usdcToken;
         address feeDistributor;
         address nodeRegistry;
         address payerReportManager;
-
         // Mappings and dynamic sets (each starts at its own storage slot)
         mapping(address => Payer) payers;
         mapping(address => Withdrawal) withdrawals;
@@ -77,25 +75,17 @@ contract PayerRegistry is
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.Payer")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant PAYER_STORAGE_LOCATION =
+    bytes32 internal constant _PAYER_STORAGE_LOCATION =
         0xd0335f337c570f3417b0f0d20340c88da711d60e810b5e9b3ecabe9ccfcdce5a;
 
     function _getPayerStorage() internal pure returns (PayerStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := PAYER_STORAGE_LOCATION
+            $.slot := _PAYER_STORAGE_LOCATION
         }
     }
 
     /* ============ Modifiers ============ */
-
-    /**
-     * @dev Modifier to check if caller is an active node operator.
-     */
-    modifier onlyNodeOperator(uint256 nodeId) {
-        require(_getIsActiveNodeOperator(nodeId), UnauthorizedNodeOperator());
-        _;
-    }
 
     /**
      * @dev Modifier to check if caller is the payer report contract.
@@ -133,11 +123,11 @@ contract PayerRegistry is
 
         PayerStorage storage $ = _getPayerStorage();
 
-        $.minimumRegistrationAmountMicroDollars = DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS;
-        $.minimumDepositAmountMicroDollars = DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS;
-        $.withdrawalLockPeriod = DEFAULT_WITHDRAWAL_LOCK_PERIOD;
-        $.maxTolerableDebtAmountMicroDollars = DEFAULT_MAX_TOLERABLE_DEBT_AMOUNT_MICRO_DOLLARS;
-        $.transferFeesPeriod = DEFAULT_MINIMUM_TRANSFER_FEES_PERIOD;
+        $.minimumRegistrationAmountMicroDollars = _DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS;
+        $.minimumDepositAmountMicroDollars = _DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS;
+        $.withdrawalLockPeriod = _DEFAULT_WITHDRAWAL_LOCK_PERIOD;
+        $.maxTolerableDebtAmountMicroDollars = _DEFAULT_MAX_TOLERABLE_DEBT_AMOUNT_MICRO_DOLLARS;
+        $.transferFeesPeriod = _DEFAULT_MINIMUM_TRANSFER_FEES_PERIOD;
 
         _setUsdcToken(usdcToken);
         _setNodeRegistry(nodesContract);
@@ -195,7 +185,7 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function deactivatePayer(uint256 nodeId, address payer) external whenNotPaused onlyNodeOperator(nodeId) {
+    function deactivatePayer(uint256 nodeId, address payer) external whenNotPaused {
         _revertIfPayerDoesNotExist(payer);
 
         _deactivatePayer(nodeId, payer);
@@ -211,9 +201,7 @@ contract PayerRegistry is
 
         require($.withdrawals[payer].withdrawableTimestamp == 0, PayerInWithdrawal());
 
-        Payer memory _storedPayer = $.payers[payer];
-
-        if (_storedPayer.balance > 0 || _storedPayer.debtAmount > 0) {
+        if ($.payers[payer].balance > 0 || $.payers[payer].debtAmount > 0) {
             revert PayerHasBalanceOrDebt();
         }
 
@@ -235,10 +223,8 @@ contract PayerRegistry is
 
         PayerStorage storage $ = _getPayerStorage();
 
-        Payer memory _storedPayer = $.payers[msg.sender];
-
-        require(_storedPayer.debtAmount == 0, PayerHasDebt());
-        require(_storedPayer.balance >= amount, InsufficientBalance());
+        require($.payers[msg.sender].debtAmount == 0, PayerHasDebt());
+        require($.payers[msg.sender].balance >= amount, InsufficientBalance());
 
         // Balance to be withdrawn is deducted from the payer's balance,
         // it can't be used to settle payments.
@@ -247,10 +233,7 @@ contract PayerRegistry is
 
         uint64 withdrawableTimestamp = uint64(block.timestamp) + $.withdrawalLockPeriod;
 
-        $.withdrawals[msg.sender] = Withdrawal({
-            withdrawableTimestamp: withdrawableTimestamp,
-            amount: amount
-        });
+        $.withdrawals[msg.sender] = Withdrawal({ withdrawableTimestamp: withdrawableTimestamp, amount: amount });
 
         emit PayerBalanceUpdated(msg.sender, $.payers[msg.sender].balance, $.payers[msg.sender].debtAmount);
 
@@ -265,16 +248,16 @@ contract PayerRegistry is
 
         PayerStorage storage $ = _getPayerStorage();
 
-        Withdrawal memory _withdrawal = $.withdrawals[msg.sender];
+        Withdrawal memory withdrawal = $.withdrawals[msg.sender];
 
         delete $.withdrawals[msg.sender];
 
-        $.payers[msg.sender].balance += _withdrawal.amount;
-        _increaseTotalDeposited(_withdrawal.amount);
+        $.payers[msg.sender].balance += withdrawal.amount;
+        _increaseTotalDeposited(withdrawal.amount);
 
         emit PayerBalanceUpdated(msg.sender, $.payers[msg.sender].balance, $.payers[msg.sender].debtAmount);
 
-        emit WithdrawalCancelled(msg.sender, _withdrawal.withdrawableTimestamp);
+        emit WithdrawalCancelled(msg.sender, withdrawal.withdrawableTimestamp);
     }
 
     /**
@@ -285,25 +268,26 @@ contract PayerRegistry is
 
         PayerStorage storage $ = _getPayerStorage();
 
-        Withdrawal memory _withdrawal = $.withdrawals[msg.sender];
+        Withdrawal memory withdrawal = $.withdrawals[msg.sender];
 
-        require(block.timestamp >= _withdrawal.withdrawableTimestamp, WithdrawalPeriodNotElapsed());
+        // slither-disable-next-line timestamp
+        require(block.timestamp >= withdrawal.withdrawableTimestamp, WithdrawalPeriodNotElapsed());
 
         delete $.withdrawals[msg.sender];
 
-        uint64 _finalWithdrawalAmount = _withdrawal.amount;
+        uint64 finalWithdrawalAmount = withdrawal.amount;
 
         if ($.payers[msg.sender].debtAmount > 0) {
-            _finalWithdrawalAmount = _settleDebts(msg.sender, _withdrawal.amount, true);
+            finalWithdrawalAmount = _settleDebts(msg.sender, withdrawal.amount, true);
         }
 
-        if (_finalWithdrawalAmount > 0) {
-            IERC20($.usdcToken).safeTransfer(msg.sender, _finalWithdrawalAmount);
+        if (finalWithdrawalAmount > 0) {
+            IERC20($.usdcToken).safeTransfer(msg.sender, finalWithdrawalAmount);
         }
 
         emit PayerBalanceUpdated(msg.sender, $.payers[msg.sender].balance, $.payers[msg.sender].debtAmount);
 
-        emit WithdrawalFinalized(msg.sender, _withdrawal.withdrawableTimestamp, _finalWithdrawalAmount);
+        emit WithdrawalFinalized(msg.sender, withdrawal.withdrawableTimestamp, finalWithdrawalAmount);
     }
 
     /**
@@ -320,18 +304,17 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function settleUsage(uint256 originatorNode, address[] calldata payerList, uint64[] calldata usageAmountsList)
-        external
-        whenNotPaused
-        nonReentrant
-        onlyPayerReport
-    {
+    function settleUsage(
+        uint256 originatorNode,
+        address[] calldata payerList,
+        uint64[] calldata usageAmountsList
+    ) external whenNotPaused nonReentrant onlyPayerReport {
         require(payerList.length == usageAmountsList.length, InvalidPayerListLength());
 
         PayerStorage storage $ = _getPayerStorage();
 
-        uint64 _settledFees = 0;
-        uint64 _pendingFees = $.pendingFees;
+        uint64 settledFees = 0;
+        uint64 pendingFees = $.pendingFees;
 
         for (uint256 i = 0; i < payerList.length; i++) {
             address payer = payerList[i];
@@ -341,41 +324,41 @@ contract PayerRegistry is
             // Payers in payerList should always exist and be active.
             if (!_payerExists(payer) || !_payerIsActive(payer)) continue;
 
-            Payer memory _storedPayer = $.payers[payer];
+            Payer memory storedPayer = $.payers[payer];
 
-            if (_storedPayer.balance < usage) {
-                uint64 _debt = usage - _storedPayer.balance;
+            if (storedPayer.balance < usage) {
+                uint64 debt = usage - storedPayer.balance;
 
-                _settledFees += _storedPayer.balance;
-                _pendingFees += _storedPayer.balance;
+                settledFees += storedPayer.balance;
+                pendingFees += storedPayer.balance;
 
-                _storedPayer.balance = 0;
-                _storedPayer.debtAmount = _debt;
-                $.payers[payer] = _storedPayer;
+                storedPayer.balance = 0;
+                storedPayer.debtAmount = debt;
+                $.payers[payer] = storedPayer;
 
                 _addDebtor(payer);
-                _increaseTotalDebt(_debt);
+                _increaseTotalDebt(debt);
 
-                if (_debt > $.maxTolerableDebtAmountMicroDollars) _deactivatePayer(PAYER_OPERATOR_ID, payer);
+                if (debt > $.maxTolerableDebtAmountMicroDollars) _deactivatePayer(_PAYER_OPERATOR_ID, payer);
 
-                emit PayerBalanceUpdated(payer, _storedPayer.balance, _storedPayer.debtAmount);
+                emit PayerBalanceUpdated(payer, storedPayer.balance, storedPayer.debtAmount);
 
                 continue;
             }
 
-            _settledFees += usage;
-            _pendingFees += usage;
+            settledFees += usage;
+            pendingFees += usage;
 
-            _storedPayer.balance -= usage;
+            storedPayer.balance -= usage;
 
-            $.payers[payer] = _storedPayer;
+            $.payers[payer] = storedPayer;
 
-            emit PayerBalanceUpdated(payer, _storedPayer.balance, _storedPayer.debtAmount);
+            emit PayerBalanceUpdated(payer, storedPayer.balance, storedPayer.debtAmount);
         }
 
-        $.pendingFees = _pendingFees;
+        $.pendingFees = pendingFees;
 
-        emit UsageSettled(originatorNode, uint64(block.timestamp), _settledFees);
+        emit UsageSettled(originatorNode, uint64(block.timestamp), settledFees);
     }
 
     /**
@@ -390,17 +373,17 @@ contract PayerRegistry is
         // slither-disable-next-line timestamp
         require(block.timestamp - $.lastFeeTransferTimestamp >= $.transferFeesPeriod, InsufficientTimePassed());
 
-        uint64 _pendingFeesAmount = $.pendingFees;
+        uint64 pendingFeesAmount = $.pendingFees;
 
-        require(_pendingFeesAmount > 0, InsufficientAmount());
+        require(pendingFeesAmount > 0, InsufficientAmount());
 
-        IERC20($.usdcToken).safeTransfer($.feeDistributor, _pendingFeesAmount);
+        IERC20($.usdcToken).safeTransfer($.feeDistributor, pendingFeesAmount);
 
         $.lastFeeTransferTimestamp = uint64(block.timestamp);
-        $.collectedFees += _pendingFeesAmount;
+        $.collectedFees += pendingFeesAmount;
         $.pendingFees = 0;
 
-        emit FeesTransferred(uint64(block.timestamp), _pendingFeesAmount);
+        emit FeesTransferred(uint64(block.timestamp), pendingFeesAmount);
     }
 
     /* ========== Administrative Functions ========== */
@@ -437,7 +420,7 @@ contract PayerRegistry is
      * @inheritdoc IPayerRegistry
      */
     function setMinimumDeposit(uint64 newMinimumDeposit) external onlyRole(ADMIN_ROLE) {
-        require(newMinimumDeposit > DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS, InvalidMinimumDeposit());
+        require(newMinimumDeposit > _DEFAULT_MINIMUM_DEPOSIT_AMOUNT_MICRO_DOLLARS, InvalidMinimumDeposit());
 
         PayerStorage storage $ = _getPayerStorage();
 
@@ -452,30 +435,30 @@ contract PayerRegistry is
      */
     function setMinimumRegistrationAmount(uint64 newMinimumRegistrationAmount) external onlyRole(ADMIN_ROLE) {
         require(
-            newMinimumRegistrationAmount > DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS,
+            newMinimumRegistrationAmount > _DEFAULT_MINIMUM_REGISTRATION_AMOUNT_MICRO_DOLLARS,
             InvalidMinimumRegistrationAmount()
         );
 
         PayerStorage storage $ = _getPayerStorage();
 
-        uint64 _oldMinimumRegistrationAmount = $.minimumRegistrationAmountMicroDollars;
+        uint64 oldMinimumRegistrationAmount = $.minimumRegistrationAmountMicroDollars;
         $.minimumRegistrationAmountMicroDollars = newMinimumRegistrationAmount;
 
-        emit MinimumRegistrationAmountSet(_oldMinimumRegistrationAmount, newMinimumRegistrationAmount);
+        emit MinimumRegistrationAmountSet(oldMinimumRegistrationAmount, newMinimumRegistrationAmount);
     }
 
     /**
      * @inheritdoc IPayerRegistry
      */
     function setWithdrawalLockPeriod(uint32 newWithdrawalLockPeriod) external onlyRole(ADMIN_ROLE) {
-        require(newWithdrawalLockPeriod >= ABSOLUTE_MINIMUM_WITHDRAWAL_LOCK_PERIOD, InvalidWithdrawalLockPeriod());
+        require(newWithdrawalLockPeriod >= _ABSOLUTE_MINIMUM_WITHDRAWAL_LOCK_PERIOD, InvalidWithdrawalLockPeriod());
 
         PayerStorage storage $ = _getPayerStorage();
 
-        uint32 _oldWithdrawalLockPeriod = $.withdrawalLockPeriod;
+        uint32 oldWithdrawalLockPeriod = $.withdrawalLockPeriod;
         $.withdrawalLockPeriod = newWithdrawalLockPeriod;
 
-        emit WithdrawalLockPeriodSet(_oldWithdrawalLockPeriod, newWithdrawalLockPeriod);
+        emit WithdrawalLockPeriodSet(oldWithdrawalLockPeriod, newWithdrawalLockPeriod);
     }
 
     /**
@@ -486,24 +469,24 @@ contract PayerRegistry is
 
         PayerStorage storage $ = _getPayerStorage();
 
-        uint64 _oldMaxTolerableDebtAmount = $.maxTolerableDebtAmountMicroDollars;
+        uint64 oldMaxTolerableDebtAmount = $.maxTolerableDebtAmountMicroDollars;
         $.maxTolerableDebtAmountMicroDollars = newMaxTolerableDebtAmountMicroDollars;
 
-        emit MaxTolerableDebtAmountSet(_oldMaxTolerableDebtAmount, newMaxTolerableDebtAmountMicroDollars);
+        emit MaxTolerableDebtAmountSet(oldMaxTolerableDebtAmount, newMaxTolerableDebtAmountMicroDollars);
     }
 
     /**
      * @inheritdoc IPayerRegistry
      */
     function setTransferFeesPeriod(uint32 newTransferFeesPeriod) external onlyRole(ADMIN_ROLE) {
-        require(newTransferFeesPeriod >= ABSOLUTE_MINIMUM_TRANSFER_FEES_PERIOD, InvalidTransferFeesPeriod());
+        require(newTransferFeesPeriod >= _ABSOLUTE_MINIMUM_TRANSFER_FEES_PERIOD, InvalidTransferFeesPeriod());
 
         PayerStorage storage $ = _getPayerStorage();
 
-        uint32 _oldTransferFeesPeriod = $.transferFeesPeriod;
+        uint32 oldTransferFeesPeriod = $.transferFeesPeriod;
         $.transferFeesPeriod = newTransferFeesPeriod;
 
-        emit TransferFeesPeriodSet(_oldTransferFeesPeriod, newTransferFeesPeriod);
+        emit TransferFeesPeriodSet(oldTransferFeesPeriod, newTransferFeesPeriod);
     }
 
     /**
@@ -534,21 +517,17 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function getActivePayers(uint32 offset, uint32 limit)
-        external
-        view
-        returns (Payer[] memory payers, bool hasMore)
-    {
+    function getActivePayers(uint32 offset, uint32 limit) external view returns (Payer[] memory payers, bool hasMore) {
         PayerStorage storage $ = _getPayerStorage();
 
-        (address[] memory _payerAddresses, bool _hasMore) = _getPaginatedAddresses($.activePayers, offset, limit);
+        (address[] memory payerAddresses, bool hasMore_) = _getPaginatedAddresses($.activePayers, offset, limit);
 
-        payers = new Payer[](_payerAddresses.length);
-        for (uint256 i = 0; i < _payerAddresses.length; i++) {
-            payers[i] = $.payers[_payerAddresses[i]];
+        payers = new Payer[](payerAddresses.length);
+        for (uint256 i = 0; i < payerAddresses.length; i++) {
+            payers[i] = $.payers[payerAddresses[i]];
         }
 
-        return (payers, _hasMore);
+        return (payers, hasMore_);
     }
 
     /**
@@ -572,21 +551,17 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function getPayersInDebt(uint32 offset, uint32 limit)
-        external
-        view
-        returns (Payer[] memory payers, bool hasMore)
-    {
+    function getPayersInDebt(uint32 offset, uint32 limit) external view returns (Payer[] memory payers, bool hasMore) {
         PayerStorage storage $ = _getPayerStorage();
 
-        (address[] memory _payerAddresses, bool _hasMore) = _getPaginatedAddresses($.debtPayers, offset, limit);
+        (address[] memory payerAddresses, bool hasMore_) = _getPaginatedAddresses($.debtPayers, offset, limit);
 
-        payers = new Payer[](_payerAddresses.length);
-        for (uint256 i = 0; i < _payerAddresses.length; i++) {
-            payers[i] = $.payers[_payerAddresses[i]];
+        payers = new Payer[](payerAddresses.length);
+        for (uint256 i = 0; i < payerAddresses.length; i++) {
+            payers[i] = $.payers[payerAddresses[i]];
         }
 
-        return (payers, _hasMore);
+        return (payers, hasMore_);
     }
 
     /**
@@ -687,11 +662,11 @@ contract PayerRegistry is
     /* ============ Internal ============ */
 
     /**
-    * @notice Validates and processes a deposit or donation
-    * @param from The address funds are coming from
-    * @param to The payer account receiving the deposit
-    * @param amount The amount to deposit
-    */
+     * @notice Validates and processes a deposit or donation
+     * @param from The address funds are coming from
+     * @param to The payer account receiving the deposit
+     * @param amount The amount to deposit
+     */
     function _validateAndProcessDeposit(address from, address to, uint64 amount) internal {
         PayerStorage storage $ = _getPayerStorage();
 
@@ -712,12 +687,12 @@ contract PayerRegistry is
      * @return leftoverAmount Amount remaining after debt settlement (if any).
      */
     function _updatePayerBalance(address payerAddress, uint64 amount) internal returns (uint64 leftoverAmount) {
-        Payer storage _payer = _getPayerStorage().payers[payerAddress];
+        Payer storage payer = _getPayerStorage().payers[payerAddress];
 
-        if (_payer.debtAmount > 0) {
+        if (payer.debtAmount > 0) {
             return _settleDebts(payerAddress, amount, false);
         } else {
-            _payer.balance += amount;
+            payer.balance += amount;
             _increaseTotalDeposited(amount);
             return amount;
         }
@@ -730,36 +705,40 @@ contract PayerRegistry is
      * @param  isWithdrawal Whether the debt settlement happens during a withdrawal.
      * @return amountAfterSettlement The amount remaining after debt settlement.
      */
-    function _settleDebts(address payer, uint64 amount, bool isWithdrawal) internal returns (uint64 amountAfterSettlement) {
+    function _settleDebts(
+        address payer,
+        uint64 amount,
+        bool isWithdrawal
+    ) internal returns (uint64 amountAfterSettlement) {
         PayerStorage storage $ = _getPayerStorage();
 
-        Payer memory _storedPayer = $.payers[payer];
+        Payer memory storedPayer = $.payers[payer];
 
-        if (_storedPayer.debtAmount < amount) {
-            uint64 _debtToRemove = _storedPayer.debtAmount;
-            amount -= _debtToRemove;
+        if (storedPayer.debtAmount < amount) {
+            uint64 debtToRemove = storedPayer.debtAmount;
+            amount -= debtToRemove;
 
             // For regular deposits, add remaining amount to balance.
             // In withdrawals, that amount was moved to the withdrawal balance.
             if (!isWithdrawal) {
-                _storedPayer.balance += amount;
+                storedPayer.balance += amount;
                 _increaseTotalDeposited(amount);
             }
 
             _removeDebtor(payer);
             _increaseTotalDeposited(amount);
-            _decreaseTotalDebt(_debtToRemove);
+            _decreaseTotalDebt(debtToRemove);
 
             amountAfterSettlement = amount;
         } else {
-            _storedPayer.debtAmount -= amount;
+            storedPayer.debtAmount -= amount;
 
             _decreaseTotalDebt(amount);
 
             amountAfterSettlement = 0;
         }
 
-        $.payers[payer] = _storedPayer;
+        $.payers[payer] = storedPayer;
 
         return amountAfterSettlement;
     }
@@ -800,6 +779,15 @@ contract PayerRegistry is
      */
     function _revertIfPayerDoesNotExist(address payer) internal view {
         require(_payerExists(payer), PayerDoesNotExist());
+    }
+
+    function _revertIfNotNodeOperator(uint256 nodeId) internal view {
+        INodes nodes = INodes(_getPayerStorage().nodeRegistry);
+
+        require(msg.sender == nodes.ownerOf(nodeId), Unauthorized());
+
+        // TODO: Change for a better filter.
+        return nodes.getReplicationNodeIsActive(nodeId);
     }
 
     /**
@@ -844,27 +832,15 @@ contract PayerRegistry is
     }
 
     /**
-     * @notice Checks if a given address is an active node operator.
-     * @param  nodeId The nodeID of the operator to check.
-     * @return isActiveNodeOperator True if the address is an active node operator, false otherwise.
-     */
-    function _getIsActiveNodeOperator(uint256 nodeId) internal view returns (bool isActiveNodeOperator) {
-        INodes nodes = INodes(_getPayerStorage().nodeRegistry);
-
-        require(msg.sender == nodes.ownerOf(nodeId), Unauthorized());
-
-        // TODO: Change for a better filter.
-        return nodes.getReplicationNodeIsActive(nodeId);
-    }
-
-    /**
      * @notice Sets the FeeDistributor contract.
      * @param  newFeeDistributor The address of the new FeeDistributor contract.
      */
     function _setFeeDistributor(address newFeeDistributor) internal {
         PayerStorage storage $ = _getPayerStorage();
 
-        try IFeeDistributor(newFeeDistributor).supportsInterface(type(IFeeDistributor).interfaceId) returns (bool supported) {
+        try IFeeDistributor(newFeeDistributor).supportsInterface(type(IFeeDistributor).interfaceId) returns (
+            bool supported
+        ) {
             require(supported, InvalidFeeDistributor());
         } catch {
             revert InvalidFeeDistributor();
@@ -882,7 +858,9 @@ contract PayerRegistry is
     function _setPayerReportManager(address newPayerReportManager) internal {
         PayerStorage storage $ = _getPayerStorage();
 
-        try IPayerReportManager(newPayerReportManager).supportsInterface(type(IPayerReportManager).interfaceId) returns (bool supported) {
+        try
+            IPayerReportManager(newPayerReportManager).supportsInterface(type(IPayerReportManager).interfaceId)
+        returns (bool supported) {
             require(supported, InvalidPayerReportManager());
         } catch {
             revert InvalidPayerReportManager();
@@ -919,7 +897,7 @@ contract PayerRegistry is
         PayerStorage storage $ = _getPayerStorage();
 
         try IERC20Metadata(newUsdcToken).symbol() returns (string memory symbol) {
-            require(keccak256(bytes(symbol)) == keccak256(bytes(USDC_SYMBOL)), InvalidUsdcTokenContract());
+            require(keccak256(bytes(symbol)) == keccak256(bytes(_USDC_SYMBOL)), InvalidUsdcTokenContract());
         } catch {
             revert InvalidUsdcTokenContract();
         }
@@ -973,26 +951,26 @@ contract PayerRegistry is
      * @return addresses Array of addresses from the set.
      * @return hasMore Whether there are more items after this page.
      */
-    function _getPaginatedAddresses(EnumerableSet.AddressSet storage addressSet, uint256 offset, uint256 limit)
-        internal
-        view
-        returns (address[] memory addresses, bool hasMore)
-    {
-        uint256 _totalCount = addressSet.length();
+    function _getPaginatedAddresses(
+        EnumerableSet.AddressSet storage addressSet,
+        uint256 offset,
+        uint256 limit
+    ) internal view returns (address[] memory addresses, bool hasMore) {
+        uint256 totalCount = addressSet.length();
 
-        if (offset >= _totalCount) revert OutOfBounds();
+        if (offset >= totalCount) revert OutOfBounds();
 
-        uint256 _count = _totalCount - offset;
-        if (_count > limit) {
-            _count = limit;
+        uint256 count = totalCount - offset;
+        if (count > limit) {
+            count = limit;
             hasMore = true;
         } else {
             hasMore = false;
         }
 
-        addresses = new address[](_count);
+        addresses = new address[](count);
 
-        for (uint256 i = 0; i < _count; i++) {
+        for (uint256 i = 0; i < count; i++) {
             addresses[i] = addressSet.at(offset + i);
         }
 
@@ -1015,12 +993,9 @@ contract PayerRegistry is
     /**
      * @dev Override to support IPayerRegistry, IERC165 and AccessControlUpgradeable.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(IERC165, AccessControlUpgradeable)
-        returns (bool supported)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(IERC165, AccessControlUpgradeable) returns (bool supported) {
         return interfaceId == type(IPayerRegistry).interfaceId || super.supportsInterface(interfaceId);
     }
 }

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IERC165} from "../../lib/oz/contracts/utils/introspection/IERC165.sol";
+import { IERC165 } from "../../lib/oz/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title  IPayerReportManager
  * @notice Interface for the PayerReportManager contract handling usage reports and batch settlements.
  */
 interface IPayerReportManager is IERC165 {
-
     /* ============ Structs ============ */
 
     /**
@@ -54,14 +53,18 @@ interface IPayerReportManager is IERC165 {
      * @dev Emitted when a node attests to the correctness of a report.
      */
     event PayerReportAttested(
-        address indexed originatorNode, uint256 indexed reportIndex, bytes32 indexed reportMerkleRoot
+        address indexed originatorNode,
+        uint256 indexed reportIndex,
+        bytes32 indexed reportMerkleRoot
     );
 
     /**
      * @dev Emitted when a usage report is confirmed.
      */
     event PayerReportConfirmed(
-        address indexed originatorNode, uint256 indexed reportIndex, bytes32 indexed reportMerkleRoot
+        address indexed originatorNode,
+        uint256 indexed reportIndex,
+        bytes32 indexed reportMerkleRoot
     );
 
     /**
@@ -80,7 +83,9 @@ interface IPayerReportManager is IERC165 {
      * @dev Emitted when a usage report is fully settled.
      */
     event PayerReportFullySettled(
-        address indexed originatorNode, uint256 indexed reportIndex, bytes32 indexed reportMerkleRoot
+        address indexed originatorNode,
+        uint256 indexed reportIndex,
+        bytes32 indexed reportMerkleRoot
     );
 
     /* ============ Usage Report Logic ============ */
@@ -108,10 +113,9 @@ interface IPayerReportManager is IERC165 {
      * @return startingSequenceIDs The array of starting sequence IDs for each report.
      * @return reportsMerkleRoots  The array of Merkle roots for each report.
      */
-    function listPayerReports(address originatorNode)
-        external
-        view
-        returns (uint256[] memory startingSequenceIDs, bytes32[] memory reportsMerkleRoots);
+    function listPayerReports(
+        address originatorNode
+    ) external view returns (uint256[] memory startingSequenceIDs, bytes32[] memory reportsMerkleRoots);
 
     /**
      * @notice Returns summary info about a specific usage report.
@@ -119,10 +123,10 @@ interface IPayerReportManager is IERC165 {
      * @param  reportIndex    The index of the report.
      * @return payerReport    A PayerReport struct with the report details.
      */
-    function getPayerReport(address originatorNode, uint256 reportIndex)
-        external
-        view
-        returns (PayerReport memory payerReport);
+    function getPayerReport(
+        address originatorNode,
+        uint256 reportIndex
+    ) external view returns (PayerReport memory payerReport);
 
     /**
      * @notice Settles a contiguous batch of usage data from a confirmed report.

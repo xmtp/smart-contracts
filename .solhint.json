@@ -17,6 +17,7 @@
         ],
         "comprehensive-interface": "off",
         "const-name-snakecase": "off",
+        "custom-errors": "off",
         "func-name-mixedcase": "off",
         "func-visibility": [
             "warn",

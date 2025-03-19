@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IERC165} from "../../lib/oz/contracts/utils/introspection/IERC165.sol";
+import { IERC165 } from "../../lib/oz/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @title  IPayerRegistryEvents
@@ -63,9 +63,7 @@ interface IPayerRegistryEvents {
     event WithdrawalLockPeriodSet(uint32 oldWithdrawalLockPeriod, uint32 newWithdrawalLockPeriod);
 
     /// @dev Emitted when a payer initiates a withdrawal request.
-    event WithdrawalRequested(
-        address indexed payer, uint64 indexed withdrawableTimestamp, uint64 amount
-    );
+    event WithdrawalRequested(address indexed payer, uint64 indexed withdrawableTimestamp, uint64 amount);
 }
 
 /**
@@ -433,10 +431,7 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      * @return payers The payer information.
      * @return hasMore True if there are more payers to retrieve.
      */
-    function getActivePayers(uint32 offset, uint32 limit)
-        external
-        view
-        returns (Payer[] memory payers, bool hasMore);
+    function getActivePayers(uint32 offset, uint32 limit) external view returns (Payer[] memory payers, bool hasMore);
 
     /**
      * @notice Checks if a given address is an active payer.
@@ -452,10 +447,7 @@ interface IPayerRegistry is IERC165, IPayerRegistryEvents, IPayerRegistryErrors 
      * @return payers      Array of payer addresses with debt.
      * @return hasMore     True if there are more payers to retrieve.
      */
-    function getPayersInDebt(uint32 offset, uint32 limit)
-        external
-        view
-        returns (Payer[] memory payers, bool hasMore);
+    function getPayersInDebt(uint32 offset, uint32 limit) external view returns (Payer[] memory payers, bool hasMore);
 
     /**
      * @notice Returns the total number of registered payers.
