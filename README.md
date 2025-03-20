@@ -1,30 +1,19 @@
 # XMTP Contracts
 
--   [XMTP Contracts](#xmtp-contracts)
-    -   [Messaging Contracts](#messaging-contracts)
-    -   [Node Registry](#node-registry)
-    -   [Usage](#usage)
-        -   [Prerequisites](#prerequisites)
-        -   [Install](#install)
-        -   [Test](#test)
-        -   [Run static analysis](#run-static-analysis)
-    -   [Scripts](#scripts)
-        -   [Messages contracts](#messaging-contracts-1)
-        -   [Node registry](#node-registry)
+- [XMTP Contracts](#xmtp-contracts)
+  - [Usage](#usage)
+    - [Prerequisites](#prerequisites)
+    - [Initialize project](#initialize-project)
+  - [Developer tools](#developer-tools)
+  - [Forge scripts](#forge-scripts)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
 This repository contains all the smart contracts that underpin the XMTP decentralized network.
 
-## Messaging Contracts
+Contracts documentation can be found [here](https://ephemerahq.notion.site/XMTP-Contracts-directory-18530823ce928017996efaa52ac248cd).
 
-The messaging contracts `GroupMessageBroadcaster` and `IdentityUpdateBroadcaster` respectively manage the broadcasting for `GroupMessages` and `IdentityUpdates` sent by clients to the network.
-
-## Node Registry
-
-The `NodeRegistry` maintains a record of all node operators participating in the XMTP network. This registry serves as a source of truth for the network's active node participants, contributing to the network's integrity.
-
-The registry is currently implemented following the [ERC721](https://eips.ethereum.org/EIPS/eip-721) standard.
+[![Solidity](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml/badge.svg)](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml)
 
 ## Usage
 
@@ -38,73 +27,62 @@ Additionally, it uses `slither` for static analysis.
 
 [Install slither](https://github.com/crytic/slither?tab=readme-ov-file#how-to-install)
 
-### Install
+[Install node](https://nodejs.org/)
 
-As the project uses `foundry`, update the dependencies by running:
+[Install prettier](https://prettier.io/docs/install)
+
+Optionally, [install yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable) or any other preferred JS package manager.
+
+### Initialize project
+
+Initialize the project dependencies:
+
+```shell
+npm install  # if using node
+yarn install # if using yarn
+```
+
+Initialize foundry:
 
 ```shell
 forge update
 ```
 
-Build the contracts:
+## Developer tools
 
-```shell
-forge build
+The following can be run using `npm`, `yarn` and similar JS package managers.
+
+```text
+# Forge scripts
+build:          Builds the contracts.
+test:           Tests the contracts.
+clean:          Cleans the forge environment.
+coverage:       Shows the test coverage.
+doc:            Serves the project documentation at http://localhost:4000
+
+# Static analysis
+slither:        Runs slither static analysis.
+
+# Linters
+solhint:        Runs solhint.
+solhint-fix:    Runs solhint in fix mode, potentially modifying files.
+lint-staged:    Runs linters only on files that are staged in git.
+
+# Formatters
+prettier:       Runs prettier in write mode, potentially modifying files.
+prettier-check: Runs prettier in check mode.
 ```
 
-### Test
-
-To run the unit tests:
-
-```shell
-forge test
-```
-
-### Run static analysis
-
-Run the analysis with `slither`:
-
-```shell
-slither .
-```
-
-## Scripts
+## Forge scripts
 
 The project includes deployer and upgrade scripts.
 
-### Messaging contracts
-
--   Configure the environment by creating an `.env` file, with this content:
+Current available configuration options:
 
 ```shell
-### Main configuration
-PRIVATE_KEY=0xYourPrivateKey # Private key of the EOA deploying the contracts
-
-### XMTP deployment configuration
-XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the GroupMessageBroadcaster contract.
-XMTP_IDENTITY_UPDATE_BROADCASTER_ADMIN_ADDRESS=0x12345abcdf # the EOA assuming the admin role in the IdentityUpdateBroadcaster contract.
-```
-
--   Run the desired script with:
-
-```shell
-forge script --rpc-url <RPC_URL> --broadcast <PATH_TO_SCRIPT>
-```
-
-Example:
-
-```shell
-forge script --rpc-url http://localhost:7545 --broadcast script/DeployGroupMessages.s.sol
-```
-
-The scripts output the deployment and upgrade in the `output` folder.
-
-### Node registry
-
-**⚠️:** The node registry hasn't been fully migrated to forge scripts.
-
--   Deploy with `forge create`:
-
-```shell
-forge create --broadcast --legacy --json --rpc-url $RPC_URL --private-key $PRIVATE_KEY "src/NodeRegistry.sol:NodeRegistry"
+PRIVATE_KEY=0x000000000000000000000000000000000000dEaD
+XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
+XMTP_IDENTITY_UPDATE_BROADCASTER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
+XMTP_NODE_REGISTRY_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
+XMTP_RATES_MANAGER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
 ```
