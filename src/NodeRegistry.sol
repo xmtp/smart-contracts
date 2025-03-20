@@ -115,7 +115,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
 
         _nodes[nodeId].inCanonicalNetwork = true;
 
-        emit NodeEnabled(nodeId);
+        emit NodeAddedToCanonicalNetwork(nodeId);
     }
 
     /**
@@ -130,7 +130,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
 
         _nodes[nodeId].inCanonicalNetwork = false;
 
-        emit NodeDisabled(nodeId);
+        emit NodeRemovedFromCanonicalNetwork(nodeId);
     }
 
     /**

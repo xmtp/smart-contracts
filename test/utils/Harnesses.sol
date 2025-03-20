@@ -69,29 +69,29 @@ contract NodeRegistryHarness is NodeRegistry {
         _nodeCounter = uint32(nodeCounter);
     }
 
-    function __setNodeEnabled(uint256 nodeId) external {
-        _nodes[nodeId].isDisabled = false;
+    function __addNodeToCanonicalNetwork(uint256 nodeId) external {
+        _canonicalNetworkNodes.add(nodeId);
     }
 
-    function __setNodeDisabled(uint256 nodeId) external {
-        _nodes[nodeId].isDisabled = true;
+    function __removeNodeFromCanonicalNetwork(uint256 nodeId) external {
+        _canonicalNetworkNodes.remove(nodeId);
+    }
+
+    function __setMaxActiveNodes(uint8 maxActiveNodes) external {
+        _maxActiveNodes = maxActiveNodes;
     }
 
     function __setNode(
         uint256 nodeId,
         bytes calldata signingKeyPub,
         string calldata httpAddress,
-        bool isReplicationEnabled,
-        bool isApiEnabled,
-        bool isDisabled,
+        bool inCanonicalNetwork,
         uint256 minMonthlyFeeMicroDollars
     ) external {
         _nodes[nodeId] = Node(
             signingKeyPub,
             httpAddress,
-            isReplicationEnabled,
-            isApiEnabled,
-            isDisabled,
+            inCanonicalNetwork,
             minMonthlyFeeMicroDollars
         );
     }
@@ -102,22 +102,6 @@ contract NodeRegistryHarness is NodeRegistry {
 
     function __mint(address to, uint256 nodeId) external {
         _mint(to, nodeId);
-    }
-
-    function __addToActiveApiNodesSet(uint256 nodeId) external {
-        _activeApiNodes.add(nodeId);
-    }
-
-    function __addToActiveReplicationNodesSet(uint256 nodeId) external {
-        _activeReplicationNodes.add(nodeId);
-    }
-
-    function __activeApiNodesSetContains(uint256 nodeId) external view returns (bool contains) {
-        return _activeApiNodes.contains(nodeId);
-    }
-
-    function __activeReplicationNodesSetContains(uint256 nodeId) external view returns (bool contains) {
-        return _activeReplicationNodes.contains(nodeId);
     }
 
     function __getNode(uint256 nodeId) external view returns (Node memory node) {

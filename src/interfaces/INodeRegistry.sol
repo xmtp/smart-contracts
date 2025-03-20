@@ -24,12 +24,6 @@ interface INodeRegistryErrors {
     /// @notice Error thrown when an invalid HTTP address is provided.
     error InvalidHttpAddress();
 
-    /// @notice Error thrown when the input length is invalid.
-    error InvalidInputLength();
-
-    /// @notice Error thrown when a node config is invalid.
-    error InvalidNodeConfig();
-
     /// @notice Error thrown when an invalid signing key is provided.
     error InvalidSigningKey();
 
@@ -48,14 +42,8 @@ interface INodeRegistryErrors {
     /// @notice Error thrown when a node does not exist.
     error NodeDoesNotExist();
 
-    /// @notice Error thrown when a node is disabled.
-    error NodeIsDisabled();
-
     /// @notice Error thrown when a node is not in the canonical network.
     error NodeNotInCanonicalNetwork();
-
-    /// @notice Error thrown when an unauthorized address attempts to call a function.
-    error Unauthorized();
 }
 
 /**
@@ -106,16 +94,16 @@ interface INodeRegistryEvents {
     );
 
     /**
-     * @notice Emitted when a node is disabled by an administrator.
+     * @notice Emitted when a node is added to the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeDisabled(uint256 indexed nodeId);
+    event NodeAddedToCanonicalNetwork(uint256 indexed nodeId);
 
     /**
-     * @notice Emitted when a disabled status is removed from a node.
+     * @notice Emitted when a node is removed from the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeEnabled(uint256 indexed nodeId);
+    event NodeRemovedFromCanonicalNetwork(uint256 indexed nodeId);
 
     /**
      * @notice Emitted when the node operator commission percent is updated.
