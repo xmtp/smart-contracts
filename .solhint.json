@@ -1,32 +1,90 @@
 {
-  "extends": ["solhint:recommended"],
-  "plugins": ["prettier"],
-  "rules": {
-    "prettier/prettier": "error",
-    "code-complexity": ["warn", 10],
-    "compiler-version": ["error", "0.8.28"],
-    "comprehensive-interface": "off",
-    "const-name-snakecase": "off",
-    "func-name-mixedcase": "off",
-    "func-visibility": [
-      "warn",
-      {
-        "ignoreConstructors": true
-      }
+    "extends": [
+        "solhint:recommended"
     ],
-    "function-max-lines": ["warn", 100],
-    "immutable-vars-naming": "off",
-    "imports-on-top": "error",
-    "max-line-length": ["warn", 120],
-    "no-empty-blocks": "off",
-    "no-inline-assembly": "off",
-    "not-rely-on-time": "off",
-    "private-vars-leading-underscore": [
-      "warn",
-      {
-        "strict": true
-      }
+    "plugins": [
+        "prettier"
     ],
-    "visibility-modifier-order": "error"
-  }
+    "rules": {
+        "prettier/prettier": "error",
+        "avoid-call-value": "off",
+        "avoid-low-level-calls": "off",
+        "avoid-sha3": "error",
+        "avoid-tx-origin": "error",
+        "code-complexity": [
+            "warn",
+            10
+        ],
+        "compiler-version": [
+            "error",
+            "0.8.28"
+        ],
+        "comprehensive-interface": "off",
+        "const-name-snakecase": "error",
+        "contract-name-capwords": "error",
+        "duplicated-imports": "error",
+        "event-name-capwords": "error",
+        "explicit-types": [
+            "error",
+            "explicit"
+        ],
+        "function-max-lines": [
+            "warn",
+            100
+        ],
+        "func-name-mixedcase": "warn",
+        "func-named-parameters": [
+            "warn",
+            6
+        ],
+        "func-order": "warn",
+        "func-param-name-mixedcase": "error",
+        "func-visibility": [
+            "error",
+            {
+                "ignoreConstructors": true
+            }
+        ],
+        "gas-calldata-parameters": "warn",
+        "gas-custom-errors": "error",
+        "gas-increment-by-one": "warn",
+        "gas-indexed-events": "warn",
+        "gas-named-return-values": "error",
+        "gas-small-strings": "warn",
+        "immutable-vars-naming": [
+            "error",
+            {
+                "immutablesAsConstants": false
+            }
+        ],
+        "imports-on-top": "error",
+        "interface-starts-with-i": "error",
+        "max-line-length": [
+            "warn",
+            120
+        ],
+        "modifier-name-mixedcase": "error",
+        "named-parameters-mapping": "warn",
+        "no-empty-blocks": "warn",
+        "no-global-import": "error",
+        "no-unused-import": "error",
+        "no-unused-vars": "warn",
+        "no-inline-assembly": "off",
+        "not-rely-on-time": "off",
+        "ordering": "warn",
+        "private-vars-leading-underscore": [
+            "warn",
+            {
+                "strict": true
+            }
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "reentrancy": "warn",
+        "state-visibility": "error",
+        "var-name-mixedcase": "error",
+        "visibility-modifier-order": "error"
+    }
 }
