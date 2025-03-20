@@ -77,8 +77,8 @@ contract NodeRegistryHarness is NodeRegistry {
         _canonicalNetworkNodes.remove(nodeId);
     }
 
-    function __setMaxActiveNodes(uint8 maxActiveNodes) external {
-        _maxActiveNodes = maxActiveNodes;
+    function __setMaxActiveNodes(uint8 maxActiveNodes_) external {
+        maxActiveNodes = maxActiveNodes_;
     }
 
     function __setNode(

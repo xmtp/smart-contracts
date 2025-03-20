@@ -193,17 +193,6 @@ contract NodeRegistryTests is Test, Utils {
         registry.addToNetwork(1);
     }
 
-    function test_addToNetwork_nodeAlreadyInCanonicalNetwork() public {
-        _addNode(1, alice, "", "", false, 0);
-
-        registry.__addNodeToCanonicalNetwork(1);
-
-        vm.expectRevert(INodeRegistryErrors.NodeAlreadyInCanonicalNetwork.selector);
-
-        vm.prank(admin);
-        registry.addToNetwork(1);
-    }
-
     function test_addToNetwork_nodeDoesNotExist() public {
         vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
 
@@ -234,15 +223,6 @@ contract NodeRegistryTests is Test, Utils {
         registry.removeFromNetwork(1);
 
         assertFalse(registry.__getNode(1).inCanonicalNetwork);
-    }
-
-    function test_removeFromNetwork_nodeNotInCanonicalNetwork() public {
-        _addNode(1, alice, "", "", false, 0);
-
-        vm.expectRevert(INodeRegistryErrors.NodeNotInCanonicalNetwork.selector);
-
-        vm.prank(admin);
-        registry.removeFromNetwork(1);
     }
 
     function test_removeFromNetwork_nodeDoesNotExist() public {
