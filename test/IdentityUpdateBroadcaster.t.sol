@@ -124,6 +124,8 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
         broadcaster.addIdentityUpdate(ID, message);
     }
 
+    /// forge-config: default.fuzz.runs = 10
+    /// forge-config: ci.fuzz.runs = 1_000
     function testFuzz_addIdentityUpdate(
         uint256 minPayloadSize,
         uint256 maxPayloadSize,
