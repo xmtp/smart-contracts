@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import { IERC165 } from "../lib/oz/contracts/utils/introspection/IERC165.sol";
-
 import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
 import {
     AccessControlDefaultAdminRules
@@ -10,9 +9,6 @@ import {
 import { EnumerableSet } from "../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
-
-// TODO: `NodeTransferred` event is redundant to `IERC721.Transfer` event.
-// TODO: `MaxActiveNodesBelowCurrentCount` should be split across sets for better error handling.
 
 /**
  * @title XMTP Nodes Registry
@@ -44,14 +40,14 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @inheritdoc INodeRegistry
     uint32 public constant NODE_INCREMENT = 100;
 
-    uint48 internal constant INITIAL_ACCESS_CONTROL_DELAY = 2 days;
+    uint48 internal constant _INITIAL_ACCESS_CONTROL_DELAY = 2 days;
 
-    bytes1 internal constant FORWARD_SLASH = 0x2f;
+    bytes1 internal constant _FORWARD_SLASH = 0x2f;
 
     /// @dev The base URI for the node NFTs.
     string internal _baseTokenURI;
 
-    /// @inheritdoc INodeRegistry
+    /// @dev The maximum number of nodes in the canonical network.
     uint8 public maxActiveNodes = 20;
 
     /**
@@ -63,18 +59,15 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @dev Mapping of token ID to Node.
     mapping(uint256 => Node) internal _nodes;
 
-    /// @dev Nodes with API enabled.
-    EnumerableSet.UintSet internal _activeApiNodes;
+    /// @dev Nodes part of the canonical network.
+    EnumerableSet.UintSet internal _canonicalNetworkNodes;
 
-    /// @dev Nodes with replication enabled.
-    EnumerableSet.UintSet internal _activeReplicationNodes;
-
-    /// @inheritdoc INodeRegistry
+    /// @dev The commission percentage that the node operator receives.
     uint256 public nodeOperatorCommissionPercent;
 
     constructor(
         address initialAdmin
-    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
+    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(_INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
         require(initialAdmin != address(0), InvalidAddress());
 
         _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
@@ -89,7 +82,9 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
 
     /* ============ Admin-Only Functions ============ */
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function addNode(
         address to,
         bytes calldata signingKeyPub,
@@ -102,91 +97,84 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
 
         nodeId = ++_nodeCounter * NODE_INCREMENT; // The first node starts with `nodeId = NODE_INCREMENT`.
 
-        _nodes[nodeId] = Node(signingKeyPub, httpAddress, false, false, false, minMonthlyFeeMicroDollars);
+        _nodes[nodeId] = Node(signingKeyPub, httpAddress, false, minMonthlyFeeMicroDollars);
 
         _mint(to, nodeId);
 
         emit NodeAdded(nodeId, to, signingKeyPub, httpAddress, minMonthlyFeeMicroDollars);
     }
 
-    /// @inheritdoc INodeRegistry
-    function disableNode(uint256 nodeId) public onlyRole(ADMIN_ROLE) {
+    /**
+     * @inheritdoc INodeRegistry
+     */
+    function addToNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
 
-        _nodes[nodeId].isDisabled = true;
+        require(_canonicalNetworkNodes.length() < maxActiveNodes, MaxActiveNodesReached());
+        require(_canonicalNetworkNodes.add(nodeId), FailedToAddNodeToCanonicalNetwork());
 
-        // Always remove from active nodes sets when disabled.
-        _disableApiNode(nodeId);
-        _disableReplicationNode(nodeId);
+        _nodes[nodeId].inCanonicalNetwork = true;
 
-        emit NodeDisabled(nodeId);
+        emit NodeAddedToCanonicalNetwork(nodeId);
     }
 
-    /// @inheritdoc INodeRegistry
-    function removeFromApiNodes(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
-        _disableApiNode(nodeId);
-    }
-
-    /// @inheritdoc INodeRegistry
-    function removeFromReplicationNodes(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
-        _disableReplicationNode(nodeId);
-    }
-
-    /// @inheritdoc INodeRegistry
-    function enableNode(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
+    /**
+     * @inheritdoc INodeRegistry
+     */
+    function removeFromNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
 
-        // Re-enabling a node just removes the disabled flag.
-        // The rest of the node properties are managed by the node operator.
-        _nodes[nodeId].isDisabled = false;
+        require(_canonicalNetworkNodes.remove(nodeId), FailedToRemoveNodeFromCanonicalNetwork());
 
-        emit NodeEnabled(nodeId);
+        _nodes[nodeId].inCanonicalNetwork = false;
+
+        emit NodeRemovedFromCanonicalNetwork(nodeId);
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function setMaxActiveNodes(uint8 newMaxActiveNodes) external onlyRole(ADMIN_ROLE) {
-        if (newMaxActiveNodes < _activeApiNodes.length() || newMaxActiveNodes < _activeReplicationNodes.length()) {
-            revert MaxActiveNodesBelowCurrentCount();
-        }
-
+        require(newMaxActiveNodes >= _canonicalNetworkNodes.length(), MaxActiveNodesBelowCurrentCount());
         maxActiveNodes = newMaxActiveNodes;
         emit MaxActiveNodesUpdated(newMaxActiveNodes);
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function setNodeOperatorCommissionPercent(uint256 newCommissionPercent) external onlyRole(ADMIN_ROLE) {
         require(newCommissionPercent <= MAX_BPS, InvalidCommissionPercent());
         nodeOperatorCommissionPercent = newCommissionPercent;
         emit NodeOperatorCommissionPercentUpdated(newCommissionPercent);
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function setBaseURI(string calldata newBaseURI) external onlyRole(ADMIN_ROLE) {
         require(bytes(newBaseURI).length > 0, InvalidURI());
-        require(bytes(newBaseURI)[bytes(newBaseURI).length - 1] == FORWARD_SLASH, InvalidURI());
+        require(bytes(newBaseURI)[bytes(newBaseURI).length - 1] == _FORWARD_SLASH, InvalidURI());
         _baseTokenURI = newBaseURI;
         emit BaseURIUpdated(newBaseURI);
     }
 
     /* ============ Node Manager Functions ============ */
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function transferFrom(
         address from,
         address to,
         uint256 nodeId
     ) public override(INodeRegistry, ERC721) onlyRole(NODE_MANAGER_ROLE) {
-        /// @dev Disable the node before transferring ownership.
-        /// It's NOP responsibility to re-enable the node after transfer.
-        _disableApiNode(nodeId);
-        _disableReplicationNode(nodeId);
         super.transferFrom(from, to, nodeId);
-        emit NodeTransferred(nodeId, from, to);
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function setHttpAddress(uint256 nodeId, string calldata httpAddress) external onlyRole(NODE_MANAGER_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
         require(bytes(httpAddress).length > 0, InvalidHttpAddress());
@@ -194,42 +182,20 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
         emit HttpAddressUpdated(nodeId, httpAddress);
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function setMinMonthlyFee(uint256 nodeId, uint256 minMonthlyFeeMicroDollars) external onlyRole(NODE_MANAGER_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
         _nodes[nodeId].minMonthlyFeeMicroDollars = minMonthlyFeeMicroDollars;
         emit MinMonthlyFeeUpdated(nodeId, minMonthlyFeeMicroDollars);
     }
 
-    /* ============ Node Owner Functions ============ */
+    /* ============ Getters ============ */
 
-    /// @inheritdoc INodeRegistry
-    function setIsApiEnabled(uint256 nodeId, bool isApiEnabled) external {
-        _revertIfNodeDoesNotExist(nodeId);
-        _revertIfNodeIsDisabled(nodeId);
-        _revertIfCallerIsNotOwner(nodeId);
-
-        if (isApiEnabled) {
-            _activateApiNode(nodeId);
-        } else {
-            _disableApiNode(nodeId);
-        }
-    }
-
-    /// @inheritdoc INodeRegistry
-    function setIsReplicationEnabled(uint256 nodeId, bool isReplicationEnabled) external {
-        _revertIfNodeDoesNotExist(nodeId);
-        _revertIfNodeIsDisabled(nodeId);
-        _revertIfCallerIsNotOwner(nodeId);
-
-        if (isReplicationEnabled) {
-            _activateReplicationNode(nodeId);
-        } else {
-            _disableReplicationNode(nodeId);
-        }
-    }
-
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function getAllNodes() public view returns (NodeWithId[] memory allNodes) {
         allNodes = new NodeWithId[](_nodeCounter);
 
@@ -240,72 +206,26 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
         }
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function getAllNodesCount() public view returns (uint256 nodeCount) {
         return _nodeCounter;
     }
 
-    /// @inheritdoc INodeRegistry
+    /**
+     * @inheritdoc INodeRegistry
+     */
     function getNode(uint256 nodeId) public view returns (Node memory node) {
         _revertIfNodeDoesNotExist(nodeId);
         return _nodes[nodeId];
     }
 
-    /// @inheritdoc INodeRegistry
-    function getActiveApiNodes() external view returns (NodeWithId[] memory activeNodes) {
-        activeNodes = new NodeWithId[](_activeApiNodes.length());
-
-        for (uint32 i; i < _activeApiNodes.length(); ++i) {
-            uint256 nodeId = _activeApiNodes.at(i);
-
-            activeNodes[i] = NodeWithId({ nodeId: nodeId, node: _nodes[nodeId] });
-        }
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getActiveApiNodesIDs() external view returns (uint256[] memory activeNodesIDs) {
-        return _activeApiNodes.values();
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getActiveApiNodesCount() external view returns (uint256 activeNodesCount) {
-        return _activeApiNodes.length();
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getApiNodeIsActive(uint256 nodeId) external view returns (bool isActive) {
-        return _activeApiNodes.contains(nodeId);
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getActiveReplicationNodes() external view returns (NodeWithId[] memory activeNodes) {
-        activeNodes = new NodeWithId[](_activeReplicationNodes.length());
-
-        for (uint32 i; i < _activeReplicationNodes.length(); ++i) {
-            uint256 nodeId = _activeReplicationNodes.at(i);
-
-            activeNodes[i] = NodeWithId({ nodeId: nodeId, node: _nodes[nodeId] });
-        }
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getActiveReplicationNodesIDs() external view returns (uint256[] memory activeNodesIDs) {
-        return _activeReplicationNodes.values();
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getActiveReplicationNodesCount() external view returns (uint256 activeNodesCount) {
-        return _activeReplicationNodes.length();
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getReplicationNodeIsActive(uint256 nodeId) external view returns (bool isActive) {
-        return _activeReplicationNodes.contains(nodeId);
-    }
-
-    /// @inheritdoc INodeRegistry
-    function getNodeOperatorCommissionPercent() external view returns (uint256 commissionPercent) {
-        return nodeOperatorCommissionPercent;
+    /**
+     * @inheritdoc INodeRegistry
+     */
+    function getIsCanonicalNode(uint256 nodeId) external view returns (bool isCanonicalNode) {
+        return _canonicalNetworkNodes.contains(nodeId);
     }
 
     /* ============ Internal Functions ============ */
@@ -319,52 +239,16 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
         return _ownerOf(nodeId) != address(0);
     }
 
-    /// @inheritdoc ERC721
+    /**
+     * @inheritdoc ERC721
+     */
     function _baseURI() internal view virtual override returns (string memory baseURI) {
         return _baseTokenURI;
     }
 
-    /// @dev Helper function to add a node to the active API nodes set.
-    function _activateApiNode(uint256 nodeId) internal {
-        require(_activeApiNodes.length() < maxActiveNodes, MaxActiveNodesReached());
-
-        if (!_activeApiNodes.add(nodeId)) return;
-
-        _nodes[nodeId].isApiEnabled = true;
-
-        emit ApiEnabled(nodeId);
-    }
-
-    /// @dev Helper function to remove a node from the active API nodes set.
-    function _disableApiNode(uint256 nodeId) internal {
-        if (!_activeApiNodes.remove(nodeId)) return;
-
-        _nodes[nodeId].isApiEnabled = false;
-
-        emit ApiDisabled(nodeId);
-    }
-
-    /// @dev Helper function to add a node to the active replication nodes set.
-    function _activateReplicationNode(uint256 nodeId) internal {
-        require(_activeReplicationNodes.length() < maxActiveNodes, MaxActiveNodesReached());
-
-        if (!_activeReplicationNodes.add(nodeId)) return;
-
-        _nodes[nodeId].isReplicationEnabled = true;
-
-        emit ReplicationEnabled(nodeId);
-    }
-
-    /// @dev Helper function to remove a node from the active replication nodes set.
-    function _disableReplicationNode(uint256 nodeId) internal {
-        if (!_activeReplicationNodes.remove(nodeId)) return;
-
-        _nodes[nodeId].isReplicationEnabled = false;
-
-        emit ReplicationDisabled(nodeId);
-    }
-
-    /// @dev Override to support INodeRegistry, ERC721, IERC165, and AccessControlEnumerable.
+    /**
+     * @dev Override to support INodeRegistry, ERC721, IERC165, and AccessControlEnumerable.
+     */
     function supportsInterface(
         bytes4 interfaceId
     ) public view override(ERC721, IERC165, AccessControlDefaultAdminRules) returns (bool supported) {
@@ -374,15 +258,5 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @dev Reverts if the node does not exist.
     function _revertIfNodeDoesNotExist(uint256 nodeId) internal view {
         require(_nodeExists(nodeId), NodeDoesNotExist());
-    }
-
-    /// @dev Reverts if the node is disabled.
-    function _revertIfNodeIsDisabled(uint256 nodeId) internal view {
-        require(!_nodes[nodeId].isDisabled, NodeIsDisabled());
-    }
-
-    /// @dev Reverts if `msg.sender` is not the owner of the node.
-    function _revertIfCallerIsNotOwner(uint256 nodeId) internal view {
-        require(_ownerOf(nodeId) == msg.sender, Unauthorized());
     }
 }
