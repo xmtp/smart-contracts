@@ -46,7 +46,7 @@ contract NodeRegistryTests is Test, Utils {
     /* ============ initial state ============ */
 
     function test_initialState() public view {
-        assertEq(registry.getMaxActiveNodes(), 20);
+        assertEq(registry.maxActiveNodes(), 20);
     }
 
     /* ============ addNode ============ */
@@ -412,7 +412,7 @@ contract NodeRegistryTests is Test, Utils {
         vm.prank(admin);
         registry.setMaxActiveNodes(10);
 
-        assertEq(registry.getMaxActiveNodes(), 10);
+        assertEq(registry.maxActiveNodes(), 10);
     }
 
     function test_setMaxActiveNodes_notAdmin() public {

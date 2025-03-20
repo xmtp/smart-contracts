@@ -48,7 +48,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     string internal _baseTokenURI;
 
     /// @dev The maximum number of nodes in the canonical network.
-    uint8 internal _maxActiveNodes = 20;
+    uint8 public maxActiveNodes = 20;
 
     /**
      * @dev The counter for n max IDs.
@@ -110,9 +110,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     function addToNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
 
-        require(_canonicalNetworkNodes.length() < _maxActiveNodes, MaxActiveNodesReached());
-        require(!_canonicalNetworkNodes.contains(nodeId), NodeAlreadyInCanonicalNetwork());
-
+        require(_canonicalNetworkNodes.length() < maxActiveNodes, MaxActiveNodesReached());
         require(_canonicalNetworkNodes.add(nodeId), FailedToAddNodeToCanonicalNetwork());
 
         _nodes[nodeId].inCanonicalNetwork = true;
@@ -126,8 +124,6 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     function removeFromNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
         _revertIfNodeDoesNotExist(nodeId);
 
-        require(_canonicalNetworkNodes.contains(nodeId), NodeNotInCanonicalNetwork());
-
         require(_canonicalNetworkNodes.remove(nodeId), FailedToRemoveNodeFromCanonicalNetwork());
 
         _nodes[nodeId].inCanonicalNetwork = false;
@@ -140,7 +136,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
      */
     function setMaxActiveNodes(uint8 newMaxActiveNodes) external onlyRole(ADMIN_ROLE) {
         require(newMaxActiveNodes >= _canonicalNetworkNodes.length(), MaxActiveNodesBelowCurrentCount());
-        _maxActiveNodes = newMaxActiveNodes;
+        maxActiveNodes = newMaxActiveNodes;
         emit MaxActiveNodesUpdated(newMaxActiveNodes);
     }
 
@@ -230,20 +226,6 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
      */
     function getIsCanonicalNode(uint256 nodeId) external view returns (bool isCanonicalNode) {
         return _canonicalNetworkNodes.contains(nodeId);
-    }
-
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getMaxActiveNodes() external view returns (uint8 maxNodes) {
-        return _maxActiveNodes;
-    }
-
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getNodeOperatorCommissionPercent() external view returns (uint256 commissionPercent) {
-        return nodeOperatorCommissionPercent;
     }
 
     /* ============ Internal Functions ============ */

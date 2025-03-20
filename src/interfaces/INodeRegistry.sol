@@ -30,20 +30,14 @@ interface INodeRegistryErrors {
     /// @notice Error thrown when an invalid URI is provided.
     error InvalidURI();
 
-    /// @notice Error when trying to set max active nodes below current active count.
+    /// @notice Error thrownwhen trying to set max active nodes below current active count.
     error MaxActiveNodesBelowCurrentCount();
 
     /// @notice Error thrown when the maximum number of active nodes is reached.
     error MaxActiveNodesReached();
 
-    /// @notice Error thrown when a node is already in the canonical network.
-    error NodeAlreadyInCanonicalNetwork();
-
     /// @notice Error thrown when a node does not exist.
     error NodeDoesNotExist();
-
-    /// @notice Error thrown when a node is not in the canonical network.
-    error NodeNotInCanonicalNetwork();
 }
 
 /**
@@ -267,18 +261,4 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
      * @return isCanonicalNode A boolean indicating whether the node is part of the canonical network.
      */
     function getIsCanonicalNode(uint256 nodeId) external view returns (bool isCanonicalNode);
-
-    /**
-     * @notice Retrieves the maximum number of active nodes in the canonical network.
-     * @return maxNodes The maximum number of active nodes in the canonical network.
-     */
-    function getMaxActiveNodes() external view returns (uint8 maxNodes);
-
-    /**
-     * @notice The commission percentage that the node operator receives.
-     * @dev    This is stored in basis points (1/100th of a percent).
-     * Example: 1% = 100bps, 10% = 1000bps, 100% = 10000bps.
-     * Commission is calculated as (nodeOperatorCommissionPercent * nodeOperatorFee) / MAX_BPS
-     */
-    function getNodeOperatorCommissionPercent() external view returns (uint256 commissionPercent);
 }
