@@ -24,3 +24,5 @@ node_modules
 gasreport.ansi
 
 .vscode/
+
+build/
