@@ -159,9 +159,8 @@ contract PayerRegistry is
     /**
      * @inheritdoc IPayerRegistry
      */
-    function deposit(address payer, uint64 amount) external whenNotPaused {
+    function deposit(address payer, uint64 amount) external whenNotPaused nonReentrant {
         _revertIfPayerDoesNotExist(payer);
-
         _validateAndProcessDeposit(msg.sender, payer, amount);
     }
 
