@@ -5,7 +5,9 @@ import { Test } from "../lib/forge-std/src/Test.sol";
 import { console } from "../lib/forge-std/src/console.sol";
 
 import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
-import { IAccessControlDefaultAdminRules } from "../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
+import {
+    IAccessControlDefaultAdminRules
+} from "../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
 import { IERC721 } from "../lib/oz/contracts/token/ERC721/IERC721.sol";
 import { IERC721Errors } from "../lib/oz/contracts/interfaces/draft-IERC6093.sol";
 import { IERC165 } from "../lib/oz/contracts/interfaces/IERC165.sol";
@@ -176,6 +178,8 @@ contract NodeRegistryTests is Test, Utils {
 
         vm.prank(admin);
         registry.addToNetwork(1);
+
+        assertTrue(registry.__getNode(1).inCanonicalNetwork);
     }
 
     function test_addToNetwork_maxActiveNodesReached() public {
@@ -587,13 +591,7 @@ contract NodeRegistryTests is Test, Utils {
         bool inCanonicalNetwork,
         uint256 minMonthlyFeeMicroDollars
     ) internal {
-        registry.__setNode(
-            nodeId,
-            signingKeyPub,
-            httpAddress,
-            inCanonicalNetwork,
-            minMonthlyFeeMicroDollars
-        );
+        registry.__setNode(nodeId, signingKeyPub, httpAddress, inCanonicalNetwork, minMonthlyFeeMicroDollars);
         registry.__mint(nodeOperator, nodeId);
     }
 

@@ -88,12 +88,7 @@ contract NodeRegistryHarness is NodeRegistry {
         bool inCanonicalNetwork,
         uint256 minMonthlyFeeMicroDollars
     ) external {
-        _nodes[nodeId] = Node(
-            signingKeyPub,
-            httpAddress,
-            inCanonicalNetwork,
-            minMonthlyFeeMicroDollars
-        );
+        _nodes[nodeId] = Node(signingKeyPub, httpAddress, inCanonicalNetwork, minMonthlyFeeMicroDollars);
     }
 
     function __setApproval(address to, uint256 tokenId, address authorizer) external {

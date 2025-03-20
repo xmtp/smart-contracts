@@ -3,7 +3,9 @@ pragma solidity 0.8.28;
 
 import { IERC165 } from "../lib/oz/contracts/utils/introspection/IERC165.sol";
 import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
-import {AccessControlDefaultAdminRules} from "../lib/oz/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
+import {
+    AccessControlDefaultAdminRules
+} from "../lib/oz/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
 import { EnumerableSet } from "../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
