@@ -24,3 +24,6 @@ node_modules
 gasreport.ansi
 
 .vscode/
+
+# Solidity wake extension
+.wake/
