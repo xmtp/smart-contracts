@@ -14,8 +14,8 @@ fs_permissions = [
     { access = "read-write", path = "config/unknown"}
 ]
 
-[fuzz]
-runs = 10
+[profile.default.fuzz]
+runs = 1_000
 
 [profile.ci.fuzz]
 runs = 10_000

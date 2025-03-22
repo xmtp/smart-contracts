@@ -7,6 +7,7 @@ import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
 import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
 import { NodeRegistry } from "../../src/NodeRegistry.sol";
 import { RateRegistry } from "../../src/RateRegistry.sol";
+import { PayerRegistry } from "../../src/PayerRegistry.sol";
 
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
     function __pause() external {
@@ -145,5 +146,63 @@ contract RateRegistryHarness is RateRegistry {
 
     function __getAllRates() external view returns (Rates[] memory) {
         return _getRatesManagerStorage().allRates;
+    }
+}
+
+contract PayerRegistryHarness is PayerRegistry {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    constructor(address token_) PayerRegistry(token_) {}
+
+    function __pause() external {
+        _pause();
+    }
+
+    function __unpause() external {
+        _unpause();
+    }
+
+    function __setMinimumDeposit(uint256 newMinimumDeposit_) external {
+        _getPayerRegistryStorage().minimumDeposit = uint96(newMinimumDeposit_);
+    }
+
+    function __setWithdrawLockPeriod(uint256 newWithdrawLockPeriod_) external {
+        _getPayerRegistryStorage().withdrawLockPeriod = uint32(newWithdrawLockPeriod_);
+    }
+
+    function __setMinActiveBalance(int256 minActiveBalance_) external {
+        _getPayerRegistryPeripheryStorage().minActiveBalance = int104(minActiveBalance_);
+    }
+
+    function __setBalance(address payer_, int256 balance_) external {
+        _getPayerRegistryStorage().payers[payer_].balance = int104(balance_);
+    }
+
+    function __setPendingWithdrawal(address payer_, uint256 pendingWithdrawal_) external {
+        _getPayerRegistryStorage().payers[payer_].pendingWithdrawal = uint96(pendingWithdrawal_);
+    }
+
+    function __setWithdrawableTimestamp(address payer_, uint256 withdrawableTimestamp_) external {
+        _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp = uint32(withdrawableTimestamp_);
+    }
+
+    function __setTotalDeposits(int256 totalDeposits_) external {
+        _getPayerRegistryStorage().totalDeposits = int104(totalDeposits_);
+    }
+
+    function __setTotalDebt(uint256 totalDebt_) external {
+        _getPayerRegistryStorage().totalDebt = uint96(totalDebt_);
+    }
+
+    function __addToActivePayersSet(address payer_) external {
+        _getPayerRegistryPeripheryStorage().activePayers.add(payer_);
+    }
+
+    function __removeFromActivePayersSet(address payer_) external {
+        _getPayerRegistryPeripheryStorage().activePayers.remove(payer_);
+    }
+
+    function __activePayersContains(address payer_) external view returns (bool contains_) {
+        return _getPayerRegistryPeripheryStorage().activePayers.contains(payer_);
     }
 }
