@@ -59,13 +59,13 @@ contract RateRegistry is Initializable, AccessControlUpgradeable, UUPSUpgradeabl
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.RatesManager")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant RATES_MANAGER_STORAGE_LOCATION =
+    bytes32 internal constant _RATES_MANAGER_STORAGE_LOCATION =
         0x6ad1a01bf62225c91223b2956030efc848b0def7d19ed478ca6dd31490e2d000;
 
     function _getRatesManagerStorage() internal pure returns (RatesManagerStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := RATES_MANAGER_STORAGE_LOCATION
+            $.slot := _RATES_MANAGER_STORAGE_LOCATION
         }
     }
 

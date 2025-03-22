@@ -65,13 +65,13 @@ contract GroupMessageBroadcaster is Initializable, AccessControlUpgradeable, UUP
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.GroupMessages")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant GROUP_MESSAGE_STORAGE_LOCATION =
+    bytes32 internal constant _GROUP_MESSAGE_STORAGE_LOCATION =
         0x5d34bcd3bd75a3e15b8380222f0e4a5877bc3f258e24e1caa87a1298d2a61000;
 
     function _getGroupMessagesStorage() internal pure returns (GroupMessagesStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := GROUP_MESSAGE_STORAGE_LOCATION
+            $.slot := _GROUP_MESSAGE_STORAGE_LOCATION
         }
     }
 

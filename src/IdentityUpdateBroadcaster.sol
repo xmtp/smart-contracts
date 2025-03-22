@@ -65,13 +65,13 @@ contract IdentityUpdateBroadcaster is Initializable, AccessControlUpgradeable, U
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.IdentityUpdates")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant IDENTITY_UPDATES_STORAGE_LOCATION =
+    bytes32 internal constant _IDENTITY_UPDATES_STORAGE_LOCATION =
         0x92f6d7b379434335724ccaa6ce32661f25de0b6cb746fac5f5edaed4b9685e00;
 
     function _getIdentityUpdatesStorage() internal pure returns (IdentityUpdatesStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := IDENTITY_UPDATES_STORAGE_LOCATION
+            $.slot := _IDENTITY_UPDATES_STORAGE_LOCATION
         }
     }
 
