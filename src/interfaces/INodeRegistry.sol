@@ -236,6 +236,12 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     // slither-disable-next-line naming-convention
     function NODE_INCREMENT() external pure returns (uint32 nodeIncrement);
 
+    /// @notice The maximum number of nodes that can be part of the canonical network.
+    function maxActiveNodes() external view returns (uint8 max);
+
+    /// @notice The commission percentage that the node operator receives.
+    function nodeOperatorCommissionPercent() external view returns (uint256 commissionPercent);
+
     /**
      * @notice Gets all nodes regardless of their health status.
      * @return allNodes An array of all nodes in the registry.
