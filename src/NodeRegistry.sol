@@ -47,7 +47,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @dev The base URI for the node NFTs.
     string internal _baseTokenURI;
 
-    /// @dev The maximum number of nodes in the canonical network.
+    /// @inheritdoc INodeRegistry
     uint8 public maxActiveNodes = 20;
 
     /**
@@ -62,7 +62,7 @@ contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
     /// @dev Nodes part of the canonical network.
     EnumerableSet.UintSet internal _canonicalNetworkNodes;
 
-    /// @dev The commission percentage that the node operator receives.
+    /// @inheritdoc INodeRegistry
     uint256 public nodeOperatorCommissionPercent;
 
     constructor(
