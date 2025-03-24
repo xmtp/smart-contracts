@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../lib/forge-std/src/Test.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IERC1967 } from "../lib/oz/contracts/interfaces/IERC1967.sol";
+import { IERC1967 } from "../../lib/oz/contracts/interfaces/IERC1967.sol";
 
-import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { IPayerRegistry } from "../src/interfaces/IPayerRegistry.sol";
+import { IPayerRegistry } from "../../src/interfaces/IPayerRegistry.sol";
 
-import { PayerRegistryHarness } from "./utils/Harnesses.sol";
-import { MockErc20 } from "./utils/Mocks.sol";
-import { Utils } from "./utils/Utils.sol";
+import { PayerRegistryHarness } from "../utils/Harnesses.sol";
+import { MockErc20 } from "../utils/Mocks.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract PayerRegistryTests is Test, Utils {
     address internal _implementation;

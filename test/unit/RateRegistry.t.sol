@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../lib/forge-std/src/Test.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
+import { IAccessControl } from "../../lib/oz/contracts/access/IAccessControl.sol";
 
-import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { RateRegistry } from "../src/RateRegistry.sol";
+import { RateRegistry } from "../../src/RateRegistry.sol";
 
-import { RateRegistryHarness } from "./utils/Harnesses.sol";
-import { Utils } from "./utils/Utils.sol";
+import { RateRegistryHarness } from "../utils/Harnesses.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract RateRegistryTests is Test, Utils {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;

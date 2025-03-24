@@ -26,6 +26,10 @@
         "test": "forge test"
     },
     "devDependencies": {
+        "@arbitrum/sdk": "^4.0.3",
+        "@ethersproject/bignumber": "^5.8.0",
+        "dotenv": "^16.4.7",
+        "ethers": "5.8.0",
         "lint-staged": "^15.5.0",
         "prettier": "^3.5.3",
         "prettier-plugin-solidity": "^1.4.2",

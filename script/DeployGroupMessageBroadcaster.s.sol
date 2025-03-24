@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
+import { IPayloadBroadcaster } from "../src/interfaces/IPayloadBroadcaster.sol";
+
 import { GroupMessageBroadcaster } from "../src/GroupMessageBroadcaster.sol";
+
+import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
 
 contract DeployGroupMessageBroadcasterScript is DeployProxiedContract {
     function _getImplementationCreationCode() internal pure override returns (bytes memory) {
@@ -29,6 +32,6 @@ contract DeployGroupMessageBroadcasterScript is DeployProxiedContract {
         address admin = vm.envAddress("XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS");
         require(admin != address(0), "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS not set");
 
-        return abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, admin);
+        return abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector, admin);
     }
 }

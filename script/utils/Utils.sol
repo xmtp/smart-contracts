@@ -2,8 +2,11 @@
 pragma solidity 0.8.28;
 
 import { Script } from "../../lib/forge-std/src/Script.sol";
+import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
 contract Utils is Script {
+    error InvalidProxyAddress(string outputJson_);
+
     uint256 constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
     uint256 constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
     uint256 constant CHAIN_ID_BASE_SEPOLIA = 84_532;
@@ -48,5 +51,15 @@ contract Utils is Script {
         if (bytes(environment).length == 0) return OUTPUT_UNKNOWN;
 
         return environment;
+    }
+
+    function _getProxy(string memory outputJson_) internal view returns (address proxy_) {
+        proxy_ = stdJson.readAddress(readOutput(outputJson_), ".addresses.proxy");
+        require(address(proxy_) != address(0), InvalidProxyAddress(outputJson_));
+    }
+
+    function _serializeUpgradeData(address implementation_, string memory outputJson_) internal {
+        vm.writeJson(vm.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
+        vm.writeJson(vm.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
     }
 }

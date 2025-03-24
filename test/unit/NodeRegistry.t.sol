@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../lib/forge-std/src/Test.sol";
-import { console } from "../lib/forge-std/src/console.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
+import { console } from "../../lib/forge-std/src/console.sol";
 
-import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
+import { IAccessControl } from "../../lib/oz/contracts/access/IAccessControl.sol";
 import {
     IAccessControlDefaultAdminRules
-} from "../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
-import { IERC721 } from "../lib/oz/contracts/token/ERC721/IERC721.sol";
-import { IERC721Errors } from "../lib/oz/contracts/interfaces/draft-IERC6093.sol";
-import { IERC165 } from "../lib/oz/contracts/interfaces/IERC165.sol";
-import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
+} from "../../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
+import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
+import { IERC721Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
+import { IERC165 } from "../../lib/oz/contracts/interfaces/IERC165.sol";
+import { ERC721 } from "../../lib/oz/contracts/token/ERC721/ERC721.sol";
 
-import { INodeRegistry, INodeRegistryEvents, INodeRegistryErrors } from "../src/interfaces/INodeRegistry.sol";
+import { INodeRegistry, INodeRegistryEvents, INodeRegistryErrors } from "../../src/interfaces/INodeRegistry.sol";
 
-import { NodeRegistryHarness } from "./utils/Harnesses.sol";
-import { Utils } from "./utils/Utils.sol";
+import { NodeRegistryHarness } from "../utils/Harnesses.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract NodeRegistryTests is Test, Utils {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;

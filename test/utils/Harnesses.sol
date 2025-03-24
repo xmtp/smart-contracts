@@ -8,56 +8,52 @@ import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.s
 import { NodeRegistry } from "../../src/NodeRegistry.sol";
 import { RateRegistry } from "../../src/RateRegistry.sol";
 import { PayerRegistry } from "../../src/PayerRegistry.sol";
-
+import { ParameterRegistry } from "../../src/ParameterRegistry.sol";
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
-    function __pause() external {
-        _pause();
+    constructor(address registry_) GroupMessageBroadcaster(registry_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayloadBroadcasterStorage().paused = paused_;
     }
 
-    function __unpause() external {
-        _unpause();
+    function __setSequenceId(uint64 sequenceId_) external {
+        _getPayloadBroadcasterStorage().sequenceId = sequenceId_;
     }
 
-    function __setSequenceId(uint64 sequenceId) external {
-        _getGroupMessagesStorage().sequenceId = sequenceId;
+    function __setMinPayloadSize(uint256 minPayloadSize_) external {
+        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
     }
 
-    function __setMinPayloadSize(uint256 minPayloadSize) external {
-        _getGroupMessagesStorage().minPayloadSize = minPayloadSize;
+    function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
+        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
     }
 
-    function __setMaxPayloadSize(uint256 maxPayloadSize) external {
-        _getGroupMessagesStorage().maxPayloadSize = maxPayloadSize;
-    }
-
-    function __getSequenceId() external view returns (uint64) {
-        return _getGroupMessagesStorage().sequenceId;
+    function __getSequenceId() external view returns (uint64 sequenceId_) {
+        return _getPayloadBroadcasterStorage().sequenceId;
     }
 }
 
 contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
-    function __pause() external {
-        _pause();
+    constructor(address registry_) IdentityUpdateBroadcaster(registry_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayloadBroadcasterStorage().paused = paused_;
     }
 
-    function __unpause() external {
-        _unpause();
+    function __setSequenceId(uint64 sequenceId_) external {
+        _getPayloadBroadcasterStorage().sequenceId = sequenceId_;
     }
 
-    function __setSequenceId(uint64 sequenceId) external {
-        _getIdentityUpdatesStorage().sequenceId = sequenceId;
+    function __setMinPayloadSize(uint256 minPayloadSize_) external {
+        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
     }
 
-    function __setMinPayloadSize(uint256 minPayloadSize) external {
-        _getIdentityUpdatesStorage().minPayloadSize = minPayloadSize;
+    function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
+        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
     }
 
-    function __setMaxPayloadSize(uint256 maxPayloadSize) external {
-        _getIdentityUpdatesStorage().maxPayloadSize = maxPayloadSize;
-    }
-
-    function __getSequenceId() external view returns (uint64) {
-        return _getIdentityUpdatesStorage().sequenceId;
+    function __getSequenceId() external view returns (uint64 sequenceId_) {
+        return _getPayloadBroadcasterStorage().sequenceId;
     }
 }
 
@@ -200,5 +196,27 @@ contract PayerRegistryHarness is PayerRegistry {
 
     function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
         return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
+    }
+}
+
+contract ParameterRegistryHarness is ParameterRegistry {
+    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+        return _getRegistryParameter(key_);
+    }
+
+    function __setRegistryParameter(bytes memory key_, address value_) external {
+        __setRegistryParameter(key_, bytes32(uint256(uint160(value_))));
+    }
+
+    function __setRegistryParameter(bytes memory key_, bool value_) external {
+        __setRegistryParameter(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    }
+
+    function __setRegistryParameter(bytes memory key_, uint256 value_) external {
+        __setRegistryParameter(key_, bytes32(value_));
+    }
+
+    function __setRegistryParameter(bytes memory key_, bytes32 value_) public {
+        _getParameterRegistryStorage().parameters[key_] = value_;
     }
 }
