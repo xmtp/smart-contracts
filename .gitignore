@@ -25,3 +25,5 @@ node_modules
 
 # User Settings
 .vscode/
+
+build/
