@@ -121,11 +121,12 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     function requestWithdrawal(uint96 amount_) external whenNotPaused {
         require(amount_ > 0, ZeroWithdrawalAmount());
 
-        // slither-disable-next-line unused-return
-        _cancelWithdrawal(msg.sender); // Cancel withdrawal (returning pending withdrawal to balance) if needed.
-
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
         Payer storage payer_ = $.payers[msg.sender];
+
+        // NOTE: For some reason, slither complains that this is a `Dangerous comparisons: block-timestamp` issue.
+        // slither-disable-next-line timestamp
+        require(payer_.pendingWithdrawal == 0, PendingWithdrawalExists());
 
         payer_.pendingWithdrawal = amount_;
         payer_.withdrawableTimestamp = uint32(block.timestamp) + $.withdrawLockPeriod;
@@ -139,7 +140,20 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
     /// @inheritdoc IPayerRegistry
     function cancelWithdrawal() external whenNotPaused {
-        require(_cancelWithdrawal(msg.sender), NoPendingWithdrawal()); // Revert if no pending withdrawal to cancel.
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        Payer storage payerInfo_ = $.payers[msg.sender];
+        uint96 pendingWithdrawal_ = payerInfo_.pendingWithdrawal;
+
+        require(pendingWithdrawal_ != 0, NoPendingWithdrawal());
+
+        emit WithdrawalCancelled(msg.sender);
+
+        uint96 debtRepaid_ = _increaseBalance(msg.sender, pendingWithdrawal_, minActiveBalance());
+
+        $.totalDebt -= debtRepaid_;
+
+        delete payerInfo_.pendingWithdrawal;
+        delete payerInfo_.withdrawableTimestamp;
     }
 
     /// @inheritdoc IPayerRegistry
@@ -199,7 +213,11 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
         emit FeesTransferred(excess_);
 
-        require(ERC20Helper.transfer(token, $.feeDistributor, excess_), ERC20TransferFailed());
+        address feeDistributor_ = $.feeDistributor;
+
+        if (feeDistributor_ == address(0)) return;
+
+        require(ERC20Helper.transfer(token, feeDistributor_, excess_), ERC20TransferFailed());
     }
 
     /// @inheritdoc IPayerRegistry
@@ -327,6 +345,22 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     }
 
     /// @inheritdoc IPayerRegistry
+    function getActivePayersAndBalances(
+        uint256 fromIndex_,
+        uint256 count_
+    ) external view returns (address[] memory activePayers_, int104[] memory balances_) {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        activePayers_ = new address[](count_);
+        balances_ = new int104[](count_);
+
+        for (uint256 index_; index_ < count_; ++index_) {
+            address payer_ = _activePayers().at(fromIndex_ + index_);
+            activePayers_[index_] = payer_;
+            balances_[index_] = $.payers[payer_].balance;
+        }
+    }
+
+    /// @inheritdoc IPayerRegistry
     function getBalance(address payer_) external view returns (int104 balance_) {
         return _getPayerRegistryStorage().payers[payer_].balance;
     }
@@ -434,29 +468,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         $.totalDebt -= debtRepaid_;
 
         require(ERC20Helper.transferFrom(token, from_, address(this), amount_), ERC20TransferFromFailed());
-    }
-
-    /**
-     * @dev Cancels the pending withdrawal of `payer_`, returning the pending withdrawal to the payer's balance.
-     * @dev Returns `true` if there was a pending withdrawal to cancel.
-     */
-    function _cancelWithdrawal(address payer_) internal returns (bool cancelled_) {
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-        Payer storage payerInfo_ = $.payers[payer_];
-        uint96 pendingWithdrawal_ = payerInfo_.pendingWithdrawal;
-
-        if (pendingWithdrawal_ == 0) return false;
-
-        emit WithdrawalCancelled(payer_);
-
-        uint96 debtRepaid_ = _increaseBalance(payer_, pendingWithdrawal_, minActiveBalance());
-
-        $.totalDebt -= debtRepaid_;
-
-        delete payerInfo_.pendingWithdrawal;
-        delete payerInfo_.withdrawableTimestamp;
-
-        return true;
     }
 
     function _setAdmin(address newAdmin_) internal {

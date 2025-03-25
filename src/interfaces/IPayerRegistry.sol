@@ -152,6 +152,9 @@ interface IPayerRegistry {
     /// @notice Error thrown when for a withdrawal request of 0.
     error ZeroWithdrawalAmount();
 
+    /// @notice Error thrown when a withdrawal is pending for a payer.
+    error PendingWithdrawalExists();
+
     /// @notice Error thrown when a withdrawal is not pending for a payer.
     error NoPendingWithdrawal();
 
@@ -323,6 +326,18 @@ interface IPayerRegistry {
      * @return activePayers_ The subset of active payers.
      */
     function getActivePayers(uint256 fromIndex_, uint256 count_) external view returns (address[] memory activePayers_);
+
+    /**
+     * @notice Returns a subset of active payers and their balances.
+     * @param  fromIndex_    The index to start from.
+     * @param  count_        The number of payers to return.
+     * @return activePayers_ The subset of active payers.
+     * @return balances_     The signed balances of each payer (negative if debt).
+     */
+    function getActivePayersAndBalances(
+        uint256 fromIndex_,
+        uint256 count_
+    ) external view returns (address[] memory activePayers_, int104[] memory balances_);
 
     /**
      * @notice Returns the balance of a payer.
