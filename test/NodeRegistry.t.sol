@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { Test } from "../lib/forge-std/src/Test.sol";
+import { console } from "../lib/forge-std/src/console.sol";
 
 import { IAccessControl } from "../lib/oz/contracts/access/IAccessControl.sol";
 import {
@@ -10,7 +11,6 @@ import {
 import { IERC721 } from "../lib/oz/contracts/token/ERC721/IERC721.sol";
 import { IERC721Errors } from "../lib/oz/contracts/interfaces/draft-IERC6093.sol";
 import { IERC165 } from "../lib/oz/contracts/interfaces/IERC165.sol";
-
 import { ERC721 } from "../lib/oz/contracts/token/ERC721/ERC721.sol";
 
 import { INodeRegistry, INodeRegistryEvents, INodeRegistryErrors } from "../src/interfaces/INodeRegistry.sol";
@@ -79,9 +79,7 @@ contract NodeRegistryTests is Test, Utils {
 
         assertEq(registry.__getNode(nodeId).signingKeyPub, node.signingKeyPub);
         assertEq(registry.__getNode(nodeId).httpAddress, node.httpAddress);
-        assertEq(registry.__getNode(nodeId).isDisabled, false);
-        assertEq(registry.__getNode(nodeId).isApiEnabled, false);
-        assertEq(registry.__getNode(nodeId).isReplicationEnabled, false);
+        assertEq(registry.__getNode(nodeId).inCanonicalNetwork, false);
         assertEq(registry.__getNode(nodeId).minMonthlyFeeMicroDollars, node.minMonthlyFeeMicroDollars);
 
         assertEq(registry.__getNodeCounter(), 1);
@@ -117,9 +115,7 @@ contract NodeRegistryTests is Test, Utils {
 
         assertEq(registry.__getNode(nodeId).signingKeyPub, node.signingKeyPub);
         assertEq(registry.__getNode(nodeId).httpAddress, node.httpAddress);
-        assertEq(registry.__getNode(nodeId).isDisabled, false);
-        assertEq(registry.__getNode(nodeId).isApiEnabled, false);
-        assertEq(registry.__getNode(nodeId).isReplicationEnabled, false);
+        assertEq(registry.__getNode(nodeId).inCanonicalNetwork, false);
         assertEq(registry.__getNode(nodeId).minMonthlyFeeMicroDollars, node.minMonthlyFeeMicroDollars);
 
         assertEq(registry.__getNodeCounter(), 12);
@@ -174,174 +170,94 @@ contract NodeRegistryTests is Test, Utils {
 
     /* ============ enableNode ============ */
 
-    function test_enableNode() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+    function test_addToNetwork() public {
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeEnabled(1);
+        emit INodeRegistryEvents.NodeAddedToCanonicalNetwork(1);
 
         vm.prank(admin);
-        registry.enableNode(1);
+        registry.addToNetwork(1);
+
+        assertTrue(registry.__getNode(1).inCanonicalNetwork);
     }
 
-    function test_enableNode_nodeDoesNotExist() public {
+    function test_addToNetwork_maxActiveNodesReached() public {
+        _addNode(1, alice, "", "", false, 0);
+
+        registry.__setMaxActiveNodes(0);
+
+        vm.expectRevert(INodeRegistryErrors.MaxActiveNodesReached.selector);
+
+        vm.prank(admin);
+        registry.addToNetwork(1);
+    }
+
+    function test_addToNetwork_nodeDoesNotExist() public {
         vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
 
         vm.prank(admin);
-        registry.enableNode(1);
+        registry.addToNetwork(1);
     }
 
-    function test_enableNode_notAdmin() public {
+    function test_addToNetwork_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
         );
 
         vm.prank(unauthorized);
-        registry.enableNode(0);
+        registry.addToNetwork(0);
     }
 
-    /* ============ disableNode ============ */
+    /* ============ removeFromNetwork ============ */
 
-    function test_disableNode() public {
-        _addNode(1, alice, "", "", true, true, false, 0);
-        registry.__addToActiveApiNodesSet(1);
-        registry.__addToActiveReplicationNodesSet(1);
+    function test_removeFromNetwork() public {
+        _addNode(1, alice, "", "", true, 0);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ApiDisabled(1);
+        registry.__addNodeToCanonicalNetwork(1);
 
         vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ReplicationDisabled(1);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeDisabled(1);
+        emit INodeRegistryEvents.NodeRemovedFromCanonicalNetwork(1);
 
         vm.prank(admin);
-        registry.disableNode(1);
+        registry.removeFromNetwork(1);
 
-        assertFalse(registry.__getNode(1).isReplicationEnabled);
-        assertFalse(registry.__getNode(1).isApiEnabled);
-        assertTrue(registry.__getNode(1).isDisabled);
-
-        assertFalse(registry.__activeApiNodesSetContains(1));
-        assertFalse(registry.__activeReplicationNodesSetContains(1));
+        assertFalse(registry.__getNode(1).inCanonicalNetwork);
     }
 
-    function test_disableNode_nodeDoesNotExist() public {
+    function test_removeFromNetwork_nodeDoesNotExist() public {
         vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
 
         vm.prank(admin);
-        registry.disableNode(1);
+        registry.removeFromNetwork(1);
     }
 
-    function test_disableNode_notAdmin() public {
+    function test_removeFromNetwork_notAdmin() public {
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
         );
 
         vm.prank(unauthorized);
-        registry.disableNode(0);
-    }
-
-    /* ============ removeFromApiNodes ============ */
-
-    function test_removeFromApiNodes() public {
-        _addNode(1, alice, "", "", false, true, false, 0);
-        registry.__addToActiveApiNodesSet(1);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ApiDisabled(1);
-
-        vm.prank(admin);
-        registry.removeFromApiNodes(1);
-
-        assertFalse(registry.__getNode(1).isApiEnabled);
-        assertFalse(registry.__activeApiNodesSetContains(1));
-    }
-
-    function test_removeFromApiNodes_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-
-        vm.prank(admin);
-        registry.removeFromApiNodes(1);
-    }
-
-    function test_removeFromApiNodes_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
-
-        vm.prank(unauthorized);
-        registry.removeFromApiNodes(0);
-    }
-
-    /* ============ removeFromReplicationNodes ============ */
-
-    function test_removeFromReplicationNodes() public {
-        _addNode(1, alice, "", "", true, false, false, 0);
-        registry.__addToActiveReplicationNodesSet(1);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ReplicationDisabled(1);
-
-        vm.prank(admin);
-        registry.removeFromReplicationNodes(1);
-
-        assertFalse(registry.__getNode(1).isApiEnabled);
-        assertFalse(registry.__activeReplicationNodesSetContains(1));
-    }
-
-    function test_removeFromReplicationNodes_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-
-        vm.prank(admin);
-        registry.removeFromReplicationNodes(1);
-    }
-
-    function test_removeFromReplicationNodes_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
-
-        vm.prank(unauthorized);
-        registry.removeFromReplicationNodes(0);
+        registry.removeFromNetwork(0);
     }
 
     /* ============ transferFrom ============ */
 
     function test_transferFrom() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
-        registry.__addToActiveApiNodesSet(1);
-        registry.__addToActiveReplicationNodesSet(1);
-
+        _addNode(1, alice, "", "", false, 0);
         registry.__setApproval(manager, 1, alice);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ApiDisabled(1);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ReplicationDisabled(1);
 
         vm.expectEmit(address(registry));
         emit IERC721.Transfer(alice, bob, 1);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeTransferred(1, alice, bob);
-
         vm.prank(manager);
         registry.transferFrom(alice, bob, 1);
-
-        assertFalse(registry.__getNode(1).isApiEnabled);
-        assertFalse(registry.__getNode(1).isReplicationEnabled);
-
-        assertFalse(registry.__activeApiNodesSetContains(1));
-        assertFalse(registry.__activeReplicationNodesSetContains(1));
 
         assertEq(registry.ownerOf(1), bob);
     }
 
     function test_transferFrom_unauthorized() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -363,7 +279,7 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_transferFrom_insufficientApproval() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, manager, 1));
 
@@ -374,7 +290,7 @@ contract NodeRegistryTests is Test, Utils {
     /* ============ setHttpAddress ============ */
 
     function test_setHttpAddress() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectEmit(address(registry));
 
@@ -394,7 +310,7 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_setHttpAddress_invalidHttpAddress() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectRevert(INodeRegistryErrors.InvalidHttpAddress.selector);
 
@@ -403,7 +319,7 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_setHttpAddress_notManager() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -424,122 +340,10 @@ contract NodeRegistryTests is Test, Utils {
         registry.setHttpAddress(1, "");
     }
 
-    /* ============ setIsApiEnabled ============ */
-
-    function test_setIsApiEnabled() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ApiEnabled(1);
-
-        vm.prank(alice);
-        registry.setIsApiEnabled(1, true);
-
-        assertTrue(registry.__getNode(1).isApiEnabled);
-        assertTrue(registry.__activeApiNodesSetContains(1));
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ApiDisabled(1);
-
-        vm.prank(alice);
-        registry.setIsApiEnabled(1, false);
-
-        assertFalse(registry.__getNode(1).isApiEnabled);
-        assertFalse(registry.__activeApiNodesSetContains(1));
-    }
-
-    function test_setIsApiEnabled_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-        registry.setIsApiEnabled(1, true);
-    }
-
-    function test_setIsApiEnabled_nodeIsDisabled() public {
-        _addNode(1, alice, "", "", false, false, true, 0);
-
-        vm.expectRevert(INodeRegistryErrors.NodeIsDisabled.selector);
-
-        registry.setIsApiEnabled(1, true);
-    }
-
-    function test_setIsApiEnabled_notOwner() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(unauthorized);
-        registry.setIsApiEnabled(1, true);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(admin);
-        registry.setIsApiEnabled(1, true);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(manager);
-        registry.setIsApiEnabled(1, true);
-    }
-
-    /* ============ setIsReplicationEnabled ============ */
-
-    function test_setIsReplicationEnabled() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ReplicationEnabled(1);
-
-        vm.prank(alice);
-        registry.setIsReplicationEnabled(1, true);
-
-        assertTrue(registry.__getNode(1).isReplicationEnabled);
-        assertTrue(registry.__activeReplicationNodesSetContains(1));
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.ReplicationDisabled(1);
-
-        vm.prank(alice);
-        registry.setIsReplicationEnabled(1, false);
-
-        assertFalse(registry.__getNode(1).isReplicationEnabled);
-        assertFalse(registry.__activeReplicationNodesSetContains(1));
-    }
-
-    function test_setIsReplicationEnabled_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-        registry.setIsReplicationEnabled(1, true);
-    }
-
-    function test_setIsReplicationEnabled_nodeIsDisabled() public {
-        _addNode(1, alice, "", "", false, false, true, 0);
-
-        vm.expectRevert(INodeRegistryErrors.NodeIsDisabled.selector);
-
-        registry.setIsReplicationEnabled(1, true);
-    }
-
-    function test_setIsReplicationEnabled_notOwner() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(unauthorized);
-        registry.setIsReplicationEnabled(1, true);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(admin);
-        registry.setIsReplicationEnabled(1, true);
-
-        vm.expectRevert(INodeRegistryErrors.Unauthorized.selector);
-
-        vm.prank(manager);
-        registry.setIsReplicationEnabled(1, true);
-    }
-
     /* ============ setMinMonthlyFee ============ */
 
     function test_setMinMonthlyFee() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectEmit(address(registry));
         emit INodeRegistryEvents.MinMonthlyFeeUpdated(1, 1000);
@@ -558,7 +362,7 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_setMinMonthlyFee_notManager() public {
-        _addNode(1, alice, "", "", false, false, false, 0);
+        _addNode(1, alice, "", "", false, 0);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -600,17 +404,8 @@ contract NodeRegistryTests is Test, Utils {
         registry.setMaxActiveNodes(0);
     }
 
-    function test_setMaxActiveNodes_lessThanActiveApiNodesLength() public {
-        registry.__addToActiveApiNodesSet(1);
-
-        vm.expectRevert(INodeRegistryErrors.MaxActiveNodesBelowCurrentCount.selector);
-
-        vm.prank(admin);
-        registry.setMaxActiveNodes(0);
-    }
-
-    function test_setMaxActiveNodes_lessThanReplicationApiNodesLength() public {
-        registry.__addToActiveReplicationNodesSet(1);
+    function test_setMaxActiveNodes_lessThanActiveNodesLength() public {
+        registry.__addNodeToCanonicalNetwork(1);
 
         vm.expectRevert(INodeRegistryErrors.MaxActiveNodesBelowCurrentCount.selector);
 
@@ -693,7 +488,7 @@ contract NodeRegistryTests is Test, Utils {
     function test_getAllNodes() public {
         INodeRegistry.NodeWithId[] memory allNodes;
 
-        _addNode(NODE_INCREMENT, alice, "", "", false, false, false, 0);
+        _addNode(NODE_INCREMENT, alice, "", "", false, 0);
         registry.__setNodeCounter(1);
 
         allNodes = registry.getAllNodes();
@@ -701,7 +496,7 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(allNodes.length, 1);
         assertEq(allNodes[0].nodeId, NODE_INCREMENT);
 
-        _addNode(NODE_INCREMENT * 2, alice, "", "", false, false, false, 0);
+        _addNode(NODE_INCREMENT * 2, alice, "", "", false, 0);
         registry.__setNodeCounter(2);
 
         allNodes = registry.getAllNodes();
@@ -726,143 +521,18 @@ contract NodeRegistryTests is Test, Utils {
     /* ============ getNode ============ */
 
     function test_getNode() public {
-        _addNode(1, alice, hex"1F1F1F", "httpAddress", true, true, true, 1000);
+        _addNode(1, alice, hex"1F1F1F", "httpAddress", true, 1000);
 
         INodeRegistry.Node memory node = registry.__getNode(1);
 
         assertEq(node.signingKeyPub, hex"1F1F1F");
         assertEq(node.httpAddress, "httpAddress");
-        assertTrue(node.isReplicationEnabled);
-        assertTrue(node.isApiEnabled);
-        assertTrue(node.isDisabled);
         assertEq(node.minMonthlyFeeMicroDollars, 1000);
     }
 
     function test_getNode_nodeDoesNotExist() public {
         vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
         registry.getNode(1);
-    }
-
-    /* ============ getActiveApiNodes ============ */
-
-    function test_getActiveApiNodes() public {
-        INodeRegistry.NodeWithId[] memory activeNodes;
-
-        _addNode(1, alice, "", "", false, false, false, 0);
-        registry.__addToActiveApiNodesSet(1);
-
-        activeNodes = registry.getActiveApiNodes();
-
-        assertEq(activeNodes.length, 1);
-        assertEq(activeNodes[0].nodeId, 1);
-
-        _addNode(2, alice, "", "", false, false, false, 0);
-        registry.__addToActiveApiNodesSet(2);
-
-        activeNodes = registry.getActiveApiNodes();
-
-        assertEq(activeNodes.length, 2);
-        assertEq(activeNodes[0].nodeId, 1);
-        assertEq(activeNodes[1].nodeId, 2);
-    }
-
-    /* ============ getActiveReplicationNodes ============ */
-
-    function test_getActiveReplicationNodes() public {
-        INodeRegistry.NodeWithId[] memory activeNodes;
-
-        _addNode(1, alice, "", "", false, false, false, 0);
-        registry.__addToActiveReplicationNodesSet(1);
-
-        activeNodes = registry.getActiveReplicationNodes();
-
-        assertEq(activeNodes.length, 1);
-        assertEq(activeNodes[0].nodeId, 1);
-
-        _addNode(2, alice, "", "", false, false, false, 0);
-        registry.__addToActiveReplicationNodesSet(2);
-
-        activeNodes = registry.getActiveReplicationNodes();
-
-        assertEq(activeNodes.length, 2);
-        assertEq(activeNodes[0].nodeId, 1);
-        assertEq(activeNodes[1].nodeId, 2);
-    }
-
-    /* ============ getActiveApiNodesIDs ============ */
-
-    function test_getActiveApiNodesIDs() public {
-        registry.__addToActiveApiNodesSet(1);
-        registry.__addToActiveApiNodesSet(2);
-        registry.__addToActiveApiNodesSet(3);
-
-        uint256[] memory nodeIds = registry.getActiveApiNodesIDs();
-
-        assertEq(nodeIds.length, 3);
-        assertEq(nodeIds[0], 1);
-        assertEq(nodeIds[1], 2);
-        assertEq(nodeIds[2], 3);
-    }
-
-    /* ============ getActiveReplicationNodesIDs ============ */
-
-    function test_getActiveReplicationNodesIDs() public {
-        registry.__addToActiveReplicationNodesSet(1);
-        registry.__addToActiveReplicationNodesSet(2);
-        registry.__addToActiveReplicationNodesSet(3);
-
-        uint256[] memory nodeIds = registry.getActiveReplicationNodesIDs();
-
-        assertEq(nodeIds.length, 3);
-        assertEq(nodeIds[0], 1);
-        assertEq(nodeIds[1], 2);
-        assertEq(nodeIds[2], 3);
-    }
-
-    /* ============ getActiveApiNodesCount ============ */
-
-    function test_getActiveApiNodesCount() public {
-        registry.__addToActiveApiNodesSet(1);
-        registry.__addToActiveApiNodesSet(2);
-        registry.__addToActiveApiNodesSet(3);
-
-        assertEq(registry.getActiveApiNodesCount(), 3);
-    }
-
-    /* ============ getActiveReplicationNodesCount ============ */
-
-    function test_getActiveReplicationNodesCount() public {
-        registry.__addToActiveReplicationNodesSet(1);
-        registry.__addToActiveReplicationNodesSet(2);
-        registry.__addToActiveReplicationNodesSet(3);
-
-        assertEq(registry.getActiveReplicationNodesCount(), 3);
-    }
-
-    /* ============ getApiNodeIsActive ============ */
-
-    function test_getApiNodeIsActive() public {
-        registry.__addToActiveApiNodesSet(1);
-        registry.__addToActiveApiNodesSet(2);
-        registry.__addToActiveApiNodesSet(3);
-
-        assertTrue(registry.getApiNodeIsActive(1));
-        assertTrue(registry.getApiNodeIsActive(2));
-        assertTrue(registry.getApiNodeIsActive(3));
-        assertFalse(registry.getApiNodeIsActive(4));
-    }
-
-    /* ============ getReplicationNodeIsActive ============ */
-
-    function test_getReplicationNodeIsActive() public {
-        registry.__addToActiveReplicationNodesSet(1);
-        registry.__addToActiveReplicationNodesSet(2);
-        registry.__addToActiveReplicationNodesSet(3);
-
-        assertTrue(registry.getReplicationNodeIsActive(1));
-        assertTrue(registry.getReplicationNodeIsActive(2));
-        assertTrue(registry.getReplicationNodeIsActive(3));
-        assertFalse(registry.getReplicationNodeIsActive(4));
     }
 
     /* ============ supportsInterface ============ */
@@ -898,20 +568,10 @@ contract NodeRegistryTests is Test, Utils {
         address nodeOperator,
         bytes memory signingKeyPub,
         string memory httpAddress,
-        bool isReplicationEnabled,
-        bool isApiEnabled,
-        bool isDisabled,
+        bool inCanonicalNetwork,
         uint256 minMonthlyFeeMicroDollars
     ) internal {
-        registry.__setNode(
-            nodeId,
-            signingKeyPub,
-            httpAddress,
-            isReplicationEnabled,
-            isApiEnabled,
-            isDisabled,
-            minMonthlyFeeMicroDollars
-        );
+        registry.__setNode(nodeId, signingKeyPub, httpAddress, inCanonicalNetwork, minMonthlyFeeMicroDollars);
         registry.__mint(nodeOperator, nodeId);
     }
 
@@ -920,9 +580,7 @@ contract NodeRegistryTests is Test, Utils {
             INodeRegistry.Node({
                 signingKeyPub: _genBytes(32),
                 httpAddress: _genString(32),
-                isReplicationEnabled: false,
-                isApiEnabled: false,
-                isDisabled: false,
+                inCanonicalNetwork: false,
                 minMonthlyFeeMicroDollars: _genRandomInt(100, 10_000)
             });
     }

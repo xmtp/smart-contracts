@@ -9,8 +9,11 @@ import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
  * @notice This interface defines the errors emitted by the INodes contract.
  */
 interface INodeRegistryErrors {
-    /// @notice Error thrown when a node is disabled.
-    error NodeIsDisabled();
+    /// @notice Error thrown when failing to add a node to the canonical network.
+    error FailedToAddNodeToCanonicalNetwork();
+
+    /// @notice Error thrown when failing to remove a node from the canonical network.
+    error FailedToRemoveNodeFromCanonicalNetwork();
 
     /// @notice Error thrown when an invalid address is provided.
     error InvalidAddress();
@@ -21,29 +24,20 @@ interface INodeRegistryErrors {
     /// @notice Error thrown when an invalid HTTP address is provided.
     error InvalidHttpAddress();
 
-    /// @notice Error thrown when the input length is invalid.
-    error InvalidInputLength();
-
-    /// @notice Error thrown when a node config is invalid.
-    error InvalidNodeConfig();
-
     /// @notice Error thrown when an invalid signing key is provided.
     error InvalidSigningKey();
 
     /// @notice Error thrown when an invalid URI is provided.
     error InvalidURI();
 
+    /// @notice Error thrownwhen trying to set max active nodes below current active count.
+    error MaxActiveNodesBelowCurrentCount();
+
     /// @notice Error thrown when the maximum number of active nodes is reached.
     error MaxActiveNodesReached();
 
-    /// @notice Error when trying to set max active nodes below current active count.
-    error MaxActiveNodesBelowCurrentCount();
-
     /// @notice Error thrown when a node does not exist.
     error NodeDoesNotExist();
-
-    /// @notice Error thrown when an unauthorized address attempts to call a function.
-    error Unauthorized();
 }
 
 /**
@@ -51,6 +45,32 @@ interface INodeRegistryErrors {
  * @notice This interface defines the events emitted by the INodes contract.
  */
 interface INodeRegistryEvents {
+    /**
+     * @notice Emitted when the base URI is updated.
+     * @param  newBaseURI The new base URI.
+     */
+    event BaseURIUpdated(string newBaseURI);
+
+    /**
+     * @notice Emitted when the HTTP address for a node is updated.
+     * @param  nodeId         The identifier of the node.
+     * @param  newHttpAddress The new HTTP address.
+     */
+    event HttpAddressUpdated(uint256 indexed nodeId, string newHttpAddress);
+
+    /**
+     * @notice Emitted when the maximum number of active nodes is updated.
+     * @param  newMaxActiveNodes The new maximum number of active nodes.
+     */
+    event MaxActiveNodesUpdated(uint8 newMaxActiveNodes);
+
+    /**
+     * @notice Emitted when the minimum monthly fee for a node is updated.
+     * @param  nodeId                    The identifier of the node.
+     * @param  minMonthlyFeeMicroDollars The updated minimum fee.
+     */
+    event MinMonthlyFeeUpdated(uint256 indexed nodeId, uint256 minMonthlyFeeMicroDollars);
+
     /**
      * @notice Emitted when a new node is added and its NFT minted.
      * @param  nodeId                    The unique identifier for the node (starts at 100, increments by 100).
@@ -68,77 +88,22 @@ interface INodeRegistryEvents {
     );
 
     /**
-     * @notice Emitted when a disabled status is removed from a node.
+     * @notice Emitted when a node is added to the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeEnabled(uint256 indexed nodeId);
+    event NodeAddedToCanonicalNetwork(uint256 indexed nodeId);
 
     /**
-     * @notice Emitted when a node is disabled by an administrator.
+     * @notice Emitted when a node is removed from the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeDisabled(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when a node is transferred.
-     */
-    event NodeTransferred(uint256 indexed nodeId, address indexed from, address indexed to);
-
-    /**
-     * @notice Emitted when the HTTP address for a node is updated.
-     * @param  nodeId         The identifier of the node.
-     * @param  newHttpAddress The new HTTP address.
-     */
-    event HttpAddressUpdated(uint256 indexed nodeId, string newHttpAddress);
-
-    /**
-     * @notice Emitted when the replication flag for a node is enabled.
-     * @param  nodeId The identifier of the node.
-     */
-    event ReplicationEnabled(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when the replication flag for a node is disabled.
-     * @param  nodeId The identifier of the node.
-     */
-    event ReplicationDisabled(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when the API enabled flag for a node is enabled.
-     * @param  nodeId The identifier of the node.
-     */
-    event ApiEnabled(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when the API enabled flag for a node is disabled.
-     * @param  nodeId The identifier of the node.
-     */
-    event ApiDisabled(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when the minimum monthly fee for a node is updated.
-     * @param  nodeId                    The identifier of the node.
-     * @param  minMonthlyFeeMicroDollars The updated minimum fee.
-     */
-    event MinMonthlyFeeUpdated(uint256 indexed nodeId, uint256 minMonthlyFeeMicroDollars);
+    event NodeRemovedFromCanonicalNetwork(uint256 indexed nodeId);
 
     /**
      * @notice Emitted when the node operator commission percent is updated.
      * @param  newCommissionPercent The new commission percentage.
      */
     event NodeOperatorCommissionPercentUpdated(uint256 newCommissionPercent);
-
-    /**
-     * @notice Emitted when the maximum number of active nodes is updated.
-     * @param  newMaxActiveNodes The new maximum number of active nodes.
-     */
-    event MaxActiveNodesUpdated(uint8 newMaxActiveNodes);
-
-    /**
-     * @notice Emitted when the base URI is updated.
-     * @param  newBaseURI The new base URI.
-     */
-    event BaseURIUpdated(string newBaseURI);
 }
 
 /**
@@ -151,19 +116,15 @@ interface INodeRegistryEvents {
 interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     /**
      * @notice Struct representing a node in the registry.
-     * @param  signingKeyPub        The public key used for node signing/verification.
-     * @param  httpAddress          The HTTP endpoint address for the node.
-     * @param  isReplicationEnabled A flag indicating whether the node supports replication.
-     * @param  isApiEnabled         A flag indicating whether the node has its API enabled.
-     * @param  isDisabled           A flag indicating whether the node was disabled by an administrator.
-     * @param  minMonthlyFee        The minimum monthly fee collected by the node operator.
+     * @param  signingKeyPub      The public key used for node signing/verification.
+     * @param  httpAddress        The HTTP endpoint address for the node.
+     * @param  inCanonicalNetwork A flag indicating whether the node is part of the canonical network.
+     * @param  minMonthlyFee      The minimum monthly fee collected by the node operator.
      */
     struct Node {
         bytes signingKeyPub;
         string httpAddress;
-        bool isReplicationEnabled;
-        bool isApiEnabled;
-        bool isDisabled;
+        bool inCanonicalNetwork;
         uint256 minMonthlyFeeMicroDollars;
     }
 
@@ -196,34 +157,18 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     ) external returns (uint256 nodeId);
 
     /**
-     * @notice Disables a node.
+     * @notice Adds a node to the canonical network.
      * @dev    Only the contract owner may call this.
      * @param  nodeId The unique identifier of the node.
      */
-    function disableNode(uint256 nodeId) external;
+    function addToNetwork(uint256 nodeId) external;
 
     /**
-     * @notice Removes a node from the active API nodes set.
+     * @notice Removes a node from the canonical network.
      * @dev    Only the contract owner may call this.
      * @param  nodeId The unique identifier of the node.
      */
-    function removeFromApiNodes(uint256 nodeId) external;
-
-    /**
-     * @notice Removes a node from the active replication nodes set.
-     * @dev    Only the contract owner may call this.
-     * @param  nodeId The unique identifier of the node.
-     */
-    function removeFromReplicationNodes(uint256 nodeId) external;
-
-    /**
-     * @notice Removes a node from the active API nodes set.
-     * @dev    Only the contract owner may call this.
-     *         enableNode sets isDisabled to false, it does not activate the node.
-     *         The node must be activated separately.
-     * @param  nodeId The unique identifier of the node.
-     */
-    function enableNode(uint256 nodeId) external;
+    function removeFromNetwork(uint256 nodeId) external;
 
     /**
      * @notice Sets the commission percentage that the node operator receives.
@@ -273,24 +218,6 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
      */
     function setMinMonthlyFee(uint256 nodeId, uint256 minMonthlyFeeMicroDollars) external;
 
-    /* ============ Node Owner Functions ============ */
-
-    /**
-     * @notice Sets the API enabled flag for the node owned by the caller.
-     * @dev    Only the owner of the node NFT may call this.
-     * @param  nodeId       The unique identifier of the node.
-     * @param  isApiEnabled The new API enabled flag.
-     */
-    function setIsApiEnabled(uint256 nodeId, bool isApiEnabled) external;
-
-    /**
-     * @notice Sets the replication enabled flag for the node owned by the caller.
-     * @dev    Only the owner of the node NFT may call this.
-     * @param  nodeId               The unique identifier of the node.
-     * @param  isReplicationEnabled A boolean indicating if replication should be enabled.
-     */
-    function setIsReplicationEnabled(uint256 nodeId, bool isReplicationEnabled) external;
-
     /* ============ Getters Functions ============ */
 
     /// @notice The admin role identifier, which can also grant roles.
@@ -308,12 +235,6 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     /// @notice The increment for node IDs, which allows for 100 shard node IDs per node in the future (modulus 100).
     // slither-disable-next-line naming-convention
     function NODE_INCREMENT() external pure returns (uint32 nodeIncrement);
-
-    /**
-     * @notice Retrieves the current node operator commission percentage.
-     * @return commissionPercent The commission percentage.
-     */
-    function getNodeOperatorCommissionPercent() external view returns (uint256 commissionPercent);
 
     /**
      * @notice Gets all nodes regardless of their health status.
@@ -335,65 +256,9 @@ interface INodeRegistry is INodeRegistryErrors, INodeRegistryEvents, IERC721 {
     function getNode(uint256 nodeId) external view returns (Node memory node);
 
     /**
-     * @notice Retrieves a list of active API nodes.
-     * @dev    Active nodes are those with `isActive` set to true.
-     * @return activeNodes An array of Node structs representing active nodes.
+     * @notice Retrieves whether a node is part of the canonical network.
+     * @param  nodeId The unique identifier of the node.
+     * @return isCanonicalNode A boolean indicating whether the node is part of the canonical network.
      */
-    function getActiveApiNodes() external view returns (NodeWithId[] memory activeNodes);
-
-    /**
-     * @notice Retrieves a list of active API nodes IDs.
-     * @return activeNodesIDs An array of node IDs representing active nodes.
-     */
-    function getActiveApiNodesIDs() external view returns (uint256[] memory activeNodesIDs);
-
-    /**
-     * @notice Retrieves the total number of active API nodes.
-     * @return activeNodesCount The total number of active API nodes.
-     */
-    function getActiveApiNodesCount() external view returns (uint256 activeNodesCount);
-
-    /**
-     * @notice Retrieves if a node API is active.
-     * @param  nodeId   The ID of the node NFT.
-     * @return isActive A boolean indicating if the node is active.
-     */
-    function getApiNodeIsActive(uint256 nodeId) external view returns (bool isActive);
-
-    /**
-     * @notice Retrieves a list of active replication nodes.
-     * @dev    Active nodes are those with `isActive` set to true.
-     * @return activeNodes An array of Node structs representing active nodes.
-     */
-    function getActiveReplicationNodes() external view returns (NodeWithId[] memory activeNodes);
-
-    /**
-     * @notice Retrieves a list of active replication nodes IDs.
-     * @return activeNodesIDs An array of node IDs representing active nodes.
-     */
-    function getActiveReplicationNodesIDs() external view returns (uint256[] memory activeNodesIDs);
-
-    /**
-     * @notice Retrieves the total number of active replication nodes.
-     * @return activeNodesCount The total number of active replication nodes.
-     */
-    function getActiveReplicationNodesCount() external view returns (uint256 activeNodesCount);
-
-    /**
-     * @notice Retrieves if a node replication is active.
-     * @param  nodeId   The ID of the node NFT.
-     * @return isActive A boolean indicating if the node is active.
-     */
-    function getReplicationNodeIsActive(uint256 nodeId) external view returns (bool isActive);
-
-    /// @notice Max number of active nodes.
-    function maxActiveNodes() external view returns (uint8 maxNodes);
-
-    /**
-     * @notice The commission percentage that the node operator receives.
-     * @dev    This is stored in basis points (1/100th of a percent).
-     * Example: 1% = 100bps, 10% = 1000bps, 100% = 10000bps.
-     * Commission is calculated as (nodeOperatorCommissionPercent * nodeOperatorFee) / MAX_BPS
-     */
-    function nodeOperatorCommissionPercent() external view returns (uint256 commissionPercent);
+    function getIsCanonicalNode(uint256 nodeId) external view returns (bool isCanonicalNode);
 }
