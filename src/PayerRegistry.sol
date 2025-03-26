@@ -295,13 +295,12 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     }
 
     /// @inheritdoc IPayerRegistry
-    function getPendingWithdrawal(address payer_) external view returns (uint96 pendingWithdrawal_) {
-        return _getPayerRegistryStorage().payers[payer_].pendingWithdrawal;
-    }
+    function getPendingWithdrawal(
+        address payer_
+    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_) {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-    /// @inheritdoc IPayerRegistry
-    function getWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
-        return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
+        return ($.payers[payer_].pendingWithdrawal, $.payers[payer_].withdrawableTimestamp);
     }
 
     /* ============ Internal Interactive Functions ============ */

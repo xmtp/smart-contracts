@@ -178,6 +178,10 @@ contract PayerRegistryHarness is PayerRegistry {
         _getPayerRegistryStorage().payers[payer_].pendingWithdrawal = uint96(pendingWithdrawal_);
     }
 
+    function __setPendingWithdrawableTimestamp(address payer_, uint256 pendingWithdrawableTimestamp_) external {
+        _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp = uint32(pendingWithdrawableTimestamp_);
+    }
+
     function __setWithdrawableTimestamp(address payer_, uint256 withdrawableTimestamp_) external {
         _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp = uint32(withdrawableTimestamp_);
     }
@@ -188,5 +192,13 @@ contract PayerRegistryHarness is PayerRegistry {
 
     function __setTotalDebt(uint256 totalDebt_) external {
         _getPayerRegistryStorage().totalDebt = uint96(totalDebt_);
+    }
+
+    function __getPendingWithdrawal(address payer_) external view returns (uint96 pendingWithdrawal_) {
+        return _getPayerRegistryStorage().payers[payer_].pendingWithdrawal;
+    }
+
+    function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
+        return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
     }
 }

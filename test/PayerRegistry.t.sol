@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test, stdError } from "../lib/forge-std/src/Test.sol";
+import { Test } from "../lib/forge-std/src/Test.sol";
 
 import { IERC1967 } from "../lib/oz/contracts/interfaces/IERC1967.sol";
 
@@ -264,17 +264,17 @@ contract PayerRegistryTests is Test, Utils {
     function test_requestWithdrawal() external {
         _registry.__setBalance(_alice, 10e6);
 
-        uint32 expectedWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
+        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawalRequested(_alice, 10e6, expectedWithdrawableTimestamp_);
+        emit IPayerRegistry.WithdrawalRequested(_alice, 10e6, expectedPendingWithdrawableTimestamp_);
 
         vm.prank(_alice);
         _registry.requestWithdrawal(10e6);
 
         assertEq(_registry.getBalance(_alice), 0);
-        assertEq(_registry.getPendingWithdrawal(_alice), 10e6);
-        assertEq(_registry.getWithdrawableTimestamp(_alice), expectedWithdrawableTimestamp_);
+        assertEq(_registry.__getPendingWithdrawal(_alice), 10e6);
+        assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), expectedPendingWithdrawableTimestamp_);
     }
 
     function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_) external {
@@ -290,14 +290,14 @@ contract PayerRegistryTests is Test, Utils {
         }
 
         int104 expectedBalance_ = startingBalance_ - _toInt104(amount_);
-        uint32 expectedWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
+        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
         uint96 expectedTotalDebt_ = expectedBalance_ < 0 ? uint96(uint104(-expectedBalance_)) : 0;
 
         if (amount_ == 0 || expectedBalance_ < 0) {
             vm.expectRevert();
         } else {
             vm.expectEmit(address(_registry));
-            emit IPayerRegistry.WithdrawalRequested(_alice, amount_, expectedWithdrawableTimestamp_);
+            emit IPayerRegistry.WithdrawalRequested(_alice, amount_, expectedPendingWithdrawableTimestamp_);
         }
 
         vm.prank(_alice);
@@ -306,8 +306,8 @@ contract PayerRegistryTests is Test, Utils {
         if (amount_ == 0 || expectedBalance_ < 0) return;
 
         assertEq(_registry.getBalance(_alice), expectedBalance_);
-        assertEq(_registry.getPendingWithdrawal(_alice), amount_);
-        assertEq(_registry.getWithdrawableTimestamp(_alice), expectedWithdrawableTimestamp_);
+        assertEq(_registry.__getPendingWithdrawal(_alice), amount_);
+        assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), expectedPendingWithdrawableTimestamp_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
     }
 
@@ -329,7 +329,7 @@ contract PayerRegistryTests is Test, Utils {
         vm.prank(_alice);
         _registry.cancelWithdrawal();
 
-        assertEq(_registry.getPendingWithdrawal(_alice), 0);
+        assertEq(_registry.__getPendingWithdrawal(_alice), 0);
     }
 
     function testFuzz_cancelWithdrawal(int104 startingBalance_, uint96 pendingWithdrawal_) external {
@@ -339,6 +339,7 @@ contract PayerRegistryTests is Test, Utils {
 
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setPendingWithdrawal(_alice, pendingWithdrawal_);
+        _registry.__setPendingWithdrawableTimestamp(_alice, 1);
         _registry.__setTotalDeposits(startingBalance_ + _toInt104(pendingWithdrawal_));
 
         if (startingBalance_ < 0) {
@@ -360,7 +361,8 @@ contract PayerRegistryTests is Test, Utils {
 
         if (pendingWithdrawal_ == 0) return;
 
-        assertEq(_registry.getPendingWithdrawal(_alice), 0);
+        assertEq(_registry.__getPendingWithdrawal(_alice), 0);
+        assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), 0);
         assertEq(_registry.getBalance(_alice), expectedBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
@@ -377,7 +379,7 @@ contract PayerRegistryTests is Test, Utils {
 
     function test_finalizeWithdrawal_payerInDebt() external {
         _registry.__setBalance(_alice, -1);
-        _registry.__setPendingWithdrawal(_alice, 10e6);
+        _registry.__setPendingWithdrawal(_alice, 1);
 
         vm.expectRevert(IPayerRegistry.PayerInDebt.selector);
 
@@ -386,7 +388,7 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     function test_finalizeWithdrawal_withdrawalNotReady() external {
-        _registry.__setPendingWithdrawal(_alice, 10e6);
+        _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()) + 1);
 
         vm.expectRevert(
@@ -402,10 +404,10 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     function test_finalizeWithdrawal_erc20TransferFailed_tokenReturnsFalse() external {
-        _registry.__setPendingWithdrawal(_alice, 10e6);
+        _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 10e6), abi.encode(false));
+        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), abi.encode(false));
 
         vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
 
@@ -414,10 +416,10 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     function test_finalizeWithdrawal_erc20TransferFailed_tokenReverts() external {
-        _registry.__setPendingWithdrawal(_alice, 10e6);
+        _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 10e6), hex"");
+        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), hex"");
 
         vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
 
@@ -437,8 +439,8 @@ contract PayerRegistryTests is Test, Utils {
         vm.prank(_alice);
         _registry.finalizeWithdrawal(_alice);
 
-        assertEq(_registry.getPendingWithdrawal(_alice), 0);
-        assertEq(_registry.getWithdrawableTimestamp(_alice), 0);
+        assertEq(_registry.__getPendingWithdrawal(_alice), 0);
+        assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), 0);
     }
 
     /* ============ settleUsage ============ */

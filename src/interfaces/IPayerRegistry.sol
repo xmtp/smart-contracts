@@ -289,15 +289,11 @@ interface IPayerRegistry {
 
     /**
      * @notice Returns the pending withdrawal of a payer.
-     * @param  payer_             The address of the payer.
-     * @return pendingWithdrawal_ The amount of a pending withdrawal, if any.
-     */
-    function getPendingWithdrawal(address payer_) external view returns (uint96 pendingWithdrawal_);
-
-    /**
-     * @notice Returns the timestamp when a pending withdrawal can be finalized.
      * @param  payer_                 The address of the payer.
+     * @return pendingWithdrawal_     The amount of a pending withdrawal, if any.
      * @return withdrawableTimestamp_ The timestamp when the pending withdrawal can be finalized.
      */
-    function getWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_);
+    function getPendingWithdrawal(
+        address payer_
+    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_);
 }
