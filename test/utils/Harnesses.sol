@@ -170,10 +170,6 @@ contract PayerRegistryHarness is PayerRegistry {
         _getPayerRegistryStorage().withdrawLockPeriod = uint32(newWithdrawLockPeriod_);
     }
 
-    function __setMinActiveBalance(int256 minActiveBalance_) external {
-        _getPayerRegistryPeripheryStorage().minActiveBalance = int104(minActiveBalance_);
-    }
-
     function __setBalance(address payer_, int256 balance_) external {
         _getPayerRegistryStorage().payers[payer_].balance = int104(balance_);
     }
@@ -192,17 +188,5 @@ contract PayerRegistryHarness is PayerRegistry {
 
     function __setTotalDebt(uint256 totalDebt_) external {
         _getPayerRegistryStorage().totalDebt = uint96(totalDebt_);
-    }
-
-    function __addToActivePayersSet(address payer_) external {
-        _getPayerRegistryPeripheryStorage().activePayers.add(payer_);
-    }
-
-    function __removeFromActivePayersSet(address payer_) external {
-        _getPayerRegistryPeripheryStorage().activePayers.remove(payer_);
-    }
-
-    function __activePayersContains(address payer_) external view returns (bool contains_) {
-        return _getPayerRegistryPeripheryStorage().activePayers.contains(payer_);
     }
 }

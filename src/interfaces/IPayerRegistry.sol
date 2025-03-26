@@ -50,13 +50,6 @@ interface IPayerRegistry {
     event WithdrawLockPeriodSet(uint32 withdrawLockPeriod);
 
     /**
-     * @notice Emitted when the minimum active balance is set.
-     * @dev    This is a periphery event for nodes, and is not required for the core protocol.
-     * @param  minActiveBalance The new minimum active balance.
-     */
-    event MinActiveBalanceSet(int104 minActiveBalance);
-
-    /**
      * @notice Emitted when a deposit of tokens occurs for a payer.
      * @param  payer  The address of the payer.
      * @param  amount The amount of tokens deposited.
@@ -95,20 +88,6 @@ interface IPayerRegistry {
      * @param  amount The amount of tokens transferred.
      */
     event FeesTransferred(uint96 amount);
-
-    /**
-     * @notice Emitted when a payer is added to the set of active payers.
-     * @dev    This is a periphery event for nodes, and is not required for the core protocol.
-     * @param  payer The address of the payer.
-     */
-    event ActivePayerAdded(address indexed payer);
-
-    /**
-     * @notice Emitted when a payer is removed from the set of active payers.
-     * @dev    This is a periphery event for nodes, and is not required for the core protocol.
-     * @param  payer The address of the payer.
-     */
-    event ActivePayerRemoved(address indexed payer);
 
     /* ============ Custom Errors ============ */
 
@@ -180,15 +159,13 @@ interface IPayerRegistry {
      * @param  feeDistributor_     The address of the fee distributor.
      * @param  minimumDeposit_     The minimum deposit amount.
      * @param  withdrawLockPeriod_ The withdraw lock period.
-     * @param  minActiveBalance_   The minimum balance a payer needs to be included in set of active payers.
      */
     function initialize(
         address admin_,
         address settler_,
         address feeDistributor_,
         uint96 minimumDeposit_,
-        uint32 withdrawLockPeriod_,
-        int104 minActiveBalance_
+        uint32 withdrawLockPeriod_
     ) external;
 
     /* ============ Interactive Functions ============ */
@@ -228,14 +205,6 @@ interface IPayerRegistry {
      */
     function settleUsage(address[] calldata payers_, uint96[] calldata fees_) external;
 
-    /**
-     * @notice Adds or removes payers, respectively, from the active payers set.
-     * @notice Should be called after changing the minimum active balance.
-     * @dev    This is a periphery function for nodes, and is not required for the core protocol.
-     * @param  payers_ The addresses of some payers.
-     */
-    function updatePayerStatuses(address[] calldata payers_) external;
-
     /* ============ Admin functionality ============ */
 
     /// @notice Pauses the contract, restricting certain actions.
@@ -274,13 +243,6 @@ interface IPayerRegistry {
      */
     function setWithdrawLockPeriod(uint32 newWithdrawLockPeriod_) external;
 
-    /**
-     * @notice Sets the minimum active balance.
-     * @dev    This is a periphery function for nodes, and is not required for the core protocol.
-     * @param  minActiveBalance_ The new minimum active balance.
-     */
-    function setMinActiveBalance(int104 minActiveBalance_) external;
-
     /* ============ View/Pure Functions ============ */
 
     /// @notice The address of the token contract used for deposits and withdrawals.
@@ -309,35 +271,6 @@ interface IPayerRegistry {
 
     /// @notice The withdraw lock period.
     function withdrawLockPeriod() external view returns (uint32 withdrawLockPeriod_);
-
-    /// @notice The minimum balance a payer needs to be included in set of active payers.
-    function minActiveBalance() external view returns (int104 minActiveBalance_);
-
-    /// @notice The number of active payers.
-    function activePayersCount() external view returns (uint256 count_);
-
-    /// @notice The entire set of active payers.
-    function activePayers() external view returns (address[] memory activePayers_);
-
-    /**
-     * @notice Returns a subset of active payers.
-     * @param  fromIndex_    The index to start from.
-     * @param  count_        The number of payers to return.
-     * @return activePayers_ The subset of active payers.
-     */
-    function getActivePayers(uint256 fromIndex_, uint256 count_) external view returns (address[] memory activePayers_);
-
-    /**
-     * @notice Returns a subset of active payers and their balances.
-     * @param  fromIndex_    The index to start from.
-     * @param  count_        The number of payers to return.
-     * @return activePayers_ The subset of active payers.
-     * @return balances_     The signed balances of each payer (negative if debt).
-     */
-    function getActivePayersAndBalances(
-        uint256 fromIndex_,
-        uint256 count_
-    ) external view returns (address[] memory activePayers_, int104[] memory balances_);
 
     /**
      * @notice Returns the balance of a payer.

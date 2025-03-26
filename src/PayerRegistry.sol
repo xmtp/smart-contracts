@@ -46,23 +46,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         }
     }
 
-    /// @custom:storage-location erc7201:xmtp.storage.PayerRegistryPeriphery
-    struct PayerRegistryPeripheryStorage {
-        int104 minActiveBalance;
-        EnumerableSet.AddressSet activePayers;
-    }
-
-    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayerRegistryPeriphery")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant _PAYER_REGISTRY_PERIPHERY_STORAGE_LOCATION =
-        0x75c4b07ebbc134a324a4cc0d61232c608694e36c5104d1b3b01995db4f13c300;
-
-    function _getPayerRegistryPeripheryStorage() internal pure returns (PayerRegistryPeripheryStorage storage $) {
-        // slither-disable-next-line assembly
-        assembly {
-            $.slot := _PAYER_REGISTRY_PERIPHERY_STORAGE_LOCATION
-        }
-    }
-
     /* ============ Modifiers ============ */
 
     modifier onlyAdmin() {
@@ -89,8 +72,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         address settler_,
         address feeDistributor_,
         uint96 minimumDeposit_,
-        uint32 withdrawLockPeriod_,
-        int104 minActiveBalance_
+        uint32 withdrawLockPeriod_
     ) external initializer {
         require(admin_ != address(0), ZeroAdminAddress());
 
@@ -102,7 +84,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         _setFeeDistributor(feeDistributor_);
         _setMinimumDeposit(minimumDeposit_);
         _setWithdrawLockPeriod(withdrawLockPeriod_);
-        _setMinActiveBalance(minActiveBalance_);
     }
 
     /* ============ Interactive Functions ============ */
@@ -133,7 +114,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
         emit WithdrawalRequested(msg.sender, amount_, payer_.withdrawableTimestamp);
 
-        uint96 debtIncurred_ = _decreaseBalance(msg.sender, amount_, minActiveBalance());
+        uint96 debtIncurred_ = _decreaseBalance(msg.sender, amount_);
 
         require(debtIncurred_ == 0, InsufficientBalance());
     }
@@ -148,7 +129,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
         emit WithdrawalCancelled(msg.sender);
 
-        uint96 debtRepaid_ = _increaseBalance(msg.sender, pendingWithdrawal_, minActiveBalance());
+        uint96 debtRepaid_ = _increaseBalance(msg.sender, pendingWithdrawal_);
 
         $.totalDebt -= debtRepaid_;
 
@@ -188,7 +169,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
         int104 totalDeposits_ = $.totalDeposits;
         uint96 totalDebt_ = $.totalDebt;
-        int104 minActiveBalance_ = minActiveBalance();
 
         for (uint256 index_; index_ < payers_.length; ++index_) {
             address payer_ = payers_[index_];
@@ -197,7 +177,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
             emit UsageSettled(payer_, fee_);
 
             totalDeposits_ -= _toInt104(fee_);
-            totalDebt_ += _decreaseBalance(payer_, fee_, minActiveBalance_);
+            totalDebt_ += _decreaseBalance(payer_, fee_);
         }
 
         $.totalDeposits = totalDeposits_;
@@ -218,19 +198,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         if (feeDistributor_ == address(0)) return;
 
         require(ERC20Helper.transfer(token, feeDistributor_, excess_), ERC20TransferFailed());
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function updatePayerStatuses(address[] calldata payers_) external whenNotPaused {
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-        int104 minActiveBalance_ = minActiveBalance();
-
-        for (uint256 index_; index_ < payers_.length; ++index_) {
-            address payer_ = payers_[index_];
-
-            _activatePayerIfNecessary(payer_, $.payers[payer_].balance, minActiveBalance_);
-            _deactivatePayerIfNecessary(payer_, $.payers[payer_].balance, minActiveBalance_);
-        }
     }
 
     /* ============ Admin functionality ============ */
@@ -268,11 +235,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     /// @inheritdoc IPayerRegistry
     function setWithdrawLockPeriod(uint32 newWithdrawLockPeriod_) external onlyAdmin {
         _setWithdrawLockPeriod(newWithdrawLockPeriod_);
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function setMinActiveBalance(int104 newMinActiveBalance_) external onlyAdmin {
-        _setMinActiveBalance(newMinActiveBalance_);
     }
 
     /* ============ View/Pure Functions ============ */
@@ -318,49 +280,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     }
 
     /// @inheritdoc IPayerRegistry
-    function minActiveBalance() public view returns (int104 minActiveBalance_) {
-        return _getPayerRegistryPeripheryStorage().minActiveBalance;
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function activePayersCount() external view returns (uint256 count_) {
-        return _activePayers().length();
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function activePayers() external view returns (address[] memory activePayers_) {
-        return _activePayers().values();
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function getActivePayers(
-        uint256 fromIndex_,
-        uint256 count_
-    ) external view returns (address[] memory activePayers_) {
-        activePayers_ = new address[](count_);
-
-        for (uint256 index_; index_ < count_; ++index_) {
-            activePayers_[index_] = _activePayers().at(fromIndex_ + index_);
-        }
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function getActivePayersAndBalances(
-        uint256 fromIndex_,
-        uint256 count_
-    ) external view returns (address[] memory activePayers_, int104[] memory balances_) {
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-        activePayers_ = new address[](count_);
-        balances_ = new int104[](count_);
-
-        for (uint256 index_; index_ < count_; ++index_) {
-            address payer_ = _activePayers().at(fromIndex_ + index_);
-            activePayers_[index_] = payer_;
-            balances_[index_] = $.payers[payer_].balance;
-        }
-    }
-
-    /// @inheritdoc IPayerRegistry
     function getBalance(address payer_) external view returns (int104 balance_) {
         return _getPayerRegistryStorage().payers[payer_].balance;
     }
@@ -388,39 +307,25 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     /* ============ Internal Interactive Functions ============ */
 
     /**
-     * @dev Increases the balance of `payer_` by `amount_`, and adds it to the set of active payers if its resulting
-     *      balance is greater than or equal to `minActiveBalance_`.
+     * @dev Increases the balance of `payer_` by `amount_`, and returns the debt repaid.
      */
-    function _increaseBalance(
-        address payer_,
-        uint96 amount_,
-        int104 minActiveBalance_
-    ) internal returns (uint96 debtRepaid_) {
+    function _increaseBalance(address payer_, uint96 amount_) internal returns (uint96 debtRepaid_) {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
         int104 startingBalance_ = $.payers[payer_].balance;
         int104 endingBalance_ = ($.payers[payer_].balance = startingBalance_ + _toInt104(amount_));
 
-        _activatePayerIfNecessary(payer_, endingBalance_, minActiveBalance_);
-
         return _getDebt(startingBalance_) - _getDebt(endingBalance_);
     }
 
     /**
-     * @dev Decreases the balance of `payer_` by `amount_`, and removes it from the set of active payers if its
-     *      resulting balance is less than `minActiveBalance_`.
+     * @dev Decreases the balance of `payer_` by `amount_`, and returns the additional debt incurred.
      */
-    function _decreaseBalance(
-        address payer_,
-        uint96 amount_,
-        int104 minActiveBalance_
-    ) internal returns (uint96 debtIncurred_) {
+    function _decreaseBalance(address payer_, uint96 amount_) internal returns (uint96 debtIncurred_) {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
         int104 startingBalance_ = $.payers[payer_].balance;
         int104 endingBalance_ = ($.payers[payer_].balance = startingBalance_ - _toInt104(amount_));
-
-        _deactivatePayerIfNecessary(payer_, endingBalance_, minActiveBalance_);
 
         return _getDebt(endingBalance_) - _getDebt(startingBalance_);
     }
@@ -433,26 +338,6 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     }
 
     /**
-     * @dev Adds `payer_` to the set of active payers if `balance_` is greater than or equal to `minActiveBalance_`.
-     */
-    function _activatePayerIfNecessary(address payer_, int104 balance_, int104 minActiveBalance_) internal {
-        if (balance_ < minActiveBalance_) return;
-        if (!_activePayers().add(payer_)) return;
-
-        emit ActivePayerAdded(payer_);
-    }
-
-    /**
-     * @dev Removes `payer_` from the set of active payers if `balance_` is less than `minActiveBalance_`.
-     */
-    function _deactivatePayerIfNecessary(address payer_, int104 balance_, int104 minActiveBalance_) internal {
-        if (balance_ >= minActiveBalance_) return;
-        if (!_activePayers().remove(payer_)) return;
-
-        emit ActivePayerRemoved(payer_);
-    }
-
-    /**
      * @dev Transfers `amount_` of tokens from `from_` to this contract to satisfy a deposit for `payer_`.
      */
     function _deposit(address from_, address payer_, uint96 amount_) internal {
@@ -462,7 +347,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
         emit Deposit(payer_, amount_);
 
-        uint96 debtRepaid_ = _increaseBalance(payer_, amount_, minActiveBalance());
+        uint96 debtRepaid_ = _increaseBalance(payer_, amount_);
 
         $.totalDeposits += _toInt104(amount_);
         $.totalDebt -= debtRepaid_;
@@ -492,15 +377,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         emit WithdrawLockPeriodSet(_getPayerRegistryStorage().withdrawLockPeriod = newWithdrawLockPeriod_);
     }
 
-    function _setMinActiveBalance(int104 newMinActiveBalance_) internal {
-        emit MinActiveBalanceSet(_getPayerRegistryPeripheryStorage().minActiveBalance = newMinActiveBalance_);
-    }
-
     /* ============ Internal View/Pure Functions ============ */
-
-    function _activePayers() internal view returns (EnumerableSet.AddressSet storage activePayers_) {
-        return _getPayerRegistryPeripheryStorage().activePayers;
-    }
 
     /**
      * @dev Returns the sum of all withdrawable balances (sum of all positive payer balances and pending withdrawals).

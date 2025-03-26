@@ -33,7 +33,6 @@ contract PayerRegistryTests is Test, Utils {
 
     uint96 internal _minimumDeposit = 10e6;
     uint32 internal _withdrawLockPeriod = 2 days;
-    int104 internal _minActiveBalance = -5e6;
 
     function setUp() external {
         _token = address(new MockErc20());
@@ -50,8 +49,7 @@ contract PayerRegistryTests is Test, Utils {
                         _settler,
                         _feeDistributor,
                         _minimumDeposit,
-                        _withdrawLockPeriod,
-                        _minActiveBalance
+                        _withdrawLockPeriod
                     )
                 )
             )
@@ -73,7 +71,7 @@ contract PayerRegistryTests is Test, Utils {
 
         new ERC1967Proxy(
             _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(0), address(0), address(0), 0, 0, 0)
+            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(0), address(0), address(0), 0, 0)
         );
     }
 
@@ -82,7 +80,7 @@ contract PayerRegistryTests is Test, Utils {
 
         new ERC1967Proxy(
             _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(0), address(0), 0, 0, 0)
+            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(0), address(0), 0, 0)
         );
     }
 
@@ -91,7 +89,7 @@ contract PayerRegistryTests is Test, Utils {
 
         new ERC1967Proxy(
             _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(1), address(0), 0, 0, 0)
+            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(1), address(0), 0, 0)
         );
     }
 
@@ -105,14 +103,13 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(_registry.feeDistributor(), _feeDistributor);
         assertEq(_registry.minimumDeposit(), _minimumDeposit);
         assertEq(_registry.withdrawLockPeriod(), _withdrawLockPeriod);
-        assertEq(_registry.minActiveBalance(), _minActiveBalance);
     }
 
     /* ============ initialize ============ */
 
     function test_invalid_reinitialization() external {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        _registry.initialize(address(0), address(0), address(0), 0, 0, 0);
+        _registry.initialize(address(0), address(0), address(0), 0, 0);
     }
 
     /* ============ deposit to self ============ */
@@ -135,32 +132,22 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.Deposit(_alice, _minimumDeposit);
 
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerAdded(_alice);
-
         vm.prank(_alice);
         _registry.deposit(_minimumDeposit);
 
         assertEq(_registry.getBalance(_alice), int256(uint256(_minimumDeposit)));
-        assertTrue(_registry.__activePayersContains(_alice));
     }
 
-    function testFuzz_deposit_toSelf(int104 startingBalance_, uint96 amount_, int104 minActiveBalance_) external {
+    function testFuzz_deposit_toSelf(int104 startingBalance_, uint96 amount_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(amount_)));
-
-        _registry.__setMinActiveBalance(minActiveBalance_);
 
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setTotalDeposits(startingBalance_);
 
         if (startingBalance_ < 0) {
             _registry.__setTotalDebt(uint104(-startingBalance_));
-        }
-
-        if (startingBalance_ >= minActiveBalance_) {
-            _registry.__addToActivePayersSet(_alice);
         }
 
         int104 expectedBalance_ = startingBalance_ + _toInt104(amount_);
@@ -173,11 +160,6 @@ contract PayerRegistryTests is Test, Utils {
         } else {
             vm.expectEmit(address(_registry));
             emit IPayerRegistry.Deposit(_alice, amount_);
-
-            if (startingBalance_ < minActiveBalance_ && expectedBalance_ >= minActiveBalance_) {
-                vm.expectEmit(address(_registry));
-                emit IPayerRegistry.ActivePayerAdded(_alice);
-            }
         }
 
         vm.prank(_alice);
@@ -186,7 +168,6 @@ contract PayerRegistryTests is Test, Utils {
         if (amount_ < _minimumDeposit) return;
 
         assertEq(_registry.getBalance(_alice), expectedBalance_);
-        assertEq(_registry.__activePayersContains(_alice), expectedBalance_ >= minActiveBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
     }
@@ -211,34 +192,23 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.Deposit(_bob, _minimumDeposit);
 
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerAdded(_bob);
-
         vm.prank(_alice);
         _registry.deposit(_bob, _minimumDeposit);
 
         assertEq(_registry.getBalance(_alice), 0);
         assertEq(_registry.getBalance(_bob), int256(uint256(_minimumDeposit)));
-        assertFalse(_registry.__activePayersContains(_alice));
-        assertTrue(_registry.__activePayersContains(_bob));
     }
 
-    function testFuzz_deposit_toPayer(int104 startingBalance_, uint96 amount_, int104 minActiveBalance_) external {
+    function testFuzz_deposit_toPayer(int104 startingBalance_, uint96 amount_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(amount_)));
-
-        _registry.__setMinActiveBalance(minActiveBalance_);
 
         _registry.__setBalance(_bob, startingBalance_);
         _registry.__setTotalDeposits(startingBalance_);
 
         if (startingBalance_ < 0) {
             _registry.__setTotalDebt(uint104(-startingBalance_));
-        }
-
-        if (startingBalance_ >= minActiveBalance_) {
-            _registry.__addToActivePayersSet(_bob);
         }
 
         int104 expectedBalance_ = startingBalance_ + _toInt104(amount_);
@@ -251,11 +221,6 @@ contract PayerRegistryTests is Test, Utils {
         } else {
             vm.expectEmit(address(_registry));
             emit IPayerRegistry.Deposit(_bob, amount_);
-
-            if (startingBalance_ < minActiveBalance_ && expectedBalance_ >= minActiveBalance_) {
-                vm.expectEmit(address(_registry));
-                emit IPayerRegistry.ActivePayerAdded(_bob);
-            }
         }
 
         vm.prank(_alice);
@@ -265,8 +230,6 @@ contract PayerRegistryTests is Test, Utils {
 
         assertEq(_registry.getBalance(_alice), 0);
         assertEq(_registry.getBalance(_bob), expectedBalance_);
-        assertFalse(_registry.__activePayersContains(_alice));
-        assertEq(_registry.__activePayersContains(_bob), expectedBalance_ >= minActiveBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
     }
@@ -314,22 +277,16 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(_registry.getWithdrawableTimestamp(_alice), expectedWithdrawableTimestamp_);
     }
 
-    function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_, int104 minActiveBalance_) external {
+    function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_));
-
-        _registry.__setMinActiveBalance(minActiveBalance_);
 
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setTotalDeposits(startingBalance_);
 
         if (startingBalance_ < 0) {
             _registry.__setTotalDebt(uint104(-startingBalance_));
-        }
-
-        if (startingBalance_ >= minActiveBalance_) {
-            _registry.__addToActivePayersSet(_alice);
         }
 
         int104 expectedBalance_ = startingBalance_ - _toInt104(amount_);
@@ -341,11 +298,6 @@ contract PayerRegistryTests is Test, Utils {
         } else {
             vm.expectEmit(address(_registry));
             emit IPayerRegistry.WithdrawalRequested(_alice, amount_, expectedWithdrawableTimestamp_);
-
-            if (startingBalance_ >= minActiveBalance_ && expectedBalance_ < minActiveBalance_) {
-                vm.expectEmit(address(_registry));
-                emit IPayerRegistry.ActivePayerRemoved(_alice);
-            }
         }
 
         vm.prank(_alice);
@@ -356,7 +308,6 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(_registry.getBalance(_alice), expectedBalance_);
         assertEq(_registry.getPendingWithdrawal(_alice), amount_);
         assertEq(_registry.getWithdrawableTimestamp(_alice), expectedWithdrawableTimestamp_);
-        assertEq(_registry.__activePayersContains(_alice), expectedBalance_ >= minActiveBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
     }
 
@@ -375,25 +326,16 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.WithdrawalCancelled(_alice);
 
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerAdded(_alice);
-
         vm.prank(_alice);
         _registry.cancelWithdrawal();
 
         assertEq(_registry.getPendingWithdrawal(_alice), 0);
     }
 
-    function testFuzz_cancelWithdrawal(
-        int104 startingBalance_,
-        uint96 pendingWithdrawal_,
-        int104 minActiveBalance_
-    ) external {
+    function testFuzz_cancelWithdrawal(int104 startingBalance_, uint96 pendingWithdrawal_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(pendingWithdrawal_)));
-
-        _registry.__setMinActiveBalance(minActiveBalance_);
 
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setPendingWithdrawal(_alice, pendingWithdrawal_);
@@ -401,10 +343,6 @@ contract PayerRegistryTests is Test, Utils {
 
         if (startingBalance_ < 0) {
             _registry.__setTotalDebt(uint104(-startingBalance_));
-        }
-
-        if (startingBalance_ >= minActiveBalance_) {
-            _registry.__addToActivePayersSet(_alice);
         }
 
         int104 expectedBalance_ = startingBalance_ + _toInt104(pendingWithdrawal_);
@@ -415,11 +353,6 @@ contract PayerRegistryTests is Test, Utils {
         } else {
             vm.expectEmit(address(_registry));
             emit IPayerRegistry.WithdrawalCancelled(_alice);
-
-            if (startingBalance_ < minActiveBalance_ && expectedBalance_ >= minActiveBalance_) {
-                vm.expectEmit(address(_registry));
-                emit IPayerRegistry.ActivePayerAdded(_alice);
-            }
         }
 
         vm.prank(_alice);
@@ -429,7 +362,6 @@ contract PayerRegistryTests is Test, Utils {
 
         assertEq(_registry.getPendingWithdrawal(_alice), 0);
         assertEq(_registry.getBalance(_alice), expectedBalance_);
-        assertEq(_registry.__activePayersContains(_alice), expectedBalance_ >= minActiveBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
     }
@@ -544,7 +476,6 @@ contract PayerRegistryTests is Test, Utils {
 
         _registry.__setBalance(_alice, 30e6);
         _registry.__setTotalDeposits(30e6);
-        _registry.__addToActivePayersSet(_alice);
 
         uint96[] memory fees = new uint96[](1);
         fees[0] = 10e6;
@@ -574,9 +505,6 @@ contract PayerRegistryTests is Test, Utils {
         _registry.__setTotalDeposits(30e6 + 10e6 - 10e6); // Sum of Alice, Bob, and Charlie's balances.
         _registry.__setTotalDebt(10e6); // Charlie's debt.
 
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-
         uint96[] memory fees = new uint96[](3);
         fees[0] = 10e6;
         fees[1] = 20e6;
@@ -596,9 +524,6 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.UsageSettled(_bob, 20e6);
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerRemoved(_bob);
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.UsageSettled(_charlie, 30e6);
@@ -621,32 +546,6 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     // TODO: testFuzz_settleUsage
-
-    /* ============ updatePayerStatuses ============ */
-
-    function test_updatePayerStatuses() external {
-        address[] memory payers = new address[](4);
-        payers[0] = _alice; // Will start off as not an active payer, but will become one.
-        payers[1] = _bob; // Will start off as an active payer, but will stop being one.
-        payers[2] = _charlie; // Will start off as an active payer and remain one.
-        payers[3] = _dave; // Will start off as not an active payer and remain one.
-
-        _registry.__setBalance(_alice, 10e6);
-        _registry.__setBalance(_bob, -10e6);
-        _registry.__setBalance(_charlie, 10e6);
-        _registry.__setBalance(_dave, -10e6);
-
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerAdded(_alice);
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.ActivePayerRemoved(_bob);
-
-        _registry.updatePayerStatuses(payers);
-    }
 
     /* ============ pause ============ */
 
@@ -799,25 +698,6 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(_registry.withdrawLockPeriod(), 3 days);
     }
 
-    /* ============ setMinActiveBalance ============ */
-
-    function test_setMinActiveBalance_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setMinActiveBalance(-5e6);
-    }
-
-    function test_setMinActiveBalance() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.MinActiveBalanceSet(-5e6);
-
-        vm.prank(_admin);
-        _registry.setMinActiveBalance(-5e6);
-
-        assertEq(_registry.minActiveBalance(), -5e6);
-    }
-
     /* ============ totalWithdrawable ============ */
 
     function test_totalWithdrawable() external {
@@ -840,153 +720,6 @@ contract PayerRegistryTests is Test, Utils {
         _registry.__setTotalDebt(120e6);
 
         assertEq(_registry.totalWithdrawable(), 0e6); // No one can withdraw.
-    }
-
-    /* ============ activePayersCount ============ */
-
-    function test_activePayersCount() external {
-        assertEq(_registry.activePayersCount(), 0);
-
-        _registry.__addToActivePayersSet(_alice);
-
-        assertEq(_registry.activePayersCount(), 1);
-
-        _registry.__addToActivePayersSet(_bob);
-
-        assertEq(_registry.activePayersCount(), 2);
-
-        _registry.__addToActivePayersSet(_charlie);
-
-        assertEq(_registry.activePayersCount(), 3);
-
-        _registry.__removeFromActivePayersSet(_bob);
-
-        assertEq(_registry.activePayersCount(), 2);
-
-        _registry.__removeFromActivePayersSet(_alice);
-
-        assertEq(_registry.activePayersCount(), 1);
-
-        _registry.__removeFromActivePayersSet(_charlie);
-
-        assertEq(_registry.activePayersCount(), 0);
-    }
-
-    /* ============ activePayers ============ */
-
-    function test_activePayers() external {
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        address[] memory activePayers = _registry.activePayers();
-
-        assertEq(activePayers.length, 3);
-        assertEq(activePayers[0], _alice);
-        assertEq(activePayers[1], _bob);
-        assertEq(activePayers[2], _charlie);
-    }
-
-    /* ============ getActivePayers ============ */
-
-    function test_getActivePayers_fromOutOfRange() external {
-        vm.expectRevert(stdError.indexOOBError);
-
-        _registry.getActivePayers(0, 1);
-    }
-
-    function test_getActivePayers_countTooLarge() external {
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        vm.expectRevert(stdError.indexOOBError);
-
-        _registry.getActivePayers(0, 4);
-    }
-
-    function test_getActivePayers() external {
-        address[] memory activePayers;
-
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        activePayers = _registry.getActivePayers(0, 1);
-
-        assertEq(activePayers.length, 1);
-        assertEq(activePayers[0], _alice);
-
-        activePayers = _registry.getActivePayers(1, 2);
-
-        assertEq(activePayers.length, 2);
-        assertEq(activePayers[0], _bob);
-        assertEq(activePayers[1], _charlie);
-
-        activePayers = _registry.getActivePayers(0, 3);
-
-        assertEq(activePayers.length, 3);
-        assertEq(activePayers[0], _alice);
-        assertEq(activePayers[1], _bob);
-        assertEq(activePayers[2], _charlie);
-    }
-
-    /* ============ getActivePayersAndBalances ============ */
-
-    function test_getActivePayersAndBalances_fromOutOfRange() external {
-        vm.expectRevert(stdError.indexOOBError);
-
-        _registry.getActivePayersAndBalances(0, 1);
-    }
-
-    function test_getActivePayersAndBalances_countTooLarge() external {
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        vm.expectRevert(stdError.indexOOBError);
-
-        _registry.getActivePayersAndBalances(0, 4);
-    }
-
-    function test_getActivePayersAndBalances() external {
-        address[] memory activePayers;
-        int104[] memory balances_;
-
-        _registry.__addToActivePayersSet(_alice);
-        _registry.__addToActivePayersSet(_bob);
-        _registry.__addToActivePayersSet(_charlie);
-
-        _registry.__setBalance(_alice, 10e6);
-        _registry.__setBalance(_bob, 20e6);
-        _registry.__setBalance(_charlie, 30e6);
-
-        (activePayers, balances_) = _registry.getActivePayersAndBalances(0, 1);
-
-        assertEq(activePayers.length, 1);
-        assertEq(activePayers[0], _alice);
-        assertEq(balances_.length, 1);
-        assertEq(balances_[0], 10e6);
-
-        (activePayers, balances_) = _registry.getActivePayersAndBalances(1, 2);
-
-        assertEq(activePayers.length, 2);
-        assertEq(activePayers[0], _bob);
-        assertEq(activePayers[1], _charlie);
-        assertEq(balances_.length, 2);
-        assertEq(balances_[0], 20e6);
-        assertEq(balances_[1], 30e6);
-
-        (activePayers, balances_) = _registry.getActivePayersAndBalances(0, 3);
-
-        assertEq(activePayers.length, 3);
-        assertEq(activePayers[0], _alice);
-        assertEq(activePayers[1], _bob);
-        assertEq(activePayers[2], _charlie);
-        assertEq(balances_.length, 3);
-        assertEq(balances_[0], 10e6);
-        assertEq(balances_[1], 20e6);
-        assertEq(balances_[2], 30e6);
     }
 
     /* ============ getBalances ============ */
