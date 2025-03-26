@@ -191,11 +191,11 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         // slither-disable-next-line incorrect-equality
         if (excess_ == 0) return;
 
-        emit FeesTransferred(excess_);
-
         address feeDistributor_ = $.feeDistributor;
 
         if (feeDistributor_ == address(0)) return;
+
+        emit FeesTransferred(excess_);
 
         require(ERC20Helper.transfer(token, feeDistributor_, excess_), ERC20TransferFailed());
     }
