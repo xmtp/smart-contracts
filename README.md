@@ -1,11 +1,11 @@
 # XMTP Contracts
 
 - [XMTP Contracts](#xmtp-contracts)
-  - [Usage](#usage)
-    - [Prerequisites](#prerequisites)
-    - [Initialize project](#initialize-project)
-  - [Developer tools](#developer-tools)
-  - [Forge scripts](#forge-scripts)
+    - [Usage](#usage)
+        - [Prerequisites](#prerequisites)
+        - [Initialize project](#initialize-project)
+    - [Developer tools](#developer-tools)
+    - [Forge scripts](#forge-scripts)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
