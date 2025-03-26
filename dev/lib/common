@@ -1,0 +1,14 @@
+#
+# Common variables
+#
+
+export source_dir="src"
+export build_dir="build"
+export artifacts_dir="artifacts"
+export config_dir="config"
+export bytecode_dir="${artifacts_dir}/bytecode"
+export abi_dir="${artifacts_dir}/abi"
+export anvil_config_dir="${config_dir}/anvil_localnet"
+export build_info_file="${artifacts_dir}/build-info.json"
+export anvil_state_file="${artifacts_dir}/anvil-state.json"
+export anvil_state_info_file="${artifacts_dir}/anvil-state-info.json"

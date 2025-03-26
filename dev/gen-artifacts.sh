@@ -1,19 +1,22 @@
 #!/bin/bash
 set -euo pipefail
 
-export source_dir="${SOURCE_DIR:-src}"
-export build_dir="${BUILD_DIR:-build}"
-export artifacts_dir="${OUTPUT_DIR:-artifacts}"
-export bytecode_dir="${artifacts_dir}/bytecode"
-export abi_dir="${artifacts_dir}/abi"
-export info_file="${artifacts_dir}/buildinfo.json"
-export forge_version=$(forge --version | grep "Version" | awk '{print $3}')
+#
+# Available environment variables
+#
+# BUILD_TAG: The tag of the build. If not provided, 
+# the tag will be the git tag of the current commit.
+#
 
 script_dir=$(dirname "$(realpath "$0")")
 repo_root=$(realpath "${script_dir}/../")
 cd "${repo_root}"
 
+source "${script_dir}/lib/common"
+
 mkdir -p "${build_dir}" "${artifacts_dir}" "${bytecode_dir}" "${abi_dir}"
+
+export forge_version=$(forge --version | grep "Version" | awk '{print $3}')
 
 function generate_artifacts() {
     local filename="$1"
@@ -37,10 +40,19 @@ function generate_artifacts() {
 }
 
 function build_info() {
+    echo "⧖ Dumping build info to ${build_info_file}"
     local build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     local build_tag=$(git describe HEAD --tags --long)
 
-    echo "{\"forge_version\": \"${forge_version}\",\"date\": \"${build_date}\", \"tag\": \"${build_tag}\"}" > "${info_file}"
+    jq -n \
+      --arg forge_version "$forge_version" \
+      --arg build_date "$build_date" \
+      --arg build_tag "${BUILD_TAG:-${build_tag}}" \
+      '{
+        forge_version: $forge_version,
+        build_date: $build_date,
+        build_tag: $build_tag
+      }' > "${build_info_file}"
 }
 
 function main() {
