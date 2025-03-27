@@ -1,33 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { CREATE3Factory } from "../src/CREATE3Factory.sol";
+
 import { NodeRegistry } from "../src/NodeRegistry.sol";
 
 import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 contract DeployNodeRegistry is Utils, Environment {
-    NodeRegistry nodes;
+    uint256 private _privateKey;
 
-    address admin;
-    address deployer;
+    CREATE3Factory public factory;
+
+    bytes32 public constant SALT = keccak256("NodeRegistry");
+
+    address public admin;
+    address public deployer;
+    address public nodeRegistry;
 
     function run() public {
-        admin = vm.envAddress("XMTP_NODE_REGISTRY_ADMIN_ADDRESS");
-        require(admin != address(0), "XMTP_NODE_REGISTRY_ADMIN_ADDRESS not set");
+        _setup();
 
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        require(privateKey != 0, "PRIVATE_KEY not set");
+        vm.startBroadcast(_privateKey);
 
-        deployer = vm.addr(privateKey);
-        vm.startBroadcast(privateKey);
+        address predictedAddress = factory.predictDeterministicAddress(SALT, deployer);
 
-        nodes = new NodeRegistry(admin);
-        require(address(nodes) != address(0), "NodeRegistry deployment failed");
+        require(predictedAddress != address(0), "Predicted address is zero");
+        require(predictedAddress.code.length == 0, "Predicted address has code");
+
+        bytes memory initCode = abi.encodePacked(
+            type(NodeRegistry).creationCode,
+            abi.encode(admin)
+        );
+
+        nodeRegistry = factory.deploy(SALT, initCode);
+        require(predictedAddress == nodeRegistry, "Deployed address doesn't match predicted address");
 
         vm.stopBroadcast();
 
         _serializeDeploymentData();
+    }
+
+    function _setup() internal {
+        admin = vm.envAddress("XMTP_NODE_REGISTRY_ADMIN_ADDRESS");
+        require(admin != address(0), "XMTP_NODE_REGISTRY_ADMIN_ADDRESS not set");
+
+        address create3Factory = vm.envAddress("XMTP_CREATE3_FACTORY_ADDRESS");
+        require(create3Factory != address(0), "XMTP_CREATE3_FACTORY_ADDRESS not set");
+
+        _privateKey = vm.envUint("PRIVATE_KEY");
+        require(_privateKey != 0, "PRIVATE_KEY not set");
+
+        deployer = vm.addr(_privateKey);
+        factory = CREATE3Factory(create3Factory);
     }
 
     function _serializeDeploymentData() internal {
@@ -37,7 +63,7 @@ contract DeployNodeRegistry is Utils, Environment {
 
         string memory addressesOutput;
         addressesOutput = vm.serializeAddress(addresses, "deployer", deployer);
-        addressesOutput = vm.serializeAddress(addresses, "implementation", address(nodes));
+        addressesOutput = vm.serializeAddress(addresses, "implementation", nodeRegistry);
 
         string memory constructorArgsOutput = vm.serializeAddress(constructorArgs, "initialAdmin", admin);
 
