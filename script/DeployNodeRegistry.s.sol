@@ -26,16 +26,13 @@ contract DeployNodeRegistry is Utils, Environment {
 
         address predictedAddress = factory.predictDeterministicAddress(SALT, deployer);
 
-        require(predictedAddress != address(0), "Predicted address is zero");
-        require(predictedAddress.code.length == 0, "Predicted address has code");
+        require(predictedAddress != address(0), "NodeRegistry predicted address is zero");
+        require(predictedAddress.code.length == 0, "NodeRegistry predicted address has code");
 
-        bytes memory initCode = abi.encodePacked(
-            type(NodeRegistry).creationCode,
-            abi.encode(admin)
-        );
+        bytes memory initCode = abi.encodePacked(type(NodeRegistry).creationCode, abi.encode(admin));
 
         nodeRegistry = factory.deploy(SALT, initCode);
-        require(predictedAddress == nodeRegistry, "Deployed address doesn't match predicted address");
+        require(predictedAddress == nodeRegistry, "NodeRegistry deployed address doesn't match predicted address");
 
         vm.stopBroadcast();
 
