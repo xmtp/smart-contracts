@@ -19,7 +19,7 @@ contract Utils is Script {
     }
 
     function getInputPath(string memory inputFileName) internal view returns (string memory) {
-        string memory inputDir = string.concat(vm.projectRoot(), "/config/");
+        string memory inputDir = string.concat(vm.projectRoot(), "/deployments/");
         string memory chainDir = string.concat(_resolveChainID(), "/");
         string memory file = string.concat(inputFileName, ".json");
         return string.concat(inputDir, chainDir, file);
@@ -36,7 +36,7 @@ contract Utils is Script {
     }
 
     function getOutputPath(string memory outputFileName) internal view returns (string memory) {
-        string memory outputDir = string.concat(vm.projectRoot(), "/config/");
+        string memory outputDir = string.concat(vm.projectRoot(), "/deployments/");
         string memory chainDir = string.concat(_resolveChainID(), "/");
         string memory outputFilePath = string.concat(outputDir, chainDir, outputFileName, ".json");
         return outputFilePath;

@@ -118,6 +118,19 @@
   },
   {
     "type": "function",
+    "name": "addToNetwork",
+    "inputs": [
+      {
+        "name": "nodeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "approve",
     "inputs": [
       {
@@ -227,198 +240,6 @@
   },
   {
     "type": "function",
-    "name": "disableNode",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "enableNode",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "getActiveApiNodes",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodes",
-        "type": "tuple[]",
-        "internalType": "struct INodeRegistry.NodeWithId[]",
-        "components": [
-          {
-            "name": "nodeId",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "node",
-            "type": "tuple",
-            "internalType": "struct INodeRegistry.Node",
-            "components": [
-              {
-                "name": "signingKeyPub",
-                "type": "bytes",
-                "internalType": "bytes"
-              },
-              {
-                "name": "httpAddress",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "isReplicationEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isApiEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isDisabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "minMonthlyFeeMicroDollars",
-                "type": "uint256",
-                "internalType": "uint256"
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveApiNodesCount",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodesCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveApiNodesIDs",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodesIDs",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveReplicationNodes",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodes",
-        "type": "tuple[]",
-        "internalType": "struct INodeRegistry.NodeWithId[]",
-        "components": [
-          {
-            "name": "nodeId",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "node",
-            "type": "tuple",
-            "internalType": "struct INodeRegistry.Node",
-            "components": [
-              {
-                "name": "signingKeyPub",
-                "type": "bytes",
-                "internalType": "bytes"
-              },
-              {
-                "name": "httpAddress",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "isReplicationEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isApiEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isDisabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "minMonthlyFeeMicroDollars",
-                "type": "uint256",
-                "internalType": "uint256"
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveReplicationNodesCount",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodesCount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getActiveReplicationNodesIDs",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "activeNodesIDs",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getAllNodes",
     "inputs": [],
     "outputs": [
@@ -448,17 +269,7 @@
                 "internalType": "string"
               },
               {
-                "name": "isReplicationEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isApiEnabled",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "isDisabled",
+                "name": "inCanonicalNetwork",
                 "type": "bool",
                 "internalType": "bool"
               },
@@ -489,25 +300,6 @@
   },
   {
     "type": "function",
-    "name": "getApiNodeIsActive",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "isActive",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "getApproved",
     "inputs": [
       {
@@ -521,6 +313,25 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getIsCanonicalNode",
+    "inputs": [
+      {
+        "name": "nodeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "isCanonicalNode",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -552,17 +363,7 @@
             "internalType": "string"
           },
           {
-            "name": "isReplicationEnabled",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "isApiEnabled",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "isDisabled",
+            "name": "inCanonicalNetwork",
             "type": "bool",
             "internalType": "bool"
           },
@@ -572,38 +373,6 @@
             "internalType": "uint256"
           }
         ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getNodeOperatorCommissionPercent",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "commissionPercent",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getReplicationNodeIsActive",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "isActive",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -802,20 +571,7 @@
   },
   {
     "type": "function",
-    "name": "removeFromApiNodes",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "removeFromReplicationNodes",
+    "name": "removeFromNetwork",
     "inputs": [
       {
         "name": "nodeId",
@@ -971,42 +727,6 @@
   },
   {
     "type": "function",
-    "name": "setIsApiEnabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "isApiEnabled",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setIsReplicationEnabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "isReplicationEnabled",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setMaxActiveNodes",
     "inputs": [
       {
@@ -1122,32 +842,6 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "event",
-    "name": "ApiDisabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ApiEnabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
   },
   {
     "type": "event",
@@ -1352,20 +1046,7 @@
   },
   {
     "type": "event",
-    "name": "NodeDisabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "NodeEnabled",
+    "name": "NodeAddedToCanonicalNetwork",
     "inputs": [
       {
         "name": "nodeId",
@@ -1391,45 +1072,7 @@
   },
   {
     "type": "event",
-    "name": "NodeTransferred",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "from",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "to",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ReplicationDisabled",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ReplicationEnabled",
+    "name": "NodeRemovedFromCanonicalNetwork",
     "inputs": [
       {
         "name": "nodeId",
@@ -1693,6 +1336,16 @@
   },
   {
     "type": "error",
+    "name": "FailedToAddNodeToCanonicalNetwork",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FailedToRemoveNodeFromCanonicalNetwork",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidAddress",
     "inputs": []
   },
@@ -1704,16 +1357,6 @@
   {
     "type": "error",
     "name": "InvalidHttpAddress",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidInputLength",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidNodeConfig",
     "inputs": []
   },
   {
@@ -1743,11 +1386,6 @@
   },
   {
     "type": "error",
-    "name": "NodeIsDisabled",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "SafeCastOverflowedUintDowncast",
     "inputs": [
       {
@@ -1761,10 +1399,5 @@
         "internalType": "uint256"
       }
     ]
-  },
-  {
-    "type": "error",
-    "name": "Unauthorized",
-    "inputs": []
   }
 ]

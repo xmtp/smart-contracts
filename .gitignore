@@ -27,3 +27,6 @@ node_modules
 .vscode/
 
 build/
+
+# local deployments
+deployments/anvil_localnet/
