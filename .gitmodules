@@ -7,3 +7,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = git@github.com:foundry-rs/forge-std.git
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/Vectorized/solady
