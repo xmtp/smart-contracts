@@ -58,6 +58,7 @@ build:          Builds the contracts.
 test:           Tests the contracts.
 clean:          Cleans the forge environment.
 coverage:       Shows the test coverage.
+gas-report:     Shows the gas costs.
 doc:            Serves the project documentation at http://localhost:4000
 
 # Static analysis

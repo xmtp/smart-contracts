@@ -124,6 +124,8 @@ contract GroupMessageBroadcasterTests is Test, Utils {
         broadcaster.addMessage(ID, message);
     }
 
+    /// forge-config: default.fuzz.runs = 10
+    /// forge-config: ci.fuzz.runs = 1_000
     function testFuzz_addMessage(
         uint256 minPayloadSize,
         uint256 maxPayloadSize,

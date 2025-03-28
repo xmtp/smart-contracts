@@ -7,6 +7,7 @@ import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
 import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
 import { NodeRegistry } from "../../src/NodeRegistry.sol";
 import { RateRegistry } from "../../src/RateRegistry.sol";
+import { PayerRegistry } from "../../src/PayerRegistry.sol";
 
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
     function __pause() external {
@@ -145,5 +146,59 @@ contract RateRegistryHarness is RateRegistry {
 
     function __getAllRates() external view returns (Rates[] memory) {
         return _getRatesManagerStorage().allRates;
+    }
+}
+
+contract PayerRegistryHarness is PayerRegistry {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    constructor(address token_) PayerRegistry(token_) {}
+
+    function __pause() external {
+        _pause();
+    }
+
+    function __unpause() external {
+        _unpause();
+    }
+
+    function __setMinimumDeposit(uint256 newMinimumDeposit_) external {
+        _getPayerRegistryStorage().minimumDeposit = uint96(newMinimumDeposit_);
+    }
+
+    function __setWithdrawLockPeriod(uint256 newWithdrawLockPeriod_) external {
+        _getPayerRegistryStorage().withdrawLockPeriod = uint32(newWithdrawLockPeriod_);
+    }
+
+    function __setBalance(address payer_, int256 balance_) external {
+        _getPayerRegistryStorage().payers[payer_].balance = int104(balance_);
+    }
+
+    function __setPendingWithdrawal(address payer_, uint256 pendingWithdrawal_) external {
+        _getPayerRegistryStorage().payers[payer_].pendingWithdrawal = uint96(pendingWithdrawal_);
+    }
+
+    function __setPendingWithdrawableTimestamp(address payer_, uint256 pendingWithdrawableTimestamp_) external {
+        _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp = uint32(pendingWithdrawableTimestamp_);
+    }
+
+    function __setWithdrawableTimestamp(address payer_, uint256 withdrawableTimestamp_) external {
+        _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp = uint32(withdrawableTimestamp_);
+    }
+
+    function __setTotalDeposits(int256 totalDeposits_) external {
+        _getPayerRegistryStorage().totalDeposits = int104(totalDeposits_);
+    }
+
+    function __setTotalDebt(uint256 totalDebt_) external {
+        _getPayerRegistryStorage().totalDebt = uint96(totalDebt_);
+    }
+
+    function __getPendingWithdrawal(address payer_) external view returns (uint96 pendingWithdrawal_) {
+        return _getPayerRegistryStorage().payers[payer_].pendingWithdrawal;
+    }
+
+    function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
+        return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
     }
 }
