@@ -1,61 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { ERC1967Proxy } from "../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
+import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
 import { GroupMessageBroadcaster } from "../src/GroupMessageBroadcaster.sol";
 
-import { Utils } from "./utils/Utils.sol";
-import { Environment } from "./utils/Environment.sol";
-
-contract DeployGroupMessageBroadcaster is Utils, Environment {
-    GroupMessageBroadcaster implementation;
-    ERC1967Proxy proxy;
-
-    address admin;
-    address deployer;
-
-    function run() external {
-        admin = vm.envAddress("XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS");
-        require(admin != address(0), "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS not set");
-
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        require(privateKey != 0, "PRIVATE_KEY not set");
-
-        deployer = vm.addr(privateKey);
-        vm.startBroadcast(privateKey);
-
-        // Deploy the implementation contract.
-        implementation = new GroupMessageBroadcaster();
-        require(address(implementation) != address(0), "Implementation deployment failed");
-
-        // Deploy the proxy contract.
-        proxy = new ERC1967Proxy(
-            address(implementation),
-            abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, admin)
-        );
-
-        vm.stopBroadcast();
-
-        _serializeDeploymentData();
+contract DeployGroupMessageBroadcasterScript is DeployProxiedContract {
+    function _getImplementationCreationCode() internal pure override returns (bytes memory) {
+        return abi.encodePacked(type(GroupMessageBroadcaster).creationCode);
     }
 
-    function _serializeDeploymentData() internal {
-        string memory parent_object = "parent object";
-        string memory addresses = "addresses";
+    function _getAdminEnvVar() internal pure override returns (string memory) {
+        return "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS";
+    }
 
-        string memory addressesOutput;
+    function _getOutputFilePath() internal pure override returns (string memory) {
+        return XMTP_GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON;
+    }
 
-        addressesOutput = vm.serializeAddress(addresses, "deployer", deployer);
-        addressesOutput = vm.serializeAddress(addresses, "proxyAdmin", admin);
-        addressesOutput = vm.serializeAddress(addresses, "proxy", address(proxy));
-        addressesOutput = vm.serializeAddress(addresses, "implementation", address(implementation));
+    function _getProxySalt() internal pure override returns (bytes32) {
+        return keccak256(abi.encodePacked("GroupMessageBroadcasterProxy"));
+    }
 
-        string memory finalJson;
-        finalJson = vm.serializeString(parent_object, addresses, addressesOutput);
-        finalJson = vm.serializeUint(parent_object, "deploymentBlock", block.number);
-        finalJson = vm.serializeUint(parent_object, "latestUpgradeBlock", block.number);
+    function _getImplementationSalt() internal pure override returns (bytes32) {
+        return keccak256(abi.encodePacked("GroupMessageBroadcaster"));
+    }
 
-        writeOutput(finalJson, XMTP_GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON);
+    function _getInitializeCalldata() internal view override returns (bytes memory) {
+        address admin = vm.envAddress("XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS");
+        require(admin != address(0), "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS not set");
+
+        return abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, admin);
     }
 }

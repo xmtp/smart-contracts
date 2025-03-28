@@ -26,4 +26,9 @@ node_modules
 # User Settings
 .vscode/
 
+.wake/
+
 build/
+
+# local deployments
+deployments/anvil_localnet/

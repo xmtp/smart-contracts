@@ -10,3 +10,6 @@
 [submodule "lib/erc20-helper"]
 	path = lib/erc20-helper
 	url = git@github.com:maple-labs/erc20-helper.git
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/Vectorized/solady
