@@ -46,4 +46,37 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: "VERSION=${{ github.ref_name }}-${{ github.event_name != 'pull_request' && github.sha || github.event.pull_request.head.sha }}"
+
+  artifacts:
+    name: Generate artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.0.0
+
+      - name: Generate artifacts
+        env:
+          BUILD_TAG: ${{ github.ref_name }}
+        run: dev/gen-artifacts.sh
+
+      - name: Create GitHub Release with artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./artifacts/**/*
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## Docker Image
+            ```
+            ghcr.io/xmtp/xmtpd-anvil:${{ github.ref_name }}
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

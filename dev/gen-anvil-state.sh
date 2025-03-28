@@ -1,9 +1,9 @@
+#!/bin/bash
 #
 # This script is intended to be run inside a docker container.
 # It will start an anvil instance, deploy the contracts, and dump the state info.
 #
 
-#!/bin/bash
 set -euo pipefail
 
 script_dir=$(dirname "$(realpath "$0")")
@@ -67,7 +67,7 @@ function dump_state_info() {
       }' > "${anvil_state_info_file}"
 }
 
-if [ ! command -v anvil &> /dev/null ]; then
+if ! command -v anvil &> /dev/null; then
     echo "ERROR: anvil could not be found"
     exit 1
 fi
