@@ -1,0 +1,10 @@
+{
+  "addresses": {
+    "deployer": "0xd27FDB90A393Ce0E390120aeB58b326AbA910BE0",
+    "implementation": "0xa0d0dab54664458d1934C49BA6cD96A3E667d101"
+  },
+  "constructorArgs": {
+    "initialAdmin": "0xd27FDB90A393Ce0E390120aeB58b326AbA910BE0"
+  },
+  "deploymentBlock": 46229
+}

@@ -13,13 +13,19 @@ cd "${repo_root}"
 source "${script_dir}/lib/common"
 source "${script_dir}/lib/default.env"
 
+export anvil_config_dir="${deployments_dir}/anvil_localnet"
+export anvil_state_file="${anvil_config_dir}/anvil-state.json"
+export anvil_state_info_file="${anvil_config_dir}/anvil-state-info.json"
+
 echo "Creating anvil config dir: ${anvil_config_dir}"
 mkdir -p "${anvil_config_dir}"
 
 function kill_anvil() {
     echo "⧖ Killing existing anvil instance"
-    pkill -f anvil
-    sleep 5
+    if pgrep -f anvil > /dev/null; then
+        pkill -f anvil
+        sleep 5
+    fi
 }
 
 function start_anvil() {
@@ -38,7 +44,7 @@ function initialize_create3_factory() {
 function deploy_contracts() {
     echo "⧖ Deploying contracts"
     initialize_create3_factory
-    forge script script/DeployRatesManager.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1
+    forge script script/DeployRateRegistry.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1
     forge script script/DeployNodeRegistry.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1
     forge script script/DeployGroupMessageBroadcaster.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1
     forge script script/DeployIdentityUpdateBroadcaster.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1

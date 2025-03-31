@@ -26,5 +26,5 @@ RUN curl -L https://foundry.paradigm.xyz | bash && \
 
 COPY . .
 
-RUN chmod +x ./dev/gen-anvil-state.sh \
-    && ./dev/gen-anvil-state.sh
+RUN chmod +x ./dev/gen-anvil-state \
+    && ./dev/gen-anvil-state

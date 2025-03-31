@@ -14,6 +14,10 @@ cd "${repo_root}"
 
 source "${script_dir}/lib/common"
 
+export bytecode_dir="${artifacts_dir}/bytecode"
+export abi_dir="${artifacts_dir}/abi"
+export build_info_file="${artifacts_dir}/build-info.json"
+
 mkdir -p "${build_dir}" "${artifacts_dir}" "${bytecode_dir}" "${abi_dir}"
 
 export forge_version=$(forge --version | grep "Version" | awk '{print $3}')

@@ -64,7 +64,7 @@ jobs:
       - name: Generate artifacts
         env:
           BUILD_TAG: ${{ github.ref_name }}
-        run: dev/gen-artifacts.sh
+        run: dev/gen-artifacts
 
       - name: Create GitHub Release with artifacts
         uses: softprops/action-gh-release@v1
