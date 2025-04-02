@@ -18,15 +18,15 @@ The `CREATE3Factory` is used to deploy all the contracts, all the addresses are 
 
 The artifacts included in the image are the following. The paths provided are the full path.
 
-- **anvil state** at `/app/deployments/anvil_localnet/anvil-state.json`
+- **anvil state** at `/app/anvil-state.json`
 
 The anvil state can be used to bootstrap an anvil instance as follows:
 
 ```shell
-anvil --load-state path/to/anvil-state.json
+anvil --load-state /app/anvil-state.json
 ```
 
-- **anvil state info file** at `/app/deployments/anvil_localnet/anvil-state-info.json`
+- **anvil state info file** at `/app/anvil-state-info.json`
 
 The `anvil-state-info.json` file contents are as follows:
 
