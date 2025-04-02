@@ -10,7 +10,7 @@ LABEL maintainer="eng@ephemerahq.com"
 LABEL source="https://github.com/xmtp/smart-contracts"
 LABEL description="XMTP Network Anvil State Generator"
 
-WORKDIR /app
+WORKDIR /build
 
 SHELL ["/bin/bash", "-c"]
 
@@ -28,3 +28,15 @@ COPY . .
 
 RUN chmod +x ./dev/gen-anvil-state \
     && ./dev/gen-anvil-state
+
+# Cleanup the builder image.
+# Instead of using a builder image, remove the build directory, \
+# and copy the files to the app directory.
+# This way it's not needed to run duplicate steps (apt-get, foundryup, etc)
+WORKDIR /app
+
+RUN cp /build/deployments/anvil_localnet/anvil-state.json . \
+    && cp /build/deployments/anvil_localnet/anvil-state-info.json . \
+    && rm -rf /build
+
+ENTRYPOINT [ "anvil", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1", "--load-state", "anvil-state.json" ]

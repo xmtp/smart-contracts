@@ -1,6 +1,6 @@
-# XMTP Anvil Baked Image
+# XMTP Contracts Image
 
-The XMTP Anvil image aims to provide a stable containerized environment to help the `xmtpd` development process and test locally.
+The XMTP Contracts Image aims to provide a stable containerized environment to help the `xmtpd` development process and test locally.
 
 The image contains a baked anvil instance, where all the necessary contracts for XMTP development are deployed.
 
@@ -18,15 +18,15 @@ The `CREATE3Factory` is used to deploy all the contracts, all the addresses are 
 
 The artifacts included in the image are the following. The paths provided are the full path.
 
-- **anvil state** at `/app/deployments/anvil_localnet/anvil-state.json`
+- **anvil state** at `/app/anvil-state.json`
 
 The anvil state can be used to bootstrap an anvil instance as follows:
 
 ```shell
-anvil --load-state path/to/anvil-state.json
+anvil --load-state /app/anvil-state.json
 ```
 
-- **anvil state info file** at `/app/deployments/anvil_localnet/anvil-state-info.json`
+- **anvil state info file** at `/app/anvil-state-info.json`
 
 The `anvil-state-info.json` file contents are as follows:
 
@@ -44,7 +44,14 @@ By parsing the file, or using `jq`, all the contracts can be accessed programmat
 
 ## Using the image
 
-A new image is created once per release, and pushed to `ghcr.io/xmtp/xmtpd-anvil:TAG`.
+A new image is created once per release, and pushed to `ghcr.io/xmtp/contracts:TAG`.
+
+Additionally, an image is created and pushed with every new pull request and is accessible by its sha, or the latest tag.
+
+```shell
+docker pull ghcr.io/xmtp/contracts:latest
+docker pull ghcr.io/xmtp/contracts:sha-44d1eb4
+```
 
 ### Locally
 
@@ -52,7 +59,7 @@ To pull the image locally, simply run the following command.
 
 ```shell
 # Use docker, podman or any other container runtime of choice.
-docker pull ghcr.io/xmtp/xmtpd-anvil:v0.3.0
+docker pull ghcr.io/xmtp/contracts:v0.3.0
 ```
 
 ### As a builder image
@@ -60,7 +67,7 @@ docker pull ghcr.io/xmtp/xmtpd-anvil:v0.3.0
 To use it as part of a container image build process, add it as `FROM`, as in the next example.
 
 ```Dockerfile
-FROM ghcr.io/xmtp/xmtpd-anvil:v0.3.0
+FROM ghcr.io/xmtp/contracts:v0.3.0
 
 RUN <...>
 

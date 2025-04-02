@@ -1,9 +1,11 @@
-name: Release from tag
+name: Build contracts image
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   image:
@@ -34,8 +36,10 @@ jobs:
         with:
           images: ghcr.io/xmtp/contracts
           tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -46,37 +50,3 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-  artifacts:
-    name: Generate artifacts
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.0.0
-
-      - name: Generate artifacts
-        env:
-          BUILD_TAG: ${{ github.ref_name }}
-        run: dev/gen-artifacts
-
-      - name: Create GitHub Release with artifacts
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ./artifacts/**/*
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
-          body: |
-            ## Docker Image
-            ```
-            ghcr.io/xmtp/xmtpd-anvil:${{ github.ref_name }}
-            ```
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
