@@ -38,3 +38,5 @@ WORKDIR /app
 RUN cp /build/deployments/anvil_localnet/anvil-state.json . \
     && cp /build/deployments/anvil_localnet/anvil-state-info.json . \
     && rm -rf /build
+
+ENTRYPOINT [ "anvil", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1", "--load-state", "anvil-state.json" ]
