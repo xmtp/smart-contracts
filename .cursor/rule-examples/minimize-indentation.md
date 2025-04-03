@@ -1,6 +1,6 @@
 ```solidity
 function toggleUsers(address[] calldata users_) external {
-    for (uint256 index_; index_ < accounts_.length; ++i) {
+    for (uint256 index_; index_ < users_.length; ++i) {
         address user_ = users_[index_];
         isUser(user_) ? _removeUser(user_) : _addUser(user_);
     }

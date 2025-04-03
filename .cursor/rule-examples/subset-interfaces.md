@@ -1,10 +1,10 @@
 ```solidity
-// This interface should be in it's own file, but this is just an example.
+// This interface should be in its own file, but this is just an example.
 interface IERC20Like {
     function balanceOf(address account_) external view returns (uint256 balance_);
 }
 
-// This interface should be in it's own file, but this is just an example.
+// This interface should be in its own file, but this is just an example.
 interface IFooLike {
     function bar() external;
 }
@@ -14,7 +14,7 @@ contract Baz {
     address public immutable foo;
 
     constructor(address token_, address foo_) {
-        token = token;
+        token = token_;
         foo = foo_;
     }
 

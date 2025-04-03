@@ -6,7 +6,7 @@ function getFoo(uint256[] calldata values_) external view returns (uint256 foo_)
         uint256 value_ = values_[index_];
 
         if (value_ < MIN_VALUE || value_ > MAX_VALUE) {
-            return;
+            continue;
         }
 
         foo_ += value_;

@@ -12,7 +12,11 @@ function test_finalizeWithdrawal() external {
     emit IPayerRegistry.WithdrawalFinalized(_alice);
 
     vm.prank(_alice);
-    _registry.finalizeWithdrawal(_alice); // Only function being tested.
+    (uint256 returnValue1_, uint256 returnValue2_) = _registry.finalizeWithdrawal(_alice); // Only function being tested.
+
+    // Expected Returns
+    assertEq(returnValue1_, 10e6);
+    assertEq(returnValue2_, 1e6);
 
     // Expected state changes.
 
