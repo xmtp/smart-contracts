@@ -2,7 +2,7 @@
 
 The XMTP Contracts Image aims to provide a stable containerized environment to help the `xmtpd` development process and test locally.
 
-The image contains a baked anvil instance, where all the necessary contracts for XMTP development are deployed.
+The image contains a baked anvil instance, where all the necessary contracts for XMTP development are deployed. And two pre-registered nodes that can serve to initialize an `xmtpd` instance.
 
 ## Contracts deployed
 
@@ -13,6 +13,24 @@ The image contains a baked anvil instance, where all the necessary contracts for
 - [IdentityUpdateBroadcaster](../src/IdentityUpdateBroadcaster.sol)
 
 The `CREATE3Factory` is used to deploy all the contracts, all the addresses are deterministically computed.
+
+## Nodes deployed
+
+### Node 1
+
+- Node ID: 100
+- Node URL: <http://localhost:5050">
+- Node owner address: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+- Private key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+- Signing public key: 0x02ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0
+
+### Node 2
+
+- Node ID: 200
+- Node URL: <http://localhost:5051>
+- Node owner address: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+- Private key: 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+- Signing public key: 0x039d9031e97dd78ff8c15aa86939de9b1e791066a0224e331bc962a2099a7b1f04
 
 ## Artifacts
 
@@ -59,7 +77,7 @@ To pull the image locally, simply run the following command.
 
 ```shell
 # Use docker, podman or any other container runtime of choice.
-docker pull ghcr.io/xmtp/contracts:v0.3.0
+docker pull ghcr.io/xmtp/contracts:latest
 ```
 
 ### As a builder image
@@ -67,7 +85,7 @@ docker pull ghcr.io/xmtp/contracts:v0.3.0
 To use it as part of a container image build process, add it as `FROM`, as in the next example.
 
 ```Dockerfile
-FROM ghcr.io/xmtp/contracts:v0.3.0
+FROM ghcr.io/xmtp/contracts:latest
 
 RUN <...>
 
