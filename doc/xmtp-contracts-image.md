@@ -19,7 +19,7 @@ The `CREATE3Factory` is used to deploy all the contracts, all the addresses are 
 ### Node 1
 
 - Node ID: 100
-- Node URL: <http://localhost:5050">
+- Node URL: <http://localhost:5050>
 - Node owner address: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 - Private key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 - Signing public key: 0x02ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0
@@ -50,11 +50,11 @@ The `anvil-state-info.json` file contents are as follows:
 
 ```json
 {
-  "create3_factory_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  "rate_registry_address": "0xE71ac6dE80392495eB52FB1dCa321f5dB8f51BAE",
-  "message_group_broadcaster_address": "0xD5b7B43B0e31112fF99Bd5d5C4f6b828259bedDE",
-  "identity_update_broadcaster_address": "0xe67104BC93003192ab78B797d120DBA6e9Ff4928",
-  "node_registry_address": "0x8d69E9834f1e4b38443C638956F7D81CD04eBB2F"
+    "create3_factory_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "rate_registry_address": "0xE71ac6dE80392495eB52FB1dCa321f5dB8f51BAE",
+    "message_group_broadcaster_address": "0xD5b7B43B0e31112fF99Bd5d5C4f6b828259bedDE",
+    "identity_update_broadcaster_address": "0xe67104BC93003192ab78B797d120DBA6e9Ff4928",
+    "node_registry_address": "0x8d69E9834f1e4b38443C638956F7D81CD04eBB2F"
 }
 ```
 
