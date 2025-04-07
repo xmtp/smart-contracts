@@ -32,11 +32,11 @@ The `anvil-state-info.json` file contents are as follows:
 
 ```json
 {
-  "create3_factory_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  "rate_registry_address": "0xE71ac6dE80392495eB52FB1dCa321f5dB8f51BAE",
-  "message_group_broadcaster_address": "0xD5b7B43B0e31112fF99Bd5d5C4f6b828259bedDE",
-  "identity_update_broadcaster_address": "0xe67104BC93003192ab78B797d120DBA6e9Ff4928",
-  "node_registry_address": "0x8d69E9834f1e4b38443C638956F7D81CD04eBB2F"
+    "create3_factory_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "rate_registry_address": "0xE71ac6dE80392495eB52FB1dCa321f5dB8f51BAE",
+    "message_group_broadcaster_address": "0xD5b7B43B0e31112fF99Bd5d5C4f6b828259bedDE",
+    "identity_update_broadcaster_address": "0xe67104BC93003192ab78B797d120DBA6e9Ff4928",
+    "node_registry_address": "0x8d69E9834f1e4b38443C638956F7D81CD04eBB2F"
 }
 ```
 
@@ -59,7 +59,7 @@ To pull the image locally, simply run the following command.
 
 ```shell
 # Use docker, podman or any other container runtime of choice.
-docker pull ghcr.io/xmtp/contracts:v0.3.0
+docker pull ghcr.io/xmtp/contracts:latest
 ```
 
 ### As a builder image
@@ -67,7 +67,7 @@ docker pull ghcr.io/xmtp/contracts:v0.3.0
 To use it as part of a container image build process, add it as `FROM`, as in the next example.
 
 ```Dockerfile
-FROM ghcr.io/xmtp/contracts:v0.3.0
+FROM ghcr.io/xmtp/contracts:latest
 
 RUN <...>
 

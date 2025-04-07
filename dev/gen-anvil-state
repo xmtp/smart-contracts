@@ -78,6 +78,11 @@ if ! command -v anvil &> /dev/null; then
     exit 1
 fi
 
+if ! command -v jq &> /dev/null; then
+    echo "ERROR: jq could not be found"
+    exit 1
+fi
+
 start_anvil
 deploy_contracts
 dump_state_info
