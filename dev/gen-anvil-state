@@ -50,74 +50,6 @@ function deploy_contracts() {
     forge script script/DeployIdentityUpdateBroadcaster.s.sol --broadcast --rpc-url http://localhost:8545 &> /dev/null 2>&1
 }
 
-function register_nodes() {
-    local node_registry_address=$(jq -r ".addresses.implementation" "${anvil_config_dir}/NodeRegistry.json")
-
-    # Node registry admin - first anvil private key
-    local node_registry_admin_private_key="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-
-    # Node 1 - second anvil private key
-    local node_1_address="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-    local node_1_signing_key="04ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0d67351e5f06073092499336ab0839ef8a521afd334e53807205fa2f08eec74f4"
-    local node_1_url="http://localhost:5050"
-    local node_1_id="100"
-    local node_1_minFee="0"
-
-    # Node 2 - third anvil private key
-    local node_2_address="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
-    local node_2_signing_key="049d9031e97dd78ff8c15aa86939de9b1e791066a0224e331bc962a2099a7b1f0464b8bbafe1535f2301c72c2cb3535b172da30b02686ab0393d348614f157fbdb"
-    local node_2_url="http://localhost:5051"
-    local node_2_id="200"
-    local node_2_minFee="0"
-
-    if ! do_registration "${node_1_address}" "${node_1_signing_key}" "${node_1_url}" "${node_1_id}" "${node_1_minFee}"; then
-        echo "ERROR: Failed to register and add node 1"
-        exit 1
-    fi
-
-    if ! do_registration "${node_2_address}" "${node_2_signing_key}" "${node_2_url}" "${node_2_id}" "${node_2_minFee}"; then
-        echo "ERROR: Failed to register and add node 2"
-        exit 1
-    fi
-
-    echo "Successfully registered and added nodes"
-}
-
-function do_registration() {
-    local node_address=$1
-    local signing_key=$2
-    local url=$3
-    local node_id=$4
-    local stake_amount=$5
-
-    local local_anvil_url="http://localhost:8545"
-    local node_registry_add_node_abi="addNode(address,bytes,string,uint256)"
-    local node_registry_add_to_network_abi="addToNetwork(uint256)"
-
-    # Mint node operator NFT
-    if ! cast send "${node_registry_address}" "${node_registry_add_node_abi}" \
-        "${node_address}" \
-        "${signing_key}" \
-        "${url}" \
-        "${stake_amount}" \
-        --rpc-url "${local_anvil_url}" \
-        --private-key "${node_registry_admin_private_key}"; then
-        echo "ERROR: Failed to mint node operator NFT, node ID: ${node_id}"
-        return 1
-    fi
-
-    # Add node to network
-    if ! cast send "${node_registry_address}" "${node_registry_add_to_network_abi}" \
-        "${node_id}" \
-        --rpc-url "${local_anvil_url}" \
-        --private-key "${node_registry_admin_private_key}"; then
-        echo "ERROR: Failed to add node to network, node ID: ${node_id}"
-        return 1
-    fi
-
-    return 0
-}
-
 function dump_state_info() {
     echo "⧖ Dumping anvil state info to ${anvil_state_info_file}"
     local create3_factory_address=$(jq -r ".addresses.implementation" "${anvil_config_dir}/CREATE3Factory.json")
@@ -146,11 +78,6 @@ if ! command -v anvil &> /dev/null; then
     exit 1
 fi
 
-if ! command -v cast &> /dev/null; then
-    echo "ERROR: cast could not be found"
-    exit 1
-fi
-
 if ! command -v jq &> /dev/null; then
     echo "ERROR: jq could not be found"
     exit 1
@@ -158,7 +85,6 @@ fi
 
 start_anvil
 deploy_contracts
-register_nodes
 dump_state_info
 kill_anvil
 
