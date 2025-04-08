@@ -6,10 +6,10 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC1967 } from "../../src/interfaces/IERC1967.sol";
-import { IGroupMessageBroadcaster } from "../../src/interfaces/IGroupMessageBroadcaster.sol";
-import { IMigratable } from "../../src/interfaces/IMigratable.sol";
-import { IPayloadBroadcaster } from "../../src/interfaces/IPayloadBroadcaster.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IPayloadBroadcaster } from "../../src/abstract/interfaces/IPayloadBroadcaster.sol";
 
 import { GroupMessageBroadcasterHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";

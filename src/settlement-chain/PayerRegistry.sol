@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { EnumerableSet } from "../lib/oz/contracts/utils/structs/EnumerableSet.sol";
-import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { ERC20Helper } from "../../lib/erc20-helper/src/ERC20Helper.sol";
+import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
-import { ERC20Helper } from "../lib/erc20-helper/src/ERC20Helper.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { UUPSUpgradeable } from "../../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import { IERC20Like } from "./interfaces/External.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";

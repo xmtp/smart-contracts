@@ -1,38 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-interface ISettlementGateway {
-    /* ============ Structs ============ */
+import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
-    /* ============ Events ============ */
-
+interface ISettlementChainGateway is IMigratable {
     /* ============ Custom Errors ============ */
 
     error ZeroRegistryAddress();
 
-    error ZeroAppchainGatewayAddress();
+    error ZeroAppChainGatewayAddress();
 
-    error ZeroAppchainNativeTokenAddress();
-
-    error ZeroAdminAddress();
-
-    error ZeroImplementationAddress();
-
-    error NotAdmin();
+    error ZeroAppChainNativeTokenAddress();
 
     error ApproveFailed();
 
     error TransferFailed();
 
-    error EmptyKeys();
+    error NoKeyChains();
 
     /* ============ Initialization ============ */
 
     /**
      * @notice Initializes the contract.
-     * @param  admin_ The address of the admin.
      */
-    function initialize(address admin_) external;
+    function initialize() external;
 
     /* ============ Interactive Functions ============ */
 
@@ -56,13 +47,13 @@ interface ISettlementGateway {
 
     /* ============ View/Pure Functions ============ */
 
-    function admin() external view returns (address admin_);
+    function migratorParameterKey() external pure returns (bytes memory key_);
 
     function registry() external view returns (address registry_);
 
-    function appchainGateway() external view returns (address appchainGateway_);
+    function appChainGateway() external view returns (address appChainGateway_);
 
-    function appchainAlias() external view returns (address appchainAlias_);
+    function appChainAlias() external view returns (address appChainAlias_);
 
-    function appchainNativeToken() external view returns (address appchainNativeToken_);
+    function appChainNativeToken() external view returns (address appChainNativeToken_);
 }

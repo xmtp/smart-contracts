@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
+import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
 
 import { Utils } from "../utils/Utils.sol";
 import { Environment } from "../utils/Environment.sol";

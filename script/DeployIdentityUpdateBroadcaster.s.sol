@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IPayloadBroadcaster } from "../src/interfaces/IPayloadBroadcaster.sol";
+import { IPayloadBroadcaster } from "../src/abstract/interfaces/IPayloadBroadcaster.sol";
 
-import { IdentityUpdateBroadcaster } from "../src/IdentityUpdateBroadcaster.sol";
+import { IdentityUpdateBroadcaster } from "../src/app-chain/IdentityUpdateBroadcaster.sol";
 
 import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
 

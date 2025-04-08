@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
+import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
 
 import { Utils } from "../utils/Utils.sol";
 import { Environment } from "../utils/Environment.sol";

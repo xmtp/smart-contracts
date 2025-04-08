@@ -9,7 +9,7 @@ import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { RateRegistry } from "../../src/RateRegistry.sol";
+import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 
 import { RateRegistryHarness } from "../utils/Harnesses.sol";
 import { Utils } from "../utils/Utils.sol";

@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 // Import the standard ERC721 interface.
-import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
+import { IERC721 } from "../../../lib/oz/contracts/token/ERC721/IERC721.sol";
 
 /**
  * @title  INodeRegistryErrors

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IGroupMessageBroadcaster } from "./interfaces/IGroupMessageBroadcaster.sol";
-import { IPayloadBroadcaster } from "./interfaces/IPayloadBroadcaster.sol";
+import { IPayloadBroadcaster } from "../abstract/interfaces/IPayloadBroadcaster.sol";
 
-import { PayloadBroadcaster } from "./PayloadBroadcaster.sol";
+import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
 
-/// @title XMTP Group Message Broadcaster Contract
-contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster {
+import { IIdentityUpdateBroadcaster } from "./interfaces/IIdentityUpdateBroadcaster.sol";
+
+/// @title XMTP Identity Update Broadcaster Contract
+contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadcaster {
     /* ============ Constructor ============ */
 
     /**
@@ -18,13 +19,13 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
 
     /* ============ Interactive Functions ============ */
 
-    /// @inheritdoc IGroupMessageBroadcaster
-    function addMessage(bytes32 groupId_, bytes calldata message_) external whenNotPaused {
-        _revertIfInvalidPayloadSize(message_.length);
+    /// @inheritdoc IIdentityUpdateBroadcaster
+    function addIdentityUpdate(bytes32 inboxId_, bytes calldata identityUpdate_) external whenNotPaused {
+        _revertIfInvalidPayloadSize(identityUpdate_.length);
 
         // Increment sequence ID safely using unchecked to save gas.
         unchecked {
-            emit MessageSent(groupId_, message_, ++_getPayloadBroadcasterStorage().sequenceId);
+            emit IdentityUpdateCreated(inboxId_, identityUpdate_, ++_getPayloadBroadcasterStorage().sequenceId);
         }
     }
 
@@ -37,7 +38,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.minPayloadSize";
+        return "xmtp.iub.minPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -47,7 +48,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.maxPayloadSize";
+        return "xmtp.iub.maxPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -57,7 +58,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.migrator";
+        return "xmtp.iub.migrator";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -67,6 +68,6 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.paused";
+        return "xmtp.iub.paused";
     }
 }

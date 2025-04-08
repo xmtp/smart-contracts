@@ -9,7 +9,7 @@ import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { IPayerRegistry } from "../../src/interfaces/IPayerRegistry.sol";
+import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 
 import { PayerRegistryHarness } from "../utils/Harnesses.sol";
 import { MockErc20 } from "../utils/Mocks.sol";

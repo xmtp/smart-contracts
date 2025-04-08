@@ -3,12 +3,13 @@ pragma solidity 0.8.28;
 
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
-import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
-import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
-import { NodeRegistry } from "../../src/NodeRegistry.sol";
-import { RateRegistry } from "../../src/RateRegistry.sol";
-import { PayerRegistry } from "../../src/PayerRegistry.sol";
-import { ParameterRegistry } from "../../src/ParameterRegistry.sol";
+import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
+import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
+import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
+import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
+import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
+import { ParameterRegistry } from "../../src/any-chain/ParameterRegistry.sol";
+
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
     constructor(address registry_) GroupMessageBroadcaster(registry_) {}
 

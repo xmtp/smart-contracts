@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IMigratable } from "./interfaces/IMigratable.sol";
 import { IParameterRegistryLike } from "./interfaces/External.sol";

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IMigratable } from "./interfaces/IMigratable.sol";
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+
+import { Migratable } from "../abstract/Migratable.sol";
+
 import { IParameterRegistry } from "./interfaces/IParameterRegistry.sol";
-
-import { Migratable } from "./Migratable.sol";
 
 contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */

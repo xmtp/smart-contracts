@@ -1,28 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-interface IAppchainGateway {
-    /* ============ Structs ============ */
-
-    /* ============ Events ============ */
-
+interface IAppChainGateway {
     /* ============ Custom Errors ============ */
 
     error ZeroRegistryAddress();
 
-    error ZeroSettlementGatewayAddress();
+    error ZeroSettlementChainGatewayAddress();
 
-    error ZeroAdminAddress();
-
-    error NotSettlementGateway();
-
-    error NotAdmin();
-
-    error ZeroImplementationAddress();
+    error NotSettlementChainGateway();
 
     /* ============ Initialization ============ */
 
-    function initialize(address admin_) external;
+    function initialize() external;
 
     /* ============ Interactive Functions ============ */
 
@@ -30,5 +20,5 @@ interface IAppchainGateway {
 
     /* ============ View/Pure Functions ============ */
 
-    function admin() external view returns (address admin_);
+    function migratorParameterKey() external pure returns (bytes memory key_);
 }

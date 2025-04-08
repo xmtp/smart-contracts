@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.28;
 
-import { CREATE3 } from "lib/solady/src/utils/CREATE3.sol";
+import { CREATE3 } from "../../lib/solady/src/utils/CREATE3.sol";
 
 import { ICREATE3Factory } from "./interfaces/ICREATE3Factory.sol";
 

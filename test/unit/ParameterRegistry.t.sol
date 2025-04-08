@@ -6,9 +6,9 @@ import { Test, console } from "../../lib/forge-std/src/Test.sol";
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC1967 } from "../../src/interfaces/IERC1967.sol";
-import { IParameterRegistry } from "../../src/interfaces/IParameterRegistry.sol";
-import { IMigratable } from "../../src/interfaces/IMigratable.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IParameterRegistry } from "../../src/any-chain/interfaces/IParameterRegistry.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 import { ParameterRegistryHarness } from "../utils/Harnesses.sol";
 import { MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
@@ -41,12 +41,6 @@ contract ParameterRegistryTests is Test, Utils {
                     abi.encodeWithSelector(IParameterRegistry.initialize.selector, admins_)
                 )
             )
-        );
-    }
-
-    function test_xxx() external {
-        console.logBytes32(
-            keccak256(abi.encode(uint256(keccak256("xmtp.storage.SettlementGateway")) - 1)) & ~bytes32(uint256(0xff))
         );
     }
 

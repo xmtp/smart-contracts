@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IMigratable } from "./IMigratable.sol";
+import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
 interface IParameterRegistry is IMigratable {
     /* ============ Events ============ */

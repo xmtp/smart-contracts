@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AccessControlUpgradeable } from "../lib/oz-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import { Initializable } from "../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from "../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { AccessControlUpgradeable } from "../../lib/oz-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import { UUPSUpgradeable } from "../../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 // TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.

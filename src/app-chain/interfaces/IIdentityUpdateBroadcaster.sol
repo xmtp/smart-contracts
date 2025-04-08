@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IPayloadBroadcaster } from "./IPayloadBroadcaster.sol";
+import { IPayloadBroadcaster } from "../../abstract/interfaces/IPayloadBroadcaster.sol";
 
 interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
     /* ============ Events ============ */

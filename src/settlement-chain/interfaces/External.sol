@@ -3,6 +3,14 @@ pragma solidity 0.8.28;
 
 // TODO: `calculateRetryableSubmissionFee` might actually be part of the counterpart inbox. Investigate.
 
+/**
+ * @title IERC20Like
+ * @notice Minimal interface for ERC20 token balance checks
+ */
+interface IERC20Like {
+    function balanceOf(address account) external view returns (uint256 balance);
+}
+
 interface IERC20InboxLike {
     function sendContractTransaction(
         uint256 gasLimit_,
@@ -61,12 +69,12 @@ interface IERC20InboxLike {
     ) external view returns (uint256 submissionFee_);
 }
 
-interface IAppchainGatewayLike {
+interface IAppChainGatewayLike {
     function receiveParameters(bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
 }
 
-interface IParameterRegistry {
-    function set(bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
-
+interface IParameterRegistryLike {
     function get(bytes[][] calldata keyChains_) external view returns (bytes32[] memory values_);
+
+    function get(bytes[] calldata keyChain_) external view returns (bytes32 value_);
 }

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { RateRegistry } from "../src/settlement-chain/RateRegistry.sol";
+
 import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
-import { RateRegistry } from "../src/RateRegistry.sol";
 
 contract DeployRateRegistry is DeployProxiedContract {
     function _getImplementationCreationCode() internal pure override returns (bytes memory) {
