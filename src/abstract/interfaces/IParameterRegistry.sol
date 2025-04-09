@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IMigratable } from "./IMigratable.sol";
 
 interface IParameterRegistry is IMigratable {
     /* ============ Events ============ */
@@ -29,6 +29,10 @@ interface IParameterRegistry is IMigratable {
     function set(bytes[] calldata keyChain_, bytes32 value_) external;
 
     /* ============ View/Pure Functions ============ */
+
+    function migratorParameterKey() external pure returns (bytes memory key_);
+
+    function adminParameterKey() external pure returns (bytes memory key_);
 
     function isAdmin(address account_) external view returns (bool isAdmin_);
 

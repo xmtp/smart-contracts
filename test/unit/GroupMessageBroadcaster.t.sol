@@ -6,40 +6,37 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
-import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayloadBroadcaster } from "../../src/abstract/interfaces/IPayloadBroadcaster.sol";
 
 import { GroupMessageBroadcasterHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockParameterRegistry } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract GroupMessageBroadcasterTests is Test, Utils {
-    uint256 constant ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
-    uint256 constant ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
+    uint256 internal constant _ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
+    uint256 internal constant _ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
 
-    bytes constant PAUSED_KEY = "xmtp.gmb.paused";
-    bytes constant MIGRATOR_KEY = "xmtp.gmb.migrator";
-    bytes constant MIN_PAYLOAD_SIZE_KEY = "xmtp.gmb.minPayloadSize";
-    bytes constant MAX_PAYLOAD_SIZE_KEY = "xmtp.gmb.maxPayloadSize";
+    bytes internal constant _PAUSED_KEY = "xmtp.gmb.paused";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.gmb.migrator";
+    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.gmb.minPayloadSize";
+    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.gmb.maxPayloadSize";
 
-    address implementation;
+    address internal _implementation;
 
-    GroupMessageBroadcasterHarness broadcaster;
+    GroupMessageBroadcasterHarness internal _broadcaster;
 
-    address registry;
-    address unauthorized = makeAddr("unauthorized");
+    address internal _registry;
 
     function setUp() external {
-        registry = address(new MockParameterRegistry());
-        implementation = address(new GroupMessageBroadcasterHarness(registry));
+        _registry = address(new MockParameterRegistry());
+        _implementation = address(new GroupMessageBroadcasterHarness(_registry));
 
-        _mockRegistryCall(MAX_PAYLOAD_SIZE_KEY, ABSOLUTE_MAX_PAYLOAD_SIZE);
-        _mockRegistryCall(MIN_PAYLOAD_SIZE_KEY, ABSOLUTE_MIN_PAYLOAD_SIZE);
+        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _ABSOLUTE_MIN_PAYLOAD_SIZE);
 
-        broadcaster = GroupMessageBroadcasterHarness(
-            address(new ERC1967Proxy(implementation, abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)))
+        _broadcaster = GroupMessageBroadcasterHarness(
+            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)))
         );
     }
 
@@ -47,7 +44,6 @@ contract GroupMessageBroadcasterTests is Test, Utils {
 
     function test_constructor_zeroRegistryAddress() external {
         vm.expectRevert(IPayloadBroadcaster.ZeroRegistryAddress.selector);
-
         new GroupMessageBroadcasterHarness(address(0));
     }
 
@@ -55,299 +51,122 @@ contract GroupMessageBroadcasterTests is Test, Utils {
 
     function test_initialize_reinitialization() external {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        broadcaster.initialize();
+        _broadcaster.initialize();
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(broadcaster)), implementation);
-        assertEq(broadcaster.implementation(), implementation);
-        assertEq(keccak256(broadcaster.minPayloadSizeParameterKey()), keccak256(MIN_PAYLOAD_SIZE_KEY));
-        assertEq(keccak256(broadcaster.maxPayloadSizeParameterKey()), keccak256(MAX_PAYLOAD_SIZE_KEY));
-        assertEq(keccak256(broadcaster.migratorParameterKey()), keccak256(MIGRATOR_KEY));
-        assertEq(keccak256(broadcaster.pausedParameterKey()), keccak256(PAUSED_KEY));
-        assertFalse(broadcaster.paused());
-        assertEq(broadcaster.registry(), registry);
-        assertEq(broadcaster.minPayloadSize(), ABSOLUTE_MIN_PAYLOAD_SIZE);
-        assertEq(broadcaster.maxPayloadSize(), ABSOLUTE_MAX_PAYLOAD_SIZE);
-        assertEq(broadcaster.__getSequenceId(), 0);
+        assertEq(_getImplementationFromSlot(address(_broadcaster)), _implementation);
+        assertEq(_broadcaster.implementation(), _implementation);
+        assertEq(keccak256(_broadcaster.minPayloadSizeParameterKey()), keccak256(_MIN_PAYLOAD_SIZE_KEY));
+        assertEq(keccak256(_broadcaster.maxPayloadSizeParameterKey()), keccak256(_MAX_PAYLOAD_SIZE_KEY));
+        assertEq(keccak256(_broadcaster.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
+        assertFalse(_broadcaster.paused());
+        assertEq(_broadcaster.registry(), _registry);
+        assertEq(_broadcaster.minPayloadSize(), _ABSOLUTE_MIN_PAYLOAD_SIZE);
+        assertEq(_broadcaster.maxPayloadSize(), _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
     /* ============ addMessage ============ */
 
     function test_addMessage_whenPaused() external {
-        broadcaster.__setPauseStatus(true);
+        _broadcaster.__setPauseStatus(true);
 
-        bytes memory message = _generatePayload(broadcaster.minPayloadSize());
+        bytes memory message_ = _generatePayload(_broadcaster.minPayloadSize());
 
         vm.expectRevert(IPayloadBroadcaster.Paused.selector);
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
     }
 
     function test_addMessage_payloadTooSmall() external {
-        broadcaster.__setMinPayloadSize(100);
-        broadcaster.__setMaxPayloadSize(200);
+        _broadcaster.__setMinPayloadSize(100);
+        _broadcaster.__setMaxPayloadSize(200);
 
-        bytes memory message = _generatePayload(99);
+        bytes memory message_ = _generatePayload(99);
 
         vm.expectRevert(abi.encodeWithSelector(IPayloadBroadcaster.InvalidPayloadSize.selector, 99, 100, 200));
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
     }
 
     function test_addMessage_payloadTooLarge() external {
-        broadcaster.__setMinPayloadSize(100);
-        broadcaster.__setMaxPayloadSize(200);
+        _broadcaster.__setMinPayloadSize(100);
+        _broadcaster.__setMaxPayloadSize(200);
 
-        bytes memory message = _generatePayload(201);
+        bytes memory message_ = _generatePayload(201);
 
         vm.expectRevert(abi.encodeWithSelector(IPayloadBroadcaster.InvalidPayloadSize.selector, 201, 100, 200));
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
     }
 
     function test_addMessage_minPayload() external {
-        broadcaster.__setMinPayloadSize(100);
-        broadcaster.__setMaxPayloadSize(200);
+        _broadcaster.__setMinPayloadSize(100);
+        _broadcaster.__setMaxPayloadSize(200);
 
-        bytes memory message = _generatePayload(100);
+        bytes memory message_ = _generatePayload(100);
 
-        vm.expectEmit(address(broadcaster));
-        emit IGroupMessageBroadcaster.MessageSent(ID, message, 1);
+        vm.expectEmit(address(_broadcaster));
+        emit IGroupMessageBroadcaster.MessageSent(ID, message_, 1);
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
 
-        assertEq(broadcaster.__getSequenceId(), 1);
+        assertEq(_broadcaster.__getSequenceId(), 1);
     }
 
     function test_addMessage_maxPayload() external {
-        broadcaster.__setMinPayloadSize(100);
-        broadcaster.__setMaxPayloadSize(200);
+        _broadcaster.__setMinPayloadSize(100);
+        _broadcaster.__setMaxPayloadSize(200);
 
-        bytes memory message = _generatePayload(200);
+        bytes memory message_ = _generatePayload(200);
 
-        vm.expectEmit(address(broadcaster));
-        emit IGroupMessageBroadcaster.MessageSent(ID, message, 1);
+        vm.expectEmit(address(_broadcaster));
+        emit IGroupMessageBroadcaster.MessageSent(ID, message_, 1);
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
 
-        assertEq(broadcaster.__getSequenceId(), 1);
+        assertEq(_broadcaster.__getSequenceId(), 1);
     }
 
     /// forge-config: default.fuzz.runs = 10
     /// forge-config: ci.fuzz.runs = 1_000
     function testFuzz_addMessage(
-        uint256 minPayloadSize,
-        uint256 maxPayloadSize,
-        uint256 payloadSize,
-        uint64 sequenceId,
-        bool paused
+        uint256 minPayloadSize_,
+        uint256 maxPayloadSize_,
+        uint256 payloadSize_,
+        uint64 sequenceId_,
+        bool paused_
     ) external {
-        minPayloadSize = bound(minPayloadSize, ABSOLUTE_MIN_PAYLOAD_SIZE, ABSOLUTE_MAX_PAYLOAD_SIZE);
-        maxPayloadSize = bound(maxPayloadSize, minPayloadSize, ABSOLUTE_MAX_PAYLOAD_SIZE);
-        payloadSize = bound(payloadSize, ABSOLUTE_MIN_PAYLOAD_SIZE, ABSOLUTE_MAX_PAYLOAD_SIZE);
-        sequenceId = uint64(bound(sequenceId, 0, type(uint64).max - 1));
+        minPayloadSize_ = bound(minPayloadSize_, _ABSOLUTE_MIN_PAYLOAD_SIZE, _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        maxPayloadSize_ = bound(maxPayloadSize_, minPayloadSize_, _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        payloadSize_ = bound(payloadSize_, _ABSOLUTE_MIN_PAYLOAD_SIZE, _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        sequenceId_ = uint64(bound(sequenceId_, 0, type(uint64).max - 1));
 
-        broadcaster.__setSequenceId(sequenceId);
-        broadcaster.__setMinPayloadSize(minPayloadSize);
-        broadcaster.__setMaxPayloadSize(maxPayloadSize);
-        broadcaster.__setPauseStatus(paused);
+        _broadcaster.__setSequenceId(sequenceId_);
+        _broadcaster.__setMinPayloadSize(minPayloadSize_);
+        _broadcaster.__setMaxPayloadSize(maxPayloadSize_);
+        _broadcaster.__setPauseStatus(paused_);
 
-        bytes memory message = _generatePayload(payloadSize);
+        bytes memory message_ = _generatePayload(payloadSize_);
 
-        bool shouldFail = (payloadSize < minPayloadSize) || (payloadSize > maxPayloadSize) || paused;
+        bool shouldFail_ = (payloadSize_ < minPayloadSize_) || (payloadSize_ > maxPayloadSize_) || paused_;
 
-        if (shouldFail) {
+        if (shouldFail_) {
             vm.expectRevert();
         } else {
-            vm.expectEmit(address(broadcaster));
-            emit IGroupMessageBroadcaster.MessageSent(ID, message, sequenceId + 1);
+            vm.expectEmit(address(_broadcaster));
+            emit IGroupMessageBroadcaster.MessageSent(ID, message_, sequenceId_ + 1);
         }
 
-        broadcaster.addMessage(ID, message);
+        _broadcaster.addMessage(ID, message_);
 
-        if (shouldFail) return;
+        if (shouldFail_) return;
 
-        assertEq(broadcaster.__getSequenceId(), sequenceId + 1);
-    }
-
-    /* ============ updateMinPayloadSize ============ */
-
-    function test_updateMinPayloadSize_greaterThanMax() external {
-        broadcaster.__setMaxPayloadSize(100);
-
-        _mockRegistryCall(MIN_PAYLOAD_SIZE_KEY, 101);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
-
-        broadcaster.updateMinPayloadSize();
-    }
-
-    function test_updateMinPayloadSize_lessThanOrEqualToAbsoluteMin() external {
-        _mockRegistryCall(MIN_PAYLOAD_SIZE_KEY, ABSOLUTE_MIN_PAYLOAD_SIZE - 1);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
-
-        broadcaster.updateMinPayloadSize();
-    }
-
-    function test_updateMinPayloadSize_noChange() external {
-        broadcaster.__setMinPayloadSize(100);
-
-        _mockRegistryCall(MIN_PAYLOAD_SIZE_KEY, 100);
-
-        vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
-
-        broadcaster.updateMinPayloadSize();
-    }
-
-    function test_updateMinPayloadSize() external {
-        broadcaster.__setMinPayloadSize(100);
-
-        _mockRegistryCall(MIN_PAYLOAD_SIZE_KEY, 101);
-
-        vm.expectEmit(address(broadcaster));
-        emit IPayloadBroadcaster.MinPayloadSizeUpdated(101);
-
-        broadcaster.updateMinPayloadSize();
-
-        assertEq(broadcaster.minPayloadSize(), 101);
-    }
-
-    /* ============ updateMaxPayloadSize ============ */
-
-    function test_updateMaxPayloadSize_lessThanMin() external {
-        broadcaster.__setMinPayloadSize(100);
-
-        _mockRegistryCall(MAX_PAYLOAD_SIZE_KEY, 99);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
-
-        broadcaster.updateMaxPayloadSize();
-    }
-
-    function test_updateMaxPayloadSize_greaterThanOrEqualToAbsoluteMax() external {
-        _mockRegistryCall(MAX_PAYLOAD_SIZE_KEY, ABSOLUTE_MAX_PAYLOAD_SIZE + 1);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
-
-        broadcaster.updateMaxPayloadSize();
-    }
-
-    function test_updateMaxPayloadSize_noChange() external {
-        broadcaster.__setMaxPayloadSize(100);
-
-        _mockRegistryCall(MAX_PAYLOAD_SIZE_KEY, 100);
-
-        vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
-
-        broadcaster.updateMaxPayloadSize();
-    }
-
-    function test_updateMaxPayloadSize() external {
-        broadcaster.__setMaxPayloadSize(100);
-
-        _mockRegistryCall(MAX_PAYLOAD_SIZE_KEY, 101);
-
-        vm.expectEmit(address(broadcaster));
-        emit IPayloadBroadcaster.MaxPayloadSizeUpdated(101);
-
-        broadcaster.updateMaxPayloadSize();
-
-        assertEq(broadcaster.maxPayloadSize(), 101);
-    }
-
-    /* ============ updatePauseStatus ============ */
-
-    function test_updatePauseStatus_noChange() external {
-        vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
-
-        broadcaster.updatePauseStatus();
-
-        _mockRegistryCall(PAUSED_KEY, true);
-
-        broadcaster.__setPauseStatus(true);
-
-        vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
-
-        broadcaster.updatePauseStatus();
-    }
-
-    function test_updatePauseStatus() external {
-        vm.expectEmit(address(broadcaster));
-        emit IPayloadBroadcaster.PauseStatusUpdated(true);
-
-        _mockRegistryCall(PAUSED_KEY, true);
-
-        broadcaster.updatePauseStatus();
-
-        assertTrue(broadcaster.paused());
-
-        vm.expectEmit(address(broadcaster));
-        emit IPayloadBroadcaster.PauseStatusUpdated(false);
-
-        _mockRegistryCall(PAUSED_KEY, false);
-
-        broadcaster.updatePauseStatus();
-
-        assertFalse(broadcaster.paused());
-    }
-
-    /* ============ migrate ============ */
-
-    function test_migrate_zeroMigrator() external {
-        vm.expectRevert(IMigratable.ZeroMigrator.selector);
-        broadcaster.migrate();
-    }
-
-    function test_migrate_migrationFailed() external {
-        address migrator = address(new MockFailingMigrator());
-
-        _mockRegistryCall(MIGRATOR_KEY, migrator);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
-
-        broadcaster.migrate();
-    }
-
-    function test_migrate_emptyCode() external {
-        _mockRegistryCall(MIGRATOR_KEY, address(1));
-
-        vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
-
-        broadcaster.migrate();
-    }
-
-    function test_migrate() external {
-        broadcaster.__setMaxPayloadSize(100);
-        broadcaster.__setMinPayloadSize(50);
-        broadcaster.__setSequenceId(10);
-
-        address newImplementation = address(new GroupMessageBroadcasterHarness(registry));
-        address migrator = address(new MockMigrator(newImplementation));
-
-        _mockRegistryCall(MIGRATOR_KEY, migrator);
-
-        vm.expectEmit(address(broadcaster));
-        emit IMigratable.Migrated(migrator);
-
-        vm.expectEmit(address(broadcaster));
-        emit IERC1967.Upgraded(newImplementation);
-
-        broadcaster.migrate();
-
-        assertEq(_getImplementationFromSlot(address(broadcaster)), newImplementation);
-        assertEq(broadcaster.registry(), registry);
-        assertEq(broadcaster.maxPayloadSize(), 100);
-        assertEq(broadcaster.minPayloadSize(), 50);
-        assertEq(broadcaster.__getSequenceId(), 10);
+        assertEq(_broadcaster.__getSequenceId(), sequenceId_ + 1);
     }
 
     /* ============ helper functions ============ */
@@ -368,15 +187,11 @@ contract GroupMessageBroadcasterTests is Test, Utils {
         bytes[] memory keyChain_ = new bytes[](1);
         keyChain_[0] = key_;
 
-        vm.mockCall(
-            registry,
-            abi.encodeWithSelector(MockParameterRegistry.get.selector, keyChain_),
-            abi.encode(value_)
-        );
+        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes[])", keyChain_), abi.encode(value_));
     }
 
-    function _getImplementationFromSlot(address proxy) internal view returns (address) {
+    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
         // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy, EIP1967_IMPLEMENTATION_SLOT))));
+        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

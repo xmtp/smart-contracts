@@ -6,7 +6,7 @@ out = "out"
 libs = ["lib"]
 gas_reports = ["*"]
 optimizer = true
-optimizer_runs = 10_000
+optimizer_runs = 999999
 fs_permissions = [
     { access = "read-write", path = "deployments/anvil_localnet"},
     { access = "read-write", path = "deployments/xmtp_testnet"},

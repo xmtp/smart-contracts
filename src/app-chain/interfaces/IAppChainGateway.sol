@@ -4,11 +4,17 @@ pragma solidity 0.8.28;
 interface IAppChainGateway {
     /* ============ Custom Errors ============ */
 
+    event ParametersReceived(uint256 indexed nonce, bytes[][] keyChains);
+
+    /* ============ Custom Errors ============ */
+
     error ZeroRegistryAddress();
 
     error ZeroSettlementChainGatewayAddress();
 
     error NotSettlementChainGateway();
+
+    error EmptyKeyChain();
 
     /* ============ Initialization ============ */
 
@@ -16,7 +22,7 @@ interface IAppChainGateway {
 
     /* ============ Interactive Functions ============ */
 
-    function receiveParameters(bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
 
     /* ============ View/Pure Functions ============ */
 

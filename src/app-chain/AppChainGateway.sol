@@ -11,11 +11,10 @@ import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: Message ordering.
-// TODO: Admin set/reset and event.
-
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
-    /* ============ Constants ============ */
+    /* ============ Constants/Immutables ============ */
+
+    bytes internal constant _DELIMITER = bytes(".");
 
     address public immutable registry;
     address public immutable settlementChainGateway;
@@ -25,7 +24,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @custom:storage-location erc7201:xmtp.storage.AppChainGateway
     struct AppChainGatewayStorage {
-        uint256 _placeholder;
+        mapping(bytes key => uint256 nonce) keyNonces;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.AppChainGateway")) - 1)) & ~bytes32(uint256(0xff))
@@ -64,10 +63,24 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Interactive Functions ============ */
 
     function receiveParameters(
+        uint256 nonce_,
         bytes[][] calldata keyChains_,
         bytes32[] calldata values_
     ) external onlySettlementChainGateway {
-        IParameterRegistryLike(registry).set(keyChains_, values_);
+        AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
+
+        emit ParametersReceived(nonce_, keyChains_);
+
+        for (uint256 index_; index_ < keyChains_.length; ++index_) {
+            bytes[] calldata keyChain_ = keyChains_[index_];
+            bytes memory key_ = _getKey(keyChain_);
+
+            if ($.keyNonces[key_] >= nonce_) continue;
+
+            $.keyNonces[key_] = nonce_;
+
+            IParameterRegistryLike(registry).set(keyChain_, values_[index_]);
+        }
     }
 
     /// @inheritdoc IMigratable
@@ -82,6 +95,19 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     }
 
     /* ============ Internal View/Pure Functions ============ */
+
+    function _getKey(bytes[] memory keyChain_) internal pure returns (bytes memory key_) {
+        require(keyChain_.length > 0, EmptyKeyChain());
+
+        // TODO: Perhaps compute the final size of the key and allocate the memory in one go.
+        for (uint256 index_; index_ < keyChain_.length; ++index_) {
+            key_ = index_ == 0 ? keyChain_[index_] : _combineKeyChainParts(key_, keyChain_[index_]);
+        }
+    }
+
+    function _combineKeyChainParts(bytes memory left_, bytes memory right_) internal pure returns (bytes memory key_) {
+        return abi.encodePacked(left_, _DELIMITER, right_);
+    }
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
         bytes[] memory keyChain_ = new bytes[](1);

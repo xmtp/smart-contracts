@@ -2,21 +2,29 @@
 pragma solidity 0.8.28;
 
 contract MockErc20 {
-    function transfer(address, uint256) external pure returns (bool success_) {
+    function approve(address, uint256) external returns (bool success_) {
         return true;
     }
 
-    function transferFrom(address, address, uint256) external pure returns (bool success_) {
+    function transfer(address, uint256) external returns (bool success_) {
         return true;
     }
 
-    function balanceOf(address) external pure returns (uint256 balance_) {
+    function transferFrom(address, address, uint256) external returns (bool success_) {
+        return true;
+    }
+
+    function balanceOf(address) external view returns (uint256 balance_) {
         return 0;
     }
 }
 
 contract MockParameterRegistry {
-    function get(bytes[] calldata keyChain_) external pure returns (bytes32 value_) {}
+    function set(bytes[] calldata keyChain_, bytes32 values) external {}
+
+    function get(bytes[][] calldata keyChains_) external returns (bytes32[] memory values_) {}
+
+    function get(bytes[] calldata keyChain_) external returns (bytes32 value_) {}
 }
 
 contract MockMigrator {
@@ -43,4 +51,28 @@ contract MockFailingMigrator {
     fallback() external payable {
         revert Failed();
     }
+}
+
+contract MockERC20Inbox {
+    function depositERC20(uint256 amount_) external returns (uint256 messageNumber_) {}
+
+    function sendContractTransaction(
+        uint256 gasLimit_,
+        uint256 maxFeePerGas_,
+        address to_,
+        uint256 value_,
+        bytes calldata data_
+    ) external returns (uint256 messageNumber_) {}
+
+    function createRetryableTicket(
+        address to_,
+        uint256 l2CallValue_,
+        uint256 maxSubmissionCost_,
+        address excessFeeRefundAddress_,
+        address callValueRefundAddress_,
+        uint256 gasLimit_,
+        uint256 maxFeePerGas_,
+        uint256 tokenTotalFeeAmount_,
+        bytes calldata data_
+    ) external returns (uint256 messageNumber_) {}
 }

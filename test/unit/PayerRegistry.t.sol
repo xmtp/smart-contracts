@@ -482,6 +482,7 @@ contract PayerRegistryTests is Test, Utils {
         uint96[] memory fees = new uint96[](1);
         fees[0] = 10e6;
 
+        // TODO: `_expectAndMockCall`.
         vm.mockCall(_token, abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)), abi.encode(30e6));
 
         vm.expectEmit(address(_registry));
@@ -512,6 +513,7 @@ contract PayerRegistryTests is Test, Utils {
         fees[1] = 20e6;
         fees[2] = 30e6;
 
+        // TODO: `_expectAndMockCall`.
         vm.mockCall(
             _token,
             abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),

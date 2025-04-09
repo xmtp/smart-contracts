@@ -3,16 +3,16 @@ pragma solidity 0.8.28;
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IMigratable } from "./interfaces/IMigratable.sol";
 
-import { Migratable } from "../abstract/Migratable.sol";
+import { Migratable } from "./Migratable.sol";
 
 import { IParameterRegistry } from "./interfaces/IParameterRegistry.sol";
 
-contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
+abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
-    bytes internal constant _DOT = bytes(".");
+    bytes internal constant _DELIMITER = bytes(".");
 
     /* ============ UUPS Storage ============ */
 
@@ -78,13 +78,9 @@ contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
 
     /* ============ View/Pure Functions ============ */
 
-    function migratorParameterKey() public pure virtual returns (bytes memory key_) {
-        return "xmtp.appchain.pr.migrator";
-    }
+    function migratorParameterKey() public pure virtual returns (bytes memory key_);
 
-    function adminParameterKey() public pure virtual returns (bytes memory key_) {
-        return "xmtp.appchain.pr.isAdmin";
-    }
+    function adminParameterKey() public pure virtual returns (bytes memory key_);
 
     function isAdmin(address account_) public view returns (bool isAdmin_) {
         bytes memory key_ = _combineKeyChainParts(adminParameterKey(), abi.encode(account_));
@@ -125,7 +121,7 @@ contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
     }
 
     function _combineKeyChainParts(bytes memory left_, bytes memory right_) internal pure returns (bytes memory key_) {
-        return abi.encodePacked(left_, _DOT, right_);
+        return abi.encodePacked(left_, _DELIMITER, right_);
     }
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {

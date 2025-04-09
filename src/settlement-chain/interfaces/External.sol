@@ -70,7 +70,7 @@ interface IERC20InboxLike {
 }
 
 interface IAppChainGatewayLike {
-    function receiveParameters(bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
 }
 
 interface IParameterRegistryLike {

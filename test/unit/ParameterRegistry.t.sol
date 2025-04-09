@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test, console } from "../../lib/forge-std/src/Test.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
-import { IParameterRegistry } from "../../src/any-chain/interfaces/IParameterRegistry.sol";
+import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 import { ParameterRegistryHarness } from "../utils/Harnesses.sol";
@@ -15,9 +15,9 @@ import { MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract ParameterRegistryTests is Test, Utils {
-    bytes internal constant _DOT = bytes(".");
-    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.appchain.pr.isAdmin";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.appchain.pr.migrator";
+    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.pr.isAdmin";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.pr.migrator";
 
     address internal _implementation;
 
@@ -60,12 +60,12 @@ contract ParameterRegistryTests is Test, Utils {
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DOT, abi.encode(_admin1))),
+            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin1))),
             bytes32(uint256(1))
         );
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DOT, abi.encode(_admin2))),
+            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin2))),
             bytes32(uint256(1))
         );
     }
@@ -102,30 +102,33 @@ contract ParameterRegistryTests is Test, Utils {
         keyChains_[0] = new bytes[](4);
         keyChains_[0][0] = abi.encodePacked("this");
         keyChains_[0][1] = abi.encodePacked("is");
-        keyChains_[0][2] = abi.encodePacked("one");
-        keyChains_[0][3] = abi.encodePacked("test");
+        keyChains_[0][2] = abi.encodePacked("a");
+        keyChains_[0][3] = abi.encodePacked("parameter");
 
         keyChains_[1] = new bytes[](4);
         keyChains_[1][0] = abi.encodePacked("this");
         keyChains_[1][1] = abi.encodePacked("is");
         keyChains_[1][2] = abi.encodePacked("another");
-        keyChains_[1][3] = abi.encodePacked("test");
+        keyChains_[1][3] = abi.encodePacked("parameter");
 
         bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(1010101));
         values_[1] = bytes32(uint256(2020202));
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet(abi.encodePacked("this.is.one.test"), keyChains_[0], values_[0]);
+        emit IParameterRegistry.ParameterSet(abi.encodePacked("this.is.a.parameter"), keyChains_[0], values_[0]);
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet(abi.encodePacked("this.is.another.test"), keyChains_[1], values_[1]);
+        emit IParameterRegistry.ParameterSet(abi.encodePacked("this.is.another.parameter"), keyChains_[1], values_[1]);
 
         vm.prank(_admin1);
         _registry.set(keyChains_, values_);
 
-        assertEq(_registry.__getRegistryParameter(abi.encodePacked("this.is.one.test")), bytes32(uint256(1010101)));
-        assertEq(_registry.__getRegistryParameter(abi.encodePacked("this.is.another.test")), bytes32(uint256(2020202)));
+        assertEq(_registry.__getRegistryParameter(abi.encodePacked("this.is.a.parameter")), bytes32(uint256(1010101)));
+        assertEq(
+            _registry.__getRegistryParameter(abi.encodePacked("this.is.another.parameter")),
+            bytes32(uint256(2020202))
+        );
     }
 
     /* ============ set one ============ */
@@ -147,15 +150,19 @@ contract ParameterRegistryTests is Test, Utils {
         keyChain_[0] = abi.encodePacked("this");
         keyChain_[1] = abi.encodePacked("is");
         keyChain_[2] = abi.encodePacked("a");
-        keyChain_[3] = abi.encodePacked("test");
+        keyChain_[3] = abi.encodePacked("parameter");
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet(abi.encodePacked("this.is.a.test"), keyChain_, bytes32(uint256(1010101)));
+        emit IParameterRegistry.ParameterSet(
+            abi.encodePacked("this.is.a.parameter"),
+            keyChain_,
+            bytes32(uint256(1010101))
+        );
 
         vm.prank(_admin1);
         _registry.set(keyChain_, bytes32(uint256(1010101)));
 
-        assertEq(_registry.__getRegistryParameter(abi.encodePacked("this.is.a.test")), bytes32(uint256(1010101)));
+        assertEq(_registry.__getRegistryParameter(abi.encodePacked("this.is.a.parameter")), bytes32(uint256(1010101)));
     }
 
     /* ============ migrate ============ */
@@ -208,12 +215,12 @@ contract ParameterRegistryTests is Test, Utils {
         assertEq(_registry.implementation(), newImplementation_);
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DOT, abi.encode(_admin1))),
+            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin1))),
             bytes32(uint256(1))
         );
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DOT, abi.encode(_admin2))),
+            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin2))),
             bytes32(uint256(1))
         );
 
@@ -226,7 +233,7 @@ contract ParameterRegistryTests is Test, Utils {
         assertFalse(_registry.isAdmin(address(1)));
 
         _registry.__setRegistryParameter(
-            abi.encodePacked(_ADMIN_PARAMETER_KEY, _DOT, abi.encode(address(1))),
+            abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(address(1))),
             bytes32(uint256(1))
         );
 
@@ -251,21 +258,21 @@ contract ParameterRegistryTests is Test, Utils {
         keyChains_[0] = new bytes[](4);
         keyChains_[0][0] = abi.encodePacked("this");
         keyChains_[0][1] = abi.encodePacked("is");
-        keyChains_[0][2] = abi.encodePacked("one");
-        keyChains_[0][3] = abi.encodePacked("test");
+        keyChains_[0][2] = abi.encodePacked("a");
+        keyChains_[0][3] = abi.encodePacked("parameter");
 
         keyChains_[1] = new bytes[](4);
         keyChains_[1][0] = abi.encodePacked("this");
         keyChains_[1][1] = abi.encodePacked("is");
         keyChains_[1][2] = abi.encodePacked("another");
-        keyChains_[1][3] = abi.encodePacked("test");
+        keyChains_[1][3] = abi.encodePacked("parameter");
 
         bytes32[] memory expectedValues_ = new bytes32[](2);
         expectedValues_[0] = bytes32(uint256(1010101));
         expectedValues_[1] = bytes32(uint256(2020202));
 
-        _registry.__setRegistryParameter(abi.encodePacked("this.is.one.test"), expectedValues_[0]);
-        _registry.__setRegistryParameter(abi.encodePacked("this.is.another.test"), expectedValues_[1]);
+        _registry.__setRegistryParameter(abi.encodePacked("this.is.a.parameter"), expectedValues_[0]);
+        _registry.__setRegistryParameter(abi.encodePacked("this.is.another.parameter"), expectedValues_[1]);
 
         bytes32[] memory values_ = _registry.get(keyChains_);
 
@@ -286,9 +293,9 @@ contract ParameterRegistryTests is Test, Utils {
         keyChain_[0] = abi.encodePacked("this");
         keyChain_[1] = abi.encodePacked("is");
         keyChain_[2] = abi.encodePacked("a");
-        keyChain_[3] = abi.encodePacked("test");
+        keyChain_[3] = abi.encodePacked("parameter");
 
-        _registry.__setRegistryParameter(abi.encodePacked("this.is.a.test"), bytes32(uint256(1010101)));
+        _registry.__setRegistryParameter(abi.encodePacked("this.is.a.parameter"), bytes32(uint256(1010101)));
 
         assertEq(_registry.get(keyChain_), bytes32(uint256(1010101)));
     }

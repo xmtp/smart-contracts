@@ -14,7 +14,7 @@
     "scripts": {
         "build": "forge build",
         "clean": "forge clean",
-        "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 2000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
+        "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 3000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
         "gas-report": "forge test --gas-report --gas-limit 2000000000 > gasreport.ansi",
         "doc": "forge doc --serve --port 4000",
         "lint-staged": "lint-staged",

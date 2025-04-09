@@ -4,6 +4,17 @@ pragma solidity 0.8.28;
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
 interface ISettlementChainGateway is IMigratable {
+    /* ============ Events ============ */
+
+    event SenderFundsDeposited(address indexed inbox_, uint256 indexed messageNumber, uint256 amount);
+
+    event ParametersSent(
+        address indexed inbox_,
+        uint256 indexed messageNumber,
+        uint256 indexed nonce,
+        bytes[][] keyChains_
+    );
+
     /* ============ Custom Errors ============ */
 
     error ZeroRegistryAddress();
@@ -15,6 +26,8 @@ interface ISettlementChainGateway is IMigratable {
     error ApproveFailed();
 
     error TransferFailed();
+
+    error NoInboxes();
 
     error NoKeyChains();
 

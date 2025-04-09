@@ -12,21 +12,18 @@ import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.so
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: Message ordering.
-
 contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
     address public immutable registry;
     address public immutable appChainGateway;
-    address public immutable appChainAlias;
     address public immutable appChainNativeToken;
 
     /* ============ UUPS Storage ============ */
 
     /// @custom:storage-location erc7201:xmtp.storage.SettlementChainGateway
     struct SettlementChainGatewayStorage {
-        uint256 _placeholder;
+        uint256 nonce;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.SettlementChainGateway")) - 1)) & ~bytes32(uint256(0xff))
@@ -46,8 +43,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         require(_isNotZero(registry = registry_), ZeroRegistryAddress());
         require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
         require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeTokenAddress());
-
-        appChainAlias = AddressAliasHelper.applyL1ToL2Alias(address(this));
     }
 
     /* ============ Initialization ============ */
@@ -60,9 +55,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     function depositSenderFunds(address inbox_, uint256 amount_) external {
         require(ERC20Helper.transferFrom(appChainNativeToken, msg.sender, address(this), amount_), TransferFailed());
-        require(ERC20Helper.approve(appChainNativeToken, inbox_, type(uint256).max), ApproveFailed());
+        require(ERC20Helper.approve(appChainNativeToken, inbox_, amount_), ApproveFailed());
 
-        IERC20InboxLike(inbox_).depositERC20(amount_);
+        uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
+
+        emit SenderFundsDeposited(inbox_, messageNumber_, amount_);
     }
 
     function sendParameters(
@@ -71,7 +68,22 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external {
-        _sendParameters(inboxes_, gasLimit_, gasPrice_, _getEncodedParameters(keyChains_));
+        require(inboxes_.length > 0, NoInboxes());
+
+        uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
+
+        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
+                gasLimit_: gasLimit_,
+                maxFeePerGas_: gasPrice_,
+                to_: appChainGateway,
+                value_: 0,
+                data_: data_
+            });
+
+            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
+        }
     }
 
     function sendParametersAsRetryableTickets(
@@ -82,14 +94,27 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 maxSubmissionCost_,
         uint256 nativeTokensToSend_
     ) external {
-        _sendParametersAsRetryableTickets(
-            inboxes_,
-            gasLimit_,
-            gasPrice_,
-            maxSubmissionCost_,
-            nativeTokensToSend_,
-            _getEncodedParameters(keyChains_)
-        );
+        require(inboxes_.length > 0, NoInboxes());
+
+        uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
+        address appChainAlias_ = appChainAlias();
+
+        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
+                to_: appChainGateway,
+                l2CallValue_: 0,
+                maxSubmissionCost_: maxSubmissionCost_,
+                excessFeeRefundAddress_: appChainAlias_,
+                callValueRefundAddress_: appChainAlias_,
+                gasLimit_: gasLimit_,
+                maxFeePerGas_: gasPrice_,
+                tokenTotalFeeAmount_: nativeTokensToSend_,
+                data_: data_
+            });
+
+            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
+        }
     }
 
     /// @inheritdoc IMigratable
@@ -99,50 +124,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ View/Pure Functions ============ */
 
+    function appChainAlias() public view returns (address alias_) {
+        return AddressAliasHelper.applyL1ToL2Alias(address(this));
+    }
+
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
         return "xmtp.scg.migrator";
-    }
-
-    /* ============ Internal Interactive Functions ============ */
-
-    function _sendParameters(
-        address[] calldata inboxes_,
-        uint256 gasLimit_,
-        uint256 gasPrice_,
-        bytes memory data_
-    ) internal {
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
-                gasLimit_: gasLimit_,
-                maxFeePerGas_: gasPrice_,
-                to_: appChainGateway,
-                value_: 0,
-                data_: data_
-            });
-        }
-    }
-
-    function _sendParametersAsRetryableTickets(
-        address[] calldata inboxes_,
-        uint256 gasLimit_,
-        uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
-        uint256 nativeTokensToSend_,
-        bytes memory data_
-    ) internal {
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
-                to_: appChainGateway,
-                l2CallValue_: 0,
-                maxSubmissionCost_: maxSubmissionCost_,
-                excessFeeRefundAddress_: appChainAlias,
-                callValueRefundAddress_: appChainAlias,
-                gasLimit_: gasLimit_,
-                maxFeePerGas_: gasPrice_,
-                tokenTotalFeeAmount_: nativeTokensToSend_,
-                data_: data_
-            });
-        }
     }
 
     /* ============ Internal View/Pure Functions ============ */
@@ -154,13 +141,16 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return IParameterRegistryLike(registry).get(keyChain_);
     }
 
-    function _getEncodedParameters(bytes[][] calldata keyChains_) internal view returns (bytes memory encoded_) {
+    function _getEncodedParameters(
+        uint256 nonce_,
+        bytes[][] calldata keyChains_
+    ) internal view returns (bytes memory encoded_) {
         require(keyChains_.length > 0, NoKeyChains());
 
         return
             abi.encodeCall(
                 IAppChainGatewayLike.receiveParameters,
-                (keyChains_, IParameterRegistryLike(registry).get(keyChains_))
+                (nonce_, keyChains_, IParameterRegistryLike(registry).get(keyChains_))
             );
     }
 
