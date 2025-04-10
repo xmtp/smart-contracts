@@ -25,6 +25,8 @@ contract MockParameterRegistry {
     function get(bytes[][] calldata keyChains_) external returns (bytes32[] memory values_) {}
 
     function get(bytes[] calldata keyChain_) external returns (bytes32 value_) {}
+
+    function get(bytes calldata key_) external returns (bytes32 value_) {}
 }
 
 contract MockMigrator {

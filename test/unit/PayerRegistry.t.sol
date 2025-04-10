@@ -419,7 +419,7 @@ contract PayerRegistryTests is Test, Utils {
         _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), hex"");
+        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), "");
 
         vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
 
@@ -464,7 +464,7 @@ contract PayerRegistryTests is Test, Utils {
 
     function test_settleUsage_erc20TransferFailed_tokenReverts() external {
         vm.mockCall(_token, abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)), abi.encode(1));
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 1), hex"");
+        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 1), "");
 
         vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
 

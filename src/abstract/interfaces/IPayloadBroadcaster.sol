@@ -68,12 +68,6 @@ interface IPayloadBroadcaster is IMigratable {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The absolute minimum valid payload size (in bytes).
-    function ABSOLUTE_MIN_PAYLOAD_SIZE() external pure returns (uint256 size_);
-
-    /// @notice The absolute maximum valid payload size (in bytes).
-    function ABSOLUTE_MAX_PAYLOAD_SIZE() external pure returns (uint256 size_);
-
     /// @notice The parameter registry key for the minimum payload size.
     function minPayloadSizeParameterKey() external pure returns (bytes memory key_);
 

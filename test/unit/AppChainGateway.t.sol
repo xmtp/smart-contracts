@@ -19,7 +19,7 @@ import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../uti
 import { Utils } from "../utils/Utils.sol";
 
 contract AppChainGatewayTests is Test, Utils {
-    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.acg.migrator";
 
     address internal _implementation;
@@ -84,30 +84,30 @@ contract AppChainGatewayTests is Test, Utils {
     }
 
     function test_receiveParameters() external {
-        _gateway.__setKeyNonce(bytes("this.is.a.skipped.parameter"), 1);
+        _gateway.__setKeyNonce("this.is.a.skipped.parameter", 1);
 
         bytes[][] memory keyChains_ = new bytes[][](3);
 
         keyChains_[0] = new bytes[](5);
-        keyChains_[0][0] = bytes("this");
-        keyChains_[0][1] = bytes("is");
-        keyChains_[0][2] = bytes("a");
-        keyChains_[0][3] = bytes("used");
-        keyChains_[0][4] = bytes("parameter");
+        keyChains_[0][0] = "this";
+        keyChains_[0][1] = "is";
+        keyChains_[0][2] = "a";
+        keyChains_[0][3] = "used";
+        keyChains_[0][4] = "parameter";
 
         keyChains_[1] = new bytes[](5);
-        keyChains_[1][0] = bytes("this");
-        keyChains_[1][1] = bytes("is");
-        keyChains_[1][2] = bytes("a");
-        keyChains_[1][3] = bytes("skipped`");
-        keyChains_[1][4] = bytes("parameter");
+        keyChains_[1][0] = "this";
+        keyChains_[1][1] = "is";
+        keyChains_[1][2] = "a";
+        keyChains_[1][3] = "skipped";
+        keyChains_[1][4] = "parameter";
 
         keyChains_[2] = new bytes[](5);
-        keyChains_[2][0] = bytes("this");
-        keyChains_[2][1] = bytes("is");
-        keyChains_[2][2] = bytes("another");
-        keyChains_[2][3] = bytes("used");
-        keyChains_[2][4] = bytes("parameter");
+        keyChains_[2][0] = "this";
+        keyChains_[2][1] = "is";
+        keyChains_[2][2] = "another";
+        keyChains_[2][3] = "used";
+        keyChains_[2][4] = "parameter";
 
         bytes32[] memory values_ = new bytes32[](3);
         values_[0] = bytes32(uint256(10101));
@@ -126,9 +126,9 @@ contract AppChainGatewayTests is Test, Utils {
         vm.prank(_settlementChainGatewayAlias);
         _gateway.receiveParameters(1, keyChains_, values_);
 
-        assertEq(_gateway.__getKeyNonce(bytes("this.is.a.used.parameter")), 1);
-        assertEq(_gateway.__getKeyNonce(bytes("this.is.a.skipped.parameter")), 1);
-        assertEq(_gateway.__getKeyNonce(bytes("this.is.another.used.parameter")), 1);
+        assertEq(_gateway.__getKeyNonce("this.is.a.used.parameter"), 1);
+        assertEq(_gateway.__getKeyNonce("this.is.a.skipped.parameter"), 1);
+        assertEq(_gateway.__getKeyNonce("this.is.another.used.parameter"), 1);
     }
 
     /* ============ migrate ============ */
@@ -205,10 +205,7 @@ contract AppChainGatewayTests is Test, Utils {
     }
 
     function _mockRegistryCall(bytes memory key_, bytes32 value_) internal {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes[])", keyChain_), abi.encode(value_));
+        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 
     function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {

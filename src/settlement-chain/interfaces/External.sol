@@ -76,5 +76,5 @@ interface IAppChainGatewayLike {
 interface IParameterRegistryLike {
     function get(bytes[][] calldata keyChains_) external view returns (bytes32[] memory values_);
 
-    function get(bytes[] calldata keyChain_) external view returns (bytes32 value_);
+    function get(bytes calldata key_) external view returns (bytes32 value_);
 }

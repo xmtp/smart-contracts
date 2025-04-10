@@ -15,8 +15,8 @@ import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../uti
 import { Utils } from "../utils/Utils.sol";
 
 contract PayloadBroadcasterTests is Test, Utils {
-    uint256 internal constant _ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
-    uint256 internal constant _ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
+    uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
+    uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
     bytes internal constant _PAUSED_KEY = "xmtp.pb.paused";
     bytes internal constant _MIGRATOR_KEY = "xmtp.pb.migrator";
@@ -33,8 +33,8 @@ contract PayloadBroadcasterTests is Test, Utils {
         _registry = address(new MockParameterRegistry());
         _implementation = address(new PayloadBroadcasterHarness(_registry));
 
-        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _ABSOLUTE_MAX_PAYLOAD_SIZE);
-        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _ABSOLUTE_MIN_PAYLOAD_SIZE);
+        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _STARTING_MAX_PAYLOAD_SIZE);
+        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _STARTING_MIN_PAYLOAD_SIZE);
 
         _broadcaster = PayloadBroadcasterHarness(
             address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)))
@@ -66,8 +66,8 @@ contract PayloadBroadcasterTests is Test, Utils {
         assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
         assertFalse(_broadcaster.paused());
         assertEq(_broadcaster.registry(), _registry);
-        assertEq(_broadcaster.minPayloadSize(), _ABSOLUTE_MIN_PAYLOAD_SIZE);
-        assertEq(_broadcaster.maxPayloadSize(), _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        assertEq(_broadcaster.minPayloadSize(), _STARTING_MIN_PAYLOAD_SIZE);
+        assertEq(_broadcaster.maxPayloadSize(), _STARTING_MAX_PAYLOAD_SIZE);
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
@@ -77,14 +77,6 @@ contract PayloadBroadcasterTests is Test, Utils {
         _broadcaster.__setMaxPayloadSize(100);
 
         _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, 101);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
-
-        _broadcaster.updateMinPayloadSize();
-    }
-
-    function test_updateMinPayloadSize_lessThanOrEqualToAbsoluteMin() external {
-        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _ABSOLUTE_MIN_PAYLOAD_SIZE - 1);
 
         vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
 
@@ -121,14 +113,6 @@ contract PayloadBroadcasterTests is Test, Utils {
         _broadcaster.__setMinPayloadSize(100);
 
         _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, 99);
-
-        vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
-
-        _broadcaster.updateMaxPayloadSize();
-    }
-
-    function test_updateMaxPayloadSize_greaterThanOrEqualToAbsoluteMax() external {
-        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _ABSOLUTE_MAX_PAYLOAD_SIZE + 1);
 
         vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
 
@@ -268,10 +252,7 @@ contract PayloadBroadcasterTests is Test, Utils {
     }
 
     function _mockRegistryCall(bytes memory key_, bytes32 value_) internal {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes[])", keyChain_), abi.encode(value_));
+        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 
     function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {

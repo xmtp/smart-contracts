@@ -6,5 +6,5 @@ pragma solidity 0.8.28;
  * @notice Minimal interface for ParameterRegistry
  */
 interface IParameterRegistryLike {
-    function get(bytes[] calldata keyChain_) external view returns (bytes32 value_);
+    function get(bytes calldata key_) external view returns (bytes32 value_);
 }

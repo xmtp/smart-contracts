@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { console } from "../../lib/forge-std/src/Test.sol";
+
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IMigratable } from "./interfaces/IMigratable.sol";
@@ -12,12 +14,6 @@ import { Migratable } from "./Migratable.sol";
 /// @title XMTP Abstract Payload Broadcaster Contract
 abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
-
-    /// @inheritdoc IPayloadBroadcaster
-    uint256 public constant ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
-
-    /// @inheritdoc IPayloadBroadcaster
-    uint256 public constant ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
 
     /// @inheritdoc IPayloadBroadcaster
     address public immutable registry;
@@ -126,9 +122,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint256 minPayloadSize_ = uint256(_getRegistryParameter(minPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        if (minPayloadSize_ > $.maxPayloadSize || minPayloadSize_ < ABSOLUTE_MIN_PAYLOAD_SIZE) {
-            revert InvalidMinPayloadSize();
-        }
+        require(minPayloadSize_ <= $.maxPayloadSize, InvalidMinPayloadSize());
 
         changed_ = minPayloadSize_ != $.minPayloadSize;
 
@@ -139,9 +133,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint256 maxPayloadSize_ = uint256(_getRegistryParameter(maxPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        if (maxPayloadSize_ < $.minPayloadSize || maxPayloadSize_ > ABSOLUTE_MAX_PAYLOAD_SIZE) {
-            revert InvalidMaxPayloadSize();
-        }
+        require(maxPayloadSize_ >= $.minPayloadSize, InvalidMaxPayloadSize());
 
         changed_ = maxPayloadSize_ != $.maxPayloadSize;
 
@@ -160,10 +152,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ Internal View/Pure Functions ============ */
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        return IParameterRegistryLike(registry).get(keyChain_);
+        return IParameterRegistryLike(registry).get(key_);
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {

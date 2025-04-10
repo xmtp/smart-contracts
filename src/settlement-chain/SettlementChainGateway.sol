@@ -54,8 +54,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Interactive Functions ============ */
 
     function depositSenderFunds(address inbox_, uint256 amount_) external {
-        require(ERC20Helper.transferFrom(appChainNativeToken, msg.sender, address(this), amount_), TransferFailed());
-        require(ERC20Helper.approve(appChainNativeToken, inbox_, amount_), ApproveFailed());
+        _redirectFunds(inbox_, amount_);
 
         uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
 
@@ -74,6 +73,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            // TODO: Should `_redirectFunds` be called here?
+
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
                 gasLimit_: gasLimit_,
                 maxFeePerGas_: gasPrice_,
@@ -101,6 +102,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address appChainAlias_ = appChainAlias();
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            _redirectFunds(inboxes_[index_], nativeTokensToSend_);
+
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
                 to_: appChainGateway,
                 l2CallValue_: 0,
@@ -132,13 +135,17 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return "xmtp.scg.migrator";
     }
 
+    /* ============ Internal Interactive Functions ============ */
+
+    function _redirectFunds(address inbox_, uint256 amount_) internal {
+        require(ERC20Helper.transferFrom(appChainNativeToken, msg.sender, address(this), amount_), TransferFailed());
+        require(ERC20Helper.approve(appChainNativeToken, inbox_, amount_), ApproveFailed());
+    }
+
     /* ============ Internal View/Pure Functions ============ */
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        return IParameterRegistryLike(registry).get(keyChain_);
+        return IParameterRegistryLike(registry).get(key_);
     }
 
     function _getEncodedParameters(

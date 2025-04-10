@@ -26,7 +26,7 @@ import {
 import { Utils } from "../utils/Utils.sol";
 
 contract SettlementChainGatewayTests is Test, Utils {
-    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.scg.migrator";
 
     address internal _implementation;
@@ -106,7 +106,7 @@ contract SettlementChainGatewayTests is Test, Utils {
         vm.mockCallRevert(
             _appChainNativeToken,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_gateway), 100),
-            hex""
+            ""
         );
 
         vm.expectRevert(ISettlementChainGateway.TransferFailed.selector);
@@ -132,7 +132,7 @@ contract SettlementChainGatewayTests is Test, Utils {
     function test_depositSenderFunds_approveFailed_tokenReverts() external {
         address inbox_ = makeAddr("inbox");
 
-        vm.mockCallRevert(_appChainNativeToken, abi.encodeWithSelector(MockErc20.approve.selector, inbox_, 100), hex"");
+        vm.mockCallRevert(_appChainNativeToken, abi.encodeWithSelector(MockErc20.approve.selector, inbox_, 100), "");
 
         vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
 
@@ -169,7 +169,7 @@ contract SettlementChainGatewayTests is Test, Utils {
         _gateway.sendParameters(new address[](1), new bytes[][](0), 0, 0);
     }
 
-    function test_sendParameters_xxx() external {
+    function test_sendParameters() external {
         address[] memory inboxes_ = new address[](2);
         inboxes_[0] = address(new MockERC20Inbox());
         inboxes_[1] = address(new MockERC20Inbox());
@@ -177,16 +177,16 @@ contract SettlementChainGatewayTests is Test, Utils {
         bytes[][] memory keyChains_ = new bytes[][](2);
 
         keyChains_[0] = new bytes[](4);
-        keyChains_[0][0] = bytes("this");
-        keyChains_[0][1] = bytes("is");
-        keyChains_[0][2] = bytes("a");
-        keyChains_[0][3] = bytes("parameter");
+        keyChains_[0][0] = "this";
+        keyChains_[0][1] = "is";
+        keyChains_[0][2] = "a";
+        keyChains_[0][3] = "parameter";
 
         keyChains_[1] = new bytes[](4);
-        keyChains_[1][0] = bytes("this");
-        keyChains_[1][1] = bytes("is");
-        keyChains_[1][2] = bytes("another");
-        keyChains_[1][3] = bytes("parameter");
+        keyChains_[1][0] = "this";
+        keyChains_[1][1] = "is";
+        keyChains_[1][2] = "another";
+        keyChains_[1][3] = "parameter";
 
         bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(10101));
@@ -251,16 +251,16 @@ contract SettlementChainGatewayTests is Test, Utils {
         bytes[][] memory keyChains_ = new bytes[][](2);
 
         keyChains_[0] = new bytes[](4);
-        keyChains_[0][0] = bytes("this");
-        keyChains_[0][1] = bytes("is");
-        keyChains_[0][2] = bytes("a");
-        keyChains_[0][3] = bytes("parameter");
+        keyChains_[0][0] = "this";
+        keyChains_[0][1] = "is";
+        keyChains_[0][2] = "a";
+        keyChains_[0][3] = "parameter";
 
         keyChains_[1] = new bytes[](4);
-        keyChains_[1][0] = bytes("this");
-        keyChains_[1][1] = bytes("is");
-        keyChains_[1][2] = bytes("another");
-        keyChains_[1][3] = bytes("parameter");
+        keyChains_[1][0] = "this";
+        keyChains_[1][1] = "is";
+        keyChains_[1][2] = "another";
+        keyChains_[1][3] = "parameter";
 
         bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(10101));
@@ -399,10 +399,7 @@ contract SettlementChainGatewayTests is Test, Utils {
     }
 
     function _mockRegistryCall(bytes memory key_, bytes32 value_) internal {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes[])", keyChain_), abi.encode(value_));
+        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 
     function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {

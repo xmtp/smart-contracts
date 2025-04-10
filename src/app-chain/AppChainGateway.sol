@@ -14,7 +14,7 @@ import { Migratable } from "../abstract/Migratable.sol";
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
-    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _DELIMITER = ".";
 
     address public immutable registry;
     address public immutable settlementChainGateway;
@@ -110,10 +110,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     }
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        return IParameterRegistryLike(registry).get(keyChain_);
+        return IParameterRegistryLike(registry).get(key_);
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {

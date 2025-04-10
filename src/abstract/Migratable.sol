@@ -5,8 +5,7 @@ import { IERC1967 } from "./interfaces/IERC1967.sol";
 import { IMigratable } from "./interfaces/IMigratable.sol";
 
 /**
- * @title  Abstract implementation for exposing the ability to migrate a contract, extending ERC-1967.
- * @author M^0 Labs
+ * @title Abstract implementation for exposing the ability to migrate a contract, extending ERC-1967.
  */
 abstract contract Migratable is IMigratable {
     /* ============ Constants/Immutables ============ */

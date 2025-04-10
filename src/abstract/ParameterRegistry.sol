@@ -12,7 +12,7 @@ import { IParameterRegistry } from "./interfaces/IParameterRegistry.sol";
 abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
-    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _DELIMITER = ".";
 
     /* ============ UUPS Storage ============ */
 
@@ -100,6 +100,10 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     function get(bytes[] calldata keyChain_) external view returns (bytes32 value_) {
         return _getParameterRegistryStorage().parameters[_getKey(keyChain_)];
+    }
+
+    function get(bytes calldata key_) external view returns (bytes32 value_) {
+        return _getParameterRegistryStorage().parameters[key_];
     }
 
     /* ============ Internal Interactive Functions ============ */

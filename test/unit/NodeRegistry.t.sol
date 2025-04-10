@@ -139,7 +139,7 @@ contract NodeRegistryTests is Test, Utils {
         vm.expectRevert(INodeRegistryErrors.InvalidSigningKey.selector);
 
         vm.prank(admin);
-        registry.addNode(vm.randomAddress(), bytes(""), node.httpAddress, node.minMonthlyFeeMicroDollars);
+        registry.addNode(vm.randomAddress(), "", node.httpAddress, node.minMonthlyFeeMicroDollars);
     }
 
     function test_addNode_invalidHttpAddress() public {

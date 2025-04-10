@@ -7,6 +7,8 @@ libs = ["lib"]
 gas_reports = ["*"]
 optimizer = true
 optimizer_runs = 999999
+bytecode_hash = "none"
+cbor_metadata = false
 fs_permissions = [
     { access = "read-write", path = "deployments/anvil_localnet"},
     { access = "read-write", path = "deployments/xmtp_testnet"},
@@ -21,3 +23,7 @@ runs = 1_000
 
 [profile.ci.fuzz]
 runs = 10_000
+
+[rpc_endpoints]
+base_sepolia = "${BASE_TESTNET_RPC_URL}"
+xmtp_testnet = "${XMTP_TESTNET_RPC_URL}"

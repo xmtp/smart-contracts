@@ -14,8 +14,8 @@ import { MockParameterRegistry } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract GroupMessageBroadcasterTests is Test, Utils {
-    uint256 internal constant _ABSOLUTE_MIN_PAYLOAD_SIZE = 78;
-    uint256 internal constant _ABSOLUTE_MAX_PAYLOAD_SIZE = 4_194_304;
+    uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
+    uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
     bytes internal constant _PAUSED_KEY = "xmtp.gmb.paused";
     bytes internal constant _MIGRATOR_KEY = "xmtp.gmb.migrator";
@@ -32,8 +32,8 @@ contract GroupMessageBroadcasterTests is Test, Utils {
         _registry = address(new MockParameterRegistry());
         _implementation = address(new GroupMessageBroadcasterHarness(_registry));
 
-        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _ABSOLUTE_MAX_PAYLOAD_SIZE);
-        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _ABSOLUTE_MIN_PAYLOAD_SIZE);
+        _mockRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _STARTING_MAX_PAYLOAD_SIZE);
+        _mockRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _STARTING_MIN_PAYLOAD_SIZE);
 
         _broadcaster = GroupMessageBroadcasterHarness(
             address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)))
@@ -65,8 +65,8 @@ contract GroupMessageBroadcasterTests is Test, Utils {
         assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
         assertFalse(_broadcaster.paused());
         assertEq(_broadcaster.registry(), _registry);
-        assertEq(_broadcaster.minPayloadSize(), _ABSOLUTE_MIN_PAYLOAD_SIZE);
-        assertEq(_broadcaster.maxPayloadSize(), _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        assertEq(_broadcaster.minPayloadSize(), _STARTING_MIN_PAYLOAD_SIZE);
+        assertEq(_broadcaster.maxPayloadSize(), _STARTING_MAX_PAYLOAD_SIZE);
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
@@ -141,9 +141,9 @@ contract GroupMessageBroadcasterTests is Test, Utils {
         uint64 sequenceId_,
         bool paused_
     ) external {
-        minPayloadSize_ = bound(minPayloadSize_, _ABSOLUTE_MIN_PAYLOAD_SIZE, _ABSOLUTE_MAX_PAYLOAD_SIZE);
-        maxPayloadSize_ = bound(maxPayloadSize_, minPayloadSize_, _ABSOLUTE_MAX_PAYLOAD_SIZE);
-        payloadSize_ = bound(payloadSize_, _ABSOLUTE_MIN_PAYLOAD_SIZE, _ABSOLUTE_MAX_PAYLOAD_SIZE);
+        minPayloadSize_ = bound(minPayloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
+        maxPayloadSize_ = bound(maxPayloadSize_, minPayloadSize_, _STARTING_MAX_PAYLOAD_SIZE);
+        payloadSize_ = bound(payloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
         sequenceId_ = uint64(bound(sequenceId_, 0, type(uint64).max - 1));
 
         _broadcaster.__setSequenceId(sequenceId_);
@@ -184,10 +184,7 @@ contract GroupMessageBroadcasterTests is Test, Utils {
     }
 
     function _mockRegistryCall(bytes memory key_, bytes32 value_) internal {
-        bytes[] memory keyChain_ = new bytes[](1);
-        keyChain_[0] = key_;
-
-        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes[])", keyChain_), abi.encode(value_));
+        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 
     function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {

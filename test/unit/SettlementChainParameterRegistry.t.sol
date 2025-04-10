@@ -12,7 +12,7 @@ import { SettlementChainParameterRegistryHarness } from "../utils/Harnesses.sol"
 import { Utils } from "../utils/Utils.sol";
 
 contract SettlementChainParameterRegistryTests is Test, Utils {
-    bytes internal constant _DELIMITER = bytes(".");
+    bytes internal constant _DELIMITER = ".";
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.scpr.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.scpr.migrator";
 
