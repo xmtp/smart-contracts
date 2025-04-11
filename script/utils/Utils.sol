@@ -1,65 +1,97 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script } from "../../lib/forge-std/src/Script.sol";
+import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
-contract Utils is Script {
+library Utils {
     error InvalidProxyAddress(string outputJson_);
 
-    uint256 constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
-    uint256 constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
-    uint256 constant CHAIN_ID_BASE_SEPOLIA = 84_532;
+    VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    string constant OUTPUT_ANVIL_LOCALNET = "anvil_localnet";
-    string constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
-    string constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
-    string constant OUTPUT_UNKNOWN = "unknown";
+    uint256 internal constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
+    uint256 internal constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
+    uint256 internal constant CHAIN_ID_BASE_SEPOLIA = 84_532;
 
-    function readInput(string memory inputFileName) internal view returns (string memory) {
-        string memory file = getInputPath(inputFileName);
-        return vm.readFile(file);
+    string internal constant OUTPUT_ANVIL_LOCALNET = "anvil_localnet";
+    string internal constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
+    string internal constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
+    string internal constant OUTPUT_UNKNOWN = "unknown";
+
+    function readInput(string memory inputFileName_) internal view returns (string memory input_) {
+        string memory file_ = getInputPath(inputFileName_);
+        return VM.readFile(file_);
     }
 
-    function getInputPath(string memory inputFileName) internal view returns (string memory) {
-        string memory inputDir = string.concat(vm.projectRoot(), "/deployments/");
-        string memory environmentDir = string.concat(_resolveEnvironment(), "/");
-        string memory file = string.concat(inputFileName, ".json");
-        return string.concat(inputDir, environmentDir, file);
+    function getInputPath(string memory inputFileName_) internal view returns (string memory inputPath_) {
+        string memory inputDir_ = string.concat(VM.projectRoot(), "/deployments/");
+        string memory environmentDir_ = string.concat(resolveEnvironment(), "/");
+        string memory file_ = string.concat(inputFileName_, ".json");
+        return string.concat(inputDir_, environmentDir_, file_);
     }
 
-    function readOutput(string memory outputFileName) internal view returns (string memory) {
-        string memory file = getOutputPath(outputFileName);
-        return vm.readFile(file);
+    function readOutput(string memory outputFileName_) internal view returns (string memory output_) {
+        string memory file_ = getOutputPath(outputFileName_);
+        return VM.readFile(file_);
     }
 
-    function writeOutput(string memory outputJson, string memory outputFileName) internal {
-        string memory outputFilePath = getOutputPath(outputFileName);
-        vm.writeJson(outputJson, outputFilePath);
+    function writeOutput(string memory outputJson_, string memory outputFileName_) internal {
+        string memory outputFilePath_ = getOutputPath(outputFileName_);
+        VM.writeJson(outputJson_, outputFilePath_);
     }
 
-    function getOutputPath(string memory outputFileName) internal view returns (string memory) {
-        string memory outputDir = string.concat(vm.projectRoot(), "/deployments/");
-        string memory environmentDir = string.concat(_resolveEnvironment(), "/");
-        string memory outputFilePath = string.concat(outputDir, environmentDir, outputFileName, ".json");
-        return outputFilePath;
+    function getOutputPath(string memory outputFileName_) internal view returns (string memory outputFilePath_) {
+        string memory outputDir_ = string.concat(VM.projectRoot(), "/deployments/");
+        string memory environmentDir_ = string.concat(resolveEnvironment(), "/");
+        return string.concat(outputDir_, environmentDir_, outputFileName_, ".json");
     }
 
-    function _resolveEnvironment() internal view returns (string memory) {
-        string memory environment = vm.envString("ENVIRONMENT");
+    function resolveEnvironment() internal view returns (string memory environment_) {
+        environment_ = VM.envString("ENVIRONMENT");
 
-        if (bytes(environment).length == 0) return OUTPUT_UNKNOWN;
-
-        return environment;
+        return (bytes(environment_).length == 0) ? OUTPUT_UNKNOWN : environment_;
     }
 
-    function _getProxy(string memory outputJson_) internal view returns (address proxy_) {
+    function getProxy(string memory outputJson_) internal view returns (address proxy_) {
         proxy_ = stdJson.readAddress(readOutput(outputJson_), ".addresses.proxy");
         require(address(proxy_) != address(0), InvalidProxyAddress(outputJson_));
     }
 
-    function _serializeUpgradeData(address implementation_, string memory outputJson_) internal {
-        vm.writeJson(vm.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
-        vm.writeJson(vm.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
+    function serializeUpgradeData(address implementation_, string memory outputJson_) internal {
+        VM.writeJson(VM.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
+        VM.writeJson(VM.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
+    }
+
+    function buildFactoryJson(address deployer_, address implementation_) internal returns (string memory json_) {
+        json_ = VM.serializeUint("", "chainId", block.chainid);
+        json_ = VM.serializeAddress("", "deployer", deployer_);
+        json_ = VM.serializeAddress("", "implementation", implementation_);
+        json_ = VM.serializeUint("", "deploymentBlock", block.number);
+    }
+
+    function buildImplementationJson(
+        address factory_,
+        address implementation_,
+        bytes memory constructorArguments_
+    ) internal returns (string memory json_) {
+        json_ = VM.serializeUint("", "chainId", block.chainid);
+        json_ = VM.serializeAddress("", "factory", factory_);
+        json_ = VM.serializeAddress("", "implementation", implementation_);
+        json_ = VM.serializeBytes("", "constructorArguments", constructorArguments_);
+        json_ = VM.serializeUint("", "deploymentBlock", block.number);
+    }
+
+    function buildProxyJson(
+        address factory_,
+        address deployer_,
+        address proxy_,
+        bytes memory constructorArguments_
+    ) internal returns (string memory json_) {
+        json_ = VM.serializeUint("", "chainId", block.chainid);
+        json_ = VM.serializeAddress("", "factory", factory_);
+        json_ = VM.serializeAddress("", "deployer", deployer_);
+        json_ = VM.serializeAddress("", "proxy", proxy_);
+        json_ = VM.serializeBytes("", "constructorArguments", constructorArguments_);
+        json_ = VM.serializeUint("", "deploymentBlock", block.number);
     }
 }

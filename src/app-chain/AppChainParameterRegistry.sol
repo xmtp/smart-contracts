@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IAppChainParameterRegistry } from "./interfaces/IAppChainParameterRegistry.sol";
 import { IParameterRegistry } from "../abstract/interfaces/IParameterRegistry.sol";
 
 import { ParameterRegistry } from "../abstract/ParameterRegistry.sol";
 
-contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegistry {
+contract AppChainParameterRegistry is IParameterRegistry, ParameterRegistry {
     /* ============ View/Pure Functions ============ */
 
+    /// @inheritdoc IParameterRegistry
     function migratorParameterKey()
         public
         pure
@@ -18,6 +18,7 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         return "xmtp.acpr.migrator";
     }
 
+    /// @inheritdoc IParameterRegistry
     function adminParameterKey()
         public
         pure

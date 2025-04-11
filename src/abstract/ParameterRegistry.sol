@@ -41,6 +41,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /* ============ Initialization ============ */
 
+    /// @inheritdoc IParameterRegistry
     function initialize(address[] calldata admins_) external initializer {
         ParameterRegistryStorage storage $ = _getParameterRegistryStorage();
 
@@ -56,6 +57,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /* ============ Interactive Functions ============ */
 
+    /// @inheritdoc IParameterRegistry
     function set(bytes[][] calldata keyChains_, bytes32[] calldata values_) external onlyAdmin {
         require(keyChains_.length > 0, NoKeyChains());
         require(keyChains_.length == values_.length, ArrayLengthMismatch());
@@ -67,6 +69,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
         }
     }
 
+    /// @inheritdoc IParameterRegistry
     function set(bytes[] calldata keyChain_, bytes32 value_) external onlyAdmin {
         _setParameter(_getParameterRegistryStorage(), keyChain_, value_);
     }
@@ -78,15 +81,19 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /* ============ View/Pure Functions ============ */
 
+    /// @inheritdoc IParameterRegistry
     function migratorParameterKey() public pure virtual returns (bytes memory key_);
 
+    /// @inheritdoc IParameterRegistry
     function adminParameterKey() public pure virtual returns (bytes memory key_);
 
+    /// @inheritdoc IParameterRegistry
     function isAdmin(address account_) public view returns (bool isAdmin_) {
         bytes memory key_ = _combineKeyChainParts(adminParameterKey(), abi.encode(account_));
         return _getRegistryParameter(key_) != bytes32(uint256(0));
     }
 
+    /// @inheritdoc IParameterRegistry
     function get(bytes[][] calldata keyChains_) external view returns (bytes32[] memory values_) {
         require(keyChains_.length > 0, NoKeyChains());
 
@@ -98,10 +105,12 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
         }
     }
 
+    /// @inheritdoc IParameterRegistry
     function get(bytes[] calldata keyChain_) external view returns (bytes32 value_) {
         return _getParameterRegistryStorage().parameters[_getKey(keyChain_)];
     }
 
+    /// @inheritdoc IParameterRegistry
     function get(bytes calldata key_) external view returns (bytes32 value_) {
         return _getParameterRegistryStorage().parameters[key_];
     }

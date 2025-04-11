@@ -10,18 +10,27 @@ import { Initializable } from "./Initializable.sol";
 import { Proxy } from "./Proxy.sol";
 
 contract Factory is IFactory {
+    /* ============ Constants/Immutables ============ */
+
+    /// @inheritdoc IFactory
     address public immutable initializableImplementation;
+
+    /* ============ Constructor ============ */
 
     constructor() {
         emit InitializableImplementationDeployed(initializableImplementation = address(new Initializable()));
     }
 
+    /* ============ Interactive Functions ============ */
+
+    /// @inheritdoc IFactory
     function deployImplementation(bytes memory bytecode_) external returns (address implementation_) {
         require(bytecode_.length > 0, EmptyBytecode());
 
         emit ImplementationDeployed(implementation_ = _create2(bytecode_, keccak256(bytecode_)));
     }
 
+    /// @inheritdoc IFactory
     function deployProxy(
         address implementation_,
         bytes32 salt_,
@@ -38,16 +47,23 @@ contract Factory is IFactory {
         IInitializable(proxy_).initialize(implementation_, initializeCallData_);
     }
 
+    /* ============ View/Pure Functions ============ */
+
+    /// @inheritdoc IFactory
     function computeImplementationAddress(bytes memory bytecode_) external view returns (address implementation_) {
         bytes32 bytecodeHash_ = keccak256(bytecode_);
         return Create2.computeAddress(bytecodeHash_, bytecodeHash_);
     }
 
+    /// @inheritdoc IFactory
     function computeProxyAddress(address caller_, bytes32 salt_) external view returns (address proxy_) {
         bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(initializableImplementation));
         return Create2.computeAddress(keccak256(abi.encode(caller_, salt_)), keccak256(initCode_));
     }
 
+    /* ============ Internal Interactive Functions ============ */
+
+    /// @dev Creates a contract via `create2` and reverts if the deployment fails.
     function _create2(bytes memory bytecode_, bytes32 salt_) internal returns (address deployed_) {
         assembly {
             deployed_ := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)

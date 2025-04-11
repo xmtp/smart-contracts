@@ -4,24 +4,18 @@ pragma solidity 0.8.28;
 import { Script } from "../lib/forge-std/src/Script.sol";
 
 import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
-import { IPayloadBroadcaster } from "../src/abstract/interfaces/IPayloadBroadcaster.sol";
+import { IParameterRegistry } from "../src/abstract/interfaces/IParameterRegistry.sol";
 
-import { GroupMessageBroadcaster } from "../src/app-chain/GroupMessageBroadcaster.sol";
+import { AppChainParameterRegistry } from "../src/app-chain/AppChainParameterRegistry.sol";
 
 import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
-library GroupMessageBroadcasterDeployer {
+library AppChainParameterRegistryDeployer {
     function deployImplementation(
-        address factory_,
-        address registry_
+        address factory_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        constructorArguments_ = abi.encode(registry_);
-
-        bytes memory creationCode_ = abi.encodePacked(
-            type(GroupMessageBroadcaster).creationCode,
-            constructorArguments_
-        );
+        bytes memory creationCode_ = type(AppChainParameterRegistry).creationCode;
 
         implementation_ = IFactory(factory_).deployImplementation(creationCode_);
     }
@@ -29,18 +23,20 @@ library GroupMessageBroadcasterDeployer {
     function deployProxy(
         address factory_,
         address implementation_,
-        bytes32 salt_
+        bytes32 salt_,
+        address[] memory admins_
     )
         internal
-        returns (GroupMessageBroadcaster proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_)
+        returns (AppChainParameterRegistry proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_)
     {
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
-        initializeCallData_ = abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector);
-        proxy_ = GroupMessageBroadcaster(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
+        initializeCallData_ = abi.encodeCall(IParameterRegistry.initialize, (admins_));
+
+        proxy_ = AppChainParameterRegistry(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
     }
 }
 
-contract DeployGroupMessageBroadcaster is Script {
+contract DeployAppChainParameterRegistry is Script {
     error PrivateKeyNotSet();
     error ExpectedImplementationNotSet();
     error ExpectedProxyNotSet();
@@ -65,22 +61,17 @@ contract DeployGroupMessageBroadcaster is Script {
 
     function deployImplementation() public {
         require(
-            Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION != address(0),
+            Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION != address(0),
             ExpectedImplementationNotSet()
         );
 
         vm.startBroadcast(_privateKey);
 
-        (address implementation_, bytes memory constructorArguments_) = GroupMessageBroadcasterDeployer
-            .deployImplementation(Environment.EXPECTED_FACTORY, Environment.EXPECTED_PARAMETER_REGISTRY_PROXY);
+        (address implementation_, bytes memory constructorArguments_) = AppChainParameterRegistryDeployer
+            .deployImplementation(Environment.EXPECTED_FACTORY);
 
         require(
-            implementation_ == Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION,
-            UnexpectedImplementation()
-        );
-
-        require(
-            GroupMessageBroadcaster(implementation_).registry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
+            implementation_ == Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
             UnexpectedImplementation()
         );
 
@@ -95,7 +86,7 @@ contract DeployGroupMessageBroadcaster is Script {
         Utils.writeOutput(
             json_,
             string.concat(
-                Environment.GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON,
+                Environment.APP_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON,
                 "_implementation_",
                 vm.toString(block.chainid)
             )
@@ -103,21 +94,22 @@ contract DeployGroupMessageBroadcaster is Script {
     }
 
     function deployProxy() public {
-        require(Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_PROXY != address(0), ExpectedProxyNotSet());
+        require(Environment.EXPECTED_PARAMETER_REGISTRY_PROXY != address(0), ExpectedProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        (GroupMessageBroadcaster proxy_, bytes memory constructorArguments_, ) = GroupMessageBroadcasterDeployer
+        (AppChainParameterRegistry proxy_, bytes memory constructorArguments_, ) = AppChainParameterRegistryDeployer
             .deployProxy(
                 Environment.EXPECTED_FACTORY,
-                Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION,
-                Environment.GROUP_MESSAGE_BROADCASTER_PROXY_SALT
+                Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
+                Environment.PARAMETER_REGISTRY_PROXY_SALT,
+                _getAdmins()
             );
 
-        require(address(proxy_) == Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_PROXY, UnexpectedProxy());
+        require(address(proxy_) == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY, UnexpectedProxy());
 
         require(
-            proxy_.implementation() == Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION,
+            proxy_.implementation() == Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
             UnexpectedProxy()
         );
 
@@ -132,7 +124,12 @@ contract DeployGroupMessageBroadcaster is Script {
 
         Utils.writeOutput(
             json_,
-            string.concat(Environment.GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON, "_proxy_", vm.toString(block.chainid))
+            string.concat(Environment.APP_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON, "_proxy_", vm.toString(block.chainid))
         );
+    }
+
+    function _getAdmins() internal pure returns (address[] memory admins_) {
+        admins_ = new address[](1);
+        admins_[0] = Environment.EXPECTED_GATEWAY_PROXY;
     }
 }

@@ -3,6 +3,10 @@ pragma solidity 0.8.28;
 
 import { IMigratable } from "./IMigratable.sol";
 
+/**
+ * @title  IPayloadBroadcaster
+ * @notice Common interface for payload broadcasters.
+ */
 interface IPayloadBroadcaster is IMigratable {
     /* ============ Events ============ */
 
@@ -26,25 +30,30 @@ interface IPayloadBroadcaster is IMigratable {
 
     /* ============ Custom Errors ============ */
 
+    /// @notice Thrown when the registry address is zero.
     error ZeroRegistryAddress();
 
+    /// @notice Thrown when the payload size is invalid.
     error InvalidPayloadSize(uint256 actualSize_, uint256 minSize_, uint256 maxSize_);
 
+    /// @notice Thrown when the maximum payload size is invalid.
     error InvalidMaxPayloadSize();
 
+    /// @notice Thrown when the minimum payload size is invalid.
     error InvalidMinPayloadSize();
 
+    /// @notice Thrown when there is no change.
     error NoChange();
 
+    /// @notice Thrown when the implementation address is zero.
     error ZeroImplementationAddress();
 
+    /// @notice Thrown when the payload broadcaster is paused.
     error Paused();
 
     /* ============ Initialization ============ */
 
-    /**
-     * @notice Initializes the contract.
-     */
+    /// @notice Initializes the contract.
     function initialize() external;
 
     /* ============ Interactive Functions ============ */
@@ -61,9 +70,7 @@ interface IPayloadBroadcaster is IMigratable {
      */
     function updateMaxPayloadSize() external;
 
-    /**
-     * @notice Updates the pause status.
-     */
+    /// @notice Updates the pause status.
     function updatePauseStatus() external;
 
     /* ============ View/Pure Functions ============ */

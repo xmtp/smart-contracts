@@ -15,8 +15,13 @@ import { Migratable } from "../abstract/Migratable.sol";
 contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
+    /// @inheritdoc ISettlementChainGateway
     address public immutable registry;
+
+    /// @inheritdoc ISettlementChainGateway
     address public immutable appChainGateway;
+
+    /// @inheritdoc ISettlementChainGateway
     address public immutable appChainNativeToken;
 
     /* ============ UUPS Storage ============ */
@@ -39,6 +44,13 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ Constructor ============ */
 
+    /**
+     * @notice Constructor.
+     * @param  registry_            The address of the registry.
+     * @param  appChainGateway_     The address of the app chain gateway.
+     * @param  appChainNativeToken_ The address of the token on the settlement chain that is used as native gas token on
+     *                              the app chain.
+     */
     constructor(address registry_, address appChainGateway_, address appChainNativeToken_) {
         require(_isNotZero(registry = registry_), ZeroRegistryAddress());
         require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
@@ -47,12 +59,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ Initialization ============ */
 
+    /// @inheritdoc ISettlementChainGateway
     function initialize() external initializer {
         // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
     }
 
     /* ============ Interactive Functions ============ */
 
+    /// @inheritdoc ISettlementChainGateway
     function depositSenderFunds(address inbox_, uint256 amount_) external {
         _redirectFunds(inbox_, amount_);
 
@@ -61,6 +75,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         emit SenderFundsDeposited(inbox_, messageNumber_, amount_);
     }
 
+    /// @inheritdoc ISettlementChainGateway
     function sendParameters(
         address[] calldata inboxes_,
         bytes[][] calldata keyChains_,
@@ -87,6 +102,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         }
     }
 
+    /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTickets(
         address[] calldata inboxes_,
         bytes[][] calldata keyChains_,
@@ -127,10 +143,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ View/Pure Functions ============ */
 
+    /// @inheritdoc ISettlementChainGateway
     function appChainAlias() public view returns (address alias_) {
         return AddressAliasHelper.applyL1ToL2Alias(address(this));
     }
 
+    /// @inheritdoc ISettlementChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
         return "xmtp.scg.migrator";
     }

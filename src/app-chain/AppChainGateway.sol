@@ -16,8 +16,13 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     bytes internal constant _DELIMITER = ".";
 
+    /// @inheritdoc IAppChainGateway
     address public immutable registry;
+
+    /// @inheritdoc IAppChainGateway
     address public immutable settlementChainGateway;
+
+    /// @inheritdoc IAppChainGateway
     address public immutable settlementChainGatewayAlias;
 
     /* ============ UUPS Storage ============ */
@@ -47,6 +52,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ Constructor ============ */
 
+    /**
+     * @notice Constructor.
+     * @param  registry_               The address of the parameter registry.
+     * @param  settlementChainGateway_ The address of the settlement chain gateway.
+     */
     constructor(address registry_, address settlementChainGateway_) {
         require(_isNotZero(registry = registry_), ZeroRegistryAddress());
         require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGatewayAddress());
@@ -56,12 +66,14 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ Initialization ============ */
 
+    /// @inheritdoc IAppChainGateway
     function initialize() external initializer {
         // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
     }
 
     /* ============ Interactive Functions ============ */
 
+    /// @inheritdoc IAppChainGateway
     function receiveParameters(
         uint256 nonce_,
         bytes[][] calldata keyChains_,
@@ -75,6 +87,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
             bytes[] calldata keyChain_ = keyChains_[index_];
             bytes memory key_ = _getKey(keyChain_);
 
+            // Each key is checked against the nonce, and ignored if the nonce is lower than the stored nonce.
             if ($.keyNonces[key_] >= nonce_) continue;
 
             $.keyNonces[key_] = nonce_;
@@ -90,6 +103,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ View/Pure Functions ============ */
 
+    /// @inheritdoc IAppChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
         return "xmtp.acg.migrator";
     }

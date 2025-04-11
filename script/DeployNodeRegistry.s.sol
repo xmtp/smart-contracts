@@ -1,73 +1,73 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { CREATE3Factory } from "../src/any-chain/CREATE3Factory.sol";
+import { Script } from "../lib/forge-std/src/Script.sol";
+
+import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
+
 import { NodeRegistry } from "../src/settlement-chain/NodeRegistry.sol";
 
 import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
-contract DeployNodeRegistry is Utils, Environment {
-    uint256 private _privateKey;
+library NodeRegistryDeployer {
+    function deployImplementation(
+        address factory_,
+        address initialAdmin_
+    ) internal returns (address implementation_, bytes memory constructorArguments_) {
+        constructorArguments_ = abi.encode(initialAdmin_);
 
-    CREATE3Factory public factory;
+        bytes memory creationCode_ = abi.encodePacked(type(NodeRegistry).creationCode, constructorArguments_);
 
-    bytes32 public constant SALT = keccak256("NodeRegistry");
+        implementation_ = IFactory(factory_).deployImplementation(creationCode_);
+    }
+}
 
-    address public admin;
-    address public deployer;
-    address public nodeRegistry;
+contract DeployNodeRegistry is Script {
+    error PrivateKeyNotSet();
+    error ExpectedImplementationNotSet();
+    error UnexpectedImplementation();
 
-    function run() public {
-        _setup();
+    uint256 internal _privateKey;
+    address internal _deployer;
+
+    function setUp() external {
+        _privateKey = vm.envUint("PRIVATE_KEY");
+
+        require(_privateKey != 0, PrivateKeyNotSet());
+
+        _deployer = vm.addr(_privateKey);
+    }
+
+    function run() external {
+        deployImplementation();
+    }
+
+    function deployImplementation() public {
+        require(Environment.EXPECTED_NODE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        address predictedAddress = factory.predictDeterministicAddress(SALT, deployer);
+        (address implementation_, bytes memory constructorArguments_) = NodeRegistryDeployer.deployImplementation(
+            Environment.EXPECTED_FACTORY,
+            Environment.NODE_REGISTRY_ADMIN
+        );
 
-        require(predictedAddress != address(0), "NodeRegistry predicted address is zero");
-        require(predictedAddress.code.length == 0, "NodeRegistry predicted address has code");
+        require(implementation_ == Environment.EXPECTED_NODE_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
 
-        bytes memory initCode = abi.encodePacked(type(NodeRegistry).creationCode, abi.encode(admin));
-
-        nodeRegistry = factory.deploy(SALT, initCode);
-        require(predictedAddress == nodeRegistry, "NodeRegistry deployed address doesn't match predicted address");
+        require(NodeRegistry(implementation_).owner() == Environment.NODE_REGISTRY_ADMIN, UnexpectedImplementation());
 
         vm.stopBroadcast();
 
-        _serializeDeploymentData();
-    }
+        string memory json_ = Utils.buildImplementationJson(
+            Environment.EXPECTED_FACTORY,
+            implementation_,
+            constructorArguments_
+        );
 
-    function _setup() internal {
-        admin = vm.envAddress("XMTP_NODE_REGISTRY_ADMIN_ADDRESS");
-        require(admin != address(0), "XMTP_NODE_REGISTRY_ADMIN_ADDRESS not set");
-
-        address create3Factory = vm.envAddress("XMTP_CREATE3_FACTORY_ADDRESS");
-        require(create3Factory != address(0), "XMTP_CREATE3_FACTORY_ADDRESS not set");
-
-        _privateKey = vm.envUint("PRIVATE_KEY");
-        require(_privateKey != 0, "PRIVATE_KEY not set");
-
-        deployer = vm.addr(_privateKey);
-        factory = CREATE3Factory(create3Factory);
-    }
-
-    function _serializeDeploymentData() internal {
-        string memory parent_object = "parent object";
-        string memory addresses = "addresses";
-        string memory constructorArgs = "constructorArgs";
-
-        string memory addressesOutput;
-        addressesOutput = vm.serializeAddress(addresses, "deployer", deployer);
-        addressesOutput = vm.serializeAddress(addresses, "implementation", nodeRegistry);
-
-        string memory constructorArgsOutput = vm.serializeAddress(constructorArgs, "initialAdmin", admin);
-
-        string memory finalJson;
-        finalJson = vm.serializeString(parent_object, addresses, addressesOutput);
-        finalJson = vm.serializeString(parent_object, constructorArgs, constructorArgsOutput);
-        finalJson = vm.serializeUint(parent_object, "deploymentBlock", block.number);
-
-        writeOutput(finalJson, XMTP_NODE_REGISTRY_OUTPUT_JSON);
+        Utils.writeOutput(
+            json_,
+            string.concat(Environment.NODE_REGISTRY_OUTPUT_JSON, "_implementation_", vm.toString(block.chainid))
+        );
     }
 }
