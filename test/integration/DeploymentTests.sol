@@ -15,6 +15,9 @@ import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
 import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
 
+import { FactoryDeployer } from "../../script/DeployFactory.s.sol";
+import { GroupMessageBroadcasterDeployer } from "../../script/DeployGroupMessageBroadcaster.s.sol";
+
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
 contract DeploymentTests is Test {
@@ -163,6 +166,12 @@ contract DeploymentTests is Test {
         return _deployFactory();
     }
 
+    function _deployFactory() internal returns (Factory factory_) {
+        vm.startPrank(_admin);
+        factory_ = FactoryDeployer.deploy();
+        vm.stopPrank();
+    }
+
     /* ============ Registry Deployer Helpers ============ */
 
     function _deploySettlementChainRegistryImplementation() internal returns (address implementation_) {
@@ -287,10 +296,9 @@ contract DeploymentTests is Test {
     ) internal returns (address implementation_) {
         vm.selectFork(_appchainForkId);
 
-        implementation_ = _deployImplementation(
-            _appChainFactory,
-            abi.encodePacked(type(GroupMessageBroadcaster).creationCode, abi.encode(registry_))
-        );
+        vm.startPrank(_admin);
+        implementation_ = GroupMessageBroadcasterDeployer.deployImplementation(address(_appChainFactory), registry_);
+        vm.stopPrank();
 
         assertEq(GroupMessageBroadcaster(implementation_).registry(), address(registry_));
     }
@@ -300,15 +308,13 @@ contract DeploymentTests is Test {
     ) internal returns (GroupMessageBroadcaster proxy_) {
         vm.selectFork(_appchainForkId);
 
-        return
-            GroupMessageBroadcaster(
-                _deployProxy(
-                    _appChainFactory,
-                    implementation_,
-                    _GROUP_MESSAGE_BROADCASTER_PROXY_SALT,
-                    abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)
-                )
-            );
+        vm.startPrank(_admin);
+        proxy_ = GroupMessageBroadcasterDeployer.deployProxy(
+            address(_appChainFactory),
+            implementation_,
+            _GROUP_MESSAGE_BROADCASTER_PROXY_SALT
+        );
+        vm.stopPrank();
     }
 
     /* ============ Identity Update Broadcaster Deployer Helpers ============ */
@@ -343,11 +349,6 @@ contract DeploymentTests is Test {
     }
 
     /* ============ Generic Deployer Helpers ============ */
-
-    function _deployFactory() internal returns (Factory factory_) {
-        vm.prank(_admin);
-        return new Factory();
-    }
 
     function _deployImplementation(
         Factory factory_,

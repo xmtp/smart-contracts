@@ -1,65 +1,68 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script } from "../../lib/forge-std/src/Script.sol";
+import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
-contract Utils is Script {
+library Utils {
     error InvalidProxyAddress(string outputJson_);
 
-    uint256 constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
-    uint256 constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
-    uint256 constant CHAIN_ID_BASE_SEPOLIA = 84_532;
+    VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    string constant OUTPUT_ANVIL_LOCALNET = "anvil_localnet";
-    string constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
-    string constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
-    string constant OUTPUT_UNKNOWN = "unknown";
+    uint256 internal constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
+    uint256 internal constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
+    uint256 internal constant CHAIN_ID_BASE_SEPOLIA = 84_532;
+
+    string internal constant OUTPUT_ANVIL_LOCALNET = "anvil_localnet";
+    string internal constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
+    string internal constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
+    string internal constant OUTPUT_UNKNOWN = "unknown";
 
     function readInput(string memory inputFileName) internal view returns (string memory) {
         string memory file = getInputPath(inputFileName);
-        return vm.readFile(file);
+        return VM.readFile(file);
     }
 
     function getInputPath(string memory inputFileName) internal view returns (string memory) {
-        string memory inputDir = string.concat(vm.projectRoot(), "/deployments/");
-        string memory environmentDir = string.concat(_resolveEnvironment(), "/");
+        string memory inputDir = string.concat(VM.projectRoot(), "/deployments/");
+        string memory environmentDir = string.concat(resolveEnvironment(), "/");
         string memory file = string.concat(inputFileName, ".json");
         return string.concat(inputDir, environmentDir, file);
     }
 
     function readOutput(string memory outputFileName) internal view returns (string memory) {
         string memory file = getOutputPath(outputFileName);
-        return vm.readFile(file);
+        return VM.readFile(file);
     }
 
     function writeOutput(string memory outputJson, string memory outputFileName) internal {
         string memory outputFilePath = getOutputPath(outputFileName);
-        vm.writeJson(outputJson, outputFilePath);
+        VM.writeJson(outputJson, outputFilePath);
     }
 
     function getOutputPath(string memory outputFileName) internal view returns (string memory) {
-        string memory outputDir = string.concat(vm.projectRoot(), "/deployments/");
-        string memory environmentDir = string.concat(_resolveEnvironment(), "/");
+        string memory outputDir = string.concat(VM.projectRoot(), "/deployments/");
+        string memory environmentDir = string.concat(resolveEnvironment(), "/");
         string memory outputFilePath = string.concat(outputDir, environmentDir, outputFileName, ".json");
         return outputFilePath;
     }
 
-    function _resolveEnvironment() internal view returns (string memory) {
-        string memory environment = vm.envString("ENVIRONMENT");
+    function resolveEnvironment() internal view returns (string memory) {
+        string memory environment = VM.envString("ENVIRONMENT");
 
         if (bytes(environment).length == 0) return OUTPUT_UNKNOWN;
 
         return environment;
     }
 
-    function _getProxy(string memory outputJson_) internal view returns (address proxy_) {
+    function getProxy(string memory outputJson_) internal view returns (address proxy_) {
         proxy_ = stdJson.readAddress(readOutput(outputJson_), ".addresses.proxy");
         require(address(proxy_) != address(0), InvalidProxyAddress(outputJson_));
     }
 
-    function _serializeUpgradeData(address implementation_, string memory outputJson_) internal {
-        vm.writeJson(vm.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
-        vm.writeJson(vm.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
+    function serializeUpgradeData(address implementation_, string memory outputJson_) internal {
+        VM.writeJson(VM.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
+
+        VM.writeJson(VM.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
     }
 }
