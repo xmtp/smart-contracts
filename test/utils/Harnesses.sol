@@ -3,61 +3,103 @@ pragma solidity 0.8.28;
 
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
-import { GroupMessageBroadcaster } from "../../src/GroupMessageBroadcaster.sol";
-import { IdentityUpdateBroadcaster } from "../../src/IdentityUpdateBroadcaster.sol";
-import { NodeRegistry } from "../../src/NodeRegistry.sol";
-import { RateRegistry } from "../../src/RateRegistry.sol";
-import { PayerRegistry } from "../../src/PayerRegistry.sol";
+import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
+import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
+import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
+import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
+import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
+import { ParameterRegistry } from "../../src/abstract/ParameterRegistry.sol";
+import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
+import { PayloadBroadcaster } from "../../src/abstract/PayloadBroadcaster.sol";
+import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
+import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
+import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
+
+contract PayloadBroadcasterHarness is PayloadBroadcaster {
+    constructor(address registry_) PayloadBroadcaster(registry_) {}
+
+    function minPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pb.minPayloadSize";
+    }
+
+    function maxPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pb.maxPayloadSize";
+    }
+
+    function migratorParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pb.migrator";
+    }
+
+    function pausedParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pb.paused";
+    }
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayloadBroadcasterStorage().paused = paused_;
+    }
+
+    function __setSequenceId(uint64 sequenceId_) external {
+        _getPayloadBroadcasterStorage().sequenceId = sequenceId_;
+    }
+
+    function __setMinPayloadSize(uint256 minPayloadSize_) external {
+        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
+    }
+
+    function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
+        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
+    }
+
+    function __getSequenceId() external view returns (uint64 sequenceId_) {
+        return _getPayloadBroadcasterStorage().sequenceId;
+    }
+}
 
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
-    function __pause() external {
-        _pause();
+    constructor(address registry_) GroupMessageBroadcaster(registry_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayloadBroadcasterStorage().paused = paused_;
     }
 
-    function __unpause() external {
-        _unpause();
+    function __setSequenceId(uint64 sequenceId_) external {
+        _getPayloadBroadcasterStorage().sequenceId = sequenceId_;
     }
 
-    function __setSequenceId(uint64 sequenceId) external {
-        _getGroupMessagesStorage().sequenceId = sequenceId;
+    function __setMinPayloadSize(uint256 minPayloadSize_) external {
+        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
     }
 
-    function __setMinPayloadSize(uint256 minPayloadSize) external {
-        _getGroupMessagesStorage().minPayloadSize = minPayloadSize;
+    function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
+        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
     }
 
-    function __setMaxPayloadSize(uint256 maxPayloadSize) external {
-        _getGroupMessagesStorage().maxPayloadSize = maxPayloadSize;
-    }
-
-    function __getSequenceId() external view returns (uint64) {
-        return _getGroupMessagesStorage().sequenceId;
+    function __getSequenceId() external view returns (uint64 sequenceId_) {
+        return _getPayloadBroadcasterStorage().sequenceId;
     }
 }
 
 contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
-    function __pause() external {
-        _pause();
+    constructor(address registry_) IdentityUpdateBroadcaster(registry_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayloadBroadcasterStorage().paused = paused_;
     }
 
-    function __unpause() external {
-        _unpause();
+    function __setSequenceId(uint64 sequenceId_) external {
+        _getPayloadBroadcasterStorage().sequenceId = sequenceId_;
     }
 
-    function __setSequenceId(uint64 sequenceId) external {
-        _getIdentityUpdatesStorage().sequenceId = sequenceId;
+    function __setMinPayloadSize(uint256 minPayloadSize_) external {
+        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
     }
 
-    function __setMinPayloadSize(uint256 minPayloadSize) external {
-        _getIdentityUpdatesStorage().minPayloadSize = minPayloadSize;
+    function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
+        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
     }
 
-    function __setMaxPayloadSize(uint256 maxPayloadSize) external {
-        _getIdentityUpdatesStorage().maxPayloadSize = maxPayloadSize;
-    }
-
-    function __getSequenceId() external view returns (uint64) {
-        return _getIdentityUpdatesStorage().sequenceId;
+    function __getSequenceId() external view returns (uint64 sequenceId_) {
+        return _getPayloadBroadcasterStorage().sequenceId;
     }
 }
 
@@ -200,5 +242,78 @@ contract PayerRegistryHarness is PayerRegistry {
 
     function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
         return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
+    }
+}
+
+contract ParameterRegistryHarness is ParameterRegistry {
+    function migratorParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pr.migrator";
+    }
+
+    function adminParameterKey() public pure override returns (bytes memory key_) {
+        return "xmtp.pr.isAdmin";
+    }
+
+    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+        return _getRegistryParameter(key_);
+    }
+
+    function __setRegistryParameter(bytes memory key_, address value_) external {
+        __setRegistryParameter(key_, bytes32(uint256(uint160(value_))));
+    }
+
+    function __setRegistryParameter(bytes memory key_, bool value_) external {
+        __setRegistryParameter(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    }
+
+    function __setRegistryParameter(bytes memory key_, uint256 value_) external {
+        __setRegistryParameter(key_, bytes32(value_));
+    }
+
+    function __setRegistryParameter(bytes memory key_, bytes32 value_) public {
+        _getParameterRegistryStorage().parameters[key_] = value_;
+    }
+}
+
+contract SettlementChainParameterRegistryHarness is SettlementChainParameterRegistry {
+    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+        return _getRegistryParameter(key_);
+    }
+}
+
+contract AppChainParameterRegistryHarness is AppChainParameterRegistry {
+    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+        return _getRegistryParameter(key_);
+    }
+}
+
+contract SettlementChainGatewayHarness is SettlementChainGateway {
+    constructor(
+        address registry_,
+        address appChainGateway_,
+        address appChainNativeToken_
+    ) SettlementChainGateway(registry_, appChainGateway_, appChainNativeToken_) {}
+
+    function __setNonce(uint256 nonce_) external {
+        _getSettlementChainGatewayStorage().nonce = nonce_;
+    }
+
+    function __getNonce() external view returns (uint256 nonce_) {
+        return _getSettlementChainGatewayStorage().nonce;
+    }
+}
+
+contract AppChainGatewayHarness is AppChainGateway {
+    constructor(
+        address registry_,
+        address settlementChainGateway_
+    ) AppChainGateway(registry_, settlementChainGateway_) {}
+
+    function __setKeyNonce(bytes memory key_, uint256 nonce_) external {
+        _getAppChainGatewayStorage().keyNonces[key_] = nonce_;
+    }
+
+    function __getKeyNonce(bytes memory key_) external view returns (uint256 nonce_) {
+        return _getAppChainGatewayStorage().keyNonces[key_];
     }
 }

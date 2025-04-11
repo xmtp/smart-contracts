@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { DeployProxiedContract } from "./utils/DeployProxiedContract.s.sol";
-import { GroupMessageBroadcaster } from "../src/GroupMessageBroadcaster.sol";
+import { Script } from "../lib/forge-std/src/Script.sol";
 
-contract DeployGroupMessageBroadcasterScript is DeployProxiedContract {
-    function _getImplementationCreationCode() internal pure override returns (bytes memory) {
-        return abi.encodePacked(type(GroupMessageBroadcaster).creationCode);
+import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
+import { IPayloadBroadcaster } from "../src/abstract/interfaces/IPayloadBroadcaster.sol";
+
+import { GroupMessageBroadcaster } from "../src/app-chain/GroupMessageBroadcaster.sol";
+
+import { Utils } from "./utils/Utils.sol";
+import { Environment } from "./utils/Environment.sol";
+
+library GroupMessageBroadcasterDeployer {
+    function deployImplementation(address factory_, address registry_) internal returns (address implementation_) {
+        bytes memory creationCode_ = abi.encodePacked(
+            type(GroupMessageBroadcaster).creationCode,
+            abi.encode(registry_)
+        );
+
+        return IFactory(factory_).deployImplementation(creationCode_);
     }
 
-    function _getAdminEnvVar() internal pure override returns (string memory) {
-        return "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS";
-    }
-
-    function _getOutputFilePath() internal pure override returns (string memory) {
-        return XMTP_GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON;
-    }
-
-    function _getProxySalt() internal pure override returns (bytes32) {
-        return keccak256(abi.encodePacked("GroupMessageBroadcasterProxy"));
-    }
-
-    function _getImplementationSalt() internal pure override returns (bytes32) {
-        return keccak256(abi.encodePacked("GroupMessageBroadcaster"));
-    }
-
-    function _getInitializeCalldata() internal view override returns (bytes memory) {
-        address admin = vm.envAddress("XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS");
-        require(admin != address(0), "XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS not set");
-
-        return abi.encodeWithSelector(GroupMessageBroadcaster.initialize.selector, admin);
+    function deployProxy(
+        address factory_,
+        address implementation_,
+        bytes32 salt_
+    ) internal returns (GroupMessageBroadcaster proxy_) {
+        bytes memory initializeCallData_ = abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector);
+        return GroupMessageBroadcaster(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
     }
 }
+
+contract DeployGroupMessageBroadcaster is Script {}
