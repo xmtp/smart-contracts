@@ -61,7 +61,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     /* ============ Constructor ============ */
 
     constructor(address token_) {
-        if ((token = token_) == address(0)) revert ZeroTokenAddress();
+        require((token = token_) != address(0), ZeroTokenAddress());
     }
 
     /* ============ Initialization ============ */
@@ -411,7 +411,7 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
      * @param newImplementation_ The address of the new implementation.
      */
     function _authorizeUpgrade(address newImplementation_) internal view override onlyAdmin {
-        // TODO: Consider reverting if there is no code at the new implementation address.
+        // TODO: Use different upgradeable pattern for this contract.
         require(newImplementation_ != address(0), ZeroImplementationAddress());
     }
 }

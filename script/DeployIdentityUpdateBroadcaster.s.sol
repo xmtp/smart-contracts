@@ -65,7 +65,7 @@ contract DeployIdentityUpdateBroadcaster is Script {
 
     function deployImplementation() public {
         require(
-            Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION != address(0),
+            Environment.EXPECTED_IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION != address(0),
             ExpectedImplementationNotSet()
         );
 
@@ -75,7 +75,7 @@ contract DeployIdentityUpdateBroadcaster is Script {
             .deployImplementation(Environment.EXPECTED_FACTORY, Environment.EXPECTED_PARAMETER_REGISTRY_PROXY);
 
         require(
-            implementation_ == Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION,
+            implementation_ == Environment.EXPECTED_IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION,
             UnexpectedImplementation()
         );
 

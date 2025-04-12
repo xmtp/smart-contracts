@@ -14,7 +14,7 @@ contract Initializable is IInitializable {
 
     /// @inheritdoc IInitializable
     function initialize(address implementation_, bytes calldata initializeCallData_) external {
-        if (implementation_ == address(0)) revert ZeroImplementation();
+        require(implementation_ != address(0), ZeroImplementation());
 
         assembly {
             sstore(_IMPLEMENTATION_SLOT, implementation_)

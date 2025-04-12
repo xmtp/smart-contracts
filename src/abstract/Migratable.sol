@@ -29,7 +29,7 @@ abstract contract Migratable is IMigratable {
      * @param migrator_ The address of a migrator contract.
      */
     function _migrate(address migrator_) internal {
-        if (migrator_ == address(0)) revert ZeroMigrator();
+        require(migrator_ != address(0), ZeroMigrator());
 
         (bool success_, bytes memory returnData_) = migrator_.delegatecall(hex"");
 

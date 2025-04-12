@@ -25,8 +25,8 @@ interface IERC20InboxLike {
     ) external returns (uint256 messageNumber_);
 
     /**
-     * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts
-     * @dev    All tokenTotalFeeAmount will be deposited to callValueRefundAddress on L2
+     * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts.
+     * @dev    All tokenTotalFeeAmount will be deposited to callValueRefundAddress on L2.
      * @dev    Gas limit and maxFeePerGas should not be set to 1 as that is used to trigger the RetryableData error
      * @dev    In case of native token having non-18 decimals: tokenTotalFeeAmount is denominated in native token's
      *         decimals. All other value params - l2CallValue, maxSubmissionCost and maxFeePerGas are denominated in

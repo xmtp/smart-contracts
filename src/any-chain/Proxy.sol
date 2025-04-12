@@ -15,7 +15,7 @@ contract Proxy is IProxy {
      * @param implementation_ The address of some implementation.
      */
     constructor(address implementation_) {
-        if (implementation_ == address(0)) revert ZeroImplementation();
+        require(implementation_ != address(0), ZeroImplementation());
 
         assembly {
             sstore(_IMPLEMENTATION_SLOT, implementation_)

@@ -88,7 +88,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            // TODO: Should `_redirectFunds` be called here?
+            // TODO: Should `_redirectFunds` be called here? If so, consider re-entrancy prevention.
 
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
                 gasLimit_: gasLimit_,
@@ -118,7 +118,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address appChainAlias_ = appChainAlias();
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            _redirectFunds(inboxes_[index_], nativeTokensToSend_);
+            _redirectFunds(inboxes_[index_], nativeTokensToSend_); // TODO: Consider re-entrancy prevention.
 
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
                 to_: appChainGateway,

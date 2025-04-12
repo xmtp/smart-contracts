@@ -160,7 +160,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     }
 
     function _revertIfPaused() internal view {
-        if (_getPayloadBroadcasterStorage().paused) revert Paused();
+        require(!_getPayloadBroadcasterStorage().paused, Paused());
     }
 
     function _revertIfInvalidPayloadSize(uint256 payloadSize_) internal view {

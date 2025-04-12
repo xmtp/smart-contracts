@@ -188,7 +188,7 @@ contract RateRegistry is Initializable, AccessControlUpgradeable, UUPSUpgradeabl
      * @param newImplementation The address of the new implementation.
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {
-        // TODO: Consider reverting if there is no code at the new implementation address.
+        // TODO: Use different upgradeable pattern for this contract.
         require(newImplementation != address(0), ZeroImplementationAddress());
         emit UpgradeAuthorized(msg.sender, newImplementation);
     }
