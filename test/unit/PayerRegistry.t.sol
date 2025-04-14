@@ -3,26 +3,31 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IERC1967 } from "../../lib/oz/contracts/interfaces/IERC1967.sol";
-
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 
 import { PayerRegistryHarness } from "../utils/Harnesses.sol";
-import { MockErc20 } from "../utils/Mocks.sol";
+import { MockParameterRegistry, MockErc20, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract PayerRegistryTests is Test, Utils {
-    address internal _implementation;
+    bytes internal constant _PAUSED_KEY = "xmtp.payerRegistry.paused";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.payerRegistry.migrator";
+    bytes internal constant _MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
+    bytes internal constant _WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
+    bytes internal constant _SETTLER_KEY = "xmtp.payerRegistry.settler";
+    bytes internal constant _FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
 
     PayerRegistryHarness internal _registry;
 
+    address internal _implementation;
+    address internal _parameterRegistry;
     address internal _token;
 
-    address internal _admin = makeAddr("admin");
     address internal _settler = makeAddr("settler");
     address internal _feeDistributor = makeAddr("feeDistributor");
     address internal _unauthorized = makeAddr("unauthorized");
@@ -35,84 +40,72 @@ contract PayerRegistryTests is Test, Utils {
     uint32 internal _withdrawLockPeriod = 2 days;
 
     function setUp() external {
+        _parameterRegistry = address(new MockParameterRegistry());
         _token = address(new MockErc20());
 
-        _implementation = address(new PayerRegistryHarness(_token));
+        _implementation = address(new PayerRegistryHarness(_parameterRegistry, _token));
+
+        _mockParameterRegistryCall(_MINIMUM_DEPOSIT_KEY, _minimumDeposit);
+        _mockParameterRegistryCall(_WITHDRAW_LOCK_PERIOD_KEY, _withdrawLockPeriod);
+        _mockParameterRegistryCall(_SETTLER_KEY, _settler);
+        _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, _feeDistributor);
 
         _registry = PayerRegistryHarness(
-            address(
-                new ERC1967Proxy(
-                    _implementation,
-                    abi.encodeWithSelector(
-                        IPayerRegistry.initialize.selector,
-                        _admin,
-                        _settler,
-                        _feeDistributor,
-                        _minimumDeposit,
-                        _withdrawLockPeriod
-                    )
-                )
-            )
+            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayerRegistry.initialize.selector)))
         );
     }
 
     /* ============ constructor ============ */
 
+    function test_constructor_zeroParameterRegistryAddress() external {
+        vm.expectRevert(IPayerRegistry.ZeroParameterRegistryAddress.selector);
+
+        new PayerRegistryHarness(address(0), _token);
+    }
+
     function test_constructor_zeroTokenAddress() external {
         vm.expectRevert(IPayerRegistry.ZeroTokenAddress.selector);
 
-        new PayerRegistryHarness(address(0));
-    }
-
-    /* ============ initializer ============ */
-
-    function test_initializer_zeroAdminAddress() external {
-        vm.expectRevert(IPayerRegistry.ZeroAdminAddress.selector);
-
-        new ERC1967Proxy(
-            _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(0), address(0), address(0), 0, 0)
-        );
-    }
-
-    function test_initializer_zeroSettler() external {
-        vm.expectRevert(IPayerRegistry.ZeroSettlerAddress.selector);
-
-        new ERC1967Proxy(
-            _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(0), address(0), 0, 0)
-        );
-    }
-
-    function test_initializer_zeroFeeDistributor() external {
-        vm.expectRevert(IPayerRegistry.ZeroFeeDistributorAddress.selector);
-
-        new ERC1967Proxy(
-            _implementation,
-            abi.encodeWithSelector(IPayerRegistry.initialize.selector, address(1), address(1), address(0), 0, 0)
-        );
+        new PayerRegistryHarness(_parameterRegistry, address(0));
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() external view {
         assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(_registry.implementation(), _implementation);
+        assertEq(keccak256(_registry.minimumDepositParameterKey()), keccak256(_MINIMUM_DEPOSIT_KEY));
+        assertEq(keccak256(_registry.withdrawLockPeriodParameterKey()), keccak256(_WITHDRAW_LOCK_PERIOD_KEY));
+        assertEq(keccak256(_registry.settlerParameterKey()), keccak256(_SETTLER_KEY));
+        assertEq(keccak256(_registry.feeDistributorParameterKey()), keccak256(_FEE_DISTRIBUTOR_KEY));
+        assertEq(keccak256(_registry.pausedParameterKey()), keccak256(_PAUSED_KEY));
+        assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertFalse(_registry.paused());
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.token(), _token);
-        assertEq(_registry.admin(), _admin);
         assertEq(_registry.settler(), _settler);
         assertEq(_registry.feeDistributor(), _feeDistributor);
         assertEq(_registry.minimumDeposit(), _minimumDeposit);
         assertEq(_registry.withdrawLockPeriod(), _withdrawLockPeriod);
     }
 
-    /* ============ initialize ============ */
+    /* ============ initializer ============ */
 
-    function test_invalid_reinitialization() external {
+    function test_initialize_reinitialization() external {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        _registry.initialize(address(0), address(0), address(0), 0, 0);
+        _registry.initialize();
     }
 
     /* ============ deposit to self ============ */
+
+    function test_deposit_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(0);
+    }
 
     function test_deposit_toSelf_insufficientDeposit() external {
         vm.expectRevert(
@@ -121,6 +114,32 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.prank(_alice);
         _registry.deposit(_minimumDeposit - 1);
+    }
+
+    function test_deposit_toSelf_erc20TransferFromFailed_tokenReturnsFalse() external {
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(_minimumDeposit);
+    }
+
+    function test_deposit_toSelf_erc20TransferFromFailed_tokenReverts() external {
+        vm.mockCallRevert(
+            _token,
+            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            ""
+        );
+
+        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(_minimumDeposit);
     }
 
     function test_deposit_toSelf() external {
@@ -174,6 +193,15 @@ contract PayerRegistryTests is Test, Utils {
 
     /* ============ deposit to payer ============ */
 
+    function test_deposit_toPayer_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(_bob, 0);
+    }
+
     function test_deposit_toPayer_insufficientDeposit() external {
         vm.expectRevert(
             abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, _minimumDeposit - 1, _minimumDeposit)
@@ -181,6 +209,32 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.prank(_alice);
         _registry.deposit(_bob, _minimumDeposit - 1);
+    }
+
+    function test_deposit_toPayer_erc20TransferFromFailed_tokenReturnsFalse() external {
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(_bob, _minimumDeposit);
+    }
+
+    function test_deposit_toPayer_erc20TransferFromFailed_tokenReverts() external {
+        vm.mockCallRevert(
+            _token,
+            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            ""
+        );
+
+        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.deposit(_bob, _minimumDeposit);
     }
 
     function test_deposit_toPayer() external {
@@ -235,6 +289,15 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     /* ============ requestWithdrawal ============ */
+
+    function test_requestWithdrawal_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.requestWithdrawal(0);
+    }
 
     function test_requestWithdrawal_zeroWithdrawalAmount() external {
         vm.expectRevert(IPayerRegistry.ZeroWithdrawalAmount.selector);
@@ -313,6 +376,15 @@ contract PayerRegistryTests is Test, Utils {
 
     /* ============ cancelWithdrawal ============ */
 
+    function test_cancelWithdrawal_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.cancelWithdrawal();
+    }
+
     function test_cancelWithdrawal_noPendingWithdrawal() external {
         vm.expectRevert(IPayerRegistry.NoPendingWithdrawal.selector);
 
@@ -369,6 +441,15 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     /* ============ finalizeWithdrawal ============ */
+
+    function test_finalizeWithdrawal_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.finalizeWithdrawal(_alice);
+    }
 
     function test_finalizeWithdrawal_noPendingWithdrawal() external {
         vm.expectRevert(IPayerRegistry.NoPendingWithdrawal.selector);
@@ -444,6 +525,22 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     /* ============ settleUsage ============ */
+
+    function test_settleUsage_notSettler() external {
+        vm.expectRevert(IPayerRegistry.NotSettler.selector);
+
+        vm.prank(_unauthorized);
+        _registry.settleUsage(new address[](0), new uint96[](0));
+    }
+
+    function test_settleUsage_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_settler);
+        _registry.settleUsage(new address[](0), new uint96[](0));
+    }
 
     function test_settleUsage_arrayLengthMismatch() external {
         vm.expectRevert(IPayerRegistry.ArrayLengthMismatch.selector);
@@ -551,155 +648,166 @@ contract PayerRegistryTests is Test, Utils {
 
     // TODO: testFuzz_settleUsage
 
-    /* ============ pause ============ */
+    /* ============ updateSettler ============ */
 
-    function test_pause() external {
+    function test_updateSettler_zeroSettlerAddress() external {
+        _mockParameterRegistryCall(_SETTLER_KEY, address(0));
+
+        vm.expectRevert(IPayerRegistry.ZeroSettlerAddress.selector);
+
+        _registry.updateSettler();
+    }
+
+    function test_updateSettler_noChange() external {
+        _registry.__setSettler(address(1));
+
+        _mockParameterRegistryCall(_SETTLER_KEY, address(1));
+
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updateSettler();
+    }
+
+    function test_updateSettler() external {
+        _registry.__setSettler(address(1));
+
+        _mockParameterRegistryCall(_SETTLER_KEY, address(2));
+
         vm.expectEmit(address(_registry));
-        emit PausableUpgradeable.Paused(_admin);
+        emit IPayerRegistry.SettlerUpdated(address(2));
 
-        vm.prank(_admin);
-        _registry.pause();
+        _registry.updateSettler();
+
+        assertEq(_registry.settler(), address(2));
+    }
+
+    /* ============ updateFeeDistributor ============ */
+
+    function test_updateFeeDistributor_zeroFeeDistributorAddress() external {
+        _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, address(0));
+
+        vm.expectRevert(IPayerRegistry.ZeroFeeDistributorAddress.selector);
+
+        _registry.updateFeeDistributor();
+    }
+
+    function test_updateFeeDistributor_noChange() external {
+        _registry.__setFeeDistributor(address(1));
+
+        _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, address(1));
+
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updateFeeDistributor();
+    }
+
+    function test_updateFeeDistributor() external {
+        _registry.__setFeeDistributor(address(1));
+
+        _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, address(2));
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.FeeDistributorUpdated(address(2));
+
+        _registry.updateFeeDistributor();
+
+        assertEq(_registry.feeDistributor(), address(2));
+    }
+
+    /* ============ updateMinimumDeposit ============ */
+
+    function test_updateMinimumDeposit_zeroMinimumDeposit() external {
+        _mockParameterRegistryCall(_MINIMUM_DEPOSIT_KEY, uint256(0));
+
+        vm.expectRevert(IPayerRegistry.ZeroMinimumDeposit.selector);
+
+        _registry.updateMinimumDeposit();
+    }
+
+    function test_updateMinimumDeposit_noChange() external {
+        _registry.__setMinimumDeposit(1);
+
+        _mockParameterRegistryCall(_MINIMUM_DEPOSIT_KEY, 1);
+
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updateMinimumDeposit();
+    }
+
+    function test_updateMinimumDeposit() external {
+        _registry.__setMinimumDeposit(1);
+
+        _mockParameterRegistryCall(_MINIMUM_DEPOSIT_KEY, uint256(2));
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.MinimumDepositUpdated(2);
+
+        _registry.updateMinimumDeposit();
+
+        assertEq(_registry.minimumDeposit(), 2);
+    }
+
+    /* ============ updateWithdrawLockPeriod ============ */
+
+    function test_updateWithdrawLockPeriod_noChange() external {
+        _registry.__setWithdrawLockPeriod(1);
+
+        _mockParameterRegistryCall(_WITHDRAW_LOCK_PERIOD_KEY, 1);
+
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updateWithdrawLockPeriod();
+    }
+
+    function test_updateWithdrawLockPeriod() external {
+        _registry.__setWithdrawLockPeriod(1);
+
+        _mockParameterRegistryCall(_WITHDRAW_LOCK_PERIOD_KEY, 2);
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.WithdrawLockPeriodUpdated(2);
+
+        _registry.updateWithdrawLockPeriod();
+
+        assertEq(_registry.withdrawLockPeriod(), 2);
+    }
+
+    /* ============ updatePauseStatus ============ */
+
+    function test_updatePauseStatus_noChange() external {
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updatePauseStatus();
+
+        _mockParameterRegistryCall(_PAUSED_KEY, true);
+
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.NoChange.selector);
+
+        _registry.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus() external {
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.PauseStatusUpdated(true);
+
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_PAUSED_KEY, true);
+
+        _registry.updatePauseStatus();
 
         assertTrue(_registry.paused());
-    }
-
-    function test_pause_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.pause();
-    }
-
-    function test_pause_whenPaused() external {
-        _registry.__pause();
-
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-
-        vm.prank(_admin);
-        _registry.pause();
-    }
-
-    /* ============ unpause ============ */
-
-    function test_unpause() external {
-        _registry.__pause();
 
         vm.expectEmit(address(_registry));
-        emit PausableUpgradeable.Unpaused(_admin);
+        emit IPayerRegistry.PauseStatusUpdated(false);
 
-        vm.prank(_admin);
-        _registry.unpause();
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_PAUSED_KEY, false);
+
+        _registry.updatePauseStatus();
 
         assertFalse(_registry.paused());
-    }
-
-    function test_unpause_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.unpause();
-    }
-
-    function test_unpause_whenNotPaused() external {
-        vm.expectRevert(PausableUpgradeable.ExpectedPause.selector);
-
-        vm.prank(_admin);
-        _registry.unpause();
-    }
-
-    /* ============ setAdmin ============ */
-
-    function test_setAdmin_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setAdmin(_unauthorized);
-    }
-
-    function test_setAdmin() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.AdminSet(_alice);
-
-        vm.prank(_admin);
-        _registry.setAdmin(_alice);
-
-        assertEq(_registry.admin(), _alice);
-    }
-
-    /* ============ setSettler ============ */
-
-    function test_setSettler_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setSettler(_unauthorized);
-    }
-
-    function test_setSettler() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.SettlerSet(_alice);
-
-        vm.prank(_admin);
-        _registry.setSettler(_alice);
-
-        assertEq(_registry.settler(), _alice);
-    }
-
-    /* ============ setFeeDistributor ============ */
-
-    function test_setFeeDistributor_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setFeeDistributor(_unauthorized);
-    }
-
-    function test_setFeeDistributor() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.FeeDistributorSet(_alice);
-
-        vm.prank(_admin);
-        _registry.setFeeDistributor(_alice);
-
-        assertEq(_registry.feeDistributor(), _alice);
-    }
-
-    /* ============ setMinimumDeposit ============ */
-
-    function test_setMinimumDeposit_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setMinimumDeposit(20e6);
-    }
-
-    function test_setMinimumDeposit() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.MinimumDepositSet(20e6);
-
-        vm.prank(_admin);
-        _registry.setMinimumDeposit(20e6);
-
-        assertEq(_registry.minimumDeposit(), 20e6);
-    }
-
-    /* ============ setWithdrawLockPeriod ============ */
-
-    function test_setWithdrawLockPeriod_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setWithdrawLockPeriod(3 days);
-    }
-
-    function test_setWithdrawLockPeriod() external {
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawLockPeriodSet(3 days);
-
-        vm.prank(_admin);
-        _registry.setWithdrawLockPeriod(3 days);
-
-        assertEq(_registry.withdrawLockPeriod(), 3 days);
     }
 
     /* ============ totalWithdrawable ============ */
@@ -749,45 +857,95 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(balances_[3], 40e6);
     }
 
-    /* ============ upgradeToAndCall ============ */
+    /* ============ getPendingWithdrawal ============ */
 
-    function test_upgradeToAndCall_notAdmin() external {
-        vm.expectRevert(IPayerRegistry.NotAdmin.selector);
+    function test_getPendingWithdrawal() external {
+        _registry.__setPendingWithdrawal(_alice, 100);
+        _registry.__setPendingWithdrawableTimestamp(_alice, 200);
 
-        vm.prank(_unauthorized);
-        _registry.upgradeToAndCall(address(0), "");
+        (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_) = _registry.getPendingWithdrawal(_alice);
+
+        assertEq(pendingWithdrawal_, 100);
+        assertEq(withdrawableTimestamp_, 200);
+    }
+    /* ============ migrate ============ */
+
+    function test_migrate_zeroMigrator() external {
+        vm.expectRevert(IMigratable.ZeroMigrator.selector);
+        _registry.migrate();
     }
 
-    function test_upgradeToAndCall_zeroImplementationAddress() external {
-        vm.expectRevert(IPayerRegistry.ZeroImplementationAddress.selector);
+    function test_migrate_migrationFailed() external {
+        address migrator_ = address(new MockFailingMigrator());
 
-        vm.prank(_admin);
-        _registry.upgradeToAndCall(address(0), "");
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMigratable.MigrationFailed.selector,
+                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
+            )
+        );
+
+        _registry.migrate();
     }
 
-    function test_upgradeToAndCall() external {
-        _registry.__setMinimumDeposit(20e6);
-        _registry.__setWithdrawLockPeriod(3 days);
+    function test_migrate_emptyCode() external {
+        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
 
-        address newImplementation = address(new PayerRegistryHarness(_token));
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
-        // Authorized upgrade should succeed and emit UpgradeAuthorized event.
+        _registry.migrate();
+    }
+
+    function test_migrate() external {
+        _registry.__setMinimumDeposit(100);
+        _registry.__setWithdrawLockPeriod(50);
+
+        address newImplementation_ = address(new PayerRegistryHarness(_parameterRegistry, _token));
+        address migrator_ = address(new MockMigrator(newImplementation_));
+
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+
         vm.expectEmit(address(_registry));
-        emit IERC1967.Upgraded(newImplementation);
+        emit IMigratable.Migrated(migrator_);
 
-        vm.prank(_admin);
-        _registry.upgradeToAndCall(newImplementation, "");
+        vm.expectEmit(address(_registry));
+        emit IERC1967.Upgraded(newImplementation_);
 
-        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation);
-        assertEq(_registry.minimumDeposit(), 20e6);
-        assertEq(_registry.withdrawLockPeriod(), 3 days);
+        _registry.migrate();
+
+        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
+        assertEq(_registry.token(), _token);
+        assertEq(_registry.settler(), _settler);
+        assertEq(_registry.feeDistributor(), _feeDistributor);
+        assertEq(_registry.minimumDeposit(), 100);
+        assertEq(_registry.withdrawLockPeriod(), 50);
     }
 
     /* ============ helper functions ============ */
 
-    function _getImplementationFromSlot(address proxy) internal view returns (address implementation_) {
-        // Retrieve the _implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy, EIP1967_IMPLEMENTATION_SLOT))));
+    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
+        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(value_));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
+    }
+
+    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
+        // Retrieve the implementation address directly from the proxy storage.
+        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 
     function _toInt104(uint96 input_) internal pure returns (int104 output_) {

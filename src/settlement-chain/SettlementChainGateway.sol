@@ -184,6 +184,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        isNotZero_ = input_ != address(0);
+        return input_ != address(0);
     }
 }

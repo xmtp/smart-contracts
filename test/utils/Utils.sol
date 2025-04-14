@@ -18,7 +18,7 @@ contract Utils {
     }
 
     /// @dev This is NOT cryptographically secure. Just good enough for testing.
-    function _genRandomInt(uint256 min, uint256 max) internal view returns (uint256) {
+    function _genRandomInt(uint256 min, uint256 max) internal view returns (uint256 output) {
         return
             min +
             (uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number, msg.sender))) %
@@ -33,7 +33,7 @@ contract Utils {
         }
     }
 
-    function _genString(uint32 length) internal pure returns (string memory) {
+    function _genString(uint32 length) internal pure returns (string memory output) {
         return string(_genBytes(length));
     }
 }

@@ -113,7 +113,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        isNotZero_ = input_ != address(0);
+        return input_ != address(0);
     }
 
     function _revertIfNotSettlementChainGateway() internal view {

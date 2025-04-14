@@ -72,6 +72,12 @@ contract Factory is IFactory {
             deployed_ := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
         }
 
-        require(deployed_ != address(0), DeployFailed());
+        require(_isNotZero(deployed_), DeployFailed());
+    }
+
+    /* ============ Internal View/Pure Functions ============ */
+
+    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
+        return input_ != address(0);
     }
 }

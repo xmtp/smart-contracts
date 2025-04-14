@@ -22,10 +22,9 @@ contract GroupMessageBroadcasterTests is Test, Utils {
     bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.minPayloadSize";
     bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
-    address internal _implementation;
-
     GroupMessageBroadcasterHarness internal _broadcaster;
 
+    address internal _implementation;
     address internal _parameterRegistry;
 
     function setUp() external {

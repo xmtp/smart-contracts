@@ -16,10 +16,9 @@ contract SettlementChainParameterRegistryTests is Test, Utils {
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.settlementChainParameterRegistry.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainParameterRegistry.migrator";
 
-    address internal _implementation;
-
     SettlementChainParameterRegistryHarness internal _registry;
 
+    address internal _implementation;
     address internal _admin1 = address(0x1111111111111111111111111111111111111111);
     address internal _admin2 = address(0x2222222222222222222222222222222222222222);
 

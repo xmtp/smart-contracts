@@ -154,7 +154,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        isNotZero_ = input_ != address(0);
+        return input_ != address(0);
     }
 
     function _revertIfPaused() internal view {
