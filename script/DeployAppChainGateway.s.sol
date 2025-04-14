@@ -13,10 +13,10 @@ import { Environment } from "./utils/Environment.sol";
 library AppChainGatewayDeployer {
     function deployImplementation(
         address factory_,
-        address registry_,
+        address parameterRegistry_,
         address settlementChainGateway_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        constructorArguments_ = abi.encode(registry_, settlementChainGateway_);
+        constructorArguments_ = abi.encode(parameterRegistry_, settlementChainGateway_);
 
         bytes memory creationCode_ = abi.encodePacked(type(AppChainGateway).creationCode, constructorArguments_);
 
@@ -77,7 +77,7 @@ contract DeployAppChainGateway is Script {
         require(implementation_ == Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION, UnexpectedImplementation());
 
         require(
-            AppChainGateway(implementation_).registry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
+            AppChainGateway(implementation_).parameterRegistry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
             UnexpectedImplementation()
         );
 

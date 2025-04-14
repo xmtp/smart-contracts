@@ -14,9 +14,9 @@ import { Environment } from "./utils/Environment.sol";
 library IdentityUpdateBroadcasterDeployer {
     function deployImplementation(
         address factory_,
-        address registry_
+        address parameterRegistry_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        constructorArguments_ = abi.encode(registry_);
+        constructorArguments_ = abi.encode(parameterRegistry_);
 
         bytes memory creationCode_ = abi.encodePacked(
             type(IdentityUpdateBroadcaster).creationCode,
@@ -85,7 +85,8 @@ contract DeployIdentityUpdateBroadcaster is Script {
         );
 
         require(
-            IdentityUpdateBroadcaster(implementation_).registry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
+            IdentityUpdateBroadcaster(implementation_).parameterRegistry() ==
+                Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
             UnexpectedImplementation()
         );
 

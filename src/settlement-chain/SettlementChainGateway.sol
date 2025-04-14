@@ -16,7 +16,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    address public immutable registry;
+    address public immutable parameterRegistry;
 
     /// @inheritdoc ISettlementChainGateway
     address public immutable appChainGateway;
@@ -46,13 +46,13 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /**
      * @notice Constructor.
-     * @param  registry_            The address of the registry.
+     * @param  parameterRegistry_   The address of the parameter registry.
      * @param  appChainGateway_     The address of the app chain gateway.
      * @param  appChainNativeToken_ The address of the token on the settlement chain that is used as native gas token on
      *                              the app chain.
      */
-    constructor(address registry_, address appChainGateway_, address appChainNativeToken_) {
-        require(_isNotZero(registry = registry_), ZeroRegistryAddress());
+    constructor(address parameterRegistry_, address appChainGateway_, address appChainNativeToken_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
         require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeTokenAddress());
     }
@@ -167,7 +167,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Internal View/Pure Functions ============ */
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(registry).get(key_);
+        return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
     function _getEncodedParameters(
@@ -179,7 +179,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return
             abi.encodeCall(
                 IAppChainGatewayLike.receiveParameters,
-                (nonce_, keyChains_, IParameterRegistryLike(registry).get(keyChains_))
+                (nonce_, keyChains_, IParameterRegistryLike(parameterRegistry).get(keyChains_))
             );
     }
 

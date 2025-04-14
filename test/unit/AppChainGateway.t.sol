@@ -26,14 +26,14 @@ contract AppChainGatewayTests is Test, Utils {
 
     AppChainGatewayHarness internal _gateway;
 
-    address internal _registry;
+    address internal _parameterRegistry;
 
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
     address internal _settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(_settlementChainGateway);
 
     function setUp() external {
-        _registry = address(new MockParameterRegistry());
-        _implementation = address(new AppChainGatewayHarness(_registry, _settlementChainGateway));
+        _parameterRegistry = address(new MockParameterRegistry());
+        _implementation = address(new AppChainGatewayHarness(_parameterRegistry, _settlementChainGateway));
 
         _gateway = AppChainGatewayHarness(
             address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IAppChainGateway.initialize.selector)))
@@ -42,14 +42,14 @@ contract AppChainGatewayTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroRegistryAddress() external {
-        vm.expectRevert(IAppChainGateway.ZeroRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistryAddress() external {
+        vm.expectRevert(IAppChainGateway.ZeroParameterRegistryAddress.selector);
         new AppChainGatewayHarness(address(0), address(0));
     }
 
     function test_constructor_zeroSettlementChainGatewayAddress() external {
         vm.expectRevert(IAppChainGateway.ZeroSettlementChainGatewayAddress.selector);
-        new AppChainGatewayHarness(_registry, address(0));
+        new AppChainGatewayHarness(_parameterRegistry, address(0));
     }
 
     /* ============ initialize ============ */
@@ -65,7 +65,7 @@ contract AppChainGatewayTests is Test, Utils {
         assertEq(_getImplementationFromSlot(address(_gateway)), _implementation);
         assertEq(_gateway.implementation(), _implementation);
         assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
-        assertEq(_gateway.registry(), _registry);
+        assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.settlementChainGateway(), _settlementChainGateway);
         assertEq(_gateway.settlementChainGatewayAlias(), _settlementChainGatewayAlias);
     }
@@ -114,11 +114,17 @@ contract AppChainGatewayTests is Test, Utils {
         values_[1] = bytes32(uint256(23232));
         values_[2] = bytes32(uint256(98765));
 
-        vm.expectCall(_registry, abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[0], values_[0]));
+        vm.expectCall(
+            _parameterRegistry,
+            abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[0], values_[0])
+        );
 
         // NOTE: (keyChains_[1], values_[1]) is skipped because the nonce is lower than the key's nonce.
 
-        vm.expectCall(_registry, abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[2], values_[2]));
+        vm.expectCall(
+            _parameterRegistry,
+            abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[2], values_[2])
+        );
 
         vm.expectEmit(address(_gateway));
         emit IAppChainGateway.ParametersReceived(1, keyChains_);
@@ -141,7 +147,7 @@ contract AppChainGatewayTests is Test, Utils {
     function test_migrate_migrationFailed() external {
         address migrator_ = address(new MockFailingMigrator());
 
-        _mockRegistryCall(_MIGRATOR_KEY, migrator_);
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -154,7 +160,7 @@ contract AppChainGatewayTests is Test, Utils {
     }
 
     function test_migrate_emptyCode() external {
-        _mockRegistryCall(_MIGRATOR_KEY, address(1));
+        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -162,15 +168,17 @@ contract AppChainGatewayTests is Test, Utils {
     }
 
     function test_migrate() external {
-        address newRegistry_ = makeAddr("newRegistry");
+        address newParameterRegistry_ = makeAddr("newParameterRegistry");
         address newSettlementChainGateway_ = makeAddr("newSettlementChainGateway");
 
-        address newImplementation_ = address(new AppChainGatewayHarness(newRegistry_, newSettlementChainGateway_));
+        address newImplementation_ = address(
+            new AppChainGatewayHarness(newParameterRegistry_, newSettlementChainGateway_)
+        );
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        // TODO: `_expectAndMockRegistryCall`.
-        _mockRegistryCall(_MIGRATOR_KEY, migrator_);
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
 
         vm.expectEmit(address(_gateway));
         emit IMigratable.Migrated(migrator_);
@@ -181,7 +189,7 @@ contract AppChainGatewayTests is Test, Utils {
         _gateway.migrate();
 
         assertEq(_getImplementationFromSlot(address(_gateway)), newImplementation_);
-        assertEq(_gateway.registry(), newRegistry_);
+        assertEq(_gateway.parameterRegistry(), newParameterRegistry_);
         assertEq(_gateway.settlementChainGateway(), newSettlementChainGateway_);
     }
 
@@ -192,20 +200,20 @@ contract AppChainGatewayTests is Test, Utils {
         vm.mockCall(callee_, data_, returnData_);
     }
 
-    function _mockRegistryCall(bytes memory key_, address value_) internal {
-        _mockRegistryCall(key_, bytes32(uint256(uint160(value_))));
+    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
     }
 
-    function _mockRegistryCall(bytes memory key_, bool value_) internal {
-        _mockRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
+        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
     }
 
-    function _mockRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockRegistryCall(key_, bytes32(value_));
+    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(value_));
     }
 
-    function _mockRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_registry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
+    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 
     function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {

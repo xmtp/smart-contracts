@@ -34,8 +34,8 @@ interface ISettlementChainGateway is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the registry address is zero.
-    error ZeroRegistryAddress();
+    /// @notice Thrown when the parameter registry address is zero.
+    error ZeroParameterRegistryAddress();
 
     /// @notice Thrown when the app chain gateway address is zero.
     error ZeroAppChainGatewayAddress();
@@ -113,8 +113,8 @@ interface ISettlementChainGateway is IMigratable {
     /// @notice The key of the migrator parameter.
     function migratorParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The address of the registry.
-    function registry() external view returns (address registry_);
+    /// @notice The address of the parameter registry.
+    function parameterRegistry() external view returns (address parameterRegistry_);
 
     /// @notice The address of the app chain gateway.
     function appChainGateway() external view returns (address appChainGateway_);

@@ -13,9 +13,9 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
 
     /**
      * @notice Constructor for immutables.
-     * @param  registry_ The address of the parameter registry.
+     * @param  parameterRegistry_ The address of the parameter registry.
      */
-    constructor(address registry_) PayloadBroadcaster(registry_) {}
+    constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
 
     /* ============ Interactive Functions ============ */
 

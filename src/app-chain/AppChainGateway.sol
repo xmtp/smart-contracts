@@ -17,7 +17,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     bytes internal constant _DELIMITER = ".";
 
     /// @inheritdoc IAppChainGateway
-    address public immutable registry;
+    address public immutable parameterRegistry;
 
     /// @inheritdoc IAppChainGateway
     address public immutable settlementChainGateway;
@@ -54,11 +54,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /**
      * @notice Constructor.
-     * @param  registry_               The address of the parameter registry.
+     * @param  parameterRegistry_      The address of the parameter registry.
      * @param  settlementChainGateway_ The address of the settlement chain gateway.
      */
-    constructor(address registry_, address settlementChainGateway_) {
-        require(_isNotZero(registry = registry_), ZeroRegistryAddress());
+    constructor(address parameterRegistry_, address settlementChainGateway_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGatewayAddress());
 
         settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_);
@@ -93,7 +93,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
             $.keyNonces[key_] = nonce_;
 
             // slither-disable-next-line calls-loop
-            IParameterRegistryLike(registry).set(keyChain_, values_[index_]);
+            IParameterRegistryLike(parameterRegistry).set(keyChain_, values_[index_]);
         }
     }
 
@@ -125,7 +125,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     }
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(registry).get(key_);
+        return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {

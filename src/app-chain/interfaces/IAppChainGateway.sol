@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+
 /**
  * @title  IAppChainGateway
  * @notice Interface for the AppChainGateway.
  */
-interface IAppChainGateway {
+interface IAppChainGateway is IMigratable {
     /* ============ Events ============ */
 
     /**
@@ -17,8 +19,8 @@ interface IAppChainGateway {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the registry address is zero.
-    error ZeroRegistryAddress();
+    /// @notice Thrown when the parameter registry address is zero.
+    error ZeroParameterRegistryAddress();
 
     /// @notice Thrown when the settlement chain gateway address is zero.
     error ZeroSettlementChainGatewayAddress();
@@ -46,8 +48,8 @@ interface IAppChainGateway {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The address of the registry.
-    function registry() external view returns (address registry_);
+    /// @notice The address of the parameter registry.
+    function parameterRegistry() external view returns (address parameterRegistry_);
 
     /// @notice The address of the settlement chain gateway.
     function settlementChainGateway() external view returns (address settlementChainGateway_);

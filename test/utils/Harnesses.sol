@@ -16,7 +16,7 @@ import { SettlementChainGateway } from "../../src/settlement-chain/SettlementCha
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
 
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
-    constructor(address registry_) PayloadBroadcaster(registry_) {}
+    constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
 
     function minPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
         return "xmtp.pb.minPayloadSize";
@@ -56,7 +56,7 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
 }
 
 contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
-    constructor(address registry_) GroupMessageBroadcaster(registry_) {}
+    constructor(address parameterRegistry_) GroupMessageBroadcaster(parameterRegistry_) {}
 
     function __setPauseStatus(bool paused_) external {
         _getPayloadBroadcasterStorage().paused = paused_;
@@ -80,7 +80,7 @@ contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
 }
 
 contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
-    constructor(address registry_) IdentityUpdateBroadcaster(registry_) {}
+    constructor(address parameterRegistry_) IdentityUpdateBroadcaster(parameterRegistry_) {}
 
     function __setPauseStatus(bool paused_) external {
         _getPayloadBroadcasterStorage().paused = paused_;
@@ -289,10 +289,10 @@ contract AppChainParameterRegistryHarness is AppChainParameterRegistry {
 
 contract SettlementChainGatewayHarness is SettlementChainGateway {
     constructor(
-        address registry_,
+        address parameterRegistry_,
         address appChainGateway_,
         address appChainNativeToken_
-    ) SettlementChainGateway(registry_, appChainGateway_, appChainNativeToken_) {}
+    ) SettlementChainGateway(parameterRegistry_, appChainGateway_, appChainNativeToken_) {}
 
     function __setNonce(uint256 nonce_) external {
         _getSettlementChainGatewayStorage().nonce = nonce_;
@@ -305,9 +305,9 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
 
 contract AppChainGatewayHarness is AppChainGateway {
     constructor(
-        address registry_,
+        address parameterRegistry_,
         address settlementChainGateway_
-    ) AppChainGateway(registry_, settlementChainGateway_) {}
+    ) AppChainGateway(parameterRegistry_, settlementChainGateway_) {}
 
     function __setKeyNonce(bytes memory key_, uint256 nonce_) external {
         _getAppChainGatewayStorage().keyNonces[key_] = nonce_;

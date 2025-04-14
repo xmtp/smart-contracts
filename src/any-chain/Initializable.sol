@@ -29,7 +29,7 @@ contract Initializable is IInitializable {
         // slither-disable-start controlled-delegatecall
         // slither-disable-start low-level-calls
         (bool success_, bytes memory returnData_) = implementation_.delegatecall(initializeCallData_);
-        // slither-disable-end [controlled-delegatecall
+        // slither-disable-end controlled-delegatecall
         // slither-disable-end low-level-calls
 
         require(success_, InitializationFailed(returnData_));

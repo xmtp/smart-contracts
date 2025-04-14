@@ -14,7 +14,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc IPayloadBroadcaster
-    address public immutable registry;
+    address public immutable parameterRegistry;
 
     /* ============ UUPS Storage ============ */
 
@@ -48,10 +48,10 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /**
      * @notice Constructor for immutables.
-     * @param  registry_ The address of the parameter registry.
+     * @param  parameterRegistry_ The address of the parameter registry.
      */
-    constructor(address registry_) {
-        require(_isNotZero(registry = registry_), ZeroRegistryAddress());
+    constructor(address parameterRegistry_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
     }
 
     /* ============ Initialization ============ */
@@ -150,7 +150,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ Internal View/Pure Functions ============ */
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(registry).get(key_);
+        return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {

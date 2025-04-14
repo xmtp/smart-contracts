@@ -30,8 +30,8 @@ interface IPayloadBroadcaster is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the registry address is zero.
-    error ZeroRegistryAddress();
+    /// @notice Thrown when the parameter registry address is zero.
+    error ZeroParameterRegistryAddress();
 
     /// @notice Thrown when the payload size is invalid.
     error InvalidPayloadSize(uint256 actualSize_, uint256 minSize_, uint256 maxSize_);
@@ -88,7 +88,7 @@ interface IPayloadBroadcaster is IMigratable {
     function pausedParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
-    function registry() external view returns (address registry_);
+    function parameterRegistry() external view returns (address parameterRegistry_);
 
     /// @notice Minimum valid payload size (in bytes).
     function minPayloadSize() external view returns (uint256 size_);

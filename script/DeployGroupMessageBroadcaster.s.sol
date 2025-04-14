@@ -14,9 +14,9 @@ import { Environment } from "./utils/Environment.sol";
 library GroupMessageBroadcasterDeployer {
     function deployImplementation(
         address factory_,
-        address registry_
+        address parameterRegistry_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        constructorArguments_ = abi.encode(registry_);
+        constructorArguments_ = abi.encode(parameterRegistry_);
 
         bytes memory creationCode_ = abi.encodePacked(
             type(GroupMessageBroadcaster).creationCode,
@@ -85,7 +85,8 @@ contract DeployGroupMessageBroadcaster is Script {
         );
 
         require(
-            GroupMessageBroadcaster(implementation_).registry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
+            GroupMessageBroadcaster(implementation_).parameterRegistry() ==
+                Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
             UnexpectedImplementation()
         );
 
