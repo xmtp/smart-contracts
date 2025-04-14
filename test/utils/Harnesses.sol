@@ -162,13 +162,7 @@ contract NodeRegistryHarness is NodeRegistry {
 }
 
 contract RateRegistryHarness is RateRegistry {
-    function __pause() external {
-        _pause();
-    }
-
-    function __unpause() external {
-        _unpause();
-    }
+    constructor(address parameterRegistry_) RateRegistry(parameterRegistry_) {}
 
     function __pushRates(
         uint256 messageFee,
@@ -177,7 +171,7 @@ contract RateRegistryHarness is RateRegistry {
         uint256 targetRatePerMinute,
         uint256 startTime
     ) external {
-        _getRatesManagerStorage().allRates.push(
+        _getRateRegistryStorage().allRates.push(
             Rates(
                 uint64(messageFee),
                 uint64(storageFee),
@@ -189,7 +183,7 @@ contract RateRegistryHarness is RateRegistry {
     }
 
     function __getAllRates() external view returns (Rates[] memory rates_) {
-        return _getRatesManagerStorage().allRates;
+        return _getRateRegistryStorage().allRates;
     }
 }
 
