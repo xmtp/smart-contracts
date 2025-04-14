@@ -90,6 +90,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
             // TODO: Should `_redirectFunds` be called here? If so, consider re-entrancy prevention.
 
+            // slither-disable-next-line calls-loop
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
                 gasLimit_: gasLimit_,
                 maxFeePerGas_: gasPrice_,
@@ -98,6 +99,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 data_: data_
             });
 
+            // slither-disable-next-line reentrancy-events
             emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
         }
     }
@@ -120,6 +122,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
             _redirectFunds(inboxes_[index_], nativeTokensToSend_); // TODO: Consider re-entrancy prevention.
 
+            // slither-disable-next-line calls-loop
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
                 to_: appChainGateway,
                 l2CallValue_: 0,
@@ -132,6 +135,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 data_: data_
             });
 
+            // slither-disable-next-line reentrancy-events
             emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
         }
     }

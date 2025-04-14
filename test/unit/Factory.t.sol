@@ -33,13 +33,14 @@ contract FactoryTests is Test {
     address internal _bob = makeAddr("bob");
 
     function setUp() external {
+        vm.prank(_alice);
         _factory = new Factory();
     }
 
     /* ============ constructor ============ */
 
-    function test_constructor_xxx() external {
-        address expectedFactory_ = vm.computeCreateAddress(_alice, 0);
+    function test_constructor() external {
+        address expectedFactory_ = vm.computeCreateAddress(_alice, 1);
         address expectedInitializableImplementation_ = vm.computeCreateAddress(expectedFactory_, 1);
 
         vm.expectEmit(expectedFactory_);
@@ -91,6 +92,7 @@ contract FactoryTests is Test {
     function test_deployProxy_deployFailed() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
 
+        // TODO: Try to mockCallRevert on the expected proxy to get the `create2` to fail, instead of this.
         _factory.deployProxy(address(foo_), bytes32(0), "");
 
         vm.expectRevert(IFactory.DeployFailed.selector);
@@ -99,32 +101,25 @@ contract FactoryTests is Test {
 
     function test_deployProxy_initializationFailed() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
+        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
 
         vm.mockCallRevert(
-            _factory.initializableImplementation(),
+            expectedProxy_,
             abi.encodeWithSelector(IInitializable.initialize.selector, foo_, bytes("")),
             ""
         );
 
         vm.expectRevert();
 
+        vm.prank(_alice);
         _factory.deployProxy(address(foo_), bytes32(0), "");
     }
 
     function test_deployProxy() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
-
-        bytes32 initCodeHash_ = keccak256(
-            abi.encodePacked(type(Proxy).creationCode, abi.encode(_factory.initializableImplementation()))
-        );
+        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
 
         bytes memory initializeCallData_ = abi.encodeWithSelector(Foo.initialize.selector, uint256(123));
-
-        address expectedProxy_ = vm.computeCreate2Address(
-            keccak256(abi.encode(_alice, bytes32(0))),
-            initCodeHash_,
-            address(_factory)
-        );
 
         vm.expectEmit(address(_factory));
         emit IFactory.ProxyDeployed(expectedProxy_, foo_, _alice, bytes32(0), initializeCallData_);
@@ -152,17 +147,17 @@ contract FactoryTests is Test {
     /* ============ computeProxyAddress ============ */
 
     function test_computeProxyAddress() external view {
-        bytes memory initCode_ = abi.encodePacked(
-            type(Proxy).creationCode,
-            abi.encode(_factory.initializableImplementation())
-        );
-
-        address expectedProxy_ = vm.computeCreate2Address(
-            keccak256(abi.encode(_alice, bytes32(0))),
-            keccak256(initCode_),
-            address(_factory)
-        );
-
+        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
         assertEq(_factory.computeProxyAddress(_alice, bytes32(0)), expectedProxy_);
+    }
+
+    /* ============ helper functions ============ */
+
+    function _getExpectedProxy(address caller_, bytes32 salt_) internal view returns (address expectedProxy_) {
+        bytes32 initCodeHash_ = keccak256(
+            abi.encodePacked(type(Proxy).creationCode, abi.encode(_factory.initializableImplementation()))
+        );
+
+        return vm.computeCreate2Address(keccak256(abi.encode(caller_, salt_)), initCodeHash_, address(_factory));
     }
 }

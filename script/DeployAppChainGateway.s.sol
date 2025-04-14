@@ -40,6 +40,9 @@ contract DeployAppChainGateway is Script {
     error ExpectedProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
+    error FactoryNotSet();
+    error ParameterRegistryProxyNotSet();
+    error GatewayProxyNotSet();
 
     uint256 internal _privateKey;
     address internal _deployer;
@@ -59,6 +62,9 @@ contract DeployAppChainGateway is Script {
 
     function deployImplementation() public {
         require(Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.EXPECTED_PARAMETER_REGISTRY_PROXY != address(0), ParameterRegistryProxyNotSet());
+        require(Environment.EXPECTED_GATEWAY_PROXY != address(0), GatewayProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -96,6 +102,8 @@ contract DeployAppChainGateway is Script {
 
     function deployProxy() public {
         require(Environment.EXPECTED_GATEWAY_PROXY != address(0), ExpectedProxyNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
 
         vm.startBroadcast(_privateKey);
 

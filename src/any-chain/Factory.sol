@@ -24,9 +24,11 @@ contract Factory is IFactory {
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IFactory
-    function deployImplementation(bytes memory bytecode_) external returns (address implementation_) {
+    function deployImplementation(bytes calldata bytecode_) external returns (address implementation_) {
         require(bytecode_.length > 0, EmptyBytecode());
 
+        // NOTE: Since an implementation is expected to be proxied, it's address can depend entirely on its bytecode, so
+        //       a unique bytecode will have only one possible address.
         emit ImplementationDeployed(implementation_ = _create2(bytecode_, keccak256(bytecode_)));
     }
 
@@ -50,7 +52,7 @@ contract Factory is IFactory {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IFactory
-    function computeImplementationAddress(bytes memory bytecode_) external view returns (address implementation_) {
+    function computeImplementationAddress(bytes calldata bytecode_) external view returns (address implementation_) {
         bytes32 bytecodeHash_ = keccak256(bytecode_);
         return Create2.computeAddress(bytecodeHash_, bytecodeHash_);
     }
@@ -65,6 +67,7 @@ contract Factory is IFactory {
 
     /// @dev Creates a contract via `create2` and reverts if the deployment fails.
     function _create2(bytes memory bytecode_, bytes32 salt_) internal returns (address deployed_) {
+        // slither-disable-next-line assembly
         assembly {
             deployed_ := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
         }

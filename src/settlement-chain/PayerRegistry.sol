@@ -12,6 +12,7 @@ import { IERC20Like } from "./interfaces/External.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 // TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
+// TODO: `isZero` internal function for address zero checks.
 
 contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, PausableUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;

@@ -46,6 +46,8 @@ contract DeployGroupMessageBroadcaster is Script {
     error ExpectedProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
+    error FactoryNotSet();
+    error ParameterRegistryProxyNotSet();
 
     uint256 internal _privateKey;
     address internal _deployer;
@@ -68,6 +70,9 @@ contract DeployGroupMessageBroadcaster is Script {
             Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION != address(0),
             ExpectedImplementationNotSet()
         );
+
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.EXPECTED_PARAMETER_REGISTRY_PROXY != address(0), ParameterRegistryProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -104,6 +109,12 @@ contract DeployGroupMessageBroadcaster is Script {
 
     function deployProxy() public {
         require(Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_PROXY != address(0), ExpectedProxyNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+
+        require(
+            Environment.EXPECTED_GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION != address(0),
+            ExpectedImplementationNotSet()
+        );
 
         vm.startBroadcast(_privateKey);
 

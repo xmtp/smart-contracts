@@ -92,6 +92,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
             $.keyNonces[key_] = nonce_;
 
+            // slither-disable-next-line calls-loop
             IParameterRegistryLike(registry).set(keyChain_, values_[index_]);
         }
     }
@@ -113,7 +114,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     function _getKey(bytes[] memory keyChain_) internal pure returns (bytes memory key_) {
         require(keyChain_.length > 0, EmptyKeyChain());
 
-        // TODO: Perhaps compute the final size of the key and allocate the memory in one go.
+        // TODO: Perhaps compute the final size of the key and allocate the memory in one go. Best in assembly.
         for (uint256 index_; index_ < keyChain_.length; ++index_) {
             key_ = index_ == 0 ? keyChain_[index_] : _combineKeyChainParts(key_, keyChain_[index_]);
         }

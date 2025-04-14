@@ -22,8 +22,12 @@ library Environment {
     address internal constant EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION =
         0x0000000000000000000000000000000000000000;
 
+    // NOTE: Use the same salt for both the settlement and app chain parameter registry proxies to ensure they have the
+    //       same address. While this is not required by the code, the symmetry is desirable.
     bytes32 internal constant PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
 
+    // NOTE: Since the salt used to deploy the settlement and app chain parameter registry proxies is the same, the
+    //       expected address of both parameter registry proxies is the same.
     address internal constant EXPECTED_PARAMETER_REGISTRY_PROXY = 0x0000000000000000000000000000000000000000;
 
     address internal constant SETTLEMENT_CHAIN_PARAMETER_REGISTRY_ADMIN_1 = 0x0000000000000000000000000000000000000000;
@@ -41,8 +45,12 @@ library Environment {
 
     address internal constant EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION = 0x0000000000000000000000000000000000000000;
 
+    // NOTE: Use the same salt for both the settlement and app chain gateway proxies to ensure they have the same
+    //       address. While this is not required by the code, the symmetry is desirable.
     bytes32 internal constant GATEWAY_PROXY_SALT = "Gateway_0";
 
+    // NOTE: Since the salt used to deploy the settlement and app chain gateway proxies is the same, the expected
+    //       address of both gateway proxies is the same.
     address internal constant EXPECTED_GATEWAY_PROXY = 0x0000000000000000000000000000000000000000;
 
     /* ============ Group Message Broadcaster ============ */

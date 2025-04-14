@@ -34,11 +34,18 @@ interface IERC20InboxLike {
      * @param  to_                     Destination L2 contract address.
      * @param  l2CallValue_            Call value for retryable L2 message.
      * @param  maxSubmissionCost_      Max gas deducted from user's L2 balance to cover base submission fee.
-     * @param  excessFeeRefundAddress_ The address which receives the difference between execution fee paid and the actual execution cost. In case this address is a contract, funds will be received in its alias on L2.
-     * @param  callValueRefundAddress_ L2 call value gets credited here on L2 if retryable txn times out or gets cancelled. In case this address is a contract, funds will be received in its alias on L2.
-     * @param  gasLimit_               Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error).
-     * @param  maxFeePerGas_           Price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error).
-     * @param  tokenTotalFeeAmount_    The amount of fees to be deposited in native token to cover for retryable ticket cost.
+     * @param  excessFeeRefundAddress_ The address which receives the difference between execution fee paid and the
+     *                                 actual execution cost. In case this address is a contract, funds will be received
+     *                                 in its alias on L2.
+     * @param  callValueRefundAddress_ L2 call value gets credited here on L2 if retryable txn times out or gets
+     *                                 cancelled. In case this address is a contract, funds will be received in its
+     *                                 alias on L2.
+     * @param  gasLimit_               Max gas deducted from user's L2 balance to cover L2 execution. Should not be
+     *                                 set to 1 (magic value used to trigger the RetryableData error).
+     * @param  maxFeePerGas_           Price bid for L2 execution. Should not be set to 1 (magic value used to trigger
+     *                                 the RetryableData error).
+     * @param  tokenTotalFeeAmount_    The amount of fees to be deposited in native token to cover for retryable ticket
+     *                                 cost.
      * @param  data_                   ABI encoded data of L2 message.
      * @return messageNumber_          The message number of the retryable transaction.
      */

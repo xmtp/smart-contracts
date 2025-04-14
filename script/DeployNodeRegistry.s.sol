@@ -27,6 +27,8 @@ contract DeployNodeRegistry is Script {
     error PrivateKeyNotSet();
     error ExpectedImplementationNotSet();
     error UnexpectedImplementation();
+    error FactoryNotSet();
+    error AdminNotSet();
 
     uint256 internal _privateKey;
     address internal _deployer;
@@ -45,6 +47,8 @@ contract DeployNodeRegistry is Script {
 
     function deployImplementation() public {
         require(Environment.EXPECTED_NODE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.NODE_REGISTRY_ADMIN != address(0), AdminNotSet());
 
         vm.startBroadcast(_privateKey);
 

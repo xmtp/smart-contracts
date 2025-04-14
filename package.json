@@ -1,6 +1,6 @@
 {
     "name": "@xmtp/smart-contracts",
-    "version": "0.2.2",
+    "version": "0.4.0",
     "description": "XMTP Smart Contracts",
     "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
     "repository": {
@@ -20,7 +20,7 @@
         "lint-staged": "lint-staged",
         "prettier": "prettier --write 'script/**/*.sol' 'src/**/*.sol' 'test/**/*.sol'",
         "prettier-check": "prettier --check 'script/**/*.sol' 'src/**/*.sol' 'test/**/*.sol'",
-        "slither": "forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
+        "slither": "forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --sarif output.sarif --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
         "solhint": "solhint -f stylish 'src/**/*.sol'",
         "solhint-fix": "solhint --fix 'src/**/*.sol'",
         "test": "forge test"

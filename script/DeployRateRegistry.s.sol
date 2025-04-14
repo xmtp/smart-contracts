@@ -37,6 +37,8 @@ contract DeployRateRegistry is Script {
     error ExpectedProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
+    error FactoryNotSet();
+    error AdminNotSet();
 
     uint256 internal _privateKey;
     address internal _deployer;
@@ -56,6 +58,7 @@ contract DeployRateRegistry is Script {
 
     function deployImplementation() public {
         require(Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -81,6 +84,9 @@ contract DeployRateRegistry is Script {
 
     function deployProxy() public {
         require(Environment.EXPECTED_RATE_REGISTRY_PROXY != address(0), ExpectedProxyNotSet());
+        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.RATE_REGISTRY_ADMIN != address(0), AdminNotSet());
 
         vm.startBroadcast(_privateKey);
 
