@@ -16,10 +16,9 @@ contract AppChainParameterRegistryTests is Test, Utils {
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.appChainParameterRegistry.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.appChainParameterRegistry.migrator";
 
-    address internal _implementation;
-
     AppChainParameterRegistryHarness internal _registry;
 
+    address internal _implementation;
     address internal _admin1 = address(0x1111111111111111111111111111111111111111);
     address internal _admin2 = address(0x2222222222222222222222222222222222222222);
 

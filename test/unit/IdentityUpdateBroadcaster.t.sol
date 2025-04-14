@@ -22,10 +22,9 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.minPayloadSize";
     bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
-    address internal _implementation;
-
     IdentityUpdateBroadcasterHarness internal _broadcaster;
 
+    address internal _implementation;
     address internal _parameterRegistry;
 
     function setUp() external {

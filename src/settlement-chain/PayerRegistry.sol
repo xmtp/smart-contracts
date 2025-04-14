@@ -5,19 +5,23 @@ import { ERC20Helper } from "../../lib/erc20-helper/src/ERC20Helper.sol";
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from "../../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import { IERC20Like } from "./interfaces/External.sol";
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
-// TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
-// TODO: `isZero` internal function for address zero checks.
+import { Migratable } from "../abstract/Migratable.sol";
 
-contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, PausableUpgradeable {
+// TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
+
+contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /* ============ Constants/Immutables ============ */
+
+    /// @inheritdoc IPayerRegistry
+    address public immutable parameterRegistry;
 
     /// @inheritdoc IPayerRegistry
     address public immutable token;
@@ -26,14 +30,14 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
     /// @custom:storage-location erc7201:xmtp.storage.PayerRegistry
     struct PayerRegistryStorage {
-        address admin;
+        bool paused;
+        int104 totalDeposits;
+        uint96 totalDebt;
+        uint32 withdrawLockPeriod;
+        uint96 minimumDeposit;
         address settler;
         address feeDistributor;
         mapping(address account => Payer payer) payers;
-        int104 totalDeposits;
-        uint96 totalDebt;
-        uint96 minimumDeposit;
-        uint32 withdrawLockPeriod;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayerRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -49,8 +53,8 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
     /* ============ Modifiers ============ */
 
-    modifier onlyAdmin() {
-        _revertIfNotAdmin();
+    modifier whenNotPaused() {
+        _revertIfPaused();
         _;
     }
 
@@ -61,30 +65,25 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
 
     /* ============ Constructor ============ */
 
-    constructor(address token_) {
-        require((token = token_) != address(0), ZeroTokenAddress());
+    /**
+     * @notice Constructor for the PayerRegistry contract.
+     * @param  parameterRegistry_ The address of the parameter registry.
+     * @param  token_             The address of the token.
+     */
+    constructor(address parameterRegistry_, address token_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        require(_isNotZero(token = token_), ZeroTokenAddress());
     }
 
     /* ============ Initialization ============ */
 
     /// @inheritdoc IPayerRegistry
-    function initialize(
-        address admin_,
-        address settler_,
-        address feeDistributor_,
-        uint96 minimumDeposit_,
-        uint32 withdrawLockPeriod_
-    ) external initializer {
-        require(admin_ != address(0), ZeroAdminAddress());
-
-        __UUPSUpgradeable_init();
-        __Pausable_init();
-
-        _setAdmin(admin_);
-        _setSettler(settler_);
-        _setFeeDistributor(feeDistributor_);
-        _setMinimumDeposit(minimumDeposit_);
-        _setWithdrawLockPeriod(withdrawLockPeriod_);
+    function initialize() external initializer {
+        _updateSettler();
+        _updateFeeDistributor();
+        _updateMinimumDeposit();
+        _updateWithdrawLockPeriod();
+        _updatePauseStatus();
     }
 
     /* ============ Interactive Functions ============ */
@@ -201,48 +200,66 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         require(ERC20Helper.transfer(token, feeDistributor_, excess_), ERC20TransferFailed());
     }
 
-    /* ============ Admin functionality ============ */
-
     /// @inheritdoc IPayerRegistry
-    function pause() external onlyAdmin {
-        _pause();
+    function updateSettler() external {
+        require(_updateSettler(), NoChange());
     }
 
     /// @inheritdoc IPayerRegistry
-    function unpause() external onlyAdmin {
-        _unpause();
+    function updateFeeDistributor() external {
+        require(_updateFeeDistributor(), NoChange());
     }
 
     /// @inheritdoc IPayerRegistry
-    function setAdmin(address newAdmin_) external onlyAdmin {
-        _setAdmin(newAdmin_);
+    function updateMinimumDeposit() external {
+        require(_updateMinimumDeposit(), NoChange());
     }
 
     /// @inheritdoc IPayerRegistry
-    function setSettler(address newSettler_) external onlyAdmin {
-        _setSettler(newSettler_);
+    function updateWithdrawLockPeriod() external {
+        require(_updateWithdrawLockPeriod(), NoChange());
     }
 
     /// @inheritdoc IPayerRegistry
-    function setFeeDistributor(address newFeeDistributor_) external onlyAdmin {
-        _setFeeDistributor(newFeeDistributor_);
+    function updatePauseStatus() external {
+        require(_updatePauseStatus(), NoChange());
     }
 
-    /// @inheritdoc IPayerRegistry
-    function setMinimumDeposit(uint96 newMinimumDeposit_) external onlyAdmin {
-        _setMinimumDeposit(newMinimumDeposit_);
-    }
-
-    /// @inheritdoc IPayerRegistry
-    function setWithdrawLockPeriod(uint32 newWithdrawLockPeriod_) external onlyAdmin {
-        _setWithdrawLockPeriod(newWithdrawLockPeriod_);
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayerRegistry
-    function admin() external view returns (address admin_) {
-        return _getPayerRegistryStorage().admin;
+    function settlerParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.settler";
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function feeDistributorParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.feeDistributor";
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function minimumDepositParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.minimumDeposit";
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function withdrawLockPeriodParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.withdrawLockPeriod";
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.paused";
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function migratorParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerRegistry.migrator";
     }
 
     /// @inheritdoc IPayerRegistry
@@ -253,6 +270,11 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
     /// @inheritdoc IPayerRegistry
     function feeDistributor() external view returns (address feeDistributor_) {
         return _getPayerRegistryStorage().feeDistributor;
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function paused() external view returns (bool paused_) {
+        return _getPayerRegistryStorage().paused;
     }
 
     /// @inheritdoc IPayerRegistry
@@ -355,29 +377,62 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         require(ERC20Helper.transferFrom(token, from_, address(this), amount_), ERC20TransferFromFailed());
     }
 
-    function _setAdmin(address newAdmin_) internal {
-        emit AdminSet(_getPayerRegistryStorage().admin = newAdmin_);
+    function _updateSettler() internal returns (bool changed_) {
+        address newSettler_ = _toAddress(_getRegistryParameter(settlerParameterKey()));
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        require(_isNotZero(newSettler_), ZeroSettlerAddress());
+
+        changed_ = newSettler_ != $.settler;
+
+        emit SettlerUpdated($.settler = newSettler_);
     }
 
-    function _setSettler(address newSettler_) internal {
-        require(newSettler_ != address(0), ZeroSettlerAddress());
-        emit SettlerSet(_getPayerRegistryStorage().settler = newSettler_);
+    function _updateFeeDistributor() internal returns (bool changed_) {
+        address newFeeDistributor_ = _toAddress(_getRegistryParameter(feeDistributorParameterKey()));
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        require(_isNotZero(newFeeDistributor_), ZeroFeeDistributorAddress());
+
+        changed_ = newFeeDistributor_ != $.feeDistributor;
+
+        emit FeeDistributorUpdated($.feeDistributor = newFeeDistributor_);
     }
 
-    function _setFeeDistributor(address newFeeDistributor_) internal {
-        require(newFeeDistributor_ != address(0), ZeroFeeDistributorAddress());
-        emit FeeDistributorSet(_getPayerRegistryStorage().feeDistributor = newFeeDistributor_);
+    function _updateMinimumDeposit() internal returns (bool changed_) {
+        uint96 newMinimumDeposit_ = _toUint96(_getRegistryParameter(minimumDepositParameterKey()));
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        require(newMinimumDeposit_ != 0, ZeroMinimumDeposit());
+
+        changed_ = newMinimumDeposit_ != $.minimumDeposit;
+
+        emit MinimumDepositUpdated($.minimumDeposit = newMinimumDeposit_);
     }
 
-    function _setMinimumDeposit(uint96 newMinimumDeposit_) internal {
-        emit MinimumDepositSet(_getPayerRegistryStorage().minimumDeposit = newMinimumDeposit_);
+    function _updateWithdrawLockPeriod() internal returns (bool changed_) {
+        uint32 newWithdrawLockPeriod_ = _toUint32(_getRegistryParameter(withdrawLockPeriodParameterKey()));
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        changed_ = newWithdrawLockPeriod_ != $.withdrawLockPeriod;
+
+        emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = newWithdrawLockPeriod_);
     }
 
-    function _setWithdrawLockPeriod(uint32 newWithdrawLockPeriod_) internal {
-        emit WithdrawLockPeriodSet(_getPayerRegistryStorage().withdrawLockPeriod = newWithdrawLockPeriod_);
+    function _updatePauseStatus() internal returns (bool changed_) {
+        bool paused_ = _getRegistryParameter(pausedParameterKey()) != bytes32(0);
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        changed_ = paused_ != $.paused;
+
+        emit PauseStatusUpdated($.paused = paused_);
     }
 
     /* ============ Internal View/Pure Functions ============ */
+
+    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
+        return IParameterRegistryLike(parameterRegistry).get(key_);
+    }
 
     /**
      * @dev Returns the sum of all withdrawable balances (sum of all positive payer balances and pending withdrawals).
@@ -390,6 +445,17 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         return uint96(uint104(totalDeposits_ + _toInt104(totalDebt_)));
     }
 
+    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
+        return input_ != address(0);
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
+    }
+
     function _toInt104(uint96 input_) internal pure returns (int104 output_) {
         // slither-disable-next-line assembly
         assembly {
@@ -397,22 +463,25 @@ contract PayerRegistry is IPayerRegistry, Initializable, UUPSUpgradeable, Pausab
         }
     }
 
-    function _revertIfNotAdmin() internal view {
-        require(msg.sender == _getPayerRegistryStorage().admin, NotAdmin());
+    function _toUint32(bytes32 value_) internal pure returns (uint32 output_) {
+        // slither-disable-next-line assembly
+        assembly {
+            output_ := value_
+        }
+    }
+
+    function _toUint96(bytes32 value_) internal pure returns (uint96 output_) {
+        // slither-disable-next-line assembly
+        assembly {
+            output_ := value_
+        }
     }
 
     function _revertIfNotSettler() internal view {
         require(msg.sender == _getPayerRegistryStorage().settler, NotSettler());
     }
 
-    /* ============ Upgradeability ============ */
-
-    /**
-     * @dev   Authorizes the upgrade of the contract.
-     * @param newImplementation_ The address of the new implementation.
-     */
-    function _authorizeUpgrade(address newImplementation_) internal view override onlyAdmin {
-        // TODO: Use different upgradeable pattern for this contract.
-        require(newImplementation_ != address(0), ZeroImplementationAddress());
+    function _revertIfPaused() internal view {
+        require(!_getPayerRegistryStorage().paused, Paused());
     }
 }

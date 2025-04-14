@@ -29,10 +29,9 @@ contract SettlementChainGatewayTests is Test, Utils {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainGateway.migrator";
 
-    address internal _implementation;
-
     SettlementChainGatewayHarness internal _gateway;
 
+    address internal _implementation;
     address internal _parameterRegistry;
     address internal _appChainNativeToken;
 
