@@ -5,6 +5,35 @@ import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
 library Utils {
+    struct DeploymentData {
+        address deployer;
+        address appChainNativeToken;
+        address factory;
+        address settlementChainParameterRegistryImplementation;
+        address appChainParameterRegistryImplementation;
+        bytes32 parameterRegistryProxySalt;
+        address parameterRegistryProxy;
+        address settlementChainParameterRegistryAdmin1;
+        address settlementChainParameterRegistryAdmin2;
+        address settlementChainParameterRegistryAdmin3;
+        address settlementChainGatewayImplementation;
+        address appChainGatewayImplementation;
+        bytes32 gatewayProxySalt;
+        address gatewayProxy;
+        address groupMessageBroadcasterImplementation;
+        bytes32 groupMessageBroadcasterProxySalt;
+        address groupMessageBroadcasterProxy;
+        address identityUpdateBroadcasterImplementation;
+        bytes32 identityUpdateBroadcasterProxySalt;
+        address identityUpdateBroadcasterProxy;
+        address nodeRegistryAdmin;
+        address nodeRegistryImplementation;
+        address rateRegistryImplementation;
+        bytes32 rateRegistrySalt;
+        address rateRegistryAdmin;
+        address rateRegistryProxy;
+    }
+
     error InvalidProxyAddress(string outputJson_);
 
     VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -17,6 +46,16 @@ library Utils {
     string internal constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
     string internal constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
     string internal constant OUTPUT_UNKNOWN = "unknown";
+
+    string internal constant FACTORY_OUTPUT_JSON = "Factory";
+    string internal constant SETTLEMENT_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON = "SettlementChainParameterRegistry";
+    string internal constant APP_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON = "AppChainParameterRegistry";
+    string internal constant SETTLEMENT_CHAIN_GATEWAY_OUTPUT_JSON = "SettlementChainGateway";
+    string internal constant APP_CHAIN_GATEWAY_OUTPUT_JSON = "AppChainGateway";
+    string internal constant GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON = "GroupMessageBroadcaster";
+    string internal constant IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON = "IdentityUpdateBroadcaster";
+    string internal constant NODE_REGISTRY_OUTPUT_JSON = "NodeRegistry";
+    string internal constant RATE_REGISTRY_OUTPUT_JSON = "RateRegistry";
 
     function readInput(string memory inputFileName_) internal view returns (string memory input_) {
         string memory file_ = getInputPath(inputFileName_);
@@ -93,5 +132,11 @@ library Utils {
         json_ = VM.serializeAddress("", "proxy", proxy_);
         json_ = VM.serializeBytes("", "constructorArguments", constructorArguments_);
         json_ = VM.serializeUint("", "deploymentBlock", block.number);
+    }
+
+    function parseDeploymentData(
+        string memory filePath_
+    ) internal view returns (DeploymentData memory deploymentData_) {
+        return abi.decode(VM.parseJson(VM.readFile(filePath_)), (DeploymentData));
     }
 }

@@ -14,8 +14,6 @@ import { Migratable } from "../abstract/Migratable.sol";
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
-    bytes internal constant _DELIMITER = ".";
-
     /// @inheritdoc IAppChainGateway
     address public immutable parameterRegistry;
 

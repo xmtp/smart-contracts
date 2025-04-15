@@ -11,10 +11,6 @@ import { IParameterRegistry } from "./interfaces/IParameterRegistry.sol";
 import { Migratable } from "./Migratable.sol";
 
 abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
-    /* ============ Constants/Immutables ============ */
-
-    bytes internal constant _DELIMITER = ".";
-
     /* ============ UUPS Storage ============ */
 
     /// @custom:storage-location erc7201:xmtp.storage.ParameterRegistry

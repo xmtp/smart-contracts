@@ -14,7 +14,7 @@ fs_permissions = [
     { access = "read-write", path = "deployments/xmtp_testnet-staging"},
     { access = "read-write", path = "deployments/base_sepolia"},
     { access = "read-write", path = "deployments/unknown"},
-    { access = "read-write", path = "temp"}
+    { access = "read", path = "config"}
 ]
 
 [profile.default.fuzz]

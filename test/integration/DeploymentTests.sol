@@ -7,24 +7,24 @@ import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenb
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
-
 import {
     ISettlementChainParameterRegistry
 } from "../../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
-
 import { ISettlementChainGateway } from "../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 import { IAppChainParameterRegistry } from "../../src/app-chain/interfaces/IAppChainParameterRegistry.sol";
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 
-import { FactoryDeployer } from "../../script/DeployFactory.s.sol";
-import { SettlementChainParameterRegistryDeployer } from "../../script/DeploySettlementChainParameterRegistry.s.sol";
-import { SettlementChainGatewayDeployer } from "../../script/DeploySettlementChainGateway.s.sol";
-import { AppChainParameterRegistryDeployer } from "../../script/DeployAppChainParameterRegistry.s.sol";
-import { AppChainGatewayDeployer } from "../../script/DeployAppChainGateway.s.sol";
-import { GroupMessageBroadcasterDeployer } from "../../script/DeployGroupMessageBroadcaster.s.sol";
-import { IdentityUpdateBroadcasterDeployer } from "../../script/DeployIdentityUpdateBroadcaster.s.sol";
+import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
+import {
+    SettlementChainParameterRegistryDeployer
+} from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
+import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
+import { AppChainParameterRegistryDeployer } from "../../script/deployers/AppChainParameterRegistryDeployer.sol";
+import { AppChainGatewayDeployer } from "../../script/deployers/AppChainGatewayDeployer.sol";
+import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMessageBroadcasterDeployer.sol";
+import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
 
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
