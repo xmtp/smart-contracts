@@ -12,25 +12,21 @@ interface IParameterRegistry is IMigratable {
 
     /**
      * @notice Emitted when a parameter is set.
-     * @param  key      The full key of the parameter.
-     * @param  keyChain The components (key chain) of the parameter, for parsing.
-     * @param  value    The value of the parameter.
+     * @param  key   The key of the parameter.
+     * @param  value The value of the parameter.
      */
-    event ParameterSet(bytes indexed key, bytes[] keyChain, bytes32 indexed value);
+    event ParameterSet(bytes indexed key, bytes32 indexed value);
 
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the caller is not an admin.
     error NotAdmin();
 
-    /// @notice Thrown when no key chains are provided.
-    error NoKeyChains();
+    /// @notice Thrown when no keys are provided.
+    error NoKeys();
 
     /// @notice Thrown when the array length mismatch.
     error ArrayLengthMismatch();
-
-    /// @notice Thrown when the key chain is empty.
-    error EmptyKeyChain();
 
     /* ============ Initialization ============ */
 
@@ -44,17 +40,17 @@ interface IParameterRegistry is IMigratable {
 
     /**
      * @notice Sets several parameters.
-     * @param  keyChains_ The components (key chain) of each parameter to set.
-     * @param  values_    The values of the parameters.
+     * @param  keys_   The keys of each parameter to set.
+     * @param  values_ The values of the parameters.
      */
-    function set(bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
+    function set(bytes[] calldata keys_, bytes32[] calldata values_) external;
 
     /**
      * @notice Sets a parameter.
-     * @param  keyChain_ The components (key chain) of the parameter to set.
-     * @param  value_    The value of the parameter.
+     * @param  key_   The key of the parameter to set.
+     * @param  value_ The value of the parameter.
      */
-    function set(bytes[] calldata keyChain_, bytes32 value_) external;
+    function set(bytes calldata key_, bytes32 value_) external;
 
     /* ============ View/Pure Functions ============ */
 
@@ -67,17 +63,10 @@ interface IParameterRegistry is IMigratable {
 
     /**
      * @notice Gets the values of several parameters.
-     * @param  keyChains_ The components (key chain) of each parameter to get.
-     * @return values_    The values of the parameters.
+     * @param  keys_   The keys of each parameter to get.
+     * @return values_ The values of the parameters.
      */
-    function get(bytes[][] calldata keyChains_) external view returns (bytes32[] memory values_);
-
-    /**
-     * @notice Gets the value of a parameter.
-     * @param  keyChain_ The components (key chain) of the parameter to get.
-     * @return value_    The value of the parameter.
-     */
-    function get(bytes[] calldata keyChain_) external view returns (bytes32 value_);
+    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);
 
     /**
      * @notice Gets the value of a parameter.

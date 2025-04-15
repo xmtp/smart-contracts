@@ -13,15 +13,15 @@ import { Utils } from "../utils/Utils.sol";
 
 contract SettlementChainParameterRegistryTests is Test, Utils {
     bytes internal constant _DELIMITER = ".";
-    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.scpr.isAdmin";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.scpr.migrator";
+    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.settlementChainParameterRegistry.isAdmin";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainParameterRegistry.migrator";
 
     address internal _implementation;
 
     SettlementChainParameterRegistryHarness internal _registry;
 
-    address internal _admin1 = makeAddr("admin1");
-    address internal _admin2 = makeAddr("admin2");
+    address internal _admin1 = address(0x1111111111111111111111111111111111111111);
+    address internal _admin2 = address(0x2222222222222222222222222222222222222222);
 
     function setUp() external {
         _implementation = address(new SettlementChainParameterRegistryHarness());
@@ -56,12 +56,16 @@ contract SettlementChainParameterRegistryTests is Test, Utils {
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin1))),
+            _registry.__getRegistryParameter(
+                "xmtp.settlementChainParameterRegistry.isAdmin.0x1111111111111111111111111111111111111111"
+            ),
             bytes32(uint256(1))
         );
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin2))),
+            _registry.__getRegistryParameter(
+                "xmtp.settlementChainParameterRegistry.isAdmin.0x2222222222222222222222222222222222222222"
+            ),
             bytes32(uint256(1))
         );
     }

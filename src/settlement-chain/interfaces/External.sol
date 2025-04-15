@@ -74,7 +74,7 @@ interface IERC20InboxLike {
  * @notice Subset interface for an AppChainGateway.
  */
 interface IAppChainGatewayLike {
-    function receiveParameters(uint256 nonce_, bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
 }
 
 /**
@@ -82,7 +82,7 @@ interface IAppChainGatewayLike {
  * @notice Subset interface for a ParameterRegistry.
  */
 interface IParameterRegistryLike {
-    function get(bytes[][] calldata keyChains_) external view returns (bytes32[] memory values_);
+    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);
 
     function get(bytes calldata key_) external view returns (bytes32 value_);
 }

@@ -17,10 +17,10 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
-    bytes internal constant _PAUSED_KEY = "xmtp.iub.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.iub.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.iub.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.iub.maxPayloadSize";
+    bytes internal constant _PAUSED_KEY = "xmtp.identityUpdateBroadcaster.paused";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.identityUpdateBroadcaster.migrator";
+    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.minPayloadSize";
+    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
     address internal _implementation;
 

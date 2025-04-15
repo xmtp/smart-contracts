@@ -11,10 +11,17 @@ import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 library RateRegistryDeployer {
+    error ZeroFactory();
+    error ZeroImplementation();
+
     function deployImplementation(
         address factory_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        bytes memory creationCode_ = type(RateRegistry).creationCode;
+        require(factory_ != address(0), ZeroFactory());
+
+        constructorArguments_ = "";
+
+        bytes memory creationCode_ = abi.encodePacked(type(RateRegistry).creationCode, constructorArguments_);
 
         implementation_ = IFactory(factory_).deployImplementation(creationCode_);
     }
@@ -24,17 +31,20 @@ library RateRegistryDeployer {
         address implementation_,
         bytes32 salt_,
         address admin_
-    ) internal returns (RateRegistry proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+    ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(implementation_ != address(0), ZeroImplementation());
+
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeCall(RateRegistry.initialize, (admin_));
-        proxy_ = RateRegistry(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
+        proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
     }
 }
 
 contract DeployRateRegistry is Script {
     error PrivateKeyNotSet();
-    error ExpectedImplementationNotSet();
-    error ExpectedProxyNotSet();
+    error ImplementationNotSet();
+    error ProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
     error FactoryNotSet();
@@ -57,21 +67,21 @@ contract DeployRateRegistry is Script {
     }
 
     function deployImplementation() public {
-        require(Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.RATE_REGISTRY_IMPLEMENTATION != address(0), ImplementationNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = RateRegistryDeployer.deployImplementation(
-            Environment.EXPECTED_FACTORY
+            Environment.FACTORY
         );
 
-        require(implementation_ == Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
+        require(implementation_ == Environment.RATE_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
 
         vm.stopBroadcast();
 
         string memory json_ = Utils.buildImplementationJson(
-            Environment.EXPECTED_FACTORY,
+            Environment.FACTORY,
             implementation_,
             constructorArguments_
         );
@@ -83,30 +93,25 @@ contract DeployRateRegistry is Script {
     }
 
     function deployProxy() public {
-        require(Environment.EXPECTED_RATE_REGISTRY_PROXY != address(0), ExpectedProxyNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
-        require(Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.RATE_REGISTRY_PROXY != address(0), ProxyNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
+        require(Environment.RATE_REGISTRY_IMPLEMENTATION != address(0), ImplementationNotSet());
         require(Environment.RATE_REGISTRY_ADMIN != address(0), AdminNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        (RateRegistry proxy_, bytes memory constructorArguments_, ) = RateRegistryDeployer.deployProxy(
-            Environment.EXPECTED_FACTORY,
-            Environment.EXPECTED_RATE_REGISTRY_IMPLEMENTATION,
+        (address proxy_, bytes memory constructorArguments_, ) = RateRegistryDeployer.deployProxy(
+            Environment.FACTORY,
+            Environment.RATE_REGISTRY_IMPLEMENTATION,
             Environment.RATE_REGISTRY_SALT,
             Environment.RATE_REGISTRY_ADMIN
         );
 
-        require(address(proxy_) == Environment.EXPECTED_RATE_REGISTRY_PROXY, UnexpectedProxy());
+        require(proxy_ == Environment.RATE_REGISTRY_PROXY, UnexpectedProxy());
 
         vm.stopBroadcast();
 
-        string memory json_ = Utils.buildProxyJson(
-            Environment.EXPECTED_FACTORY,
-            _deployer,
-            address(proxy_),
-            constructorArguments_
-        );
+        string memory json_ = Utils.buildProxyJson(Environment.FACTORY, _deployer, proxy_, constructorArguments_);
 
         Utils.writeOutput(
             json_,

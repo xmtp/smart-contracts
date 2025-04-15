@@ -11,11 +11,20 @@ import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 library AppChainGatewayDeployer {
+    error ZeroFactory();
+    error ZeroParameterRegistry();
+    error ZeroSettlementChainGateway();
+    error ZeroImplementation();
+
     function deployImplementation(
         address factory_,
         address parameterRegistry_,
         address settlementChainGateway_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
+        require(settlementChainGateway_ != address(0), ZeroSettlementChainGateway());
+
         constructorArguments_ = abi.encode(parameterRegistry_, settlementChainGateway_);
 
         bytes memory creationCode_ = abi.encodePacked(type(AppChainGateway).creationCode, constructorArguments_);
@@ -27,17 +36,20 @@ library AppChainGatewayDeployer {
         address factory_,
         address implementation_,
         bytes32 salt_
-    ) internal returns (AppChainGateway proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+    ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(implementation_ != address(0), ZeroImplementation());
+
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeWithSelector(AppChainGateway.initialize.selector);
-        proxy_ = AppChainGateway(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
+        proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
     }
 }
 
 contract DeployAppChainGateway is Script {
     error PrivateKeyNotSet();
-    error ExpectedImplementationNotSet();
-    error ExpectedProxyNotSet();
+    error ImplementationNotSet();
+    error ProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
     error FactoryNotSet();
@@ -61,35 +73,35 @@ contract DeployAppChainGateway is Script {
     }
 
     function deployImplementation() public {
-        require(Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
-        require(Environment.EXPECTED_PARAMETER_REGISTRY_PROXY != address(0), ParameterRegistryProxyNotSet());
-        require(Environment.EXPECTED_GATEWAY_PROXY != address(0), GatewayProxyNotSet());
+        require(Environment.APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ImplementationNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
+        require(Environment.PARAMETER_REGISTRY_PROXY != address(0), ParameterRegistryProxyNotSet());
+        require(Environment.GATEWAY_PROXY != address(0), GatewayProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = AppChainGatewayDeployer.deployImplementation(
-            Environment.EXPECTED_FACTORY,
-            Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
-            Environment.EXPECTED_GATEWAY_PROXY
+            Environment.FACTORY,
+            Environment.PARAMETER_REGISTRY_PROXY,
+            Environment.GATEWAY_PROXY
         );
 
-        require(implementation_ == Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION, UnexpectedImplementation());
+        require(implementation_ == Environment.APP_CHAIN_GATEWAY_IMPLEMENTATION, UnexpectedImplementation());
 
         require(
-            AppChainGateway(implementation_).parameterRegistry() == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY,
+            AppChainGateway(implementation_).parameterRegistry() == Environment.PARAMETER_REGISTRY_PROXY,
             UnexpectedImplementation()
         );
 
         require(
-            AppChainGateway(implementation_).settlementChainGateway() == Environment.EXPECTED_GATEWAY_PROXY,
+            AppChainGateway(implementation_).settlementChainGateway() == Environment.GATEWAY_PROXY,
             UnexpectedImplementation()
         );
 
         vm.stopBroadcast();
 
         string memory json_ = Utils.buildImplementationJson(
-            Environment.EXPECTED_FACTORY,
+            Environment.FACTORY,
             implementation_,
             constructorArguments_
         );
@@ -101,30 +113,28 @@ contract DeployAppChainGateway is Script {
     }
 
     function deployProxy() public {
-        require(Environment.EXPECTED_GATEWAY_PROXY != address(0), ExpectedProxyNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
-        require(Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
+        require(Environment.GATEWAY_PROXY != address(0), ProxyNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
+        require(Environment.APP_CHAIN_GATEWAY_IMPLEMENTATION != address(0), ImplementationNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        (AppChainGateway proxy_, bytes memory constructorArguments_, ) = AppChainGatewayDeployer.deployProxy(
-            Environment.EXPECTED_FACTORY,
-            Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION,
+        (address proxy_, bytes memory constructorArguments_, ) = AppChainGatewayDeployer.deployProxy(
+            Environment.FACTORY,
+            Environment.APP_CHAIN_GATEWAY_IMPLEMENTATION,
             Environment.GATEWAY_PROXY_SALT
         );
 
-        require(address(proxy_) == Environment.EXPECTED_GATEWAY_PROXY, UnexpectedProxy());
+        require(proxy_ == Environment.GATEWAY_PROXY, UnexpectedProxy());
 
-        require(proxy_.implementation() == Environment.EXPECTED_APP_CHAIN_GATEWAY_IMPLEMENTATION, UnexpectedProxy());
+        require(
+            AppChainGateway(proxy_).implementation() == Environment.APP_CHAIN_GATEWAY_IMPLEMENTATION,
+            UnexpectedProxy()
+        );
 
         vm.stopBroadcast();
 
-        string memory json_ = Utils.buildProxyJson(
-            Environment.EXPECTED_FACTORY,
-            _deployer,
-            address(proxy_),
-            constructorArguments_
-        );
+        string memory json_ = Utils.buildProxyJson(Environment.FACTORY, _deployer, proxy_, constructorArguments_);
 
         Utils.writeOutput(
             json_,

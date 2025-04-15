@@ -17,10 +17,10 @@ contract GroupMessageBroadcasterTests is Test, Utils {
     uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
-    bytes internal constant _PAUSED_KEY = "xmtp.gmb.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.gmb.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.gmb.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.gmb.maxPayloadSize";
+    bytes internal constant _PAUSED_KEY = "xmtp.groupMessageBroadcaster.paused";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.groupMessageBroadcaster.migrator";
+    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.minPayloadSize";
+    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
     address internal _implementation;
 

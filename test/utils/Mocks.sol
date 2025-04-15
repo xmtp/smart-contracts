@@ -20,11 +20,9 @@ contract MockErc20 {
 }
 
 contract MockParameterRegistry {
-    function set(bytes[] calldata keyChain_, bytes32 values) external {}
+    function set(bytes calldata key_, bytes32 values) external {}
 
-    function get(bytes[][] calldata keyChains_) external returns (bytes32[] memory values_) {}
-
-    function get(bytes[] calldata keyChain_) external returns (bytes32 value_) {}
+    function get(bytes[] calldata keys_) external returns (bytes32[] memory values_) {}
 
     function get(bytes calldata key_) external returns (bytes32 value_) {}
 }

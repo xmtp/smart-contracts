@@ -23,14 +23,9 @@ interface ISettlementChainGateway is IMigratable {
      * @param  inbox         The inbox address, from which you can derive the app chain.
      * @param  messageNumber The message number, unique per inbox.
      * @param  nonce         The nonce of the parameter transmission (to prevent out-of-sequence resets).
-     * @param  keyChains     The key chains of the parameters.
+     * @param  keys          The keys of the parameters.
      */
-    event ParametersSent(
-        address indexed inbox,
-        uint256 indexed messageNumber,
-        uint256 indexed nonce,
-        bytes[][] keyChains
-    );
+    event ParametersSent(address indexed inbox, uint256 indexed messageNumber, uint256 indexed nonce, bytes[] keys);
 
     /* ============ Custom Errors ============ */
 
@@ -52,8 +47,8 @@ interface ISettlementChainGateway is IMigratable {
     /// @notice Thrown when no inboxes are provided.
     error NoInboxes();
 
-    /// @notice Thrown when no key chains are provided.
-    error NoKeyChains();
+    /// @notice Thrown when no keys are provided.
+    error NoKeys();
 
     /* ============ Initialization ============ */
 
@@ -72,7 +67,7 @@ interface ISettlementChainGateway is IMigratable {
     /**
      * @notice Sends parameters to the app chain as a direct contract call.
      * @param  inboxes_   The inboxes to send parameters to, which target app chains respectively.
-     * @param  keyChains_ The key chains of the parameters.
+     * @param  keys_      The keys of the parameters.
      * @param  gasLimit_  The gas limit for the transaction on the app chain.
      * @param  gasPrice_  The gas price for the transaction on the app chain.
      * @dev    This will perform an L2->L3 message, where the settlement gateway alias must have enough balance to pay
@@ -82,7 +77,7 @@ interface ISettlementChainGateway is IMigratable {
      */
     function sendParameters(
         address[] calldata inboxes_,
-        bytes[][] calldata keyChains_,
+        bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external;
@@ -90,7 +85,7 @@ interface ISettlementChainGateway is IMigratable {
     /**
      * @notice Sends parameters to the app chain as retryable tickets (which may be a direct contract call).
      * @param  inboxes_            The inboxes to send parameters to, which target app chains respectively.
-     * @param  keyChains_          The key chains of the parameters.
+     * @param  keys_               The keys of the parameters.
      * @param  gasLimit_           The gas limit for the transaction on the app chain.
      * @param  gasPrice_           The gas price for the transaction on the app chain.
      * @param  maxSubmissionCost_  The maximum submission cost for the transaction.
@@ -101,7 +96,7 @@ interface ISettlementChainGateway is IMigratable {
      */
     function sendParametersAsRetryableTickets(
         address[] calldata inboxes_,
-        bytes[][] calldata keyChains_,
+        bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,

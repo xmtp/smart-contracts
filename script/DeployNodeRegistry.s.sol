@@ -11,10 +11,16 @@ import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 library NodeRegistryDeployer {
+    error ZeroFactory();
+    error ZeroInitialAdmin();
+
     function deployImplementation(
         address factory_,
         address initialAdmin_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(initialAdmin_ != address(0), ZeroInitialAdmin());
+
         constructorArguments_ = abi.encode(initialAdmin_);
 
         bytes memory creationCode_ = abi.encodePacked(type(NodeRegistry).creationCode, constructorArguments_);
@@ -25,7 +31,7 @@ library NodeRegistryDeployer {
 
 contract DeployNodeRegistry is Script {
     error PrivateKeyNotSet();
-    error ExpectedImplementationNotSet();
+    error ImplementationNotSet();
     error UnexpectedImplementation();
     error FactoryNotSet();
     error AdminNotSet();
@@ -46,25 +52,24 @@ contract DeployNodeRegistry is Script {
     }
 
     function deployImplementation() public {
-        require(Environment.EXPECTED_NODE_REGISTRY_IMPLEMENTATION != address(0), ExpectedImplementationNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.NODE_REGISTRY_IMPLEMENTATION != address(0), ImplementationNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
         require(Environment.NODE_REGISTRY_ADMIN != address(0), AdminNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = NodeRegistryDeployer.deployImplementation(
-            Environment.EXPECTED_FACTORY,
+            Environment.FACTORY,
             Environment.NODE_REGISTRY_ADMIN
         );
 
-        require(implementation_ == Environment.EXPECTED_NODE_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
-
+        require(implementation_ == Environment.NODE_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
         require(NodeRegistry(implementation_).owner() == Environment.NODE_REGISTRY_ADMIN, UnexpectedImplementation());
 
         vm.stopBroadcast();
 
         string memory json_ = Utils.buildImplementationJson(
-            Environment.EXPECTED_FACTORY,
+            Environment.FACTORY,
             implementation_,
             constructorArguments_
         );

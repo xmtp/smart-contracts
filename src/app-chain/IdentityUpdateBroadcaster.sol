@@ -38,7 +38,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.iub.minPayloadSize";
+        return "xmtp.identityUpdateBroadcaster.minPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -48,7 +48,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.iub.maxPayloadSize";
+        return "xmtp.identityUpdateBroadcaster.maxPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -58,7 +58,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.iub.migrator";
+        return "xmtp.identityUpdateBroadcaster.migrator";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -68,6 +68,6 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.iub.paused";
+        return "xmtp.identityUpdateBroadcaster.paused";
     }
 }

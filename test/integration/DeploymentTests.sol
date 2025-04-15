@@ -6,13 +6,17 @@ import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenb
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 
-import { Factory } from "../../src/any-chain/Factory.sol";
-import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
-import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
-import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
-import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
-import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
-import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
+import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
+
+import {
+    ISettlementChainParameterRegistry
+} from "../../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
+
+import { ISettlementChainGateway } from "../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
+import { IAppChainParameterRegistry } from "../../src/app-chain/interfaces/IAppChainParameterRegistry.sol";
+import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
+import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
+import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 
 import { FactoryDeployer } from "../../script/DeployFactory.s.sol";
 import { SettlementChainParameterRegistryDeployer } from "../../script/DeploySettlementChainParameterRegistry.s.sol";
@@ -34,11 +38,17 @@ contract DeploymentTests is Test {
     address internal constant _APPCHAIN_NATIVE_TOKEN = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     address internal constant _APPCHAIN_RETRYABLE_TX_PRECOMPILE = 0x000000000000000000000000000000000000006E;
 
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY = "xmtp.gmb.minPayloadSize";
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY = "xmtp.gmb.maxPayloadSize";
+    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+        "xmtp.groupMessageBroadcaster.minPayloadSize";
 
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY = "xmtp.iub.minPayloadSize";
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY = "xmtp.iub.maxPayloadSize";
+    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+        "xmtp.groupMessageBroadcaster.maxPayloadSize";
+
+    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+        "xmtp.identityUpdateBroadcaster.minPayloadSize";
+
+    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+        "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
@@ -59,17 +69,17 @@ contract DeploymentTests is Test {
     uint256 internal _baseForkId;
     uint256 internal _appchainForkId;
 
-    Factory internal _settlementChainFactory;
-    Factory internal _appChainFactory;
+    IFactory internal _settlementChainFactory;
+    IFactory internal _appChainFactory;
 
-    SettlementChainParameterRegistry internal _settlementChainParameterRegistryProxy;
-    AppChainParameterRegistry internal _appChainParameterRegistryProxy;
+    ISettlementChainParameterRegistry internal _settlementChainParameterRegistryProxy;
+    IAppChainParameterRegistry internal _appChainParameterRegistryProxy;
 
-    SettlementChainGateway internal _settlementChainGatewayProxy;
-    AppChainGateway internal _appChainGatewayProxy;
+    ISettlementChainGateway internal _settlementChainGatewayProxy;
+    IAppChainGateway internal _appChainGatewayProxy;
 
-    GroupMessageBroadcaster internal _groupMessageBroadcasterProxy;
-    IdentityUpdateBroadcaster internal _identityUpdateBroadcasterProxy;
+    IGroupMessageBroadcaster internal _groupMessageBroadcasterProxy;
+    IIdentityUpdateBroadcaster internal _identityUpdateBroadcasterProxy;
 
     function setUp() external {
         vm.recordLogs();
@@ -160,19 +170,19 @@ contract DeploymentTests is Test {
 
     /* ============ Factory Deployer Helpers ============ */
 
-    function _deploySettlementChainFactory() internal returns (Factory factory_) {
+    function _deploySettlementChainFactory() internal returns (IFactory factory_) {
         vm.selectFork(_baseForkId);
         return _deployFactory();
     }
 
-    function _deployAppChainFactory() internal returns (Factory factory_) {
+    function _deployAppChainFactory() internal returns (IFactory factory_) {
         vm.selectFork(_appchainForkId);
         return _deployFactory();
     }
 
-    function _deployFactory() internal returns (Factory factory_) {
+    function _deployFactory() internal returns (IFactory factory_) {
         vm.startPrank(_admin);
-        factory_ = FactoryDeployer.deploy();
+        factory_ = IFactory(FactoryDeployer.deploy());
         vm.stopPrank();
     }
 
@@ -199,39 +209,47 @@ contract DeploymentTests is Test {
     function _deploySettlementChainParameterRegistryProxy(
         address implementation_,
         address admin_
-    ) internal returns (SettlementChainParameterRegistry proxy_) {
+    ) internal returns (ISettlementChainParameterRegistry registry_) {
         vm.selectFork(_baseForkId);
 
         address[] memory admins_ = new address[](1);
         admins_[0] = admin_;
 
         vm.startPrank(_admin);
-        (proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
+        (address proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
             address(_settlementChainFactory),
             implementation_,
             _PARAMETER_REGISTRY_PROXY_SALT,
             admins_
         );
         vm.stopPrank();
+
+        registry_ = ISettlementChainParameterRegistry(proxy_);
+
+        assertEq(registry_.implementation(), implementation_);
     }
 
     function _deployAppChainParameterRegistryProxy(
         address implementation_,
         address admin_
-    ) internal returns (AppChainParameterRegistry proxy_) {
+    ) internal returns (IAppChainParameterRegistry registry_) {
         vm.selectFork(_appchainForkId);
 
         address[] memory admins_ = new address[](1);
         admins_[0] = admin_;
 
         vm.startPrank(_admin);
-        (proxy_, , ) = AppChainParameterRegistryDeployer.deployProxy(
+        (address proxy_, , ) = AppChainParameterRegistryDeployer.deployProxy(
             address(_appChainFactory),
             implementation_,
             _PARAMETER_REGISTRY_PROXY_SALT,
             admins_
         );
         vm.stopPrank();
+
+        registry_ = IAppChainParameterRegistry(proxy_);
+
+        assertEq(registry_.implementation(), implementation_);
     }
 
     /* ============ Gateway Deployer Helpers ============ */
@@ -251,9 +269,9 @@ contract DeploymentTests is Test {
         );
         vm.stopPrank();
 
-        assertEq(SettlementChainGateway(implementation_).parameterRegistry(), parameterRegistry_);
-        assertEq(SettlementChainGateway(implementation_).appChainGateway(), appChainGateway_);
-        assertEq(SettlementChainGateway(implementation_).appChainNativeToken(), _APPCHAIN_NATIVE_TOKEN);
+        assertEq(ISettlementChainGateway(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(ISettlementChainGateway(implementation_).appChainGateway(), appChainGateway_);
+        assertEq(ISettlementChainGateway(implementation_).appChainNativeToken(), _APPCHAIN_NATIVE_TOKEN);
     }
 
     function _deployAppChainGatewayImplementation(
@@ -270,39 +288,47 @@ contract DeploymentTests is Test {
         );
         vm.stopPrank();
 
-        assertEq(AppChainGateway(implementation_).parameterRegistry(), parameterRegistry_);
-        assertEq(AppChainGateway(implementation_).settlementChainGateway(), settlementChainGateway_);
+        assertEq(IAppChainGateway(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(IAppChainGateway(implementation_).settlementChainGateway(), settlementChainGateway_);
 
         assertEq(
-            AppChainGateway(implementation_).settlementChainGatewayAlias(),
+            IAppChainGateway(implementation_).settlementChainGatewayAlias(),
             AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_)
         );
     }
 
     function _deploySettlementChainGatewayProxy(
         address implementation_
-    ) internal returns (SettlementChainGateway proxy_) {
+    ) internal returns (ISettlementChainGateway gateway_) {
         vm.selectFork(_baseForkId);
 
         vm.startPrank(_admin);
-        (proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
+        (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
             address(_settlementChainFactory),
             implementation_,
             _GATEWAY_PROXY_SALT
         );
         vm.stopPrank();
+
+        gateway_ = ISettlementChainGateway(proxy_);
+
+        assertEq(gateway_.implementation(), implementation_);
     }
 
-    function _deployAppChainGatewayProxy(address implementation_) internal returns (AppChainGateway proxy_) {
+    function _deployAppChainGatewayProxy(address implementation_) internal returns (IAppChainGateway gateway_) {
         vm.selectFork(_appchainForkId);
 
         vm.startPrank(_admin);
-        (proxy_, , ) = AppChainGatewayDeployer.deployProxy(
+        (address proxy_, , ) = AppChainGatewayDeployer.deployProxy(
             address(_appChainFactory),
             implementation_,
             _GATEWAY_PROXY_SALT
         );
         vm.stopPrank();
+
+        gateway_ = IAppChainGateway(proxy_);
+
+        assertEq(gateway_.implementation(), implementation_);
     }
 
     /* ============ Group Message Broadcaster Deployer Helpers ============ */
@@ -319,21 +345,25 @@ contract DeploymentTests is Test {
         );
         vm.stopPrank();
 
-        assertEq(GroupMessageBroadcaster(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(IGroupMessageBroadcaster(implementation_).parameterRegistry(), parameterRegistry_);
     }
 
     function _deployGroupMessageBroadcasterProxy(
         address implementation_
-    ) internal returns (GroupMessageBroadcaster proxy_) {
+    ) internal returns (IGroupMessageBroadcaster broadcaster_) {
         vm.selectFork(_appchainForkId);
 
         vm.startPrank(_admin);
-        (proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
+        (address proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
             address(_appChainFactory),
             implementation_,
             _GROUP_MESSAGE_BROADCASTER_PROXY_SALT
         );
         vm.stopPrank();
+
+        broadcaster_ = IGroupMessageBroadcaster(proxy_);
+
+        assertEq(broadcaster_.implementation(), implementation_);
     }
 
     /* ============ Identity Update Broadcaster Deployer Helpers ============ */
@@ -350,27 +380,31 @@ contract DeploymentTests is Test {
         );
         vm.stopPrank();
 
-        assertEq(IdentityUpdateBroadcaster(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(IIdentityUpdateBroadcaster(implementation_).parameterRegistry(), parameterRegistry_);
     }
 
     function _deployIdentityUpdateBroadcasterProxy(
         address implementation_
-    ) internal returns (IdentityUpdateBroadcaster proxy_) {
+    ) internal returns (IIdentityUpdateBroadcaster broadcaster_) {
         vm.selectFork(_appchainForkId);
 
         vm.startPrank(_admin);
-        (proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
+        (address proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
             address(_appChainFactory),
             implementation_,
             _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT
         );
         vm.stopPrank();
+
+        broadcaster_ = IIdentityUpdateBroadcaster(proxy_);
+
+        assertEq(broadcaster_.implementation(), implementation_);
     }
 
     /* ============ Generic Deployer Helpers ============ */
 
     function _deployImplementation(
-        Factory factory_,
+        IFactory factory_,
         bytes memory creationCode_
     ) internal returns (address implementation_) {
         vm.prank(_alice); // Anyone can deploy an implementation, it will always be the same address.
@@ -378,7 +412,7 @@ contract DeploymentTests is Test {
     }
 
     function _deployProxy(
-        Factory factory_,
+        IFactory factory_,
         address implementation_,
         bytes32 salt_,
         bytes memory initializeCallData_
@@ -394,19 +428,11 @@ contract DeploymentTests is Test {
     function _setBroadcasterStartingParameters() internal {
         vm.selectFork(_baseForkId);
 
-        bytes[][] memory keyChains_ = new bytes[][](4);
-
-        keyChains_[0] = new bytes[](1);
-        keyChains_[0][0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
-
-        keyChains_[1] = new bytes[](1);
-        keyChains_[1][0] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
-
-        keyChains_[2] = new bytes[](1);
-        keyChains_[2][0] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
-
-        keyChains_[3] = new bytes[](1);
-        keyChains_[3][0] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        bytes[] memory keys_ = new bytes[](4);
+        keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
+        keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
+        keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
         bytes32[] memory values_ = new bytes32[](4);
         values_[0] = bytes32(_GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE);
@@ -415,34 +441,26 @@ contract DeploymentTests is Test {
         values_[3] = bytes32(_IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
 
         vm.prank(_admin);
-        _settlementChainParameterRegistryProxy.set(keyChains_, values_);
+        _settlementChainParameterRegistryProxy.set(keys_, values_);
 
-        assertEq(_settlementChainParameterRegistryProxy.get(keyChains_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keyChains_[1]), values_[1]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keyChains_[2]), values_[2]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keyChains_[3]), values_[3]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
     function _bridgeBroadcasterStartingParameters() internal {
-        bytes[][] memory keyChains_ = new bytes[][](4);
-
-        keyChains_[0] = new bytes[](1);
-        keyChains_[0][0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
-
-        keyChains_[1] = new bytes[](1);
-        keyChains_[1][0] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
-
-        keyChains_[2] = new bytes[](1);
-        keyChains_[2][0] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
-
-        keyChains_[3] = new bytes[](1);
-        keyChains_[3][0] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        bytes[] memory keys_ = new bytes[](4);
+        keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
+        keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
+        keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
         _approveTokens(_alice, address(_settlementChainGatewayProxy), 1_000000);
 
         _sendParametersAsRetryableTickets(
             _alice,
-            keyChains_,
+            keys_,
             200_000,
             2_000_000_000, // 2 gwei
             1_000000, // 1 USDC
@@ -452,7 +470,7 @@ contract DeploymentTests is Test {
 
     function _sendParametersAsRetryableTickets(
         address account_,
-        bytes[][] memory keyChains_,
+        bytes[] memory keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
@@ -466,7 +484,7 @@ contract DeploymentTests is Test {
         vm.prank(account_);
         _settlementChainGatewayProxy.sendParametersAsRetryableTickets(
             inboxes_,
-            keyChains_,
+            keys_,
             gasLimit_,
             gasPrice_,
             maxSubmissionCost_,

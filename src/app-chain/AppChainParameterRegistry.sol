@@ -16,7 +16,7 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         override(IParameterRegistry, ParameterRegistry)
         returns (bytes memory key_)
     {
-        return "xmtp.acpr.migrator";
+        return "xmtp.appChainParameterRegistry.migrator";
     }
 
     /// @inheritdoc IParameterRegistry
@@ -26,6 +26,6 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         override(IParameterRegistry, ParameterRegistry)
         returns (bytes memory key_)
     {
-        return "xmtp.acpr.isAdmin";
+        return "xmtp.appChainParameterRegistry.isAdmin";
     }
 }

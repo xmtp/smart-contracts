@@ -18,10 +18,10 @@ contract PayloadBroadcasterTests is Test, Utils {
     uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
-    bytes internal constant _PAUSED_KEY = "xmtp.pb.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.pb.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.pb.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.pb.maxPayloadSize";
+    bytes internal constant _PAUSED_KEY = "xmtp.payloadBroadcaster.paused";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.payloadBroadcaster.migrator";
+    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
+    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.maxPayloadSize";
 
     address internal _implementation;
 

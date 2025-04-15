@@ -16,16 +16,16 @@ import { Utils } from "../utils/Utils.sol";
 
 contract ParameterRegistryTests is Test, Utils {
     bytes internal constant _DELIMITER = ".";
-    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.pr.isAdmin";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.pr.migrator";
+    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.parameterRegistry.isAdmin";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.parameterRegistry.migrator";
 
     address internal _implementation;
 
     ParameterRegistryHarness internal _registry;
 
     address internal _unauthorized = makeAddr("unauthorized");
-    address internal _admin1 = makeAddr("admin1");
-    address internal _admin2 = makeAddr("admin2");
+    address internal _admin1 = address(0x1111111111111111111111111111111111111111);
+    address internal _admin2 = address(0x2222222222222222222222222222222222222222);
 
     function setUp() external {
         _implementation = address(new ParameterRegistryHarness());
@@ -60,12 +60,16 @@ contract ParameterRegistryTests is Test, Utils {
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin1))),
+            _registry.__getRegistryParameter(
+                "xmtp.parameterRegistry.isAdmin.0x1111111111111111111111111111111111111111"
+            ),
             bytes32(uint256(1))
         );
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin2))),
+            _registry.__getRegistryParameter(
+                "xmtp.parameterRegistry.isAdmin.0x2222222222222222222222222222222222222222"
+            ),
             bytes32(uint256(1))
         );
     }
@@ -75,57 +79,42 @@ contract ParameterRegistryTests is Test, Utils {
     function test_set_several_notAdmin() external {
         vm.expectRevert(IParameterRegistry.NotAdmin.selector);
         vm.prank(_unauthorized);
-        _registry.set(new bytes[][](0), new bytes32[](0));
+        _registry.set(new bytes[](0), new bytes32[](0));
     }
 
-    function test_set_several_noKeyChains() external {
-        vm.expectRevert(IParameterRegistry.NoKeyChains.selector);
+    function test_set_several_noKeys() external {
+        vm.expectRevert(IParameterRegistry.NoKeys.selector);
         vm.prank(_admin1);
-        _registry.set(new bytes[][](0), new bytes32[](0));
+        _registry.set(new bytes[](0), new bytes32[](0));
     }
 
     function test_set_several_arrayLengthMismatch() external {
         vm.expectRevert(IParameterRegistry.ArrayLengthMismatch.selector);
         vm.prank(_admin1);
-        _registry.set(new bytes[][](1), new bytes32[](2));
-    }
-
-    function test_set_several_emptyKeyChain() external {
-        vm.expectRevert(IParameterRegistry.EmptyKeyChain.selector);
-        vm.prank(_admin1);
-        _registry.set(new bytes[][](1), new bytes32[](1));
+        _registry.set(new bytes[](1), new bytes32[](2));
     }
 
     function test_set_several() external {
-        bytes[][] memory keyChains_ = new bytes[][](2);
+        bytes[] memory keys_ = new bytes[](2);
 
-        keyChains_[0] = new bytes[](4);
-        keyChains_[0][0] = "this";
-        keyChains_[0][1] = "is";
-        keyChains_[0][2] = "a";
-        keyChains_[0][3] = "parameter";
-
-        keyChains_[1] = new bytes[](4);
-        keyChains_[1][0] = "this";
-        keyChains_[1][1] = "is";
-        keyChains_[1][2] = "another";
-        keyChains_[1][3] = "parameter";
+        keys_[0] = "this.is.a.parameter";
+        keys_[1] = "this.is.another.parameter";
 
         bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(1010101));
         values_[1] = bytes32(uint256(2020202));
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet("this.is.a.parameter", keyChains_[0], values_[0]);
+        emit IParameterRegistry.ParameterSet(keys_[0], values_[0]);
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet("this.is.another.parameter", keyChains_[1], values_[1]);
+        emit IParameterRegistry.ParameterSet(keys_[1], values_[1]);
 
         vm.prank(_admin1);
-        _registry.set(keyChains_, values_);
+        _registry.set(keys_, values_);
 
-        assertEq(_registry.__getRegistryParameter("this.is.a.parameter"), bytes32(uint256(1010101)));
-        assertEq(_registry.__getRegistryParameter("this.is.another.parameter"), bytes32(uint256(2020202)));
+        assertEq(_registry.__getRegistryParameter(keys_[0]), bytes32(uint256(1010101)));
+        assertEq(_registry.__getRegistryParameter(keys_[1]), bytes32(uint256(2020202)));
     }
 
     /* ============ set one ============ */
@@ -133,27 +122,15 @@ contract ParameterRegistryTests is Test, Utils {
     function test_set_one_notAdmin() external {
         vm.expectRevert(IParameterRegistry.NotAdmin.selector);
         vm.prank(_unauthorized);
-        _registry.set(new bytes[](0), bytes32(0));
-    }
-
-    function test_set_one_emptyKeyChain() external {
-        vm.expectRevert(IParameterRegistry.EmptyKeyChain.selector);
-        vm.prank(_admin1);
-        _registry.set(new bytes[](0), bytes32(0));
+        _registry.set("", bytes32(0));
     }
 
     function test_set_one() external {
-        bytes[] memory keyChain_ = new bytes[](4);
-        keyChain_[0] = "this";
-        keyChain_[1] = "is";
-        keyChain_[2] = "a";
-        keyChain_[3] = "parameter";
-
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet("this.is.a.parameter", keyChain_, bytes32(uint256(1010101)));
+        emit IParameterRegistry.ParameterSet("this.is.a.parameter", bytes32(uint256(1010101)));
 
         vm.prank(_admin1);
-        _registry.set(keyChain_, bytes32(uint256(1010101)));
+        _registry.set("this.is.a.parameter", bytes32(uint256(1010101)));
 
         assertEq(_registry.__getRegistryParameter("this.is.a.parameter"), bytes32(uint256(1010101)));
     }
@@ -208,12 +185,16 @@ contract ParameterRegistryTests is Test, Utils {
         assertEq(_registry.implementation(), newImplementation_);
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin1))),
+            _registry.__getRegistryParameter(
+                "xmtp.parameterRegistry.isAdmin.0x1111111111111111111111111111111111111111"
+            ),
             bytes32(uint256(1))
         );
 
         assertEq(
-            _registry.__getRegistryParameter(abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(_admin2))),
+            _registry.__getRegistryParameter(
+                "xmtp.parameterRegistry.isAdmin.0x2222222222222222222222222222222222222222"
+            ),
             bytes32(uint256(1))
         );
 
@@ -226,76 +207,43 @@ contract ParameterRegistryTests is Test, Utils {
         assertFalse(_registry.isAdmin(address(1)));
 
         _registry.__setRegistryParameter(
-            abi.encodePacked(_ADMIN_PARAMETER_KEY, _DELIMITER, abi.encode(address(1))),
+            "xmtp.parameterRegistry.isAdmin.0x0000000000000000000000000000000000000001",
             bytes32(uint256(1))
         );
 
         assertTrue(_registry.isAdmin(address(1)));
     }
 
-    /* ============ get several with keyChains ============ */
+    /* ============ get several ============ */
 
-    function test_get_severalKeyChains_noKeyChains() external {
-        vm.expectRevert(IParameterRegistry.NoKeyChains.selector);
-        _registry.get(new bytes[][](0));
+    function test_get_several_noKeys() external {
+        vm.expectRevert(IParameterRegistry.NoKeys.selector);
+        _registry.get(new bytes[](0));
     }
 
-    function test_get_severalKeyChains_emptyKeyChain() external {
-        vm.expectRevert(IParameterRegistry.EmptyKeyChain.selector);
-        _registry.get(new bytes[][](1));
-    }
+    function test_get_several() external {
+        bytes[] memory keys_ = new bytes[](2);
 
-    function test_get_severalKeyChains() external {
-        bytes[][] memory keyChains_ = new bytes[][](2);
-
-        keyChains_[0] = new bytes[](4);
-        keyChains_[0][0] = "this";
-        keyChains_[0][1] = "is";
-        keyChains_[0][2] = "a";
-        keyChains_[0][3] = "parameter";
-
-        keyChains_[1] = new bytes[](4);
-        keyChains_[1][0] = "this";
-        keyChains_[1][1] = "is";
-        keyChains_[1][2] = "another";
-        keyChains_[1][3] = "parameter";
+        keys_[0] = "this.is.a.parameter";
+        keys_[1] = "this.is.another.parameter";
 
         bytes32[] memory expectedValues_ = new bytes32[](2);
         expectedValues_[0] = bytes32(uint256(1010101));
         expectedValues_[1] = bytes32(uint256(2020202));
 
-        _registry.__setRegistryParameter("this.is.a.parameter", expectedValues_[0]);
-        _registry.__setRegistryParameter("this.is.another.parameter", expectedValues_[1]);
+        _registry.__setRegistryParameter(keys_[0], expectedValues_[0]);
+        _registry.__setRegistryParameter(keys_[1], expectedValues_[1]);
 
-        bytes32[] memory values_ = _registry.get(keyChains_);
+        bytes32[] memory values_ = _registry.get(keys_);
 
-        assertEq(values_.length, values_.length);
+        assertEq(values_.length, keys_.length);
         assertEq(values_[0], expectedValues_[0]);
         assertEq(values_[1], expectedValues_[1]);
     }
 
-    /* ============ get one with keyChain ============ */
+    /* ============ get one ============ */
 
-    function test_get_oneKeyChain_emptyKeyChain() external {
-        vm.expectRevert(IParameterRegistry.EmptyKeyChain.selector);
-        _registry.get(new bytes[](0));
-    }
-
-    function test_get_oneKeyChain() external {
-        bytes[] memory keyChain_ = new bytes[](4);
-        keyChain_[0] = "this";
-        keyChain_[1] = "is";
-        keyChain_[2] = "a";
-        keyChain_[3] = "parameter";
-
-        _registry.__setRegistryParameter("this.is.a.parameter", bytes32(uint256(1010101)));
-
-        assertEq(_registry.get(keyChain_), bytes32(uint256(1010101)));
-    }
-
-    /* ============ get one with key ============ */
-
-    function test_get_oneKey() external {
+    function test_get_one() external {
         _registry.__setRegistryParameter("this.is.a.parameter", bytes32(uint256(1010101)));
 
         assertEq(_registry.get("this.is.a.parameter"), bytes32(uint256(1010101)));

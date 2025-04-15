@@ -9,8 +9,8 @@ import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 library FactoryDeployer {
-    function deploy() internal returns (Factory factory_) {
-        return new Factory();
+    function deploy() internal returns (address factory_) {
+        return address(new Factory());
     }
 }
 
@@ -35,13 +35,13 @@ contract DeployFactory is Script {
     }
 
     function deploy() public returns (address factory_) {
-        require(Environment.EXPECTED_FACTORY != address(0), ExpectedFactoryNotSet());
+        require(Environment.FACTORY != address(0), ExpectedFactoryNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        factory_ = address(FactoryDeployer.deploy());
+        factory_ = FactoryDeployer.deploy();
 
-        require(factory_ == Environment.EXPECTED_FACTORY, UnexpectedFactory());
+        require(factory_ == Environment.FACTORY, UnexpectedFactory());
 
         vm.stopBroadcast();
 

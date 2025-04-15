@@ -16,7 +16,7 @@ contract SettlementChainParameterRegistry is ISettlementChainParameterRegistry, 
         override(IParameterRegistry, ParameterRegistry)
         returns (bytes memory key_)
     {
-        return "xmtp.scpr.migrator";
+        return "xmtp.settlementChainParameterRegistry.migrator";
     }
 
     /// @inheritdoc IParameterRegistry
@@ -26,6 +26,6 @@ contract SettlementChainParameterRegistry is ISettlementChainParameterRegistry, 
         override(IParameterRegistry, ParameterRegistry)
         returns (bytes memory key_)
     {
-        return "xmtp.scpr.isAdmin";
+        return "xmtp.settlementChainParameterRegistry.isAdmin";
     }
 }

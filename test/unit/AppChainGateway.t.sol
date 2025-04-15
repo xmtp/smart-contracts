@@ -20,7 +20,7 @@ import { Utils } from "../utils/Utils.sol";
 
 contract AppChainGatewayTests is Test, Utils {
     bytes internal constant _DELIMITER = ".";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.acg.migrator";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
 
     address internal _implementation;
 
@@ -74,40 +74,17 @@ contract AppChainGatewayTests is Test, Utils {
 
     function test_receiveParameters_notSettlementChainGateway() external {
         vm.expectRevert(IAppChainGateway.NotSettlementChainGateway.selector);
-        _gateway.receiveParameters(0, new bytes[][](0), new bytes32[](0));
-    }
-
-    function test_receiveParameters_emptyKeyChain() external {
-        vm.expectRevert(IAppChainGateway.EmptyKeyChain.selector);
-        vm.prank(_settlementChainGatewayAlias);
-        _gateway.receiveParameters(0, new bytes[][](1), new bytes32[](1));
+        _gateway.receiveParameters(0, new bytes[](0), new bytes32[](0));
     }
 
     function test_receiveParameters() external {
         _gateway.__setKeyNonce("this.is.a.skipped.parameter", 1);
 
-        bytes[][] memory keyChains_ = new bytes[][](3);
+        bytes[] memory keys_ = new bytes[](3);
 
-        keyChains_[0] = new bytes[](5);
-        keyChains_[0][0] = "this";
-        keyChains_[0][1] = "is";
-        keyChains_[0][2] = "a";
-        keyChains_[0][3] = "used";
-        keyChains_[0][4] = "parameter";
-
-        keyChains_[1] = new bytes[](5);
-        keyChains_[1][0] = "this";
-        keyChains_[1][1] = "is";
-        keyChains_[1][2] = "a";
-        keyChains_[1][3] = "skipped";
-        keyChains_[1][4] = "parameter";
-
-        keyChains_[2] = new bytes[](5);
-        keyChains_[2][0] = "this";
-        keyChains_[2][1] = "is";
-        keyChains_[2][2] = "another";
-        keyChains_[2][3] = "used";
-        keyChains_[2][4] = "parameter";
+        keys_[0] = "this.is.a.used.parameter";
+        keys_[1] = "this.is.a.skipped.parameter";
+        keys_[2] = "this.is.another.used.parameter";
 
         bytes32[] memory values_ = new bytes32[](3);
         values_[0] = bytes32(uint256(10101));
@@ -116,21 +93,21 @@ contract AppChainGatewayTests is Test, Utils {
 
         vm.expectCall(
             _parameterRegistry,
-            abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[0], values_[0])
+            abi.encodeWithSelector(MockParameterRegistry.set.selector, keys_[0], values_[0])
         );
 
-        // NOTE: (keyChains_[1], values_[1]) is skipped because the nonce is lower than the key's nonce.
+        // NOTE: (keys_[1], values_[1]) is skipped because the nonce is lower than the key's nonce.
 
         vm.expectCall(
             _parameterRegistry,
-            abi.encodeWithSelector(MockParameterRegistry.set.selector, keyChains_[2], values_[2])
+            abi.encodeWithSelector(MockParameterRegistry.set.selector, keys_[2], values_[2])
         );
 
         vm.expectEmit(address(_gateway));
-        emit IAppChainGateway.ParametersReceived(1, keyChains_);
+        emit IAppChainGateway.ParametersReceived(1, keys_);
 
         vm.prank(_settlementChainGatewayAlias);
-        _gateway.receiveParameters(1, keyChains_, values_);
+        _gateway.receiveParameters(1, keys_, values_);
 
         assertEq(_gateway.__getKeyNonce("this.is.a.used.parameter"), 1);
         assertEq(_gateway.__getKeyNonce("this.is.a.skipped.parameter"), 1);

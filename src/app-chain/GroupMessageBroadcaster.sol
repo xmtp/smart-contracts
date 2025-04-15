@@ -38,7 +38,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.minPayloadSize";
+        return "xmtp.groupMessageBroadcaster.minPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -48,7 +48,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.maxPayloadSize";
+        return "xmtp.groupMessageBroadcaster.maxPayloadSize";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -58,7 +58,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.migrator";
+        return "xmtp.groupMessageBroadcaster.migrator";
     }
 
     /// @inheritdoc IPayloadBroadcaster
@@ -68,6 +68,6 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         override(IPayloadBroadcaster, PayloadBroadcaster)
         returns (bytes memory key_)
     {
-        return "xmtp.gmb.paused";
+        return "xmtp.groupMessageBroadcaster.paused";
     }
 }

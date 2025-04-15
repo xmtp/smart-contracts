@@ -78,14 +78,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParameters(
         address[] calldata inboxes_,
-        bytes[][] calldata keyChains_,
+        bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external {
         require(inboxes_.length > 0, NoInboxes());
 
         uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
-        bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
+        bytes memory data_ = _getEncodedParameters(nonce_, keys_);
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
             // TODO: Should `_redirectFunds` be called here? If so, consider re-entrancy prevention.
@@ -100,14 +100,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             });
 
             // slither-disable-next-line reentrancy-events
-            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
+            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keys_);
         }
     }
 
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTickets(
         address[] calldata inboxes_,
-        bytes[][] calldata keyChains_,
+        bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
@@ -116,7 +116,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         require(inboxes_.length > 0, NoInboxes());
 
         uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
-        bytes memory data_ = _getEncodedParameters(nonce_, keyChains_);
+        bytes memory data_ = _getEncodedParameters(nonce_, keys_);
         address appChainAlias_ = appChainAlias();
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
@@ -136,7 +136,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             });
 
             // slither-disable-next-line reentrancy-events
-            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keyChains_);
+            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keys_);
         }
     }
 
@@ -154,7 +154,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
-        return "xmtp.scg.migrator";
+        return "xmtp.settlementChainGateway.migrator";
     }
 
     /* ============ Internal Interactive Functions ============ */
@@ -172,14 +172,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     function _getEncodedParameters(
         uint256 nonce_,
-        bytes[][] calldata keyChains_
+        bytes[] calldata keys_
     ) internal view returns (bytes memory encoded_) {
-        require(keyChains_.length > 0, NoKeyChains());
+        require(keys_.length > 0, NoKeys());
 
         return
             abi.encodeCall(
                 IAppChainGatewayLike.receiveParameters,
-                (nonce_, keyChains_, IParameterRegistryLike(parameterRegistry).get(keyChains_))
+                (nonce_, keys_, IParameterRegistryLike(parameterRegistry).get(keys_))
             );
     }
 

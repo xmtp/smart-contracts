@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
+import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
+
 import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
 import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
@@ -19,19 +21,19 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
 
     function minPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pb.minPayloadSize";
+        return "xmtp.payloadBroadcaster.minPayloadSize";
     }
 
     function maxPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pb.maxPayloadSize";
+        return "xmtp.payloadBroadcaster.maxPayloadSize";
     }
 
     function migratorParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pb.migrator";
+        return "xmtp.payloadBroadcaster.migrator";
     }
 
     function pausedParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pb.paused";
+        return "xmtp.payloadBroadcaster.paused";
     }
 
     function __setPauseStatus(bool paused_) external {
@@ -186,7 +188,7 @@ contract RateRegistryHarness is RateRegistry {
         );
     }
 
-    function __getAllRates() external view returns (Rates[] memory) {
+    function __getAllRates() external view returns (Rates[] memory rates_) {
         return _getRatesManagerStorage().allRates;
     }
 }
@@ -247,11 +249,11 @@ contract PayerRegistryHarness is PayerRegistry {
 
 contract ParameterRegistryHarness is ParameterRegistry {
     function migratorParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pr.migrator";
+        return "xmtp.parameterRegistry.migrator";
     }
 
     function adminParameterKey() public pure override returns (bytes memory key_) {
-        return "xmtp.pr.isAdmin";
+        return "xmtp.parameterRegistry.isAdmin";
     }
 
     function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
@@ -315,5 +317,23 @@ contract AppChainGatewayHarness is AppChainGateway {
 
     function __getKeyNonce(bytes memory key_) external view returns (uint256 nonce_) {
         return _getAppChainGatewayStorage().keyNonces[key_];
+    }
+}
+
+contract ParameterKeysHarness {
+    function getKey(bytes[] memory keyComponents_) external pure returns (bytes memory key_) {
+        return ParameterKeys.getKey(keyComponents_);
+    }
+
+    function combineKeyComponents(bytes memory left_, bytes memory right_) external pure returns (bytes memory key_) {
+        return ParameterKeys.combineKeyComponents(left_, right_);
+    }
+
+    function addressToKeyComponent(address account_) external pure returns (bytes memory keyComponent_) {
+        return ParameterKeys.addressToKeyComponent(account_);
+    }
+
+    function uint256ToKeyComponent(uint256 value_) external pure returns (bytes memory keyComponent_) {
+        return ParameterKeys.uint256ToKeyComponent(value_);
     }
 }

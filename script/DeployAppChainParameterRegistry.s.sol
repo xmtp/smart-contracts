@@ -12,10 +12,20 @@ import { Utils } from "./utils/Utils.sol";
 import { Environment } from "./utils/Environment.sol";
 
 library AppChainParameterRegistryDeployer {
+    error ZeroFactory();
+    error ZeroImplementation();
+
     function deployImplementation(
         address factory_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        bytes memory creationCode_ = type(AppChainParameterRegistry).creationCode;
+        require(factory_ != address(0), ZeroFactory());
+
+        constructorArguments_ = "";
+
+        bytes memory creationCode_ = abi.encodePacked(
+            type(AppChainParameterRegistry).creationCode,
+            constructorArguments_
+        );
 
         implementation_ = IFactory(factory_).deployImplementation(creationCode_);
     }
@@ -25,21 +35,21 @@ library AppChainParameterRegistryDeployer {
         address implementation_,
         bytes32 salt_,
         address[] memory admins_
-    )
-        internal
-        returns (AppChainParameterRegistry proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_)
-    {
+    ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(implementation_ != address(0), ZeroImplementation());
+
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeCall(IParameterRegistry.initialize, (admins_));
 
-        proxy_ = AppChainParameterRegistry(IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_));
+        proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
     }
 }
 
 contract DeployAppChainParameterRegistry is Script {
     error PrivateKeyNotSet();
-    error ExpectedImplementationNotSet();
-    error ExpectedProxyNotSet();
+    error ImplementationNotSet();
+    error ProxyNotSet();
     error UnexpectedImplementation();
     error UnexpectedProxy();
     error FactoryNotSet();
@@ -61,27 +71,20 @@ contract DeployAppChainParameterRegistry is Script {
     }
 
     function deployImplementation() public {
-        require(
-            Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION != address(0),
-            ExpectedImplementationNotSet()
-        );
-
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
+        require(Environment.APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION != address(0), ImplementationNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = AppChainParameterRegistryDeployer
-            .deployImplementation(Environment.EXPECTED_FACTORY);
+            .deployImplementation(Environment.FACTORY);
 
-        require(
-            implementation_ == Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
-            UnexpectedImplementation()
-        );
+        require(implementation_ == Environment.APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION, UnexpectedImplementation());
 
         vm.stopBroadcast();
 
         string memory json_ = Utils.buildImplementationJson(
-            Environment.EXPECTED_FACTORY,
+            Environment.FACTORY,
             implementation_,
             constructorArguments_
         );
@@ -97,39 +100,30 @@ contract DeployAppChainParameterRegistry is Script {
     }
 
     function deployProxy() public {
-        require(Environment.EXPECTED_PARAMETER_REGISTRY_PROXY != address(0), ExpectedProxyNotSet());
-        require(Environment.EXPECTED_FACTORY != address(0), FactoryNotSet());
-
-        require(
-            Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION != address(0),
-            ExpectedImplementationNotSet()
-        );
+        require(Environment.PARAMETER_REGISTRY_PROXY != address(0), ProxyNotSet());
+        require(Environment.FACTORY != address(0), FactoryNotSet());
+        require(Environment.APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION != address(0), ImplementationNotSet());
 
         vm.startBroadcast(_privateKey);
 
-        (AppChainParameterRegistry proxy_, bytes memory constructorArguments_, ) = AppChainParameterRegistryDeployer
-            .deployProxy(
-                Environment.EXPECTED_FACTORY,
-                Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
-                Environment.PARAMETER_REGISTRY_PROXY_SALT,
-                _getAdmins()
-            );
+        (address proxy_, bytes memory constructorArguments_, ) = AppChainParameterRegistryDeployer.deployProxy(
+            Environment.FACTORY,
+            Environment.APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
+            Environment.PARAMETER_REGISTRY_PROXY_SALT,
+            _getAdmins()
+        );
 
-        require(address(proxy_) == Environment.EXPECTED_PARAMETER_REGISTRY_PROXY, UnexpectedProxy());
+        require(proxy_ == Environment.PARAMETER_REGISTRY_PROXY, UnexpectedProxy());
 
         require(
-            proxy_.implementation() == Environment.EXPECTED_APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
+            AppChainParameterRegistry(proxy_).implementation() ==
+                Environment.APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION,
             UnexpectedProxy()
         );
 
         vm.stopBroadcast();
 
-        string memory json_ = Utils.buildProxyJson(
-            Environment.EXPECTED_FACTORY,
-            _deployer,
-            address(proxy_),
-            constructorArguments_
-        );
+        string memory json_ = Utils.buildProxyJson(Environment.FACTORY, _deployer, proxy_, constructorArguments_);
 
         Utils.writeOutput(
             json_,
@@ -139,6 +133,6 @@ contract DeployAppChainParameterRegistry is Script {
 
     function _getAdmins() internal pure returns (address[] memory admins_) {
         admins_ = new address[](1);
-        admins_[0] = Environment.EXPECTED_GATEWAY_PROXY;
+        admins_[0] = Environment.GATEWAY_PROXY;
     }
 }

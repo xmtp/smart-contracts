@@ -12,10 +12,10 @@ interface IAppChainGateway is IMigratable {
 
     /**
      * @notice Emitted when parameters are received from the settlement chain.
-     * @param  nonce     The nonce of the parameter transmission (to prevent out-of-sequence resets).
-     * @param  keyChains The key chains of the parameters.
+     * @param  nonce The nonce of the parameter transmission (to prevent out-of-sequence resets).
+     * @param  keys  The keys of the parameters.
      */
-    event ParametersReceived(uint256 indexed nonce, bytes[][] keyChains);
+    event ParametersReceived(uint256 indexed nonce, bytes[] keys);
 
     /* ============ Custom Errors ============ */
 
@@ -28,9 +28,6 @@ interface IAppChainGateway is IMigratable {
     /// @notice Thrown when the sender is not the settlement chain gateway.
     error NotSettlementChainGateway();
 
-    /// @notice Thrown when the key chain is empty.
-    error EmptyKeyChain();
-
     /* ============ Initialization ============ */
 
     /// @notice Initializes the gateway.
@@ -40,11 +37,11 @@ interface IAppChainGateway is IMigratable {
 
     /**
      * @notice Receives parameters from the settlement chain.
-     * @param  nonce_     The nonce of the parameter transmission (to prevent out-of-sequence resets).
-     * @param  keyChains_ The key chains of the parameters.
-     * @param  values_    The values of the parameters.
+     * @param  nonce_  The nonce of the parameter transmission (to prevent out-of-sequence resets).
+     * @param  keys_   The keys of the parameters.
+     * @param  values_ The values of the parameters.
      */
-    function receiveParameters(uint256 nonce_, bytes[][] calldata keyChains_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
 
     /* ============ View/Pure Functions ============ */
 

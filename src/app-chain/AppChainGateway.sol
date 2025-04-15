@@ -76,16 +76,15 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /// @inheritdoc IAppChainGateway
     function receiveParameters(
         uint256 nonce_,
-        bytes[][] calldata keyChains_,
+        bytes[] calldata keys_,
         bytes32[] calldata values_
     ) external onlySettlementChainGateway {
         AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
 
-        emit ParametersReceived(nonce_, keyChains_);
+        emit ParametersReceived(nonce_, keys_);
 
-        for (uint256 index_; index_ < keyChains_.length; ++index_) {
-            bytes[] calldata keyChain_ = keyChains_[index_];
-            bytes memory key_ = _getKey(keyChain_);
+        for (uint256 index_; index_ < keys_.length; ++index_) {
+            bytes calldata key_ = keys_[index_];
 
             // Each key is checked against the nonce, and ignored if the nonce is lower than the stored nonce.
             if ($.keyNonces[key_] >= nonce_) continue;
@@ -93,7 +92,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
             $.keyNonces[key_] = nonce_;
 
             // slither-disable-next-line calls-loop
-            IParameterRegistryLike(parameterRegistry).set(keyChain_, values_[index_]);
+            IParameterRegistryLike(parameterRegistry).set(key_, values_[index_]);
         }
     }
 
@@ -106,23 +105,10 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IAppChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
-        return "xmtp.acg.migrator";
+        return "xmtp.appChainGateway.migrator";
     }
 
     /* ============ Internal View/Pure Functions ============ */
-
-    function _getKey(bytes[] memory keyChain_) internal pure returns (bytes memory key_) {
-        require(keyChain_.length > 0, EmptyKeyChain());
-
-        // TODO: Perhaps compute the final size of the key and allocate the memory in one go. Best in assembly.
-        for (uint256 index_; index_ < keyChain_.length; ++index_) {
-            key_ = index_ == 0 ? keyChain_[index_] : _combineKeyChainParts(key_, keyChain_[index_]);
-        }
-    }
-
-    function _combineKeyChainParts(bytes memory left_, bytes memory right_) internal pure returns (bytes memory key_) {
-        return abi.encodePacked(left_, _DELIMITER, right_);
-    }
 
     function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
         return IParameterRegistryLike(parameterRegistry).get(key_);
