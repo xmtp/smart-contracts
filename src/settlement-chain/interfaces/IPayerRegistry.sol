@@ -80,10 +80,10 @@ interface IPayerRegistry is IMigratable {
     event UsageSettled(address indexed payer, uint96 amount);
 
     /**
-     * @notice Emitted when fees are transferred to the fee distributor.
-     * @param  amount The amount of tokens transferred.
+     * @notice Emitted when excess tokens are transferred to the fee distributor.
+     * @param  amount The amount of excess tokens transferred.
      */
-    event FeesTransferred(uint96 amount);
+    event ExcessTransferred(uint96 amount);
 
     /**
      * @notice Emitted when the pause status is set.
@@ -105,17 +105,23 @@ interface IPayerRegistry is IMigratable {
     /// @notice Error thrown when the settler address is being set to 0x0.
     error ZeroSettlerAddress();
 
-    /// @notice Error thrown when the fee distributor address is being set to 0x0.
+    /// @notice Error thrown when the fee distributor address is 0x0.
     error ZeroFeeDistributorAddress();
 
     /// @notice Error thrown when the minimum deposit is being set to 0.
     error ZeroMinimumDeposit();
 
-    /// @notice Error thrown when a `transfer` of tokens fails.
-    error ERC20TransferFailed();
+    /**
+     * @notice Thrown when the `ERC20.transfer` call fails.
+     * @dev    This is an identical redefinition of `SafeTransferLib.TransferFailed`.
+     */
+    error TransferFailed();
 
-    /// @notice Error thrown when a `transferFrom` of tokens fails.
-    error ERC20TransferFromFailed();
+    /**
+     * @notice Thrown when the `ERC20.transferFrom` call fails.
+     * @dev    This is an identical redefinition of `SafeTransferLib.TransferFromFailed`.
+     */
+    error TransferFromFailed();
 
     /**
      * @notice Error thrown when the deposit amount is less than the minimum deposit.
@@ -154,6 +160,9 @@ interface IPayerRegistry is IMigratable {
 
     /// @notice Thrown when the payer registry is paused.
     error Paused();
+
+    /// @notice Thrown when there is no excess tokens to transfer to the fee distributor.
+    error NoExcess();
 
     /* ============ Initialization ============ */
 
@@ -198,6 +207,12 @@ interface IPayerRegistry is IMigratable {
      * @param  fees_   The fees to settle for each payer.
      */
     function settleUsage(address[] calldata payers_, uint96[] calldata fees_) external;
+
+    /**
+     * @notice Sends the excess tokens in the contract to the fee distributor.
+     * @return excess_ The amount of excess tokens sent to the fee distributor.
+     */
+    function sendExcessToFeeDistributor() external returns (uint96 excess_);
 
     /**
      * @notice Updates the settler of the contract.
@@ -272,6 +287,9 @@ interface IPayerRegistry is IMigratable {
 
     /// @notice The withdraw lock period.
     function withdrawLockPeriod() external view returns (uint32 withdrawLockPeriod_);
+
+    /// @notice The amount of excess tokens in the contract that are not withdrawable by payers.
+    function excess() external view returns (uint96 excess_);
 
     /**
      * @notice Returns the balance of a payer.
