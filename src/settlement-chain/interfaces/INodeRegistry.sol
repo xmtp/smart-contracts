@@ -113,7 +113,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      * @notice Emitted when the node operator commission percent is updated.
      * @param  commissionPercent The new commission percentage.
      */
-    event NodeOperatorCommissionPercentUpdated(uint256 commissionPercent);
+    event NodeOperatorCommissionPercentUpdated(uint16 commissionPercent);
 
     /* ============ Custom Errors ============ */
 
@@ -143,6 +143,12 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /// @notice Error thrown when trying to set max canonical nodes below current canonical count.
     error MaxCanonicalNodesBelowCurrentCount();
+
+    /// @notice Error thrown when a node is already in the canonical network.
+    error NodeAlreadyInCanonicalNetwork();
+
+    /// @notice Error thrown when a node is not in the canonical network.
+    error NodeNotInCanonicalNetwork();
 
     /// @notice Error thrown when the maximum number of canonical nodes is reached.
     error MaxCanonicalNodesReached();

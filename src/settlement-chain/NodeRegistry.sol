@@ -35,8 +35,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     uint32 public constant NODE_INCREMENT = 100;
 
-    uint48 internal constant _INITIAL_ACCESS_CONTROL_DELAY = 2 days;
-
     bytes1 internal constant _FORWARD_SLASH = 0x2f;
 
     address public immutable parameterRegistry;
@@ -57,7 +55,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 internal constant _NODE_REGISTRY_STORAGE_LOCATION =
-        0x6ad1a01bf62225c91223b2956030efc848b0def7d19ed478ca6dd31490e2d000; // TODO: Fix this.
+        0xd48713bc7b5e2644bcb4e26ace7d67dc9027725a9a1ee11596536cc6096a2000;
 
     function _getNodeRegistryStorage() internal pure returns (NodeRegistryStorage storage $) {
         // slither-disable-next-line assembly
@@ -113,7 +111,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        nodeId_ = ++$.nodeCount * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
+        nodeId_ = uint256(++$.nodeCount) * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
 
         $.nodes[nodeId_] = Node(signingKeyPub_, httpAddress_, false, minMonthlyFee_);
 
@@ -128,6 +126,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
+        require(!$.nodes[nodeId_].isCanonical, NodeAlreadyInCanonicalNetwork());
         require(++$.canonicalNodesCount <= $.maxCanonicalNodes, MaxCanonicalNodesReached());
 
         $.nodes[nodeId_].isCanonical = true;
@@ -140,6 +139,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         _requireOwned(nodeId_);
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        require($.nodes[nodeId_].isCanonical, NodeNotInCanonicalNetwork());
 
         delete $.nodes[nodeId_].isCanonical;
         --$.canonicalNodesCount;

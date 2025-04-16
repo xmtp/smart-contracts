@@ -199,6 +199,16 @@ contract NodeRegistryTests is Test, Utils {
         _registry.addToNetwork(1);
     }
 
+    function test_addToNetwork_alreadyInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", true, 0);
+
+        vm.expectRevert(INodeRegistry.NodeAlreadyInCanonicalNetwork.selector);
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
+    }
+
     function test_addToNetwork_maxActiveNodesReached() external {
         _registry.__setAdmin(_admin);
         _addNode(1, _alice, "", "", false, 0);
@@ -242,6 +252,16 @@ contract NodeRegistryTests is Test, Utils {
 
         vm.prank(_unauthorized);
         _registry.removeFromNetwork(0);
+    }
+
+    function test_removeFromNetwork_notInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", false, 0);
+
+        vm.expectRevert(INodeRegistry.NodeNotInCanonicalNetwork.selector);
+
+        vm.prank(_admin);
+        _registry.removeFromNetwork(1);
     }
 
     function test_removeFromNetwork_nonexistentToken() external {
