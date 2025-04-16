@@ -664,7 +664,8 @@ contract DeploymentTests is Test {
 
     function _call(address sender_, address to_, bytes memory data_) internal {
         vm.prank(sender_);
-        to_.call(data_);
+        (bool success_, ) = to_.call(data_);
+        assertTrue(success_);
     }
 
     /* ============ Bridge Event Decoders ============ */

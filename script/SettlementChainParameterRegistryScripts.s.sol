@@ -103,6 +103,8 @@ contract SettlementChainParameterRegistryScripts is ScriptBase {
             _deployer,
             _deploymentData.parameterRegistryProxySalt
         );
+
+        console.log("Proxy: %s", proxy_);
     }
 
     function _getAdmins() internal view returns (address[] memory admins_) {
