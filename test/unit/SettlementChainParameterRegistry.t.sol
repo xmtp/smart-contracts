@@ -3,10 +3,11 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { SettlementChainParameterRegistryHarness } from "../utils/Harnesses.sol";
 import { Utils } from "../utils/Utils.sol";
@@ -29,14 +30,9 @@ contract SettlementChainParameterRegistryTests is Test, Utils {
         admins_[0] = _admin1;
         admins_[1] = _admin2;
 
-        _registry = SettlementChainParameterRegistryHarness(
-            address(
-                new ERC1967Proxy(
-                    _implementation,
-                    abi.encodeWithSelector(IParameterRegistry.initialize.selector, admins_)
-                )
-            )
-        );
+        _registry = SettlementChainParameterRegistryHarness(address(new Proxy(_implementation)));
+
+        _registry.initialize(admins_);
     }
 
     /* ============ initialize ============ */

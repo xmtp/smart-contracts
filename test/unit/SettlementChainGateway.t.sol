@@ -5,13 +5,14 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { ISettlementChainGateway } from "../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IAppChainGatewayLike } from "../../src/settlement-chain/interfaces/External.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { SettlementChainGatewayHarness } from "../utils/Harnesses.sol";
 
@@ -46,11 +47,9 @@ contract SettlementChainGatewayTests is Test, Utils {
             new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, _appChainNativeToken)
         );
 
-        _gateway = SettlementChainGatewayHarness(
-            address(
-                new ERC1967Proxy(_implementation, abi.encodeWithSelector(ISettlementChainGateway.initialize.selector))
-            )
-        );
+        _gateway = SettlementChainGatewayHarness(address(new Proxy(_implementation)));
+
+        _gateway.initialize();
     }
 
     /* ============ constructor ============ */
