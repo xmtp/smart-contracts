@@ -55,14 +55,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
         require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeTokenAddress());
+
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    function initialize() external initializer {
-        // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
-    }
+    function initialize() external initializer {}
 
     /* ============ Interactive Functions ============ */
 

@@ -70,6 +70,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     constructor(address parameterRegistry_, address token_) {
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(token = token_), ZeroTokenAddress());
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */

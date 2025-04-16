@@ -106,8 +106,6 @@ contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
 }
 
 contract NodeRegistryHarness is NodeRegistry {
-    using EnumerableSet for EnumerableSet.UintSet;
-
     constructor(address parameterRegistry_) NodeRegistry(parameterRegistry_) {}
 
     function __setMaxCanonicalNodes(uint256 maxCanonicalNodes_) external {

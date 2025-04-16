@@ -84,6 +84,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      */
     constructor(address parameterRegistry_) {
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */
@@ -262,7 +263,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         allNodes_ = new NodeWithId[]($.nodeCount);
 
         for (uint32 index_; index_ < $.nodeCount; ++index_) {
-            uint32 nodeId_ = NODE_INCREMENT * (index_ + 1);
+            uint256 nodeId_ = uint256(NODE_INCREMENT) * (index_ + 1);
             allNodes_[index_] = NodeWithId({ nodeId: nodeId_, node: $.nodes[nodeId_] });
         }
     }
