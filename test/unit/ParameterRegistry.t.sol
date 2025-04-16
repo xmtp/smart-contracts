@@ -3,12 +3,13 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { ParameterRegistryHarness } from "../utils/Harnesses.sol";
 import { MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
@@ -33,14 +34,9 @@ contract ParameterRegistryTests is Test, Utils {
         admins_[0] = _admin1;
         admins_[1] = _admin2;
 
-        _registry = ParameterRegistryHarness(
-            address(
-                new ERC1967Proxy(
-                    _implementation,
-                    abi.encodeWithSelector(IParameterRegistry.initialize.selector, admins_)
-                )
-            )
-        );
+        _registry = ParameterRegistryHarness(address(new Proxy(_implementation)));
+
+        _registry.initialize(admins_);
     }
 
     /* ============ initialize ============ */

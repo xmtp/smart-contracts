@@ -3,11 +3,12 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { IPayloadBroadcaster } from "../../src/abstract/interfaces/IPayloadBroadcaster.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { IdentityUpdateBroadcasterHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry } from "../utils/Mocks.sol";
@@ -34,9 +35,9 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
         _mockParameterRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _STARTING_MAX_PAYLOAD_SIZE);
         _mockParameterRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _STARTING_MIN_PAYLOAD_SIZE);
 
-        _broadcaster = IdentityUpdateBroadcasterHarness(
-            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayloadBroadcaster.initialize.selector)))
-        );
+        _broadcaster = IdentityUpdateBroadcasterHarness(address(new Proxy(_implementation)));
+
+        _broadcaster.initialize();
     }
 
     /* ============ constructor ============ */

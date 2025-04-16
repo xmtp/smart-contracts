@@ -6,12 +6,13 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
 import { IERC721Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { NodeRegistryHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
@@ -42,9 +43,9 @@ contract NodeRegistryTests is Test, Utils {
         _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new NodeRegistryHarness(_parameterRegistry));
 
-        _registry = NodeRegistryHarness(
-            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(INodeRegistry.initialize.selector)))
-        );
+        _registry = NodeRegistryHarness(address(new Proxy(_implementation)));
+
+        _registry.initialize();
     }
 
     /* ============ constructor ============ */

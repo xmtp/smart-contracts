@@ -3,12 +3,13 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { PayerRegistryHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockErc20, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
@@ -50,9 +51,9 @@ contract PayerRegistryTests is Test, Utils {
         _mockParameterRegistryCall(_SETTLER_KEY, _settler);
         _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, _feeDistributor);
 
-        _registry = PayerRegistryHarness(
-            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayerRegistry.initialize.selector)))
-        );
+        _registry = PayerRegistryHarness(address(new Proxy(_implementation)));
+
+        _registry.initialize();
     }
 
     /* ============ constructor ============ */

@@ -5,12 +5,13 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { AppChainGatewayHarness } from "../utils/Harnesses.sol";
 
@@ -34,9 +35,9 @@ contract AppChainGatewayTests is Test, Utils {
         _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new AppChainGatewayHarness(_parameterRegistry, _settlementChainGateway));
 
-        _gateway = AppChainGatewayHarness(
-            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IAppChainGateway.initialize.selector)))
-        );
+        _gateway = AppChainGatewayHarness(address(new Proxy(_implementation)));
+
+        _gateway.initialize();
     }
 
     /* ============ constructor ============ */
