@@ -4,7 +4,7 @@ set -euo pipefail
 #
 # Available environment variables
 #
-# BUILD_TAG: The tag of the build. If not provided, 
+# BUILD_TAG: The tag of the build. If not provided,
 # the tag will be the git tag of the current commit.
 #
 

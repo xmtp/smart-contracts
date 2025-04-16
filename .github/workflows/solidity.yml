@@ -131,6 +131,9 @@ jobs:
 
       - name: Run Forge tests
         run: forge test -vvv
+        env:
+          BASE_TESTNET_RPC_URL: ${{ secrets.BASE_TESTNET_RPC_URL }}
+          XMTP_TESTNET_RPC_URL: ${{ secrets.XMTP_TESTNET_RPC_URL }}
 
   gas:
     name: Gas Report
@@ -167,6 +170,8 @@ jobs:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          BASE_TESTNET_RPC_URL: ${{ secrets.BASE_TESTNET_RPC_URL }}
+          XMTP_TESTNET_RPC_URL: ${{ secrets.XMTP_TESTNET_RPC_URL }}
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.21
@@ -215,6 +220,9 @@ jobs:
       - name: Run coverage
         id: coverage
         run: forge coverage --no-match-coverage "(script|test)" --gas-limit 2000000000 --report lcov && lcov --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage
+        env:
+          BASE_TESTNET_RPC_URL: ${{ secrets.BASE_TESTNET_RPC_URL }}
+          XMTP_TESTNET_RPC_URL: ${{ secrets.XMTP_TESTNET_RPC_URL }}
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v4
@@ -260,7 +268,7 @@ jobs:
           node-version: 23
 
       - name: Install dev dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Run Solhint check
         run: npm run solhint
@@ -300,7 +308,7 @@ jobs:
           node-version: 23
 
       - name: Install dev dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Run Prettier check
         run: npm run prettier-check
@@ -339,7 +347,7 @@ jobs:
         run: pip3 install slither-analyzer
 
       - name: Run Slither
-        run: slither . --sarif output.sarif
+        run: npm run slither
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3

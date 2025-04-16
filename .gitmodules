@@ -13,3 +13,6 @@
 [submodule "lib/solady"]
 	path = lib/solady
 	url = https://github.com/Vectorized/solady
+[submodule "lib/arbitrum-bridging"]
+	path = lib/arbitrum-bridging
+	url = git@github.com:OffchainLabs/token-bridge-contracts.git
