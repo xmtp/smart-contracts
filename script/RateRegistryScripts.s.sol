@@ -16,8 +16,8 @@ contract RateRegistryScripts is ScriptBase {
     error UnexpectedImplementation();
     error UnexpectedProxy();
     error FactoryNotSet();
-    error RateRegistrySaltNotSet();
     error ParameterRegistryProxyNotSet();
+    error ProxySaltNotSet();
 
     function deployImplementation() public {
         require(_deploymentData.rateRegistryImplementation != address(0), ImplementationNotSet());
@@ -56,14 +56,14 @@ contract RateRegistryScripts is ScriptBase {
         require(_deploymentData.rateRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.rateRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.rateRegistrySalt != bytes32(0), RateRegistrySaltNotSet());
+        require(_deploymentData.rateRegistryProxySalt != bytes32(0), ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address proxy_, bytes memory constructorArguments_, ) = RateRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.rateRegistryImplementation,
-            _deploymentData.rateRegistrySalt
+            _deploymentData.rateRegistryProxySalt
         );
 
         require(proxy_ == _deploymentData.rateRegistryProxy, UnexpectedProxy());
@@ -94,12 +94,12 @@ contract RateRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.rateRegistrySalt != bytes32(0), RateRegistrySaltNotSet());
+        require(_deploymentData.rateRegistryProxySalt != bytes32(0), ProxySaltNotSet());
 
         address proxy_ = RateRegistryDeployer.getProxy(
             _deploymentData.factory,
             _deployer,
-            _deploymentData.rateRegistrySalt
+            _deploymentData.rateRegistryProxySalt
         );
 
         console.log("Proxy: %s", proxy_);

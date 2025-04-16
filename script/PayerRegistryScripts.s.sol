@@ -18,7 +18,7 @@ contract PayerRegistryScripts is ScriptBase {
     error FactoryNotSet();
     error ParameterRegistryProxyNotSet();
     error AppChainNativeTokenNotSet();
-    error PayerRegistrySaltNotSet();
+    error ProxySaltNotSet();
 
     function deployImplementation() public {
         require(_deploymentData.payerRegistryImplementation != address(0), ImplementationNotSet());
@@ -64,14 +64,14 @@ contract PayerRegistryScripts is ScriptBase {
         require(_deploymentData.payerRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.payerRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.payerRegistrySalt != bytes32(0), PayerRegistrySaltNotSet());
+        require(_deploymentData.payerRegistryProxySalt != bytes32(0), ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address proxy_, bytes memory constructorArguments_, ) = PayerRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.payerRegistryImplementation,
-            _deploymentData.payerRegistrySalt
+            _deploymentData.payerRegistryProxySalt
         );
 
         require(proxy_ == _deploymentData.payerRegistryProxy, UnexpectedProxy());
@@ -107,12 +107,12 @@ contract PayerRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.payerRegistrySalt != bytes32(0), PayerRegistrySaltNotSet());
+        require(_deploymentData.payerRegistryProxySalt != bytes32(0), ProxySaltNotSet());
 
         address proxy_ = PayerRegistryDeployer.getProxy(
             _deploymentData.factory,
             _deployer,
-            _deploymentData.payerRegistrySalt
+            _deploymentData.payerRegistryProxySalt
         );
 
         console.log("Proxy: %s", proxy_);
