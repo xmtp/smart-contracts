@@ -60,14 +60,14 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGatewayAddress());
 
         settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_);
+
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */
 
     /// @inheritdoc IAppChainGateway
-    function initialize() external initializer {
-        // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
-    }
+    function initialize() external initializer {}
 
     /* ============ Interactive Functions ============ */
 

@@ -48,14 +48,13 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
      */
     constructor(address parameterRegistry_) {
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */
 
     /// @inheritdoc IRateRegistry
-    function initialize() public initializer {
-        // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
-    }
+    function initialize() public initializer {}
 
     /* ============ Interactive Functions ============ */
 

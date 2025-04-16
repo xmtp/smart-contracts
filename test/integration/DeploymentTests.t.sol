@@ -17,6 +17,7 @@ import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupM
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
+import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
 
 import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
 import {
@@ -29,6 +30,7 @@ import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMes
 import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 import { RateRegistryDeployer } from "../../script/deployers/RateRegistryDeployer.sol";
+import { NodeRegistryDeployer } from "../../script/deployers/NodeRegistryDeployer.sol";
 
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
@@ -64,6 +66,9 @@ contract DeploymentTests is Test {
     bytes internal constant _RATE_REGISTRY_CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
     bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
 
+    bytes internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    bytes internal constant _NODE_REGISTRY_NODE_MANAGER_KEY = "xmtp.nodeRegistry.nodeManager";
+
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
@@ -84,10 +89,12 @@ contract DeploymentTests is Test {
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
     bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
     bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = bytes32(uint256(5));
+    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = bytes32(uint256(6));
 
     uint8 internal constant _RETRYABLE_TICKET_KIND = 9;
 
     address internal _admin = makeAddr("admin");
+    address internal _nodeManager = makeAddr("nodeManager");
     address internal _alice = makeAddr("alice");
     address internal _settler = makeAddr("settler");
     address internal _feeDistributor = makeAddr("feeDistributor");
@@ -110,6 +117,8 @@ contract DeploymentTests is Test {
     IPayerRegistry internal _payerRegistryProxy;
 
     IRateRegistry internal _rateRegistryProxy;
+
+    INodeRegistry internal _nodeRegistryProxy;
 
     function setUp() external {
         vm.recordLogs();
@@ -217,6 +226,19 @@ contract DeploymentTests is Test {
         );
 
         _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
+
+        // Deploy the Node Registry on the base (settlement) chain.
+        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(
+            address(_settlementChainParameterRegistryProxy)
+        );
+
+        _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
+
+        // Set the parameters as need for the Node Registry.
+        _setNodeRegistryStartingParameters();
+
+        // Update the Node Registry admin and node manager.
+        _updateNodeRegistryAdminAndNodeManager();
     }
 
     /* ============ Factory Deployer Helpers ============ */
@@ -552,6 +574,49 @@ contract DeploymentTests is Test {
         assertFalse(hasMore_);
     }
 
+    /* ============ Node Registry Deployer Helpers ============ */
+
+    function _deployNodeRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (implementation_, ) = NodeRegistryDeployer.deployImplementation(
+            address(_settlementChainFactory),
+            parameterRegistry_
+        );
+        vm.stopPrank();
+
+        assertEq(INodeRegistry(implementation_).parameterRegistry(), parameterRegistry_);
+    }
+
+    function _deployNodeRegistryProxy(address implementation_) internal returns (INodeRegistry registry_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (address proxy_, , ) = NodeRegistryDeployer.deployProxy(
+            address(_settlementChainFactory),
+            implementation_,
+            _NODE_REGISTRY_PROXY_SALT
+        );
+        vm.stopPrank();
+
+        registry_ = INodeRegistry(proxy_);
+
+        assertEq(registry_.implementation(), implementation_);
+    }
+
+    function _updateNodeRegistryAdminAndNodeManager() internal {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_alice);
+        _nodeRegistryProxy.updateAdmin();
+        _nodeRegistryProxy.updateNodeManager();
+        vm.stopPrank();
+
+        assertEq(_nodeRegistryProxy.admin(), _admin);
+        assertEq(_nodeRegistryProxy.nodeManager(), _nodeManager);
+    }
+
     /* ============ Generic Deployer Helpers ============ */
 
     function _deployImplementation(
@@ -648,7 +713,27 @@ contract DeploymentTests is Test {
         assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
+    function _setNodeRegistryStartingParameters() internal {
+        vm.selectFork(_baseForkId);
+
+        bytes[] memory keys_ = new bytes[](2);
+        keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
+        keys_[1] = _NODE_REGISTRY_NODE_MANAGER_KEY;
+
+        bytes32[] memory values_ = new bytes32[](2);
+        values_[0] = bytes32(uint256(uint160(_admin)));
+        values_[1] = bytes32(uint256(uint160(_nodeManager)));
+
+        vm.prank(_admin);
+        _settlementChainParameterRegistryProxy.set(keys_, values_);
+
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
+    }
+
     function _bridgeBroadcasterStartingParameters() internal {
+        vm.selectFork(_baseForkId);
+
         bytes[] memory keys_ = new bytes[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
@@ -691,7 +776,9 @@ contract DeploymentTests is Test {
         );
     }
 
-    function _assertBroadcasterStartingParameters() internal view {
+    function _assertBroadcasterStartingParameters() internal {
+        vm.selectFork(_appchainForkId);
+
         assertEq(
             uint256(_appChainParameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
             _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE

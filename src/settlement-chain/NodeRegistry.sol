@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
+import { ERC721Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 
-import {
-    AccessControlDefaultAdminRules
-} from "../../lib/oz/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
-
-import { IERC165 } from "../../lib/oz/contracts/utils/introspection/IERC165.sol";
-import { ERC721 } from "../../lib/oz/contracts/token/ERC721/ERC721.sol";
-
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
+
+import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: `nodeOperatorCommissionPercent` (and thus `MAX_BPS`) likely does not belong in this contract.
 
 /**
  * @title XMTP Nodes Registry
@@ -27,238 +26,299 @@ import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
  *   - updating the node operator's minimum monthly fee.
  *   - updating the node operator's API enabled flag.
  */
-contract NodeRegistry is INodeRegistry, AccessControlDefaultAdminRules, ERC721 {
-    using EnumerableSet for EnumerableSet.UintSet;
+contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
+    /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc INodeRegistry
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
-    /// @inheritdoc INodeRegistry
-    bytes32 public constant NODE_MANAGER_ROLE = keccak256("NODE_MANAGER_ROLE");
-
-    /// @inheritdoc INodeRegistry
-    uint256 public constant MAX_BPS = 10_000;
+    uint16 public constant MAX_BPS = 10_000;
 
     /// @inheritdoc INodeRegistry
     uint32 public constant NODE_INCREMENT = 100;
 
-    uint48 internal constant _INITIAL_ACCESS_CONTROL_DELAY = 2 days;
-
     bytes1 internal constant _FORWARD_SLASH = 0x2f;
 
-    /// @dev The base URI for the node NFTs.
-    string internal _baseTokenURI;
+    address public immutable parameterRegistry;
 
-    /// @inheritdoc INodeRegistry
-    uint8 public maxActiveNodes = 20;
+    /* ============ UUPS Storage ============ */
+
+    /// @custom:storage-location erc7201:xmtp.storage.NodeRegistry
+    struct NodeRegistryStorage {
+        string baseURI;
+        uint8 maxCanonicalNodes;
+        uint8 canonicalNodesCount;
+        uint32 nodeCount;
+        uint16 nodeOperatorCommissionPercent;
+        mapping(uint256 tokenId => Node node) nodes;
+        address admin;
+        address nodeManager;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant _NODE_REGISTRY_STORAGE_LOCATION =
+        0xd48713bc7b5e2644bcb4e26ace7d67dc9027725a9a1ee11596536cc6096a2000;
+
+    function _getNodeRegistryStorage() internal pure returns (NodeRegistryStorage storage $) {
+        // slither-disable-next-line assembly
+        assembly {
+            $.slot := _NODE_REGISTRY_STORAGE_LOCATION
+        }
+    }
+
+    /* ============ Modifiers ============ */
+
+    modifier onlyAdmin() {
+        _revertIfNotAdmin();
+        _;
+    }
+
+    modifier onlyNodeManager() {
+        _revertIfNotNodeManager();
+        _;
+    }
+
+    /* ============ Constructor ============ */
 
     /**
-     * @dev The counter for n max IDs.
-     * The ERC721 standard expects the tokenID to be uint256 for standard methods unfortunately.
+     * @notice Constructor for the NodeRegistry contract.
+     * @param  parameterRegistry_ The address of the parameter registry.
      */
-    uint32 internal _nodeCounter = 0;
+    constructor(address parameterRegistry_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        _disableInitializers();
+    }
 
-    /// @dev Mapping of token ID to Node.
-    mapping(uint256 => Node) internal _nodes;
-
-    /// @dev Nodes part of the canonical network.
-    EnumerableSet.UintSet internal _canonicalNetworkNodes;
+    /* ============ Initialization ============ */
 
     /// @inheritdoc INodeRegistry
-    uint256 public nodeOperatorCommissionPercent;
+    function initialize() public initializer {
+        __ERC721_init("XMTP Node Operator", "XMTP");
 
-    constructor(
-        address initialAdmin
-    ) ERC721("XMTP Node Operator", "XMTP") AccessControlDefaultAdminRules(_INITIAL_ACCESS_CONTROL_DELAY, initialAdmin) {
-        require(initialAdmin != address(0), InvalidAddress());
-
-        _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(NODE_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-
-        // slither-disable-next-line unused-return
-        _grantRole(ADMIN_ROLE, initialAdmin); // Will return false if the role is already granted.
-
-        // slither-disable-next-line unused-return
-        _grantRole(NODE_MANAGER_ROLE, initialAdmin); // Will return false if the role is already granted.
+        // TODO: This should probably come from the parameter registry.
+        _getNodeRegistryStorage().maxCanonicalNodes = 20;
     }
 
     /* ============ Admin-Only Functions ============ */
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
+    /// @inheritdoc INodeRegistry
     function addNode(
-        address to,
-        bytes calldata signingKeyPub,
-        string calldata httpAddress,
-        uint256 minMonthlyFeeMicroDollars
-    ) external onlyRole(ADMIN_ROLE) returns (uint256 nodeId) {
-        require(to != address(0), InvalidAddress());
-        require(signingKeyPub.length > 0, InvalidSigningKey());
-        require(bytes(httpAddress).length > 0, InvalidHttpAddress());
+        address to_,
+        bytes calldata signingKeyPub_,
+        string calldata httpAddress_,
+        uint256 minMonthlyFee_
+    ) external onlyAdmin returns (uint256 nodeId_) {
+        require(to_ != address(0), InvalidAddress());
+        require(signingKeyPub_.length > 0, InvalidSigningKey());
+        require(bytes(httpAddress_).length > 0, InvalidHttpAddress());
 
-        nodeId = ++_nodeCounter * NODE_INCREMENT; // The first node starts with `nodeId = NODE_INCREMENT`.
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        _nodes[nodeId] = Node(signingKeyPub, httpAddress, false, minMonthlyFeeMicroDollars);
+        nodeId_ = uint256(++$.nodeCount) * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
 
-        _mint(to, nodeId);
+        $.nodes[nodeId_] = Node(signingKeyPub_, httpAddress_, false, minMonthlyFee_);
 
-        emit NodeAdded(nodeId, to, signingKeyPub, httpAddress, minMonthlyFeeMicroDollars);
+        _mint(to_, nodeId_);
+
+        emit NodeAdded(nodeId_, to_, signingKeyPub_, httpAddress_, minMonthlyFee_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function addToNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
+    /// @inheritdoc INodeRegistry
+    function addToNetwork(uint256 nodeId_) external onlyAdmin {
+        _requireOwned(nodeId_);
 
-        require(_canonicalNetworkNodes.length() < maxActiveNodes, MaxActiveNodesReached());
-        require(_canonicalNetworkNodes.add(nodeId), FailedToAddNodeToCanonicalNetwork());
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        _nodes[nodeId].inCanonicalNetwork = true;
+        require(!$.nodes[nodeId_].isCanonical, NodeAlreadyInCanonicalNetwork());
+        require(++$.canonicalNodesCount <= $.maxCanonicalNodes, MaxCanonicalNodesReached());
 
-        emit NodeAddedToCanonicalNetwork(nodeId);
+        $.nodes[nodeId_].isCanonical = true;
+
+        emit NodeAddedToCanonicalNetwork(nodeId_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function removeFromNetwork(uint256 nodeId) external onlyRole(ADMIN_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
+    /// @inheritdoc INodeRegistry
+    function removeFromNetwork(uint256 nodeId_) external onlyAdmin {
+        _requireOwned(nodeId_);
 
-        require(_canonicalNetworkNodes.remove(nodeId), FailedToRemoveNodeFromCanonicalNetwork());
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        _nodes[nodeId].inCanonicalNetwork = false;
+        require($.nodes[nodeId_].isCanonical, NodeNotInCanonicalNetwork());
 
-        emit NodeRemovedFromCanonicalNetwork(nodeId);
+        delete $.nodes[nodeId_].isCanonical;
+        --$.canonicalNodesCount;
+
+        emit NodeRemovedFromCanonicalNetwork(nodeId_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function setMaxActiveNodes(uint8 newMaxActiveNodes) external onlyRole(ADMIN_ROLE) {
-        require(newMaxActiveNodes >= _canonicalNetworkNodes.length(), MaxActiveNodesBelowCurrentCount());
-        maxActiveNodes = newMaxActiveNodes;
-        emit MaxActiveNodesUpdated(newMaxActiveNodes);
+    /// @inheritdoc INodeRegistry
+    function setMaxCanonicalNodes(uint8 newMaxCanonicalNodes_) external onlyAdmin {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+        require(newMaxCanonicalNodes_ >= $.canonicalNodesCount, MaxCanonicalNodesBelowCurrentCount());
+        emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = newMaxCanonicalNodes_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function setNodeOperatorCommissionPercent(uint256 newCommissionPercent) external onlyRole(ADMIN_ROLE) {
-        require(newCommissionPercent <= MAX_BPS, InvalidCommissionPercent());
-        nodeOperatorCommissionPercent = newCommissionPercent;
-        emit NodeOperatorCommissionPercentUpdated(newCommissionPercent);
+    /// @inheritdoc INodeRegistry
+    function setNodeOperatorCommissionPercent(uint16 newCommissionPercent_) external onlyAdmin {
+        require(newCommissionPercent_ <= MAX_BPS, InvalidCommissionPercent());
+        _getNodeRegistryStorage().nodeOperatorCommissionPercent = newCommissionPercent_;
+        emit NodeOperatorCommissionPercentUpdated(newCommissionPercent_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function setBaseURI(string calldata newBaseURI) external onlyRole(ADMIN_ROLE) {
-        require(bytes(newBaseURI).length > 0, InvalidURI());
-        require(bytes(newBaseURI)[bytes(newBaseURI).length - 1] == _FORWARD_SLASH, InvalidURI());
-        _baseTokenURI = newBaseURI;
-        emit BaseURIUpdated(newBaseURI);
+    /// @inheritdoc INodeRegistry
+    function setBaseURI(string calldata newBaseURI_) external onlyAdmin {
+        require(bytes(newBaseURI_).length > 0, InvalidURI());
+        require(bytes(newBaseURI_)[bytes(newBaseURI_).length - 1] == _FORWARD_SLASH, InvalidURI());
+        emit BaseURIUpdated(_getNodeRegistryStorage().baseURI = newBaseURI_);
     }
 
     /* ============ Node Manager Functions ============ */
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 nodeId
-    ) public override(INodeRegistry, ERC721) onlyRole(NODE_MANAGER_ROLE) {
-        super.transferFrom(from, to, nodeId);
+    /// @inheritdoc INodeRegistry
+    function setHttpAddress(uint256 nodeId_, string calldata httpAddress_) external onlyNodeManager {
+        _requireOwned(nodeId_);
+        require(bytes(httpAddress_).length > 0, InvalidHttpAddress());
+        emit HttpAddressUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].httpAddress = httpAddress_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function setHttpAddress(uint256 nodeId, string calldata httpAddress) external onlyRole(NODE_MANAGER_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
-        require(bytes(httpAddress).length > 0, InvalidHttpAddress());
-        _nodes[nodeId].httpAddress = httpAddress;
-        emit HttpAddressUpdated(nodeId, httpAddress);
+    /// @inheritdoc INodeRegistry
+    function setMinMonthlyFee(uint256 nodeId_, uint256 minMonthlyFee_) external onlyNodeManager {
+        _requireOwned(nodeId_);
+        emit MinMonthlyFeeUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].minMonthlyFee = minMonthlyFee_);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function setMinMonthlyFee(uint256 nodeId, uint256 minMonthlyFeeMicroDollars) external onlyRole(NODE_MANAGER_ROLE) {
-        _revertIfNodeDoesNotExist(nodeId);
-        _nodes[nodeId].minMonthlyFeeMicroDollars = minMonthlyFeeMicroDollars;
-        emit MinMonthlyFeeUpdated(nodeId, minMonthlyFeeMicroDollars);
+    /* ============ Interactive Functions ============ */
+
+    /// @inheritdoc INodeRegistry
+    function updateAdmin() external {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        address newAdmin_ = _toAddress(_getRegistryParameter(adminParameterKey()));
+
+        require(newAdmin_ != $.admin, NoChange());
+
+        emit AdminUpdated($.admin = newAdmin_);
+    }
+
+    /// @inheritdoc INodeRegistry
+    function updateNodeManager() external {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        address newNodeManager_ = _toAddress(_getRegistryParameter(nodeManagerParameterKey()));
+
+        require(newNodeManager_ != $.nodeManager, NoChange());
+
+        emit NodeManagerUpdated($.nodeManager = newNodeManager_);
+    }
+
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ Getters ============ */
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getAllNodes() public view returns (NodeWithId[] memory allNodes) {
-        allNodes = new NodeWithId[](_nodeCounter);
+    /// @inheritdoc INodeRegistry
+    function admin() external view returns (address admin_) {
+        return _getNodeRegistryStorage().admin;
+    }
 
-        for (uint32 i; i < _nodeCounter; ++i) {
-            uint32 nodeId = NODE_INCREMENT * (i + 1);
+    /// @inheritdoc INodeRegistry
+    function nodeManager() external view returns (address nodeManager_) {
+        return _getNodeRegistryStorage().nodeManager;
+    }
 
-            allNodes[i] = NodeWithId({ nodeId: nodeId, node: _nodes[nodeId] });
+    /// @inheritdoc INodeRegistry
+    function adminParameterKey() public pure returns (bytes memory key_) {
+        return bytes("xmtp.nodeRegistry.admin");
+    }
+
+    /// @inheritdoc INodeRegistry
+    function nodeManagerParameterKey() public pure returns (bytes memory key_) {
+        return bytes("xmtp.nodeRegistry.nodeManager");
+    }
+
+    /// @inheritdoc INodeRegistry
+    function migratorParameterKey() public pure returns (bytes memory key_) {
+        return bytes("xmtp.nodeRegistry.migrator");
+    }
+
+    /// @inheritdoc INodeRegistry
+    function maxCanonicalNodes() external view returns (uint8 maxCanonicalNodes_) {
+        return _getNodeRegistryStorage().maxCanonicalNodes;
+    }
+
+    /// @inheritdoc INodeRegistry
+    function canonicalNodesCount() external view returns (uint8 canonicalNodesCount_) {
+        return _getNodeRegistryStorage().canonicalNodesCount;
+    }
+
+    /// @inheritdoc INodeRegistry
+    function nodeOperatorCommissionPercent() external view returns (uint16 nodeOperatorCommissionPercent_) {
+        return _getNodeRegistryStorage().nodeOperatorCommissionPercent;
+    }
+
+    /// @inheritdoc INodeRegistry
+    function getAllNodes() external view returns (NodeWithId[] memory allNodes_) {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        allNodes_ = new NodeWithId[]($.nodeCount);
+
+        for (uint32 index_; index_ < $.nodeCount; ++index_) {
+            uint256 nodeId_ = uint256(NODE_INCREMENT) * (index_ + 1);
+            allNodes_[index_] = NodeWithId({ nodeId: nodeId_, node: $.nodes[nodeId_] });
         }
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getAllNodesCount() public view returns (uint256 nodeCount) {
-        return _nodeCounter;
+    /// @inheritdoc INodeRegistry
+    function getAllNodesCount() external view returns (uint256 nodeCount_) {
+        return _getNodeRegistryStorage().nodeCount;
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getNode(uint256 nodeId) public view returns (Node memory node) {
-        _revertIfNodeDoesNotExist(nodeId);
-        return _nodes[nodeId];
+    /// @inheritdoc INodeRegistry
+    function getNode(uint256 nodeId_) external view returns (Node memory node_) {
+        _requireOwned(nodeId_);
+        return _getNodeRegistryStorage().nodes[nodeId_];
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function getIsCanonicalNode(uint256 nodeId) external view returns (bool isCanonicalNode) {
-        return _canonicalNetworkNodes.contains(nodeId);
+    /// @inheritdoc INodeRegistry
+    function getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_) {
+        _requireOwned(nodeId_);
+        return _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
     }
 
-    /* ============ Internal Functions ============ */
+    /* ============ Internal View/Pure Functions ============ */
 
-    /**
-     * @dev    Checks if a node exists.
-     * @param  nodeId The ID of the node to check.
-     * @return exists True if the node exists, false otherwise.
-     */
-    function _nodeExists(uint256 nodeId) internal view returns (bool exists) {
-        return _ownerOf(nodeId) != address(0);
+    function _baseURI() internal view override returns (string memory baseURI_) {
+        return _getNodeRegistryStorage().baseURI;
     }
 
-    /**
-     * @inheritdoc ERC721
-     */
-    function _baseURI() internal view virtual override returns (string memory baseURI) {
-        return _baseTokenURI;
+    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
+        return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    /**
-     * @dev Override to support INodeRegistry, ERC721, IERC165, and AccessControlEnumerable.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721, IERC165, AccessControlDefaultAdminRules) returns (bool supported) {
-        return interfaceId == type(INodeRegistry).interfaceId || super.supportsInterface(interfaceId);
+    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
+        return input_ != address(0);
     }
 
-    /// @dev Reverts if the node does not exist.
-    function _revertIfNodeDoesNotExist(uint256 nodeId) internal view {
-        require(_nodeExists(nodeId), NodeDoesNotExist());
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
+    }
+
+    function _isAuthorized(
+        address owner_,
+        address spender_,
+        uint256 tokenId_
+    ) internal view override returns (bool isAuthorized_) {
+        return spender_ == _getNodeRegistryStorage().nodeManager || super._isAuthorized(owner_, spender_, tokenId_);
+    }
+
+    function _revertIfNotAdmin() internal view {
+        require(msg.sender == _getNodeRegistryStorage().admin, NotAdmin());
+    }
+
+    function _revertIfNotNodeManager() internal view {
+        require(msg.sender == _getNodeRegistryStorage().nodeManager, NotNodeManager());
     }
 }
