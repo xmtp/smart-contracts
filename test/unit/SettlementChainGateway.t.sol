@@ -98,7 +98,7 @@ contract SettlementChainGatewayTests is Test, Utils {
             abi.encode(false)
         );
 
-        vm.expectRevert(ISettlementChainGateway.TransferFailed.selector);
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _gateway.depositSenderFunds(address(0), 100);
@@ -111,7 +111,7 @@ contract SettlementChainGatewayTests is Test, Utils {
             ""
         );
 
-        vm.expectRevert(ISettlementChainGateway.TransferFailed.selector);
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _gateway.depositSenderFunds(address(0), 100);
