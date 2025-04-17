@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { ERC20Helper } from "../../lib/erc20-helper/src/ERC20Helper.sol";
+import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
@@ -157,7 +157,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         emit WithdrawalFinalized(msg.sender);
 
-        require(ERC20Helper.transfer(token, recipient_, pendingWithdrawal_), ERC20TransferFailed());
+        SafeTransferLib.safeTransfer(token, recipient_, pendingWithdrawal_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -180,22 +180,19 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         $.totalDeposits = totalDeposits_;
         $.totalDebt = totalDebt_;
+    }
 
-        // The excess token in the contract that is not withdrawable by payers can be sent to the fee distributor.
-        uint96 totalWithdrawable_ = _getTotalWithdrawable(totalDeposits_, totalDebt_);
-        uint96 tokenBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
-        uint96 excess_ = tokenBalance_ > totalWithdrawable_ ? tokenBalance_ - totalWithdrawable_ : 0;
+    /// @inheritdoc IPayerRegistry
+    function sendExcessToFeeDistributor() external whenNotPaused returns (uint96 excess_) {
+        require((excess_ = excess()) != 0, NoExcess());
 
-        // slither-disable-next-line incorrect-equality
-        if (excess_ == 0) return;
+        address feeDistributor_ = _getPayerRegistryStorage().feeDistributor;
 
-        address feeDistributor_ = $.feeDistributor;
+        require(_isNotZero(feeDistributor_), ZeroFeeDistributorAddress());
 
-        if (feeDistributor_ == address(0)) return;
+        emit ExcessTransferred(excess_);
 
-        emit FeesTransferred(excess_);
-
-        require(ERC20Helper.transfer(token, feeDistributor_, excess_), ERC20TransferFailed());
+        SafeTransferLib.safeTransfer(token, feeDistributor_, excess_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -301,6 +298,16 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /// @inheritdoc IPayerRegistry
+    function excess() public view returns (uint96 excess_) {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        uint96 totalWithdrawable_ = _getTotalWithdrawable($.totalDeposits, $.totalDebt);
+        uint96 tokenBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
+
+        return tokenBalance_ > totalWithdrawable_ ? tokenBalance_ - totalWithdrawable_ : 0;
+    }
+
+    /// @inheritdoc IPayerRegistry
     function getBalance(address payer_) external view returns (int104 balance_) {
         return _getPayerRegistryStorage().payers[payer_].balance;
     }
@@ -372,7 +379,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         $.totalDeposits += _toInt104(amount_);
         $.totalDebt -= debtRepaid_;
 
-        require(ERC20Helper.transferFrom(token, from_, address(this), amount_), ERC20TransferFromFailed());
+        SafeTransferLib.safeTransferFrom(token, from_, address(this), amount_);
     }
 
     function _updateSettler() internal returns (bool changed_) {
