@@ -3,13 +3,17 @@ pragma solidity 0.8.28;
 
 import { IPayloadBroadcaster } from "../../abstract/interfaces/IPayloadBroadcaster.sol";
 
+/**
+ * @title  Interface for an App Chain Group Message Broadcaster.
+ * @notice The GroupMessageBroadcaster is a group message payload broadcaster on an app chain.
+ */
 interface IGroupMessageBroadcaster is IPayloadBroadcaster {
     /* ============ Events ============ */
 
     /**
      * @notice Emitted when a message is sent.
      * @param  groupId    The group ID.
-     * @param  message    The message in bytes. Contains the full mls group message payload.
+     * @param  message    The message in bytes. Contains the full MLS group message payload.
      * @param  sequenceId The unique sequence ID of the message.
      */
     event MessageSent(bytes32 indexed groupId, bytes message, uint64 indexed sequenceId);

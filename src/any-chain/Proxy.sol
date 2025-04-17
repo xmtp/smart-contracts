@@ -14,7 +14,7 @@ contract Proxy is IProxy {
     uint256 private constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /**
-     * @dev   Constructs the contract given the address of some implementation.
+     * @dev   Constructs the contract such that it proxies calls to the given implementation.
      * @param implementation_ The address of some implementation.
      */
     constructor(address implementation_) {

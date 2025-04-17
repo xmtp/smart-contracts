@@ -42,8 +42,8 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(IPayloadBroadcaster.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(IPayloadBroadcaster.ZeroParameterRegistry.selector);
         new IdentityUpdateBroadcasterHarness(address(0));
     }
 

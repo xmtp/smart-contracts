@@ -14,6 +14,13 @@ import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
 
+/**
+ * @title  Implementation of the Payer Registry.
+ * @notice This contract is responsible for:
+ *           - handling deposits, withdrawals, and usage settlements for payers,
+ *           - settling usage fees for payers,
+ *           - sending excess tokens to the fee distributor.
+ */
 contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
@@ -25,7 +32,18 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.PayerRegistry
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.PayerRegistry
+     * @notice The UUPS storage for the payer registry.
+     * @param  paused             The pause status.
+     * @param  totalDeposits      The sum of all payer balances and pending withdrawals.
+     * @param  totalDebt          The sum of all payer debts.
+     * @param  withdrawLockPeriod The withdraw lock period.
+     * @param  minimumDeposit     The minimum deposit.
+     * @param  settler            The address of the settler.
+     * @param  feeDistributor     The address of the fee distributor.
+     * @param  payers             A mapping of payer addresses to payer information.
+     */
     struct PayerRegistryStorage {
         bool paused;
         int104 totalDeposits;
@@ -63,13 +81,16 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for the PayerRegistry contract.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
      * @param  token_             The address of the token.
+     * @dev    The parameter registry and token must not be the zero address.
+     * @dev    The parameter registry and token are immutable so that they are inlined in the contract code, and have
+     *         minimal gas cost.
      */
     constructor(address parameterRegistry_, address token_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
-        require(_isNotZero(token = token_), ZeroTokenAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        require(_isNotZero(token = token_), ZeroToken());
         _disableInitializers();
     }
 
@@ -81,7 +102,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         _updateFeeDistributor();
         _updateMinimumDeposit();
         _updateWithdrawLockPeriod();
-        _updatePauseStatus();
+        _updatePauseStatus(); // The contract may start out paused, as needed.
     }
 
     /* ============ Interactive Functions ============ */
@@ -114,6 +135,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         uint96 debtIncurred_ = _decreaseBalance(msg.sender, amount_);
 
+        // If debt was incurred decreasing the payer's balance, then the payer's balance must have been insufficient.
         require(debtIncurred_ == 0, InsufficientBalance());
     }
 
@@ -188,7 +210,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         address feeDistributor_ = _getPayerRegistryStorage().feeDistributor;
 
-        require(_isNotZero(feeDistributor_), ZeroFeeDistributorAddress());
+        require(_isNotZero(feeDistributor_), ZeroFeeDistributor());
 
         emit ExcessTransferred(excess_);
 
@@ -358,7 +380,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /**
-     * @dev    Returns the debt represented by a balance, if any.
+     * @dev Returns the debt represented by a balance, if any.
      */
     function _getDebt(int104 balance_) internal pure returns (uint96 debt_) {
         return balance_ < 0 ? uint96(uint104(-balance_)) : 0;
@@ -382,28 +404,31 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         SafeTransferLib.safeTransferFrom(token, from_, address(this), amount_);
     }
 
+    /// @dev Sets the settler address by fetching it from the parameter registry, returning whether it changed.
     function _updateSettler() internal returns (bool changed_) {
         address newSettler_ = _toAddress(_getRegistryParameter(settlerParameterKey()));
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        require(_isNotZero(newSettler_), ZeroSettlerAddress());
+        require(_isNotZero(newSettler_), ZeroSettler());
 
         changed_ = newSettler_ != $.settler;
 
         emit SettlerUpdated($.settler = newSettler_);
     }
 
+    /// @dev Sets the fee distributor address by fetching it from the parameter registry, returning whether it changed.
     function _updateFeeDistributor() internal returns (bool changed_) {
         address newFeeDistributor_ = _toAddress(_getRegistryParameter(feeDistributorParameterKey()));
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        require(_isNotZero(newFeeDistributor_), ZeroFeeDistributorAddress());
+        require(_isNotZero(newFeeDistributor_), ZeroFeeDistributor());
 
         changed_ = newFeeDistributor_ != $.feeDistributor;
 
         emit FeeDistributorUpdated($.feeDistributor = newFeeDistributor_);
     }
 
+    /// @dev Sets the minimum deposit by fetching it from the parameter registry, returning whether it changed.
     function _updateMinimumDeposit() internal returns (bool changed_) {
         uint96 newMinimumDeposit_ = _toUint96(_getRegistryParameter(minimumDepositParameterKey()));
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
@@ -415,6 +440,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         emit MinimumDepositUpdated($.minimumDeposit = newMinimumDeposit_);
     }
 
+    /// @dev Sets the withdraw lock period by fetching it from the parameter registry, returning whether it changed.
     function _updateWithdrawLockPeriod() internal returns (bool changed_) {
         uint32 newWithdrawLockPeriod_ = _toUint32(_getRegistryParameter(withdrawLockPeriodParameterKey()));
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
@@ -424,6 +450,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = newWithdrawLockPeriod_);
     }
 
+    /// @dev Sets the pause status by fetching it from the parameter registry, returning whether it changed.
     function _updatePauseStatus() internal returns (bool changed_) {
         bool paused_ = _getRegistryParameter(pausedParameterKey()) != bytes32(0);
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();

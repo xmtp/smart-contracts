@@ -7,12 +7,15 @@ import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
 
 import { IIdentityUpdateBroadcaster } from "./interfaces/IIdentityUpdateBroadcaster.sol";
 
-/// @title XMTP Identity Update Broadcaster Contract
+/**
+ * @title  Implementation for an App Chain Identity Update Broadcaster.
+ * @notice An IdentityUpdateBroadcaster is an identity payload broadcaster on an app chain.
+ */
 contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadcaster {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for immutables.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
      */
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -23,7 +26,6 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
     function addIdentityUpdate(bytes32 inboxId_, bytes calldata identityUpdate_) external whenNotPaused {
         _revertIfInvalidPayloadSize(identityUpdate_.length);
 
-        // Increment sequence ID safely using unchecked to save gas.
         unchecked {
             emit IdentityUpdateCreated(inboxId_, identityUpdate_, ++_getPayloadBroadcasterStorage().sequenceId);
         }

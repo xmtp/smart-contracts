@@ -8,7 +8,7 @@ import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
 import { Factory } from "../../src/any-chain/Factory.sol";
 
 contract Foo {
-    uint256 public constant constantValue = 123;
+    uint256 public constant CONSTANT_VALUE = 123;
 
     uint256 public immutable immutableValue;
 
@@ -43,7 +43,7 @@ contract FactoryTests is Test {
         address foo1_ = _factory.deployImplementation(initCode1_);
 
         assertEq(foo1_, expectedImplementation1_);
-        assertEq(Foo(foo1_).constantValue(), 123);
+        assertEq(Foo(foo1_).CONSTANT_VALUE(), 123);
         assertEq(Foo(foo1_).immutableValue(), 456);
         assertEq(Foo(foo1_).value(), 789);
 
@@ -56,7 +56,7 @@ contract FactoryTests is Test {
         address foo2_ = _factory.deployImplementation(initCode2_);
 
         assertEq(foo2_, expectedImplementation2_);
-        assertEq(Foo(foo2_).constantValue(), 123);
+        assertEq(Foo(foo2_).CONSTANT_VALUE(), 123);
         assertEq(Foo(foo2_).immutableValue(), 456);
         assertEq(Foo(foo2_).value(), 987);
 
@@ -70,7 +70,7 @@ contract FactoryTests is Test {
         address foo3_ = _factory.deployImplementation(initCode3_);
 
         assertEq(foo3_, expectedImplementation3_);
-        assertEq(Foo(foo3_).constantValue(), 123);
+        assertEq(Foo(foo3_).CONSTANT_VALUE(), 123);
         assertEq(Foo(foo3_).immutableValue(), 654);
         assertEq(Foo(foo3_).value(), 789);
 
@@ -101,7 +101,7 @@ contract FactoryTests is Test {
         );
 
         assertEq(proxy_, expectedProxy1_);
-        assertEq(Foo(proxy_).constantValue(), 123);
+        assertEq(Foo(proxy_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy_).immutableValue(), 456);
         assertEq(Foo(proxy_).value(), 789);
 
@@ -116,7 +116,7 @@ contract FactoryTests is Test {
         );
 
         assertEq(proxy2_, expectedProxy2_);
-        assertEq(Foo(proxy2_).constantValue(), 123);
+        assertEq(Foo(proxy2_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy2_).immutableValue(), 456);
         assertEq(Foo(proxy2_).value(), 789);
 
@@ -131,7 +131,7 @@ contract FactoryTests is Test {
         );
 
         assertEq(proxy3_, expectedProxy3_);
-        assertEq(Foo(proxy3_).constantValue(), 123);
+        assertEq(Foo(proxy3_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy3_).immutableValue(), 456);
         assertEq(Foo(proxy3_).value(), 987);
 
@@ -156,7 +156,7 @@ contract FactoryTests is Test {
         );
 
         assertEq(proxy4_, expectedProxy4_);
-        assertEq(Foo(proxy4_).constantValue(), 123);
+        assertEq(Foo(proxy4_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy4_).immutableValue(), 456);
         assertEq(Foo(proxy4_).value(), 789);
     }

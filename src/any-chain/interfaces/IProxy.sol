@@ -2,6 +2,6 @@
 pragma solidity 0.8.28;
 
 interface IProxy {
-    /// @dev Thrown when a zero address is provided as an implementation.
+    /// @notice Thrown when the implementation address is zero (i.e. address(0)).
     error ZeroImplementation();
 }

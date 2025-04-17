@@ -5,8 +5,6 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { AppChainParameterRegistryHarness } from "../utils/Harnesses.sol";

@@ -58,14 +58,14 @@ contract PayerRegistryTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(IPayerRegistry.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(IPayerRegistry.ZeroParameterRegistry.selector);
 
         new PayerRegistryHarness(address(0), _token);
     }
 
-    function test_constructor_zeroTokenAddress() external {
-        vm.expectRevert(IPayerRegistry.ZeroTokenAddress.selector);
+    function test_constructor_zeroToken() external {
+        vm.expectRevert(IPayerRegistry.ZeroToken.selector);
 
         new PayerRegistryHarness(_parameterRegistry, address(0));
     }
@@ -617,7 +617,7 @@ contract PayerRegistryTests is Test, Utils {
         _registry.sendExcessToFeeDistributor();
     }
 
-    function test_sendExcessToFeeDistributor_ZeroFeeDistributorAddress() external {
+    function test_sendExcessToFeeDistributor_ZeroFeeDistributor() external {
         _registry.__setFeeDistributor(address(0));
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
@@ -628,7 +628,7 @@ contract PayerRegistryTests is Test, Utils {
             abi.encode(200e6)
         );
 
-        vm.expectRevert(IPayerRegistry.ZeroFeeDistributorAddress.selector);
+        vm.expectRevert(IPayerRegistry.ZeroFeeDistributor.selector);
 
         _registry.sendExcessToFeeDistributor();
     }
@@ -692,10 +692,10 @@ contract PayerRegistryTests is Test, Utils {
 
     /* ============ updateSettler ============ */
 
-    function test_updateSettler_zeroSettlerAddress() external {
+    function test_updateSettler_zeroSettler() external {
         _mockParameterRegistryCall(_SETTLER_KEY, address(0));
 
-        vm.expectRevert(IPayerRegistry.ZeroSettlerAddress.selector);
+        vm.expectRevert(IPayerRegistry.ZeroSettler.selector);
 
         _registry.updateSettler();
     }
@@ -725,10 +725,10 @@ contract PayerRegistryTests is Test, Utils {
 
     /* ============ updateFeeDistributor ============ */
 
-    function test_updateFeeDistributor_zeroFeeDistributorAddress() external {
+    function test_updateFeeDistributor_zeroFeeDistributor() external {
         _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, address(0));
 
-        vm.expectRevert(IPayerRegistry.ZeroFeeDistributorAddress.selector);
+        vm.expectRevert(IPayerRegistry.ZeroFeeDistributor.selector);
 
         _registry.updateFeeDistributor();
     }
@@ -974,6 +974,7 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );
