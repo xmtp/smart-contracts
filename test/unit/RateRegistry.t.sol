@@ -1,316 +1,306 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../../lib/forge-std/src/Test.sol";
-
-import { IAccessControl } from "../../lib/oz/contracts/access/IAccessControl.sol";
+import { Test, console } from "../../lib/forge-std/src/Test.sol";
 
 import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
 
 import { RateRegistryHarness } from "../utils/Harnesses.sol";
+import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract RateRegistryTests is Test, Utils {
-    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
-    bytes32 constant RATES_MANAGER_ROLE = keccak256("RATES_MANAGER_ROLE");
+    bytes internal constant _MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
+    bytes internal constant _STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
+    bytes internal constant _CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
+    bytes internal constant _TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.rateRegistry.migrator";
 
-    uint256 constant PAGE_SIZE = 50;
+    uint256 internal constant _PAGE_SIZE = 50;
 
-    uint64 constant MESSAGE_FEE = 100;
-    uint64 constant STORAGE_FEE = 200;
-    uint64 constant CONGESTION_FEE = 300;
-    uint64 constant TARGET_RATE_PER_MINUTE = 100 * 60;
+    RateRegistryHarness internal _registry;
 
-    RateRegistryHarness registry;
+    address internal _implementation;
+    address internal _parameterRegistry;
 
-    address implementation;
-    address admin = makeAddr("admin");
-    address unauthorized = makeAddr("unauthorized");
+    function setUp() external {
+        _parameterRegistry = address(new MockParameterRegistry());
+        _implementation = address(new RateRegistryHarness(_parameterRegistry));
 
-    function setUp() public {
-        implementation = address(new RateRegistryHarness());
-
-        registry = RateRegistryHarness(
-            address(new ERC1967Proxy(implementation, abi.encodeWithSelector(RateRegistry.initialize.selector, admin)))
+        _registry = RateRegistryHarness(
+            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IRateRegistry.initialize.selector)))
         );
     }
 
-    /* ============ initializer ============ */
+    /* ============ constructor ============ */
 
-    function test_initializer_zeroAdminAddress() public {
-        vm.expectRevert(RateRegistry.ZeroAdminAddress.selector);
+    function test_constructor_zeroParameterRegistryAddress() external {
+        vm.expectRevert(IRateRegistry.ZeroParameterRegistryAddress.selector);
 
-        new ERC1967Proxy(implementation, abi.encodeWithSelector(RateRegistry.initialize.selector, address(0)));
+        new RateRegistryHarness(address(0));
     }
 
     /* ============ initial state ============ */
 
-    function test_initialState() public view {
-        assertEq(_getImplementationFromSlot(address(registry)), implementation);
-        assertEq(registry.__getAllRates().length, 0);
+    function test_initialState() external view {
+        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(_registry.implementation(), _implementation);
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
+        assertEq(_registry.PAGE_SIZE(), _PAGE_SIZE);
+        assertEq(_registry.messageFeeParameterKey(), _MESSAGE_FEE_KEY);
+        assertEq(_registry.storageFeeParameterKey(), _STORAGE_FEE_KEY);
+        assertEq(_registry.congestionFeeParameterKey(), _CONGESTION_FEE_KEY);
+        assertEq(_registry.targetRatePerMinuteParameterKey(), _TARGET_RATE_PER_MINUTE_KEY);
+        assertEq(_registry.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_registry.__getAllRates().length, 0);
     }
 
-    /* ============ addRates ============ */
+    /* ============ initializer ============ */
 
-    function test_addRates_notManager() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                RATES_MANAGER_ROLE
-            )
+    function test_initialize_reinitialization() external {
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        _registry.initialize();
+    }
+
+    /* ============ updateRates ============ */
+
+    function test_updateRates_noChange() external {
+        _registry.__pushRates(100, 200, 300, 100 * 60, 0);
+
+        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, 100);
+        _mockParameterRegistryCall(_STORAGE_FEE_KEY, 200);
+        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, 300);
+        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, 100 * 60);
+
+        vm.expectRevert(IRateRegistry.NoChange.selector);
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_first() external {
+        uint64 messageFee_ = 100;
+        uint64 storageFee_ = 200;
+        uint64 congestionFee_ = 300;
+        uint64 targetRatePerMinute_ = 100 * 60;
+
+        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, messageFee_);
+        _mockParameterRegistryCall(_STORAGE_FEE_KEY, storageFee_);
+        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, congestionFee_);
+        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
+
+        vm.expectEmit(address(_registry));
+        emit IRateRegistry.RatesUpdated(
+            messageFee_,
+            storageFee_,
+            congestionFee_,
+            targetRatePerMinute_,
+            uint64(vm.getBlockTimestamp())
         );
 
-        vm.prank(unauthorized);
-        registry.addRates(0, 0, 0, 0, 0);
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
 
-        // TODO: Test where admin is not the manager.
+        IRateRegistry.Rates[] memory rates_ = _registry.__getAllRates();
+
+        assertEq(rates_.length, 1);
+
+        assertEq(rates_[0].messageFee, messageFee_);
+        assertEq(rates_[0].storageFee, storageFee_);
+        assertEq(rates_[0].congestionFee, congestionFee_);
+        assertEq(rates_[0].targetRatePerMinute, targetRatePerMinute_);
+        assertEq(rates_[0].startTime, uint64(vm.getBlockTimestamp()));
     }
 
-    function test_addRates_first() public {
-        vm.expectEmit(address(registry));
-        emit RateRegistry.RatesAdded(100, 200, 300, 400, 500);
+    function test_addRates_nth() external {
+        _registry.__pushRates(0, 0, 0, 0, 0);
+        _registry.__pushRates(0, 0, 0, 0, 0);
+        _registry.__pushRates(0, 0, 0, 0, 0);
+        _registry.__pushRates(0, 0, 0, 0, 0);
 
-        vm.prank(admin);
-        registry.addRates(100, 200, 300, 400, 500);
+        uint64 messageFee_ = 100;
+        uint64 storageFee_ = 200;
+        uint64 congestionFee_ = 300;
+        uint64 targetRatePerMinute_ = 100 * 60;
 
-        RateRegistry.Rates[] memory rates = registry.__getAllRates();
+        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, messageFee_);
+        _mockParameterRegistryCall(_STORAGE_FEE_KEY, storageFee_);
+        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, congestionFee_);
+        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
 
-        assertEq(rates.length, 1);
+        vm.expectEmit(address(_registry));
+        emit IRateRegistry.RatesUpdated(
+            messageFee_,
+            storageFee_,
+            congestionFee_,
+            targetRatePerMinute_,
+            uint64(vm.getBlockTimestamp())
+        );
 
-        assertEq(rates[0].messageFee, 100);
-        assertEq(rates[0].storageFee, 200);
-        assertEq(rates[0].congestionFee, 300);
-        assertEq(rates[0].targetRatePerMinute, 400);
-        assertEq(rates[0].startTime, 500);
-    }
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
 
-    function test_addRates_nth() public {
-        registry.__pushRates(0, 0, 0, 0, 0);
-        registry.__pushRates(0, 0, 0, 0, 0);
-        registry.__pushRates(0, 0, 0, 0, 0);
-        registry.__pushRates(0, 0, 0, 0, 0);
+        IRateRegistry.Rates[] memory rates_ = _registry.__getAllRates();
 
-        vm.expectEmit(address(registry));
-        emit RateRegistry.RatesAdded(100, 200, 300, 400, 500);
+        assertEq(rates_.length, 5);
 
-        vm.prank(admin);
-        registry.addRates(100, 200, 300, 400, 500);
-
-        RateRegistry.Rates[] memory rates = registry.__getAllRates();
-
-        assertEq(rates.length, 5);
-
-        assertEq(rates[4].messageFee, 100);
-        assertEq(rates[4].storageFee, 200);
-        assertEq(rates[4].congestionFee, 300);
-        assertEq(rates[4].targetRatePerMinute, 400);
-        assertEq(rates[4].startTime, 500);
-    }
-
-    function test_addRates_invalidStartTime() public {
-        registry.__pushRates(0, 0, 0, 0, 100);
-
-        vm.expectRevert(RateRegistry.InvalidStartTime.selector);
-
-        vm.prank(admin);
-        registry.addRates(0, 0, 0, 0, 100);
+        assertEq(rates_[4].messageFee, messageFee_);
+        assertEq(rates_[4].storageFee, storageFee_);
+        assertEq(rates_[4].congestionFee, congestionFee_);
+        assertEq(rates_[4].targetRatePerMinute, targetRatePerMinute_);
+        assertEq(rates_[4].startTime, vm.getBlockTimestamp());
     }
 
     /* ============ getRates ============ */
 
-    function test_getRates_emptyArray() public view {
-        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates(0);
-
-        assertEq(rates.length, 0);
-        assertFalse(hasMore);
+    function test_getRates_fromIndexOutOfRange() external {
+        vm.expectRevert(IRateRegistry.FromIndexOutOfRange.selector);
+        _registry.getRates(1);
     }
 
-    function test_getRates_withinPageSize() public {
-        for (uint256 i; i < 3 * PAGE_SIZE; ++i) {
-            registry.__pushRates(i, i, i, i, i);
+    function test_getRates_emptyArray() external view {
+        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
+
+        assertEq(rates_.length, 0);
+        assertFalse(hasMore_);
+    }
+
+    function test_getRates_withinPageSize() external {
+        for (uint256 i_; i_ < 3 * _PAGE_SIZE; ++i_) {
+            _registry.__pushRates(i_, i_, i_, i_, i_);
         }
 
-        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates((3 * PAGE_SIZE) - 10);
+        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates((3 * _PAGE_SIZE) - 10);
 
-        assertEq(rates.length, 10);
-        assertFalse(hasMore);
+        assertEq(rates_.length, 10);
+        assertFalse(hasMore_);
 
-        for (uint256 i; i < rates.length; ++i) {
-            assertEq(rates[i].messageFee, i + (3 * PAGE_SIZE) - 10);
-            assertEq(rates[i].storageFee, i + (3 * PAGE_SIZE) - 10);
-            assertEq(rates[i].congestionFee, i + (3 * PAGE_SIZE) - 10);
-            assertEq(rates[i].startTime, i + (3 * PAGE_SIZE) - 10);
+        for (uint256 i_; i_ < rates_.length; ++i_) {
+            assertEq(rates_[i_].messageFee, i_ + (3 * _PAGE_SIZE) - 10);
+            assertEq(rates_[i_].storageFee, i_ + (3 * _PAGE_SIZE) - 10);
+            assertEq(rates_[i_].congestionFee, i_ + (3 * _PAGE_SIZE) - 10);
+            assertEq(rates_[i_].startTime, i_ + (3 * _PAGE_SIZE) - 10);
         }
     }
 
-    function test_getRates_pagination() public {
-        for (uint256 i; i < 3 * PAGE_SIZE; ++i) {
-            registry.__pushRates(i, i, i, i, i);
+    function test_getRates_pagination() external {
+        for (uint256 i_; i_ < 3 * _PAGE_SIZE; ++i_) {
+            _registry.__pushRates(i_, i_, i_, i_, i_);
         }
 
-        (RateRegistry.Rates[] memory rates, bool hasMore) = registry.getRates(0);
+        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
 
-        assertEq(rates.length, PAGE_SIZE);
-        assertTrue(hasMore);
+        assertEq(rates_.length, _PAGE_SIZE);
+        assertTrue(hasMore_);
 
-        for (uint256 i; i < rates.length; ++i) {
-            assertEq(rates[i].messageFee, i);
-            assertEq(rates[i].storageFee, i);
-            assertEq(rates[i].congestionFee, i);
-            assertEq(rates[i].targetRatePerMinute, i);
-            assertEq(rates[i].startTime, i);
+        for (uint256 i_; i_ < rates_.length; ++i_) {
+            assertEq(rates_[i_].messageFee, i_);
+            assertEq(rates_[i_].storageFee, i_);
+            assertEq(rates_[i_].congestionFee, i_);
+            assertEq(rates_[i_].targetRatePerMinute, i_);
+            assertEq(rates_[i_].startTime, i_);
         }
     }
 
     /* ============ getRatesCount ============ */
 
-    function test_getRatesCount() public {
-        assertEq(registry.getRatesCount(), 0);
+    function test_getRatesCount() external {
+        assertEq(_registry.getRatesCount(), 0);
 
-        for (uint256 i = 1; i <= 1000; ++i) {
-            registry.__pushRates(0, 0, 0, 0, 0);
-            assertEq(registry.getRatesCount(), i);
+        for (uint256 i_ = 1; i_ <= 1000; ++i_) {
+            _registry.__pushRates(0, 0, 0, 0, 0);
+            assertEq(_registry.getRatesCount(), i_);
         }
     }
 
-    /* ============ pause ============ */
+    /* ============ migrate ============ */
 
-    function test_pause() public {
-        vm.expectEmit(address(registry));
-        emit PausableUpgradeable.Paused(admin);
-
-        vm.prank(admin);
-        registry.pause();
-
-        assertTrue(registry.paused());
+    function test_migrate_zeroMigrator() external {
+        vm.expectRevert(IMigratable.ZeroMigrator.selector);
+        _registry.migrate();
     }
 
-    function test_pause_notAdmin() public {
+    function test_migrate_migrationFailed() external {
+        address migrator_ = address(new MockFailingMigrator());
+
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                DEFAULT_ADMIN_ROLE
+                IMigratable.MigrationFailed.selector,
+                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );
 
-        vm.prank(unauthorized);
-        registry.pause();
+        _registry.migrate();
     }
 
-    function test_pause_whenPaused() public {
-        registry.__pause();
+    function test_migrate_emptyCode() external {
+        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
 
-        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
-        vm.prank(admin);
-        registry.pause();
+        _registry.migrate();
     }
 
-    /* ============ unpause ============ */
+    function test_migrate() external {
+        _registry.__pushRates(100, 200, 300, 100 * 60, 500);
 
-    function test_unpause() public {
-        registry.__pause();
+        address newImplementation_ = address(new RateRegistryHarness(_parameterRegistry));
+        address migrator_ = address(new MockMigrator(newImplementation_));
 
-        vm.expectEmit(address(registry));
-        emit PausableUpgradeable.Unpaused(admin);
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
 
-        vm.prank(admin);
-        registry.unpause();
+        vm.expectEmit(address(_registry));
+        emit IMigratable.Migrated(migrator_);
 
-        assertFalse(registry.paused());
-    }
+        vm.expectEmit(address(_registry));
+        emit IERC1967.Upgraded(newImplementation_);
 
-    function test_unpause_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                DEFAULT_ADMIN_ROLE
-            )
-        );
+        _registry.migrate();
 
-        vm.prank(unauthorized);
-        registry.unpause();
-    }
+        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
 
-    function test_unpause_whenNotPaused() public {
-        vm.expectRevert(PausableUpgradeable.ExpectedPause.selector);
+        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
 
-        vm.prank(admin);
-        registry.unpause();
-    }
+        assertEq(rates_.length, 1);
 
-    /* ============ upgradeToAndCall ============ */
+        assertEq(rates_[0].messageFee, 100);
+        assertEq(rates_[0].storageFee, 200);
+        assertEq(rates_[0].congestionFee, 300);
+        assertEq(rates_[0].targetRatePerMinute, 100 * 60);
+        assertEq(rates_[0].startTime, 500);
 
-    function test_upgradeToAndCall_notAdmin() public {
-        // Unauthorized upgrade attempts should revert.
-        vm.prank(unauthorized);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                DEFAULT_ADMIN_ROLE
-            )
-        );
-
-        registry.upgradeToAndCall(address(0), "");
-    }
-
-    function test_upgradeToAndCall_zeroImplementationAddress() public {
-        vm.expectRevert(RateRegistry.ZeroImplementationAddress.selector);
-
-        vm.prank(admin);
-        registry.upgradeToAndCall(address(0), "");
-    }
-
-    function test_upgradeToAndCall() public {
-        registry.__pushRates(0, 0, 0, 0, 0);
-        registry.__pushRates(1, 1, 1, 1, 1);
-        registry.__pushRates(2, 2, 2, 2, 2);
-
-        address newImplementation = address(new RateRegistryHarness());
-
-        // Authorized upgrade should succeed and emit UpgradeAuthorized event.
-        vm.expectEmit(address(registry));
-        emit RateRegistry.UpgradeAuthorized(admin, newImplementation);
-
-        vm.prank(admin);
-        registry.upgradeToAndCall(newImplementation, "");
-
-        assertEq(_getImplementationFromSlot(address(registry)), newImplementation);
-
-        RateRegistry.Rates[] memory rates = registry.__getAllRates();
-
-        assertEq(rates.length, 3);
-
-        assertEq(rates[0].messageFee, 0);
-        assertEq(rates[0].storageFee, 0);
-        assertEq(rates[0].congestionFee, 0);
-        assertEq(rates[0].startTime, 0);
-
-        assertEq(rates[1].messageFee, 1);
-        assertEq(rates[1].storageFee, 1);
-        assertEq(rates[1].congestionFee, 1);
-        assertEq(rates[1].targetRatePerMinute, 1);
-        assertEq(rates[1].startTime, 1);
-
-        assertEq(rates[2].messageFee, 2);
-        assertEq(rates[2].storageFee, 2);
-        assertEq(rates[2].congestionFee, 2);
-        assertEq(rates[2].targetRatePerMinute, 2);
-        assertEq(rates[2].startTime, 2);
+        assertFalse(hasMore_);
     }
 
     /* ============ helper functions ============ */
 
-    function _getImplementationFromSlot(address proxy) internal view returns (address) {
+    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
+        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(value_));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
+    }
+
+    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
         // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy, EIP1967_IMPLEMENTATION_SLOT))));
+        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

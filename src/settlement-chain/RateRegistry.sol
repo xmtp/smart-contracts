@@ -1,195 +1,194 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AccessControlUpgradeable } from "../../lib/oz-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { PausableUpgradeable } from "../../lib/oz-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from "../../lib/oz-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IParameterRegistryLike } from "./interfaces/External.sol";
+import { IRateRegistry } from "./interfaces/IRateRegistry.sol";
+
+import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
+// TODO: Technically, the `startTime` in the `RatesUpdated` event is not needed, but it's kept for now.
 
-contract RateRegistry is Initializable, AccessControlUpgradeable, UUPSUpgradeable, PausableUpgradeable {
-    /* ============ Events ============ */
+contract RateRegistry is IRateRegistry, Migratable, Initializable {
+    /* ============ Constants/Immutables ============ */
 
-    // Event emitted when new Rates are added
-    event RatesAdded(
-        uint64 messageFee,
-        uint64 storageFee,
-        uint64 congestionFee,
-        uint64 targetRatePerMinute,
-        uint64 startTime
-    );
+    /// @inheritdoc IRateRegistry
+    uint256 public constant PAGE_SIZE = 50; // Fixed page size for reading rates.
 
-    /**
-     * @notice Emitted when an upgrade is authorized.
-     * @param  upgrader          The EOA authorizing the upgrade.
-     * @param  newImplementation The address of the new implementation.
-     */
-    event UpgradeAuthorized(address upgrader, address newImplementation); // TODO: index both.
-
-    /* ============ Custom Errors ============ */
-
-    error ZeroAdminAddress();
-    error InvalidStartTime();
-    error FromIndexOutOfRange();
-    error ZeroImplementationAddress();
-
-    /* ============ Structs ============ */
-
-    // Rates struct holds the fees and the start time of the rates.
-    struct Rates {
-        uint64 messageFee;
-        uint64 storageFee;
-        uint64 congestionFee;
-        uint64 targetRatePerMinute;
-        uint64 startTime;
-    }
-
-    /* ============ Constants ============ */
-
-    bytes32 public constant RATES_MANAGER_ROLE = keccak256("RATES_MANAGER_ROLE");
-    uint256 public constant PAGE_SIZE = 50; // Fixed page size for reading rates
+    /// @inheritdoc IRateRegistry
+    address public immutable parameterRegistry;
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.RatesManager
-    struct RatesManagerStorage {
+    /// @custom:storage-location erc7201:xmtp.storage.RateRegistry
+    struct RateRegistryStorage {
         Rates[] allRates; // All Rates appended here.
     }
 
-    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.RatesManager")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant _RATES_MANAGER_STORAGE_LOCATION =
-        0x6ad1a01bf62225c91223b2956030efc848b0def7d19ed478ca6dd31490e2d000;
+    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.RateRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant _RATE_REGISTRY_STORAGE_LOCATION =
+        0x988e236e2caf5758fdf811320ba1d2fca453cb71bd6049ebba876b68af505000;
 
-    function _getRatesManagerStorage() internal pure returns (RatesManagerStorage storage $) {
+    function _getRateRegistryStorage() internal pure returns (RateRegistryStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := _RATES_MANAGER_STORAGE_LOCATION
+            $.slot := _RATE_REGISTRY_STORAGE_LOCATION
         }
+    }
+
+    /* ============ Constructor ============ */
+
+    /**
+     * @notice Constructor for the PayerRegistry contract.
+     * @param  parameterRegistry_ The address of the parameter registry.
+     */
+    constructor(address parameterRegistry_) {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
     }
 
     /* ============ Initialization ============ */
 
-    /**
-     * @notice Initializes the contract with the deployer as admin.
-     * @param  admin The address of the admin.
-     */
-    function initialize(address admin) public initializer {
-        require(admin != address(0), ZeroAdminAddress());
-
-        __UUPSUpgradeable_init();
-        __AccessControl_init();
-        __Pausable_init();
-
-        _setRoleAdmin(RATES_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-
-        // slither-disable-next-line unused-return
-        _grantRole(DEFAULT_ADMIN_ROLE, admin); // Will return false if the role is already granted.
-
-        // slither-disable-next-line unused-return
-        _grantRole(RATES_MANAGER_ROLE, admin); // Will return false if the role is already granted.
+    /// @inheritdoc IRateRegistry
+    function initialize() public initializer {
+        // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
     }
 
-    /* ============ Pausable functionality ============ */
+    /* ============ Interactive Functions ============ */
 
-    /**
-     * @notice Pauses the contract, restricting certain actions.
-     * @dev    Callable only by accounts with the DEFAULT_ADMIN_ROLE.
-     */
-    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _pause();
+    /// @inheritdoc IRateRegistry
+    function updateRates() external {
+        RateRegistryStorage storage $ = _getRateRegistryStorage();
+
+        uint64 messageFee_ = _toUint64(_getRegistryParameter(messageFeeParameterKey()));
+        uint64 storageFee_ = _toUint64(_getRegistryParameter(storageFeeParameterKey()));
+        uint64 congestionFee_ = _toUint64(_getRegistryParameter(congestionFeeParameterKey()));
+        uint64 targetRatePerMinute_ = _toUint64(_getRegistryParameter(targetRatePerMinuteParameterKey()));
+        uint64 startTime_ = uint64(block.timestamp);
+
+        _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+
+        $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
+
+        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_);
     }
 
-    /**
-     * @notice Unpauses the contract, allowing normal operations.
-     * @dev    Callable only by accounts with the DEFAULT_ADMIN_ROLE.
-     */
-    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _unpause();
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
-    /* ============ RatesManager functionality ============ */
+    /* ============ View/Pure Functions ============ */
 
-    /**
-     * @dev Add new Rates. Can only be called by addresses with RATES_ADMIN_ROLE.
-     *      The array only grows; we do not allow removal or updating.
-     */
-    function addRates(
-        uint64 messageFee,
-        uint64 storageFee,
-        uint64 congestionFee,
-        uint64 targetRatePerMinute,
-        uint64 startTime
-    ) external onlyRole(RATES_MANAGER_ROLE) {
-        RatesManagerStorage storage $ = _getRatesManagerStorage();
+    /// @inheritdoc IRateRegistry
+    function messageFeeParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.rateRegistry.messageFee";
+    }
 
-        // Enforce chronological order.
-        if ($.allRates.length > 0 && startTime <= $.allRates[$.allRates.length - 1].startTime) {
-            revert InvalidStartTime();
-        }
+    /// @inheritdoc IRateRegistry
+    function storageFeeParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.rateRegistry.storageFee";
+    }
 
-        $.allRates.push(
-            Rates({
-                messageFee: messageFee,
-                storageFee: storageFee,
-                congestionFee: congestionFee,
-                startTime: startTime,
-                targetRatePerMinute: targetRatePerMinute
-            })
-        );
+    /// @inheritdoc IRateRegistry
+    function congestionFeeParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.rateRegistry.congestionFee";
+    }
 
-        emit RatesAdded(messageFee, storageFee, congestionFee, targetRatePerMinute, startTime);
+    /// @inheritdoc IRateRegistry
+    function targetRatePerMinuteParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.rateRegistry.targetRatePerMinute";
+    }
+
+    /// @inheritdoc IRateRegistry
+    function migratorParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.rateRegistry.migrator";
     }
 
     /**
      * @dev    Returns a slice of the Rates list for pagination.
-     * @param  fromIndex Index from which to start (must be < allRates.length).
-     * @return rates     The subset of Rates.
-     * @return hasMore   True if there are more items beyond this slice.
+     * @param  fromIndex_ Index from which to start (must be < allRates.length).
+     * @return rates_     The subset of Rates.
+     * @return hasMore_   True if there are more items beyond this slice.
      */
-    function getRates(uint256 fromIndex) external view returns (Rates[] memory rates, bool hasMore) {
-        RatesManagerStorage storage $ = _getRatesManagerStorage();
+    function getRates(uint256 fromIndex_) external view returns (Rates[] memory rates_, bool hasMore_) {
+        RateRegistryStorage storage $ = _getRateRegistryStorage();
 
         // TODO: Fix unexpected behavior that an out of bounds query is not an error when the list is empty.
-        if ($.allRates.length == 0 && fromIndex == 0) return (new Rates[](0), false);
+        if ($.allRates.length == 0 && fromIndex_ == 0) return (new Rates[](0), false);
 
-        require(fromIndex < $.allRates.length, FromIndexOutOfRange());
+        require(fromIndex_ < $.allRates.length, FromIndexOutOfRange());
 
-        uint256 toIndex = _min(fromIndex + PAGE_SIZE, $.allRates.length);
+        uint256 toIndex_ = _min(fromIndex_ + PAGE_SIZE, $.allRates.length);
 
-        rates = new Rates[](toIndex - fromIndex);
+        rates_ = new Rates[](toIndex_ - fromIndex_);
 
-        for (uint256 i; i < rates.length; ++i) {
-            rates[i] = $.allRates[fromIndex + i];
+        for (uint256 i_; i_ < rates_.length; ++i_) {
+            rates_[i_] = $.allRates[fromIndex_ + i_];
         }
 
-        hasMore = toIndex < $.allRates.length;
+        hasMore_ = toIndex_ < $.allRates.length;
     }
 
     /**
      * @dev Returns the total number of Rates stored.
      */
-    function getRatesCount() external view returns (uint256 count) {
-        return _getRatesManagerStorage().allRates.length;
+    function getRatesCount() external view returns (uint256 count_) {
+        return _getRateRegistryStorage().allRates.length;
     }
 
-    /* ============ Internal Functions ============ */
+    /* ============ Internal View/Pure Functions ============ */
+
+    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
+        return IParameterRegistryLike(parameterRegistry).get(key_);
+    }
+
+    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
+        return input_ != address(0);
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
+    }
 
     /// @dev Returns the minimum of two numbers.
-    function _min(uint256 a, uint256 b) internal pure returns (uint256 min) {
-        return a < b ? a : b;
+    function _min(uint256 a_, uint256 b_) internal pure returns (uint256 min_) {
+        return a_ < b_ ? a_ : b_;
     }
 
-    /* ============ Upgradeability ============ */
+    function _toUint64(bytes32 value_) internal pure returns (uint64 output_) {
+        // slither-disable-next-line assembly
+        assembly {
+            output_ := value_
+        }
+    }
 
-    /**
-     * @dev   Authorizes the upgrade of the contract.
-     * @param newImplementation The address of the new implementation.
-     */
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {
-        // TODO: Use different upgradeable pattern for this contract.
-        require(newImplementation != address(0), ZeroImplementationAddress());
-        emit UpgradeAuthorized(msg.sender, newImplementation);
+    /// @dev Reverts if none of the rates have changed.
+    function _revertIfNoRateChange(
+        uint64 messageFee_,
+        uint64 storageFee_,
+        uint64 congestionFee_,
+        uint64 targetRatePerMinute_
+    ) internal view {
+        RateRegistryStorage storage $ = _getRateRegistryStorage();
+
+        if ($.allRates.length == 0) return;
+
+        Rates memory rates_ = $.allRates[$.allRates.length - 1];
+
+        if (
+            rates_.messageFee == messageFee_ &&
+            rates_.storageFee == storageFee_ &&
+            rates_.congestionFee == congestionFee_ &&
+            rates_.targetRatePerMinute == targetRatePerMinute_
+        ) {
+            revert NoChange();
+        }
     }
 }

@@ -16,6 +16,7 @@ import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGatewa
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
+import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
 
 import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
 import {
@@ -27,6 +28,7 @@ import { AppChainGatewayDeployer } from "../../script/deployers/AppChainGatewayD
 import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
+import { RateRegistryDeployer } from "../../script/deployers/RateRegistryDeployer.sol";
 
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
@@ -57,6 +59,11 @@ contract DeploymentTests is Test {
     bytes internal constant _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
     bytes internal constant _PAYER_REGISTRY_WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
 
+    bytes internal constant _RATE_REGISTRY_MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
+    bytes internal constant _RATE_REGISTRY_STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
+    bytes internal constant _RATE_REGISTRY_CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
+    bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
+
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
@@ -66,11 +73,17 @@ contract DeploymentTests is Test {
     uint256 internal constant _PAYER_REGISTRY_STARTING_MINIMUM_DEPOSIT = 10_000000;
     uint256 internal constant _PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD = 2 days;
 
+    uint256 internal constant _RATE_REGISTRY_STARTING_MESSAGE_FEE = 100;
+    uint256 internal constant _RATE_REGISTRY_STARTING_STORAGE_FEE = 200;
+    uint256 internal constant _RATE_REGISTRY_STARTING_CONGESTION_FEE = 300;
+    uint256 internal constant _RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE = 100 * 60;
+
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
     bytes32 internal constant _GATEWAY_PROXY_SALT = bytes32(uint256(1));
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
     bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
+    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = bytes32(uint256(5));
 
     uint8 internal constant _RETRYABLE_TICKET_KIND = 9;
 
@@ -95,6 +108,8 @@ contract DeploymentTests is Test {
     IIdentityUpdateBroadcaster internal _identityUpdateBroadcasterProxy;
 
     IPayerRegistry internal _payerRegistryProxy;
+
+    IRateRegistry internal _rateRegistryProxy;
 
     function setUp() external {
         vm.recordLogs();
@@ -192,6 +207,16 @@ contract DeploymentTests is Test {
         );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
+
+        // Set the parameters as need for the Rate Registry.
+        _setRateRegistryStartingParameters();
+
+        // Deploy the Rate Registry on the base (settlement) chain.
+        address rateRegistryImplementation_ = _deployRateRegistryImplementation(
+            address(_settlementChainParameterRegistryProxy)
+        );
+
+        _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
     }
 
     /* ============ Factory Deployer Helpers ============ */
@@ -253,6 +278,7 @@ contract DeploymentTests is Test {
         registry_ = ISettlementChainParameterRegistry(proxy_);
 
         assertEq(registry_.implementation(), implementation_);
+        assertTrue(registry_.isAdmin(admin_));
     }
 
     function _deployAppChainParameterRegistryProxy(
@@ -276,6 +302,7 @@ contract DeploymentTests is Test {
         registry_ = IAppChainParameterRegistry(proxy_);
 
         assertEq(registry_.implementation(), implementation_);
+        assertTrue(registry_.isAdmin(admin_));
     }
 
     /* ============ Gateway Deployer Helpers ============ */
@@ -390,6 +417,10 @@ contract DeploymentTests is Test {
         broadcaster_ = IGroupMessageBroadcaster(proxy_);
 
         assertEq(broadcaster_.implementation(), implementation_);
+
+        assertEq(broadcaster_.minPayloadSize(), _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE);
+
+        assertEq(broadcaster_.maxPayloadSize(), _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
     }
 
     /* ============ Identity Update Broadcaster Deployer Helpers ============ */
@@ -425,6 +456,8 @@ contract DeploymentTests is Test {
         broadcaster_ = IIdentityUpdateBroadcaster(proxy_);
 
         assertEq(broadcaster_.implementation(), implementation_);
+        assertEq(broadcaster_.minPayloadSize(), _IDENTITY_UPDATE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE);
+        assertEq(broadcaster_.maxPayloadSize(), _IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
     }
 
     /* ============ Payer Registry Deployer Helpers ============ */
@@ -461,6 +494,62 @@ contract DeploymentTests is Test {
         registry_ = IPayerRegistry(proxy_);
 
         assertEq(registry_.implementation(), implementation_);
+        assertEq(registry_.settler(), _settler);
+        assertEq(registry_.feeDistributor(), _feeDistributor);
+        assertEq(registry_.minimumDeposit(), _PAYER_REGISTRY_STARTING_MINIMUM_DEPOSIT);
+        assertEq(registry_.withdrawLockPeriod(), _PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD);
+    }
+
+    /* ============ Rate Registry Deployer Helpers ============ */
+
+    function _deployRateRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (implementation_, ) = RateRegistryDeployer.deployImplementation(
+            address(_settlementChainFactory),
+            parameterRegistry_
+        );
+        vm.stopPrank();
+
+        assertEq(IRateRegistry(implementation_).parameterRegistry(), parameterRegistry_);
+    }
+
+    function _deployRateRegistryProxy(address implementation_) internal returns (IRateRegistry registry_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (address proxy_, , ) = RateRegistryDeployer.deployProxy(
+            address(_settlementChainFactory),
+            implementation_,
+            _RATE_REGISTRY_PROXY_SALT
+        );
+        vm.stopPrank();
+
+        registry_ = IRateRegistry(proxy_);
+
+        assertEq(registry_.implementation(), implementation_);
+    }
+
+    function _updateRateRegistryRates() internal {
+        vm.selectFork(_baseForkId);
+
+        vm.prank(_alice);
+        _rateRegistryProxy.updateRates();
+
+        assertEq(_rateRegistryProxy.getRatesCount(), 1);
+
+        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _rateRegistryProxy.getRates(0);
+
+        assertEq(rates_.length, 1);
+
+        assertEq(rates_[0].messageFee, _RATE_REGISTRY_STARTING_MESSAGE_FEE);
+        assertEq(rates_[0].storageFee, _RATE_REGISTRY_STARTING_STORAGE_FEE);
+        assertEq(rates_[0].congestionFee, _RATE_REGISTRY_STARTING_CONGESTION_FEE);
+        assertEq(rates_[0].targetRatePerMinute, _RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE);
+        assertEq(rates_[0].startTime, uint64(vm.getBlockTimestamp()));
+
+        assertFalse(hasMore_);
     }
 
     /* ============ Generic Deployer Helpers ============ */
@@ -525,6 +614,30 @@ contract DeploymentTests is Test {
         values_[1] = bytes32(uint256(uint160(_feeDistributor)));
         values_[2] = bytes32(_PAYER_REGISTRY_STARTING_MINIMUM_DEPOSIT);
         values_[3] = bytes32(_PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD);
+
+        vm.prank(_admin);
+        _settlementChainParameterRegistryProxy.set(keys_, values_);
+
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
+    }
+
+    function _setRateRegistryStartingParameters() internal {
+        vm.selectFork(_baseForkId);
+
+        bytes[] memory keys_ = new bytes[](4);
+        keys_[0] = _RATE_REGISTRY_MESSAGE_FEE_KEY;
+        keys_[1] = _RATE_REGISTRY_STORAGE_FEE_KEY;
+        keys_[2] = _RATE_REGISTRY_CONGESTION_FEE_KEY;
+        keys_[3] = _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY;
+
+        bytes32[] memory values_ = new bytes32[](4);
+        values_[0] = bytes32(_RATE_REGISTRY_STARTING_MESSAGE_FEE);
+        values_[1] = bytes32(_RATE_REGISTRY_STARTING_STORAGE_FEE);
+        values_[2] = bytes32(_RATE_REGISTRY_STARTING_CONGESTION_FEE);
+        values_[3] = bytes32(_RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE);
 
         vm.prank(_admin);
         _settlementChainParameterRegistryProxy.set(keys_, values_);

@@ -7,14 +7,17 @@ import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 
 library RateRegistryDeployer {
     error ZeroFactory();
+    error ZeroParameterRegistry();
     error ZeroImplementation();
 
     function deployImplementation(
-        address factory_
+        address factory_,
+        address parameterRegistry_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
         require(factory_ != address(0), ZeroFactory());
+        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
 
-        constructorArguments_ = "";
+        constructorArguments_ = abi.encode(parameterRegistry_);
 
         bytes memory creationCode_ = abi.encodePacked(type(RateRegistry).creationCode, constructorArguments_);
 
@@ -24,19 +27,24 @@ library RateRegistryDeployer {
     function deployProxy(
         address factory_,
         address implementation_,
-        bytes32 salt_,
-        address admin_
+        bytes32 salt_
     ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
         require(factory_ != address(0), ZeroFactory());
         require(implementation_ != address(0), ZeroImplementation());
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
-        initializeCallData_ = abi.encodeCall(RateRegistry.initialize, (admin_));
+        initializeCallData_ = abi.encodeWithSelector(RateRegistry.initialize.selector);
         proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
     }
 
-    function getImplementation(address factory_) internal view returns (address implementation_) {
-        return IFactory(factory_).computeImplementationAddress(abi.encodePacked(type(RateRegistry).creationCode));
+    function getImplementation(
+        address factory_,
+        address parameterRegistry_
+    ) internal view returns (address implementation_) {
+        bytes memory constructorArguments_ = abi.encode(parameterRegistry_);
+        bytes memory creationCode_ = abi.encodePacked(type(RateRegistry).creationCode, constructorArguments_);
+
+        return IFactory(factory_).computeImplementationAddress(creationCode_);
     }
 
     function getProxy(address factory_, address caller_, bytes32 salt_) internal view returns (address proxy_) {
