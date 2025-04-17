@@ -868,6 +868,7 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(pendingWithdrawal_, 100);
         assertEq(withdrawableTimestamp_, 200);
     }
+
     /* ============ migrate ============ */
 
     function test_migrate_zeroMigrator() external {

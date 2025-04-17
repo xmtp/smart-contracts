@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import { ERC20Helper } from "../../lib/erc20-helper/src/ERC20Helper.sol";
-import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
@@ -16,8 +15,6 @@ import { Migratable } from "../abstract/Migratable.sol";
 // TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
 
 contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc IPayerRegistry
@@ -73,6 +70,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     constructor(address parameterRegistry_, address token_) {
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(token = token_), ZeroTokenAddress());
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */

@@ -3,588 +3,779 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IAccessControl } from "../../lib/oz/contracts/access/IAccessControl.sol";
-import {
-    IAccessControlDefaultAdminRules
-} from "../../lib/oz/contracts/access/extensions/IAccessControlDefaultAdminRules.sol";
 import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
 import { IERC721Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
-import { IERC165 } from "../../lib/oz/contracts/interfaces/IERC165.sol";
-import { ERC721 } from "../../lib/oz/contracts/token/ERC721/ERC721.sol";
 
-import {
-    INodeRegistry,
-    INodeRegistryEvents,
-    INodeRegistryErrors
-} from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
+import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
 
 import { NodeRegistryHarness } from "../utils/Harnesses.sol";
+import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract NodeRegistryTests is Test, Utils {
-    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
-    bytes32 constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 constant NODE_MANAGER_ROLE = keccak256("NODE_MANAGER_ROLE");
+    bytes internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    bytes internal constant _NODE_MANAGER_KEY = "xmtp.nodeRegistry.nodeManager";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
 
-    uint32 constant NODE_INCREMENT = 100;
+    uint32 internal constant _NODE_INCREMENT = 100;
 
-    uint256 public constant MAX_BPS = 10_000;
+    uint16 internal constant _MAX_BPS = 10_000;
 
-    NodeRegistryHarness registry;
+    NodeRegistryHarness internal _registry;
 
-    address admin = makeAddr("admin");
-    address manager = makeAddr("manager");
-    address unauthorized = makeAddr("unauthorized");
+    address internal _implementation;
+    address internal _parameterRegistry;
 
-    address alice = makeAddr("alice");
-    address bob = makeAddr("bob");
+    address internal _admin = makeAddr("admin");
+    address internal _manager = makeAddr("manager");
+    address internal _unauthorized = makeAddr("unauthorized");
 
-    function setUp() public {
-        registry = new NodeRegistryHarness(admin);
+    address internal _alice = makeAddr("alice");
+    address internal _bob = makeAddr("bob");
 
-        vm.prank(admin);
-        registry.grantRole(NODE_MANAGER_ROLE, manager);
+    function setUp() external {
+        _parameterRegistry = address(new MockParameterRegistry());
+        _implementation = address(new NodeRegistryHarness(_parameterRegistry));
+
+        _registry = NodeRegistryHarness(
+            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(INodeRegistry.initialize.selector)))
+        );
+    }
+
+    /* ============ constructor ============ */
+
+    function test_constructor_zeroParameterRegistryAddress() external {
+        vm.expectRevert(INodeRegistry.ZeroParameterRegistryAddress.selector);
+
+        new NodeRegistryHarness(address(0));
     }
 
     /* ============ initial state ============ */
 
-    function test_initialState() public view {
-        assertEq(registry.maxActiveNodes(), 20);
+    function test_initialState() external view {
+        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(_registry.implementation(), _implementation);
+        assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
+        assertEq(keccak256(_registry.nodeManagerParameterKey()), keccak256(_NODE_MANAGER_KEY));
+        assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
+        assertEq(_registry.maxCanonicalNodes(), 20);
+    }
+
+    /* ============ initializer ============ */
+
+    function test_initialize_reinitialization() external {
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        _registry.initialize();
     }
 
     /* ============ addNode ============ */
 
-    function test_addNode_first() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    function test_addNode_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        address operatorAddress = vm.randomAddress();
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeAdded(
-            NODE_INCREMENT,
-            operatorAddress,
-            node.signingKeyPub,
-            node.httpAddress,
-            node.minMonthlyFeeMicroDollars
+        vm.prank(_unauthorized);
+        _registry.addNode(address(0), hex"", "", 0);
+    }
+
+    function test_addNode_invalidAddress() external {
+        _registry.__setAdmin(_admin);
+
+        vm.expectRevert(INodeRegistry.InvalidAddress.selector);
+
+        vm.prank(_admin);
+        _registry.addNode(address(0), hex"", "", 0);
+    }
+
+    function test_addNode_invalidSigningKey() external {
+        _registry.__setAdmin(_admin);
+
+        vm.expectRevert(INodeRegistry.InvalidSigningKey.selector);
+
+        vm.prank(_admin);
+        _registry.addNode(address(1), hex"", "", 1000);
+    }
+
+    function test_addNode_invalidHttpAddress() external {
+        _registry.__setAdmin(_admin);
+
+        vm.expectRevert(INodeRegistry.InvalidHttpAddress.selector);
+
+        vm.prank(_admin);
+        _registry.addNode(address(1), hex"1F", "", 1000);
+    }
+
+    function test_addNode_first() external {
+        _registry.__setAdmin(_admin);
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeAdded(
+            _NODE_INCREMENT,
+            address(1),
+            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
+            "http://example.com",
+            1000
         );
 
-        vm.prank(admin);
-        uint256 nodeId = registry.addNode(
-            operatorAddress,
-            node.signingKeyPub,
-            node.httpAddress,
-            node.minMonthlyFeeMicroDollars
+        vm.prank(_admin);
+        uint256 nodeId_ = _registry.addNode(
+            address(1),
+            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
+            "http://example.com",
+            1000
         );
 
-        assertEq(nodeId, NODE_INCREMENT);
+        assertEq(nodeId_, _NODE_INCREMENT);
 
-        assertEq(registry.__getOwner(nodeId), operatorAddress);
+        assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(registry.__getNode(nodeId).signingKeyPub, node.signingKeyPub);
-        assertEq(registry.__getNode(nodeId).httpAddress, node.httpAddress);
-        assertEq(registry.__getNode(nodeId).inCanonicalNetwork, false);
-        assertEq(registry.__getNode(nodeId).minMonthlyFeeMicroDollars, node.minMonthlyFeeMicroDollars);
+        assertEq(_registry.__getNode(nodeId_).signingKeyPub, hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F");
+        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
+        assertEq(_registry.__getNode(nodeId_).isCanonical, false);
+        assertEq(_registry.__getNode(nodeId_).minMonthlyFee, 1000);
 
-        assertEq(registry.__getNodeCounter(), 1);
+        assertEq(_registry.__getNodeCount(), 1);
+        assertEq(_registry.canonicalNodesCount(), 0);
     }
 
-    function test_addNode_nth() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    function test_addNode_nth() external {
+        _registry.__setAdmin(_admin);
+        _registry.__setNodeCount(11);
 
-        address operatorAddress = vm.randomAddress();
-
-        registry.__setNodeCounter(11);
-
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeAdded(
-            12 * NODE_INCREMENT,
-            operatorAddress,
-            node.signingKeyPub,
-            node.httpAddress,
-            node.minMonthlyFeeMicroDollars
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeAdded(
+            _NODE_INCREMENT * 12,
+            address(1),
+            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
+            "http://example.com",
+            1000
         );
 
-        vm.prank(admin);
-        uint256 nodeId = registry.addNode(
-            operatorAddress,
-            node.signingKeyPub,
-            node.httpAddress,
-            node.minMonthlyFeeMicroDollars
+        vm.prank(_admin);
+        uint256 nodeId_ = _registry.addNode(
+            address(1),
+            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
+            "http://example.com",
+            1000
         );
 
-        assertEq(nodeId, 12 * NODE_INCREMENT);
+        assertEq(nodeId_, _NODE_INCREMENT * 12);
 
-        assertEq(registry.__getOwner(nodeId), operatorAddress);
+        assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(registry.__getNode(nodeId).signingKeyPub, node.signingKeyPub);
-        assertEq(registry.__getNode(nodeId).httpAddress, node.httpAddress);
-        assertEq(registry.__getNode(nodeId).inCanonicalNetwork, false);
-        assertEq(registry.__getNode(nodeId).minMonthlyFeeMicroDollars, node.minMonthlyFeeMicroDollars);
+        assertEq(_registry.__getNode(nodeId_).signingKeyPub, hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F");
+        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
+        assertEq(_registry.__getNode(nodeId_).isCanonical, false);
+        assertEq(_registry.__getNode(nodeId_).minMonthlyFee, 1000);
 
-        assertEq(registry.__getNodeCounter(), 12);
+        assertEq(_registry.__getNodeCount(), 12);
+        assertEq(_registry.canonicalNodesCount(), 0);
     }
 
-    function test_addNode_invalidAddress() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    /* ============ addToNetwork ============ */
 
-        vm.expectRevert(INodeRegistryErrors.InvalidAddress.selector);
+    function test_addToNetwork_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.addNode(address(0), node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars);
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
+
+        vm.prank(_unauthorized);
+        _registry.addToNetwork(0);
     }
 
-    function test_addNode_invalidSigningKey() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    function test_addToNetwork_nonexistentToken() external {
+        _registry.__setAdmin(_admin);
 
-        vm.expectRevert(INodeRegistryErrors.InvalidSigningKey.selector);
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
 
-        vm.prank(admin);
-        registry.addNode(vm.randomAddress(), "", node.httpAddress, node.minMonthlyFeeMicroDollars);
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
     }
 
-    function test_addNode_invalidHttpAddress() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    function test_addToNetwork_alreadyInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", true, 0);
 
-        vm.expectRevert(INodeRegistryErrors.InvalidHttpAddress.selector);
+        vm.expectRevert(INodeRegistry.NodeAlreadyInCanonicalNetwork.selector);
 
-        vm.prank(admin);
-        registry.addNode(vm.randomAddress(), node.signingKeyPub, "", node.minMonthlyFeeMicroDollars);
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
     }
 
-    function test_addNode_notAdmin() public {
-        INodeRegistry.Node memory node = _getRandomNode();
+    function test_addToNetwork_maxActiveNodesReached() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", false, 0);
 
-        // Addresses without DEFAULT_ADMIN_ROLE cannot add registry.
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
+        _registry.__setMaxCanonicalNodes(0);
 
-        vm.prank(unauthorized);
-        registry.addNode(vm.randomAddress(), node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars);
+        vm.expectRevert(INodeRegistry.MaxCanonicalNodesReached.selector);
 
-        // NODE_MANAGER_ROLE is not authorized to add registry.
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, manager, ADMIN_ROLE)
-        );
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
 
-        vm.prank(manager);
-        registry.addNode(vm.randomAddress(), node.signingKeyPub, node.httpAddress, node.minMonthlyFeeMicroDollars);
+        _registry.__setMaxCanonicalNodes(10);
+        _registry.__setCanonicalNodesCount(10);
+
+        vm.expectRevert(INodeRegistry.MaxCanonicalNodesReached.selector);
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
     }
 
-    /* ============ enableNode ============ */
+    function test_addToNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", false, 0);
 
-    function test_addToNetwork() public {
-        _addNode(1, alice, "", "", false, 0);
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeAddedToCanonicalNetwork(1);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeAddedToCanonicalNetwork(1);
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
 
-        vm.prank(admin);
-        registry.addToNetwork(1);
-
-        assertTrue(registry.__getNode(1).inCanonicalNetwork);
-    }
-
-    function test_addToNetwork_maxActiveNodesReached() public {
-        _addNode(1, alice, "", "", false, 0);
-
-        registry.__setMaxActiveNodes(0);
-
-        vm.expectRevert(INodeRegistryErrors.MaxActiveNodesReached.selector);
-
-        vm.prank(admin);
-        registry.addToNetwork(1);
-    }
-
-    function test_addToNetwork_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-
-        vm.prank(admin);
-        registry.addToNetwork(1);
-    }
-
-    function test_addToNetwork_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
-
-        vm.prank(unauthorized);
-        registry.addToNetwork(0);
+        assertTrue(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 1);
     }
 
     /* ============ removeFromNetwork ============ */
 
-    function test_removeFromNetwork() public {
-        _addNode(1, alice, "", "", true, 0);
+    function test_removeFromNetwork_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        registry.__addNodeToCanonicalNetwork(1);
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeRemovedFromCanonicalNetwork(1);
-
-        vm.prank(admin);
-        registry.removeFromNetwork(1);
-
-        assertFalse(registry.__getNode(1).inCanonicalNetwork);
+        vm.prank(_unauthorized);
+        _registry.removeFromNetwork(0);
     }
 
-    function test_removeFromNetwork_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
+    function test_removeFromNetwork_notInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.prank(admin);
-        registry.removeFromNetwork(1);
+        vm.expectRevert(INodeRegistry.NodeNotInCanonicalNetwork.selector);
+
+        vm.prank(_admin);
+        _registry.removeFromNetwork(1);
     }
 
-    function test_removeFromNetwork_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
+    function test_removeFromNetwork_nonexistentToken() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(unauthorized);
-        registry.removeFromNetwork(0);
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+
+        vm.prank(_admin);
+        _registry.removeFromNetwork(1);
+    }
+
+    function test_removeFromNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, "", "", true, 0);
+
+        _registry.__addNodeToCanonicalNetwork(1);
+        _registry.__setCanonicalNodesCount(1);
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeRemovedFromCanonicalNetwork(1);
+
+        vm.prank(_admin);
+        _registry.removeFromNetwork(1);
+
+        assertFalse(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 0);
     }
 
     /* ============ transferFrom ============ */
 
-    function test_transferFrom() public {
-        _addNode(1, alice, "", "", false, 0);
-        registry.__setApproval(manager, 1, alice);
+    function test_transferFrom_unauthorized() external {
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.expectEmit(address(registry));
-        emit IERC721.Transfer(alice, bob, 1);
+        vm.expectRevert();
 
-        vm.prank(manager);
-        registry.transferFrom(alice, bob, 1);
-
-        assertEq(registry.ownerOf(1), bob);
+        vm.prank(_unauthorized);
+        _registry.transferFrom(_alice, _bob, 1);
     }
 
-    function test_transferFrom_unauthorized() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_transferFrom_asOperator() external {
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                NODE_MANAGER_ROLE
-            )
-        );
+        vm.expectEmit(address(_registry));
+        emit IERC721.Transfer(_alice, _bob, 1);
 
-        vm.prank(unauthorized);
-        registry.transferFrom(alice, bob, 1);
+        vm.prank(_alice);
+        _registry.transferFrom(_alice, _bob, 1);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, NODE_MANAGER_ROLE)
-        );
-
-        vm.prank(alice);
-        registry.transferFrom(alice, bob, 1);
+        assertEq(_registry.ownerOf(1), _bob);
     }
 
-    function test_transferFrom_insufficientApproval() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_transferFrom_asNodeManager() external {
+        _registry.__setNodeManager(_manager);
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, manager, 1));
+        vm.expectEmit(address(_registry));
+        emit IERC721.Transfer(_alice, _bob, 1);
 
-        vm.prank(manager);
-        registry.transferFrom(alice, bob, 1);
+        vm.prank(_manager);
+        _registry.transferFrom(_alice, _bob, 1);
+
+        assertEq(_registry.ownerOf(1), _bob);
     }
 
     /* ============ setHttpAddress ============ */
 
-    function test_setHttpAddress() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_setHttpAddress_notManager() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.expectEmit(address(registry));
+        _addNode(1, _alice, "", "", false, 0);
 
-        emit INodeRegistryEvents.HttpAddressUpdated(1, "http://example.com");
+        vm.expectRevert(INodeRegistry.NotNodeManager.selector);
 
-        vm.prank(manager);
-        registry.setHttpAddress(1, "http://example.com");
-
-        assertEq(registry.__getNode(1).httpAddress, "http://example.com");
+        vm.prank(_unauthorized);
+        _registry.setHttpAddress(1, "");
     }
 
-    function test_setHttpAddress_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
+    function test_setHttpAddress_nonexistentToken() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.prank(manager);
-        registry.setHttpAddress(1, "");
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+
+        vm.prank(_manager);
+        _registry.setHttpAddress(1, "");
     }
 
-    function test_setHttpAddress_invalidHttpAddress() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_setHttpAddress_invalidHttpAddress() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.expectRevert(INodeRegistryErrors.InvalidHttpAddress.selector);
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.prank(manager);
-        registry.setHttpAddress(1, "");
+        vm.expectRevert(INodeRegistry.InvalidHttpAddress.selector);
+
+        vm.prank(_manager);
+        _registry.setHttpAddress(1, "");
     }
 
-    function test_setHttpAddress_notManager() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_setHttpAddress() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                NODE_MANAGER_ROLE
-            )
-        );
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.prank(unauthorized);
-        registry.setHttpAddress(1, "");
+        vm.expectEmit(address(_registry));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, NODE_MANAGER_ROLE)
-        );
+        emit INodeRegistry.HttpAddressUpdated(1, "http://example.com");
 
-        vm.prank(alice);
-        registry.setHttpAddress(1, "");
+        vm.prank(_manager);
+        _registry.setHttpAddress(1, "http://example.com");
+
+        assertEq(_registry.__getNode(1).httpAddress, "http://example.com");
     }
 
     /* ============ setMinMonthlyFee ============ */
 
-    function test_setMinMonthlyFee() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_setMinMonthlyFee_notManager() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.MinMonthlyFeeUpdated(1, 1000);
+        vm.expectRevert(INodeRegistry.NotNodeManager.selector);
 
-        vm.prank(manager);
-        registry.setMinMonthlyFee(1, 1000);
-
-        assertEq(registry.__getNode(1).minMonthlyFeeMicroDollars, 1000);
+        vm.prank(_unauthorized);
+        _registry.setMinMonthlyFee(1, 0);
     }
 
-    function test_setMinMonthlyFee_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
+    function test_setMinMonthlyFee_nonexistentToken() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.prank(manager);
-        registry.setMinMonthlyFee(1, 0);
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+
+        vm.prank(_manager);
+        _registry.setMinMonthlyFee(1, 0);
     }
 
-    function test_setMinMonthlyFee_notManager() public {
-        _addNode(1, alice, "", "", false, 0);
+    function test_setMinMonthlyFee() external {
+        _registry.__setNodeManager(_manager);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorized,
-                NODE_MANAGER_ROLE
-            )
-        );
+        _addNode(1, _alice, "", "", false, 0);
 
-        vm.prank(unauthorized);
-        registry.setMinMonthlyFee(0, 0);
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.MinMonthlyFeeUpdated(1, 1000);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, NODE_MANAGER_ROLE)
-        );
+        vm.prank(_manager);
+        _registry.setMinMonthlyFee(1, 1000);
 
-        vm.prank(alice);
-        registry.setMinMonthlyFee(0, 0);
+        assertEq(_registry.__getNode(1).minMonthlyFee, 1000);
     }
 
-    /* ============ setMaxActiveNodes ============ */
+    /* ============ setMaxCanonicalNodes ============ */
 
-    function test_setMaxActiveNodes() public {
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.MaxActiveNodesUpdated(10);
+    function test_setMaxActiveNodes_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setMaxActiveNodes(10);
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
-        assertEq(registry.maxActiveNodes(), 10);
+        vm.prank(_unauthorized);
+        _registry.setMaxCanonicalNodes(0);
     }
 
-    function test_setMaxActiveNodes_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
+    function test_setMaxCanonicalNodes_lessThanActiveNodesLength() external {
+        _registry.__setAdmin(_admin);
+        _registry.__setCanonicalNodesCount(1);
 
-        vm.prank(unauthorized);
-        registry.setMaxActiveNodes(0);
+        vm.expectRevert(INodeRegistry.MaxCanonicalNodesBelowCurrentCount.selector);
+
+        vm.prank(_admin);
+        _registry.setMaxCanonicalNodes(0);
     }
 
-    function test_setMaxActiveNodes_lessThanActiveNodesLength() public {
-        registry.__addNodeToCanonicalNetwork(1);
+    function test_setMaxCanonicalNodes() external {
+        _registry.__setAdmin(_admin);
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.MaxCanonicalNodesUpdated(10);
 
-        vm.expectRevert(INodeRegistryErrors.MaxActiveNodesBelowCurrentCount.selector);
+        vm.prank(_admin);
+        _registry.setMaxCanonicalNodes(10);
 
-        vm.prank(admin);
-        registry.setMaxActiveNodes(0);
+        assertEq(_registry.maxCanonicalNodes(), 10);
     }
 
     /* ============ setNodeOperatorCommissionPercent ============ */
 
-    function test_setNodeOperatorCommissionPercent() public {
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.NodeOperatorCommissionPercentUpdated(1000);
+    function test_setNodeOperatorCommissionPercent_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setNodeOperatorCommissionPercent(1000);
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
-        assertEq(registry.nodeOperatorCommissionPercent(), 1000);
+        vm.prank(_unauthorized);
+        _registry.setNodeOperatorCommissionPercent(0);
     }
 
-    function test_setNodeOperatorCommissionPercent_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
+    function test_setNodeOperatorCommissionPercent_invalidCommissionPercent() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(unauthorized);
-        registry.setNodeOperatorCommissionPercent(0);
+        vm.expectRevert(INodeRegistry.InvalidCommissionPercent.selector);
+
+        vm.prank(_admin);
+        _registry.setNodeOperatorCommissionPercent(_MAX_BPS + 1);
     }
 
-    function test_setNodeOperatorCommissionPercent_invalidCommissionPercent() public {
-        vm.expectRevert(INodeRegistryErrors.InvalidCommissionPercent.selector);
+    function test_setNodeOperatorCommissionPercent() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setNodeOperatorCommissionPercent(MAX_BPS + 1);
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeOperatorCommissionPercentUpdated(1000);
+
+        vm.prank(_admin);
+        _registry.setNodeOperatorCommissionPercent(1000);
+
+        assertEq(_registry.nodeOperatorCommissionPercent(), 1000);
     }
 
     /* ============ setBaseURI ============ */
 
-    function test_setBaseURI() public {
-        vm.expectEmit(address(registry));
-        emit INodeRegistryEvents.BaseURIUpdated("http://example.com/");
+    function test_setBaseURI_notAdmin() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setBaseURI("http://example.com/");
+        vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
-        assertEq(registry.__getBaseTokenURI(), "http://example.com/");
+        vm.prank(_unauthorized);
+        _registry.setBaseURI("");
     }
 
-    function test_setBaseURI_notAdmin() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, unauthorized, ADMIN_ROLE)
-        );
+    function test_setBaseURI_invalidURI_empty() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(unauthorized);
-        registry.setBaseURI("");
+        vm.expectRevert(INodeRegistry.InvalidURI.selector);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, manager, ADMIN_ROLE)
-        );
-
-        vm.prank(manager);
-        registry.setBaseURI("");
+        vm.prank(_admin);
+        _registry.setBaseURI("");
     }
 
-    function test_setBaseURI_emptyURI() public {
-        vm.expectRevert(INodeRegistryErrors.InvalidURI.selector);
+    function test_setBaseURI_invalidURI_missingTrailingSlash() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setBaseURI("");
+        vm.expectRevert(INodeRegistry.InvalidURI.selector);
+
+        vm.prank(_admin);
+        _registry.setBaseURI("http://example.com");
     }
 
-    function test_setBaseURI_noTrailingSlash() public {
-        vm.expectRevert(INodeRegistryErrors.InvalidURI.selector);
+    function test_setBaseURI() external {
+        _registry.__setAdmin(_admin);
 
-        vm.prank(admin);
-        registry.setBaseURI("http://example.com");
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.BaseURIUpdated("http://example.com/");
+
+        vm.prank(_admin);
+        _registry.setBaseURI("http://example.com/");
+
+        assertEq(_registry.__getBaseURI(), "http://example.com/");
+    }
+
+    /* ============ updateAdmin ============ */
+
+    function test_updateAdmin_noChange() external {
+        _registry.__setAdmin(_admin);
+
+        _mockParameterRegistryCall(_ADMIN_KEY, _admin);
+
+        vm.expectRevert(INodeRegistry.NoChange.selector);
+
+        _registry.updateAdmin();
+    }
+
+    function test_updateAdmin() external {
+        _registry.__setAdmin(_admin);
+
+        _mockParameterRegistryCall(_ADMIN_KEY, address(1));
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.AdminUpdated(address(1));
+
+        _registry.updateAdmin();
+    }
+
+    /* ============ updateNodeManager ============ */
+
+    function test_updateNodeManager_noChange() external {
+        _registry.__setNodeManager(_manager);
+
+        _mockParameterRegistryCall(_NODE_MANAGER_KEY, _manager);
+
+        vm.expectRevert(INodeRegistry.NoChange.selector);
+
+        _registry.updateNodeManager();
+    }
+
+    function test_updateNodeManager() external {
+        _registry.__setNodeManager(_manager);
+
+        _mockParameterRegistryCall(_NODE_MANAGER_KEY, address(1));
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeManagerUpdated(address(1));
+
+        _registry.updateNodeManager();
+    }
+
+    /* ============ maxCanonicalNodes ============ */
+
+    function test_maxCanonicalNodes() external {
+        _registry.__setMaxCanonicalNodes(10);
+
+        assertEq(_registry.maxCanonicalNodes(), 10);
+
+        _registry.__setMaxCanonicalNodes(20);
+
+        assertEq(_registry.maxCanonicalNodes(), 20);
+    }
+
+    /* ============ canonicalNodesCount ============ */
+
+    function test_canonicalNodesCount() external {
+        _registry.__setCanonicalNodesCount(10);
+
+        assertEq(_registry.canonicalNodesCount(), 10);
+
+        _registry.__setCanonicalNodesCount(20);
+
+        assertEq(_registry.canonicalNodesCount(), 20);
+    }
+
+    /* ============ nodeOperatorCommissionPercent ============ */
+
+    function test_nodeOperatorCommissionPercent() external {
+        _registry.__setNodeOperatorCommissionPercent(1000);
+
+        assertEq(_registry.nodeOperatorCommissionPercent(), 1000);
+
+        _registry.__setNodeOperatorCommissionPercent(2000);
+
+        assertEq(_registry.nodeOperatorCommissionPercent(), 2000);
     }
 
     /* ============ getAllNodes ============ */
 
-    function test_getAllNodes() public {
-        INodeRegistry.NodeWithId[] memory allNodes;
+    function test_getAllNodes() external {
+        INodeRegistry.NodeWithId[] memory allNodes_;
 
-        _addNode(NODE_INCREMENT, alice, "", "", false, 0);
-        registry.__setNodeCounter(1);
+        _addNode(_NODE_INCREMENT, _alice, "", "", false, 0);
+        _registry.__setNodeCount(1);
 
-        allNodes = registry.getAllNodes();
+        allNodes_ = _registry.getAllNodes();
 
-        assertEq(allNodes.length, 1);
-        assertEq(allNodes[0].nodeId, NODE_INCREMENT);
+        assertEq(allNodes_.length, 1);
+        assertEq(allNodes_[0].nodeId, _NODE_INCREMENT);
 
-        _addNode(NODE_INCREMENT * 2, alice, "", "", false, 0);
-        registry.__setNodeCounter(2);
+        _addNode(_NODE_INCREMENT * 2, _alice, "", "", false, 0);
+        _registry.__setNodeCount(2);
 
-        allNodes = registry.getAllNodes();
+        allNodes_ = _registry.getAllNodes();
 
-        assertEq(allNodes.length, 2);
-        assertEq(allNodes[0].nodeId, NODE_INCREMENT);
-        assertEq(allNodes[1].nodeId, NODE_INCREMENT * 2);
+        assertEq(allNodes_.length, 2);
+        assertEq(allNodes_[0].nodeId, _NODE_INCREMENT);
+        assertEq(allNodes_[1].nodeId, _NODE_INCREMENT * 2);
     }
 
     /* ============ getAllNodesCount ============ */
 
-    function test_getAllNodesCount() public {
-        registry.__setNodeCounter(1);
+    function test_getAllNodesCount() external {
+        _registry.__setNodeCount(1);
 
-        assertEq(registry.getAllNodesCount(), 1);
+        assertEq(_registry.getAllNodesCount(), 1);
 
-        registry.__setNodeCounter(2);
+        _registry.__setNodeCount(2);
 
-        assertEq(registry.getAllNodesCount(), 2);
+        assertEq(_registry.getAllNodesCount(), 2);
     }
 
     /* ============ getNode ============ */
 
-    function test_getNode() public {
-        _addNode(1, alice, hex"1F1F1F", "httpAddress", true, 1000);
-
-        INodeRegistry.Node memory node = registry.__getNode(1);
-
-        assertEq(node.signingKeyPub, hex"1F1F1F");
-        assertEq(node.httpAddress, "httpAddress");
-        assertEq(node.minMonthlyFeeMicroDollars, 1000);
+    function test_getNode_nonexistentToken() external {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+        _registry.getNode(1);
     }
 
-    function test_getNode_nodeDoesNotExist() public {
-        vm.expectRevert(INodeRegistryErrors.NodeDoesNotExist.selector);
-        registry.getNode(1);
+    function test_getNode() external {
+        _addNode(1, _alice, hex"1F1F1F", "httpAddress", true, 1000);
+
+        INodeRegistry.Node memory node_ = _registry.getNode(1);
+
+        assertEq(node_.signingKeyPub, hex"1F1F1F");
+        assertEq(node_.httpAddress, "httpAddress");
+        assertEq(node_.minMonthlyFee, 1000);
+        assertTrue(node_.isCanonical);
     }
 
-    /* ============ supportsInterface ============ */
+    /* ============ getIsCanonicalNode ============ */
 
-    function test_supportsInterface() public view {
-        assertTrue(registry.supportsInterface(type(IERC721).interfaceId));
-        assertTrue(registry.supportsInterface(type(IERC165).interfaceId));
-        assertTrue(registry.supportsInterface(type(IAccessControl).interfaceId));
-        assertTrue(registry.supportsInterface(type(IAccessControlDefaultAdminRules).interfaceId));
+    function test_getIsCanonicalNode_nonexistentToken() external {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+
+        _registry.getIsCanonicalNode(1);
     }
 
-    /* ============ revokeRole ============ */
+    function test_getIsCanonicalNode() external {
+        _addNode(1, _alice, hex"1F1F1F", "httpAddress", true, 1000);
 
-    function test_revokeRole_revokeDefaultAdminRole() public {
-        vm.expectRevert(IAccessControlDefaultAdminRules.AccessControlEnforcedDefaultAdminRules.selector);
-        registry.revokeRole(DEFAULT_ADMIN_ROLE, admin);
+        assertTrue(_registry.getIsCanonicalNode(1));
+
+        _registry.__removeNodeFromCanonicalNetwork(1);
+
+        assertFalse(_registry.getIsCanonicalNode(1));
     }
 
-    /* ============ renounceRole ============ */
+    /* ============ admin ============ */
 
-    function test_renounceRole_withinDelay() public {
+    function test_admin() external {
+        _registry.__setAdmin(_admin);
+
+        assertEq(_registry.admin(), _admin);
+
+        _registry.__setAdmin(address(1));
+
+        assertEq(_registry.admin(), address(1));
+    }
+
+    /* ============ nodeManager ============ */
+
+    function test_nodeManager() external {
+        _registry.__setNodeManager(_manager);
+
+        assertEq(_registry.nodeManager(), _manager);
+
+        _registry.__setNodeManager(address(1));
+
+        assertEq(_registry.nodeManager(), address(1));
+    }
+
+    /* ============ migrate ============ */
+
+    function test_migrate_zeroMigrator() external {
+        vm.expectRevert(IMigratable.ZeroMigrator.selector);
+        _registry.migrate();
+    }
+
+    function test_migrate_migrationFailed() external {
+        address migrator_ = address(new MockFailingMigrator());
+
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControlDefaultAdminRules.AccessControlEnforcedDefaultAdminDelay.selector, 0)
+            abi.encodeWithSelector(
+                IMigratable.MigrationFailed.selector,
+                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
+            )
         );
 
-        registry.renounceRole(DEFAULT_ADMIN_ROLE, admin);
+        _registry.migrate();
+    }
+
+    function test_migrate_emptyCode() external {
+        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
+
+        _registry.migrate();
+    }
+
+    function test_migrate() external {
+        _registry.__setNodeCount(100);
+        _registry.__setNodeOperatorCommissionPercent(50);
+
+        address newImplementation_ = address(new NodeRegistryHarness(_parameterRegistry));
+        address migrator_ = address(new MockMigrator(newImplementation_));
+
+        // TODO: `_expectAndMockParameterRegistryCall`.
+        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+
+        vm.expectEmit(address(_registry));
+        emit IMigratable.Migrated(migrator_);
+
+        vm.expectEmit(address(_registry));
+        emit IERC1967.Upgraded(newImplementation_);
+
+        _registry.migrate();
+
+        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(_registry.parameterRegistry(), _parameterRegistry);
+        assertEq(_registry.__getNodeCount(), 100);
+        assertEq(_registry.nodeOperatorCommissionPercent(), 50);
     }
 
     /* ============ helper functions ============ */
 
     function _addNode(
-        uint256 nodeId,
-        address nodeOperator,
-        bytes memory signingKeyPub,
-        string memory httpAddress,
-        bool inCanonicalNetwork,
-        uint256 minMonthlyFeeMicroDollars
+        uint256 nodeId_,
+        address operator_,
+        bytes memory signingKeyPub_,
+        string memory httpAddress_,
+        bool inCanonical_,
+        uint256 minMonthlyFee_
     ) internal {
-        registry.__setNode(nodeId, signingKeyPub, httpAddress, inCanonicalNetwork, minMonthlyFeeMicroDollars);
-        registry.__mint(nodeOperator, nodeId);
+        _registry.__setNode(nodeId_, signingKeyPub_, httpAddress_, inCanonical_, minMonthlyFee_);
+        _registry.__mint(operator_, nodeId_);
     }
 
-    function _getRandomNode() internal view returns (INodeRegistry.Node memory) {
-        return
-            INodeRegistry.Node({
-                signingKeyPub: _genBytes(32),
-                httpAddress: _genString(32),
-                inCanonicalNetwork: false,
-                minMonthlyFeeMicroDollars: _genRandomInt(100, 10_000)
-            });
+    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
+        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
+        _mockParameterRegistryCall(key_, bytes32(value_));
+    }
+
+    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
+    }
+
+    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
+        // Retrieve the implementation address directly from the proxy storage.
+        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

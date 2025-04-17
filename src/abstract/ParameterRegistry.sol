@@ -36,6 +36,15 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
         _;
     }
 
+    /* ============ Constructor ============ */
+
+    /**
+     * @notice Constructor for the ParameterRegistry contract such that the implementation cannot be initialized.
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
     /* ============ Initialization ============ */
 
     /// @inheritdoc IParameterRegistry

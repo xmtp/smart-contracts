@@ -106,58 +106,76 @@ contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
 }
 
 contract NodeRegistryHarness is NodeRegistry {
-    using EnumerableSet for EnumerableSet.UintSet;
+    constructor(address parameterRegistry_) NodeRegistry(parameterRegistry_) {}
 
-    constructor(address initialAdmin) NodeRegistry(initialAdmin) {}
-
-    function __setNodeCounter(uint256 nodeCounter) external {
-        _nodeCounter = uint32(nodeCounter);
+    function __setMaxCanonicalNodes(uint256 maxCanonicalNodes_) external {
+        _getNodeRegistryStorage().maxCanonicalNodes = uint8(maxCanonicalNodes_);
     }
 
-    function __addNodeToCanonicalNetwork(uint256 nodeId) external {
-        _canonicalNetworkNodes.add(nodeId);
+    function __setCanonicalNodesCount(uint256 canonicalNodesCount_) external {
+        _getNodeRegistryStorage().canonicalNodesCount = uint8(canonicalNodesCount_);
     }
 
-    function __removeNodeFromCanonicalNetwork(uint256 nodeId) external {
-        _canonicalNetworkNodes.remove(nodeId);
+    function __setNodeCount(uint256 nodeCount_) external {
+        _getNodeRegistryStorage().nodeCount = uint32(nodeCount_);
     }
 
-    function __setMaxActiveNodes(uint8 maxActiveNodes_) external {
-        maxActiveNodes = maxActiveNodes_;
+    function __setAdmin(address admin_) external {
+        _getNodeRegistryStorage().admin = admin_;
+    }
+
+    function __setNodeManager(address nodeManager_) external {
+        _getNodeRegistryStorage().nodeManager = nodeManager_;
+    }
+
+    function __setNodeOperatorCommissionPercent(uint256 nodeOperatorCommissionPercent_) external {
+        _getNodeRegistryStorage().nodeOperatorCommissionPercent = uint16(nodeOperatorCommissionPercent_);
+    }
+
+    function __addNodeToCanonicalNetwork(uint256 nodeId_) external {
+        _getNodeRegistryStorage().nodes[nodeId_].isCanonical = true;
+    }
+
+    function __removeNodeFromCanonicalNetwork(uint256 nodeId_) external {
+        delete _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
     }
 
     function __setNode(
-        uint256 nodeId,
-        bytes calldata signingKeyPub,
-        string calldata httpAddress,
-        bool inCanonicalNetwork,
-        uint256 minMonthlyFeeMicroDollars
+        uint256 nodeId_,
+        bytes calldata signingKeyPub_,
+        string calldata httpAddress_,
+        bool inCanonical_,
+        uint256 minMonthlyFee_
     ) external {
-        _nodes[nodeId] = Node(signingKeyPub, httpAddress, inCanonicalNetwork, minMonthlyFeeMicroDollars);
+        _getNodeRegistryStorage().nodes[nodeId_] = Node(signingKeyPub_, httpAddress_, inCanonical_, minMonthlyFee_);
     }
 
-    function __setApproval(address to, uint256 tokenId, address authorizer) external {
-        _approve(to, tokenId, authorizer);
+    function __setApproval(address to_, uint256 tokenId_, address authorizer_) external {
+        _approve(to_, tokenId_, authorizer_);
     }
 
-    function __mint(address to, uint256 nodeId) external {
-        _mint(to, nodeId);
+    function __mint(address to_, uint256 nodeId_) external {
+        _mint(to_, nodeId_);
     }
 
-    function __getNode(uint256 nodeId) external view returns (Node memory node) {
-        return _nodes[nodeId];
+    function __getNode(uint256 nodeId_) external view returns (Node memory node_) {
+        return _getNodeRegistryStorage().nodes[nodeId_];
     }
 
-    function __getOwner(uint256 nodeId) external view returns (address owner) {
-        return _ownerOf(nodeId);
+    function __getOwner(uint256 nodeId_) external view returns (address owner_) {
+        return _ownerOf(nodeId_);
     }
 
-    function __getNodeCounter() external view returns (uint32 nodeCounter) {
-        return _nodeCounter;
+    function __getBaseURI() external view returns (string memory baseURI_) {
+        return _baseURI();
     }
 
-    function __getBaseTokenURI() external view returns (string memory baseTokenURI) {
-        return _baseTokenURI;
+    function __getNodeCount() external view returns (uint32 nodeCount_) {
+        return _getNodeRegistryStorage().nodeCount;
+    }
+
+    function __getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_) {
+        return _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
     }
 }
 

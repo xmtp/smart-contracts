@@ -7,11 +7,11 @@ import { ScriptBase } from "./ScriptBase.s.sol";
 import { Utils } from "./utils/Utils.sol";
 
 contract FactoryScripts is ScriptBase {
-    error ExpectedFactoryNotSet();
+    error FactoryNotSet();
     error UnexpectedFactory();
 
     function deploy() public returns (address factory_) {
-        require(_deploymentData.factory != address(0), ExpectedFactoryNotSet());
+        require(_deploymentData.factory != address(0), FactoryNotSet());
 
         vm.startBroadcast(_privateKey);
 
