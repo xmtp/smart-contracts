@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
-import { ERC20Helper } from "../../lib/erc20-helper/src/ERC20Helper.sol";
+import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
@@ -55,14 +55,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
         require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
         require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeTokenAddress());
+
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    function initialize() external initializer {
-        // TODO: If nothing to initialize, consider `_disableInitializers()` in constructor.
-    }
+    function initialize() external initializer {}
 
     /* ============ Interactive Functions ============ */
 
@@ -72,6 +72,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
         uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
 
+        // slither-disable-next-line reentrancy-events
         emit SenderFundsDeposited(inbox_, messageNumber_, amount_);
     }
 
@@ -160,8 +161,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Internal Interactive Functions ============ */
 
     function _redirectFunds(address inbox_, uint256 amount_) internal {
-        require(ERC20Helper.transferFrom(appChainNativeToken, msg.sender, address(this), amount_), TransferFailed());
-        require(ERC20Helper.approve(appChainNativeToken, inbox_, amount_), ApproveFailed());
+        SafeTransferLib.safeTransferFrom(appChainNativeToken, msg.sender, address(this), amount_);
+        SafeTransferLib.safeApprove(appChainNativeToken, inbox_, amount_);
     }
 
     /* ============ Internal View/Pure Functions ============ */

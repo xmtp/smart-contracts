@@ -26,14 +26,14 @@ library Utils {
         address identityUpdateBroadcasterImplementation;
         bytes32 identityUpdateBroadcasterProxySalt;
         address identityUpdateBroadcasterProxy;
-        address nodeRegistryAdmin;
         address nodeRegistryImplementation;
+        bytes32 nodeRegistryProxySalt;
+        address nodeRegistryProxy;
         address rateRegistryImplementation;
-        bytes32 rateRegistrySalt;
-        address rateRegistryAdmin;
+        bytes32 rateRegistryProxySalt;
         address rateRegistryProxy;
         address payerRegistryImplementation;
-        bytes32 payerRegistrySalt;
+        bytes32 payerRegistryProxySalt;
         address payerRegistryProxy;
     }
 

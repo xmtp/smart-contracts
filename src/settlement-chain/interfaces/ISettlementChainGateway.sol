@@ -38,11 +38,17 @@ interface ISettlementChainGateway is IMigratable {
     /// @notice Thrown when the app chain native token address is zero.
     error ZeroAppChainNativeTokenAddress();
 
-    /// @notice Thrown when the `ERC20.approve` call fails.
+    /**
+     * @notice Thrown when the `ERC20.approve` call fails.
+     * @dev    This is an identical redefinition of `SafeTransferLib.ApproveFailed`.
+     */
     error ApproveFailed();
 
-    /// @notice Thrown when the `ERC20.transfer` call fails.
-    error TransferFailed();
+    /**
+     * @notice Thrown when the `ERC20.transferFrom` call fails.
+     * @dev    This is an identical redefinition of `SafeTransferLib.TransferFromFailed`.
+     */
+    error TransferFromFailed();
 
     /// @notice Thrown when no inboxes are provided.
     error NoInboxes();

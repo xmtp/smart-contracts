@@ -7,29 +7,47 @@ import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
 
 library NodeRegistryDeployer {
     error ZeroFactory();
-    error ZeroInitialAdmin();
+    error ZeroParameterRegistry();
+    error ZeroImplementation();
 
     function deployImplementation(
         address factory_,
-        address initialAdmin_
+        address parameterRegistry_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
         require(factory_ != address(0), ZeroFactory());
-        require(initialAdmin_ != address(0), ZeroInitialAdmin());
+        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
 
-        constructorArguments_ = abi.encode(initialAdmin_);
+        constructorArguments_ = abi.encode(parameterRegistry_);
 
         bytes memory creationCode_ = abi.encodePacked(type(NodeRegistry).creationCode, constructorArguments_);
 
         implementation_ = IFactory(factory_).deployImplementation(creationCode_);
     }
 
+    function deployProxy(
+        address factory_,
+        address implementation_,
+        bytes32 salt_
+    ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
+        require(factory_ != address(0), ZeroFactory());
+        require(implementation_ != address(0), ZeroImplementation());
+
+        constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
+        initializeCallData_ = abi.encodeWithSelector(NodeRegistry.initialize.selector);
+        proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
+    }
+
     function getImplementation(
         address factory_,
-        address initialAdmin_
+        address parameterRegistry_
     ) internal view returns (address implementation_) {
-        bytes memory constructorArguments_ = abi.encode(initialAdmin_);
+        bytes memory constructorArguments_ = abi.encode(parameterRegistry_);
         bytes memory creationCode_ = abi.encodePacked(type(NodeRegistry).creationCode, constructorArguments_);
 
         return IFactory(factory_).computeImplementationAddress(creationCode_);
+    }
+
+    function getProxy(address factory_, address caller_, bytes32 salt_) internal view returns (address proxy_) {
+        return IFactory(factory_).computeProxyAddress(caller_, salt_);
     }
 }

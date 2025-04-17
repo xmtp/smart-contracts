@@ -3,12 +3,13 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ERC1967Proxy } from "../../lib/oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { PayerRegistryHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockErc20, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
@@ -50,9 +51,9 @@ contract PayerRegistryTests is Test, Utils {
         _mockParameterRegistryCall(_SETTLER_KEY, _settler);
         _mockParameterRegistryCall(_FEE_DISTRIBUTOR_KEY, _feeDistributor);
 
-        _registry = PayerRegistryHarness(
-            address(new ERC1967Proxy(_implementation, abi.encodeWithSelector(IPayerRegistry.initialize.selector)))
-        );
+        _registry = PayerRegistryHarness(address(new Proxy(_implementation)));
+
+        _registry.initialize();
     }
 
     /* ============ constructor ============ */
@@ -123,7 +124,7 @@ contract PayerRegistryTests is Test, Utils {
             abi.encode(false)
         );
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _registry.deposit(_minimumDeposit);
@@ -136,7 +137,7 @@ contract PayerRegistryTests is Test, Utils {
             ""
         );
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _registry.deposit(_minimumDeposit);
@@ -218,7 +219,7 @@ contract PayerRegistryTests is Test, Utils {
             abi.encode(false)
         );
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _registry.deposit(_bob, _minimumDeposit);
@@ -231,7 +232,7 @@ contract PayerRegistryTests is Test, Utils {
             ""
         );
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFromFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _registry.deposit(_bob, _minimumDeposit);
@@ -490,7 +491,7 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.mockCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), abi.encode(false));
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFailed.selector);
 
         vm.prank(_alice);
         _registry.finalizeWithdrawal(_alice);
@@ -502,7 +503,7 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), "");
 
-        vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
+        vm.expectRevert(IPayerRegistry.TransferFailed.selector);
 
         vm.prank(_alice);
         _registry.finalizeWithdrawal(_alice);
@@ -549,49 +550,6 @@ contract PayerRegistryTests is Test, Utils {
         _registry.settleUsage(new address[](0), new uint96[](1));
     }
 
-    function test_settleUsage_erc20TransferFailed_tokenReturnsFalse() external {
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)), abi.encode(1));
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 1), abi.encode(false));
-
-        vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
-
-        vm.prank(_settler);
-        _registry.settleUsage(new address[](0), new uint96[](0));
-    }
-
-    function test_settleUsage_erc20TransferFailed_tokenReverts() external {
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)), abi.encode(1));
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 1), "");
-
-        vm.expectRevert(IPayerRegistry.ERC20TransferFailed.selector);
-
-        vm.prank(_settler);
-        _registry.settleUsage(new address[](0), new uint96[](0));
-    }
-
-    function test_settleUsage_zeroFeeDistributor() external {
-        address[] memory payers = new address[](1);
-        payers[0] = _alice;
-
-        _registry.__setBalance(_alice, 30e6);
-        _registry.__setTotalDeposits(30e6);
-
-        uint96[] memory fees = new uint96[](1);
-        fees[0] = 10e6;
-
-        // TODO: `_expectAndMockCall`.
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)), abi.encode(30e6));
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.UsageSettled(_alice, 10e6);
-
-        vm.prank(_settler);
-        _registry.settleUsage(payers, fees);
-
-        assertEq(_registry.getBalance(_alice), 20e6);
-        assertEq(_registry.totalDeposits(), 20e6);
-    }
-
     function test_settleUsage() external {
         address[] memory payers = new address[](3);
         payers[0] = _alice;
@@ -617,9 +575,6 @@ contract PayerRegistryTests is Test, Utils {
             abi.encode(30e6 + 10e6) // Sum of positive balances (i.e. that can be withdrawn before fees are charged).
         );
 
-        // The contract's token balance (`30e6 + 10e6`, see above) minus Alice's withdrawable amount.
-        vm.expectCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 30e6 + 10e6 - 20e6));
-
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.UsageSettled(_alice, 10e6);
 
@@ -628,9 +583,6 @@ contract PayerRegistryTests is Test, Utils {
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.UsageSettled(_charlie, 30e6);
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.FeesTransferred(20e6);
 
         vm.prank(_settler);
         _registry.settleUsage(payers, fees);
@@ -647,6 +599,96 @@ contract PayerRegistryTests is Test, Utils {
     }
 
     // TODO: testFuzz_settleUsage
+
+    /* ============ sendExcessToFeeDistributor ============ */
+
+    function test_sendExcessToFeeDistributor_noExcess() external {
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(100e6)
+        );
+
+        vm.expectRevert(IPayerRegistry.NoExcess.selector);
+
+        _registry.sendExcessToFeeDistributor();
+    }
+
+    function test_sendExcessToFeeDistributor_ZeroFeeDistributorAddress() external {
+        _registry.__setFeeDistributor(address(0));
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(200e6)
+        );
+
+        vm.expectRevert(IPayerRegistry.ZeroFeeDistributorAddress.selector);
+
+        _registry.sendExcessToFeeDistributor();
+    }
+
+    function test_sendExcessToFeeDistributor_erc20TransferFailed_tokenReturnsFalse() external {
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(200e6)
+        );
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(IPayerRegistry.TransferFailed.selector);
+
+        _registry.sendExcessToFeeDistributor();
+    }
+
+    function test_sendExcessToFeeDistributor_erc20TransferFailed_tokenReverts() external {
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(200e6)
+        );
+
+        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6), "");
+
+        vm.expectRevert(IPayerRegistry.TransferFailed.selector);
+
+        _registry.sendExcessToFeeDistributor();
+    }
+
+    function test_sendExcessToFeeDistributor() external {
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        // TODO: `_expectAndMockCall`.
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(200e6)
+        );
+
+        vm.expectCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6));
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.ExcessTransferred(100e6);
+
+        _registry.sendExcessToFeeDistributor();
+    }
 
     /* ============ updateSettler ============ */
 
@@ -868,6 +910,55 @@ contract PayerRegistryTests is Test, Utils {
         assertEq(pendingWithdrawal_, 100);
         assertEq(withdrawableTimestamp_, 200);
     }
+
+    /* ============ excess ============ */
+
+    function test_excess() external {
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(100e6)
+        );
+
+        assertEq(_registry.excess(), 0); // 100 withdrawable, so none of balance is excess
+
+        _registry.__setTotalDeposits(100e6);
+        _registry.__setTotalDebt(0);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(200e6)
+        );
+
+        assertEq(_registry.excess(), 100e6); // 100 withdrawable, so 100 of balance is excess.
+
+        _registry.__setTotalDeposits(-100e6);
+        _registry.__setTotalDebt(100e6);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(100e6)
+        );
+
+        assertEq(_registry.excess(), 100e6); // 0 withdrawable, so 100 of balance is excess.
+
+        _registry.__setTotalDeposits(-50e6);
+        _registry.__setTotalDebt(100e6);
+
+        vm.mockCall(
+            _token,
+            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encode(100e6)
+        );
+
+        assertEq(_registry.excess(), 50e6); // 50 withdrawable, so 50 of balance is excess.
+    }
+
     /* ============ migrate ============ */
 
     function test_migrate_zeroMigrator() external {
