@@ -606,6 +606,8 @@ contract DeploymentTests is Test {
     }
 
     function _updateNodeRegistryAdminAndNodeManager() internal {
+        vm.selectFork(_baseForkId);
+
         vm.startPrank(_alice);
         _nodeRegistryProxy.updateAdmin();
         _nodeRegistryProxy.updateNodeManager();
@@ -730,6 +732,8 @@ contract DeploymentTests is Test {
     }
 
     function _bridgeBroadcasterStartingParameters() internal {
+        vm.selectFork(_baseForkId);
+
         bytes[] memory keys_ = new bytes[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
@@ -772,7 +776,9 @@ contract DeploymentTests is Test {
         );
     }
 
-    function _assertBroadcasterStartingParameters() internal view {
+    function _assertBroadcasterStartingParameters() internal {
+        vm.selectFork(_appchainForkId);
+
         assertEq(
             uint256(_appChainParameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
             _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE
