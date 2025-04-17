@@ -437,7 +437,7 @@ contract DeploymentTests is Test {
 
         vm.startPrank(_admin);
         (implementation_, ) = PayerRegistryDeployer.deployImplementation(
-            address(_appChainFactory),
+            address(_settlementChainFactory),
             parameterRegistry_,
             token_
         );
@@ -452,7 +452,7 @@ contract DeploymentTests is Test {
 
         vm.startPrank(_admin);
         (address proxy_, , ) = PayerRegistryDeployer.deployProxy(
-            address(_appChainFactory),
+            address(_settlementChainFactory),
             implementation_,
             _PAYER_REGISTRY_PROXY_SALT
         );
