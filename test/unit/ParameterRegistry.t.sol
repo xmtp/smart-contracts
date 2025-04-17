@@ -145,6 +145,7 @@ contract ParameterRegistryTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );

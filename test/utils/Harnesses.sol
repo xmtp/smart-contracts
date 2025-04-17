@@ -272,35 +272,35 @@ contract ParameterRegistryHarness is ParameterRegistry {
         return "xmtp.parameterRegistry.isAdmin";
     }
 
-    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 
-    function __setRegistryParameter(bytes memory key_, address value_) external {
+    function __setRegistryParameter(bytes calldata key_, address value_) external {
         __setRegistryParameter(key_, bytes32(uint256(uint160(value_))));
     }
 
-    function __setRegistryParameter(bytes memory key_, bool value_) external {
+    function __setRegistryParameter(bytes calldata key_, bool value_) external {
         __setRegistryParameter(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
     }
 
-    function __setRegistryParameter(bytes memory key_, uint256 value_) external {
+    function __setRegistryParameter(bytes calldata key_, uint256 value_) external {
         __setRegistryParameter(key_, bytes32(value_));
     }
 
-    function __setRegistryParameter(bytes memory key_, bytes32 value_) public {
+    function __setRegistryParameter(bytes calldata key_, bytes32 value_) public {
         _getParameterRegistryStorage().parameters[key_] = value_;
     }
 }
 
 contract SettlementChainParameterRegistryHarness is SettlementChainParameterRegistry {
-    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 }
 
 contract AppChainParameterRegistryHarness is AppChainParameterRegistry {
-    function __getRegistryParameter(bytes memory key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 }
@@ -327,21 +327,24 @@ contract AppChainGatewayHarness is AppChainGateway {
         address settlementChainGateway_
     ) AppChainGateway(parameterRegistry_, settlementChainGateway_) {}
 
-    function __setKeyNonce(bytes memory key_, uint256 nonce_) external {
+    function __setKeyNonce(bytes calldata key_, uint256 nonce_) external {
         _getAppChainGatewayStorage().keyNonces[key_] = nonce_;
     }
 
-    function __getKeyNonce(bytes memory key_) external view returns (uint256 nonce_) {
+    function __getKeyNonce(bytes calldata key_) external view returns (uint256 nonce_) {
         return _getAppChainGatewayStorage().keyNonces[key_];
     }
 }
 
 contract ParameterKeysHarness {
-    function getKey(bytes[] memory keyComponents_) external pure returns (bytes memory key_) {
+    function getKey(bytes[] calldata keyComponents_) external pure returns (bytes memory key_) {
         return ParameterKeys.getKey(keyComponents_);
     }
 
-    function combineKeyComponents(bytes memory left_, bytes memory right_) external pure returns (bytes memory key_) {
+    function combineKeyComponents(
+        bytes calldata left_,
+        bytes calldata right_
+    ) external pure returns (bytes memory key_) {
         return ParameterKeys.combineKeyComponents(left_, right_);
     }
 

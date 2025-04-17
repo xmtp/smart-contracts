@@ -13,6 +13,10 @@ import { Migratable } from "../abstract/Migratable.sol";
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
 // TODO: Technically, the `startTime` in the `RatesUpdated` event is not needed, but it's kept for now.
 
+/**
+ * @title  Implementation of the Rate Registry.
+ * @notice This contract handles functionality for updating the rates, tracking them historically.
+ */
 contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
@@ -24,7 +28,11 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.RateRegistry
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.RateRegistry
+     * @notice The UUPS storage for the rate registry.
+     * @param  allRates The array of all historical rates.
+     */
     struct RateRegistryStorage {
         Rates[] allRates; // All Rates appended here.
     }
@@ -43,11 +51,13 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for the PayerRegistry contract.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
+     * @dev    The parameter registry must not be the zero address.
+     * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
         _disableInitializers();
     }
 

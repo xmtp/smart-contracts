@@ -3,13 +3,17 @@ pragma solidity 0.8.28;
 
 import { IPayloadBroadcaster } from "../../abstract/interfaces/IPayloadBroadcaster.sol";
 
+/**
+ * @title  Interface for an App Chain Identity Update Broadcaster.
+ * @notice The IdentityUpdateBroadcaster is an identity payload broadcaster on an app chain.
+ */
 interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
     /* ============ Events ============ */
 
     /**
      * @notice Emitted when an identity update is sent.
      * @param  inboxId    The inbox ID.
-     * @param  update     The identity update in bytes. Contains the full mls identity update payload.
+     * @param  update     The identity update in bytes. Contains the full MLS identity update payload.
      * @param  sequenceId The unique sequence ID of the identity update.
      */
     event IdentityUpdateCreated(bytes32 indexed inboxId, bytes update, uint64 indexed sequenceId);

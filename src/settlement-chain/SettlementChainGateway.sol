@@ -12,6 +12,11 @@ import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.so
 
 import { Migratable } from "../abstract/Migratable.sol";
 
+/**
+ * @title  Implementation for a Settlement Chain Gateway.
+ * @notice A SettlementChainGateway exposes the ability to send parameters to any app chain gateways, via their
+ *         respective inboxes on the settlement chain.
+ */
 contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
@@ -26,7 +31,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.SettlementChainGateway
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.SettlementChainGateway
+     * @notice The UUPS storage for the settlement chain gateway.
+     * @param  nonce The nonce of the parameter transmission (to prevent out-of-sequence resets).
+     */
     struct SettlementChainGatewayStorage {
         uint256 nonce;
     }
@@ -45,16 +54,19 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_   The address of the parameter registry.
      * @param  appChainGateway_     The address of the app chain gateway.
      * @param  appChainNativeToken_ The address of the token on the settlement chain that is used as native gas token on
      *                              the app chain.
+     * @dev    The parameter registry, app chain gateway, and app chain native token must not be the zero address.
+     * @dev    The parameter registry, app chain gateway, and app chain native token are immutable so that they are
+     *         inlined in the contract code, and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address appChainGateway_, address appChainNativeToken_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
-        require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGatewayAddress());
-        require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeTokenAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGateway());
+        require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeToken());
 
         _disableInitializers();
     }
@@ -85,7 +97,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     ) external {
         require(inboxes_.length > 0, NoInboxes());
 
-        uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        uint256 nonce_;
+
+        unchecked {
+            nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        }
+
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
@@ -116,7 +133,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     ) external {
         require(inboxes_.length > 0, NoInboxes());
 
-        uint256 nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        uint256 nonce_;
+
+        unchecked {
+            nonce_ = ++_getSettlementChainGatewayStorage().nonce;
+        }
+
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
         address appChainAlias_ = appChainAlias();
 
@@ -143,7 +165,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(address(uint160(uint256(_getRegistryParameter(migratorParameterKey())))));
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -160,6 +182,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ Internal Interactive Functions ============ */
 
+    /// @dev Pulls and amount of tokens from the caller, and approves some inbox to spend them.
     function _redirectFunds(address inbox_, uint256 amount_) internal {
         SafeTransferLib.safeTransferFrom(appChainNativeToken, msg.sender, address(this), amount_);
         SafeTransferLib.safeApprove(appChainNativeToken, inbox_, amount_);
@@ -171,6 +194,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
+    /**
+     * @dev Encodes the parameters and their values, from the settlement chain parameter registry, as a batch to be
+     *      sent to the app chain. The function to be called on the app chain is `IAppChainGateway.receiveParameters`.
+     */
     function _getEncodedParameters(
         uint256 nonce_,
         bytes[] calldata keys_
@@ -186,5 +213,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
         return input_ != address(0);
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
     }
 }

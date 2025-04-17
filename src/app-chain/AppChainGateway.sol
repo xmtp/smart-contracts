@@ -11,6 +11,11 @@ import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
+/**
+ * @title  Implementation for an App Chain Gateway.
+ * @notice The AppChainGateway exposes the ability to receive parameters from the settlement chain gateway, and set
+ *         them at the parameter registry on this same app chain. Currently, it is a receiver-only contract.
+ */
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
@@ -25,7 +30,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.AppChainGateway
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.AppChainGateway
+     * @notice The UUPS storage for the app chain gateway.
+     * @param  keyNonces A mapping of keys and their corresponding nonces, to track order of parameter receipts.
+     */
     struct AppChainGatewayStorage {
         mapping(bytes key => uint256 nonce) keyNonces;
     }
@@ -43,6 +52,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ Modifiers ============ */
 
+    /// @notice Modifier to ensure the caller is the settlement chain gateway (i.e. its L3 alias address).
     modifier onlySettlementChainGateway() {
         _revertIfNotSettlementChainGateway();
         _;
@@ -51,14 +61,19 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_      The address of the parameter registry.
      * @param  settlementChainGateway_ The address of the settlement chain gateway.
+     * @dev    The parameter registry and settlement chain gateway must not be the zero address.
+     * @dev    The parameter registry, settlement chain gateway, and the settlement chain gateway alias are immutable so
+     *         that they are inlined in the contract code, and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address settlementChainGateway_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
-        require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGatewayAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGateway());
 
+        // Despite the `L1ToL2Alias` naming, this function is also used to get the L3 alias address of an L2 account.
+        // Save gas at runtime by inlining the alias address as an immutable.
         settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_);
 
         _disableInitializers();
@@ -84,7 +99,10 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         for (uint256 index_; index_ < keys_.length; ++index_) {
             bytes calldata key_ = keys_[index_];
 
-            // Each key is checked against the nonce, and ignored if the nonce is lower than the stored nonce.
+            // Each key is checked against its nonce, and ignored if the nonce is lower than the stored nonce. This is
+            // to prevent out-of-order parameter receipts. For example, if the settlement chain gateway sends key A
+            // when it has a value of 10, and then again shortly after when it has a value of 5, the key cannot be set
+            // out of order. Either the A=10 comes first, then the A=5, or the A=5 comes first, and the A=10 is ignored.
             if ($.keyNonces[key_] >= nonce_) continue;
 
             $.keyNonces[key_] = nonce_;
@@ -96,7 +114,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(address(uint160(uint256(_getRegistryParameter(migratorParameterKey())))));
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -118,5 +136,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     function _revertIfNotSettlementChainGateway() internal view {
         require(msg.sender == settlementChainGatewayAlias, NotSettlementChainGateway());
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
     }
 }

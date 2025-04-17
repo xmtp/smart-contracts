@@ -69,15 +69,12 @@ contract FactoryTests is Test {
 
     function test_deployImplementation() external {
         bytes memory initCode_ = abi.encodePacked(type(Foo).creationCode, abi.encode(uint256(456), uint256(789)));
+        bytes32 bytecodeHash_ = keccak256(initCode_);
 
-        address expectedImplementation_ = vm.computeCreate2Address(
-            keccak256(initCode_),
-            keccak256(initCode_),
-            address(_factory)
-        );
+        address expectedImplementation_ = vm.computeCreate2Address(bytecodeHash_, bytecodeHash_, address(_factory));
 
         vm.expectEmit(address(_factory));
-        emit IFactory.ImplementationDeployed(expectedImplementation_);
+        emit IFactory.ImplementationDeployed(expectedImplementation_, bytecodeHash_);
 
         address foo_ = _factory.deployImplementation(initCode_);
 

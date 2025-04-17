@@ -8,7 +8,7 @@ import { IERC721Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC60
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
 /**
- * @title  INodeRegistry
+ * @title  Interface for the Node Registry.
  * @notice This interface defines the ERC721-based registry for “nodes” in the system.
  *         Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
  *         In addition to the standard ERC721 functionality, the contract supports node-specific features, including
@@ -117,49 +117,49 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when the parameter registry address is being set to 0x0.
-    error ZeroParameterRegistryAddress();
+    /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    error ZeroParameterRegistry();
 
-    /// @notice Error thrown when failing to add a node to the canonical network.
+    /// @notice Thrown when failing to add a node to the canonical network.
     error FailedToAddNodeToCanonicalNetwork();
 
-    /// @notice Error thrown when failing to remove a node from the canonical network.
+    /// @notice Thrown when failing to remove a node from the canonical network.
     error FailedToRemoveNodeFromCanonicalNetwork();
 
-    /// @notice Error thrown when an invalid address is provided.
+    /// @notice Thrown when an invalid address is provided.
     error InvalidAddress();
 
-    /// @notice Error thrown when an invalid commission percentage is provided.
+    /// @notice Thrown when an invalid commission percentage is provided.
     error InvalidCommissionPercent();
 
-    /// @notice Error thrown when an invalid HTTP address is provided.
+    /// @notice Thrown when an invalid HTTP address is provided.
     error InvalidHttpAddress();
 
-    /// @notice Error thrown when an invalid signing key is provided.
+    /// @notice Thrown when an invalid signing key is provided.
     error InvalidSigningKey();
 
-    /// @notice Error thrown when an invalid URI is provided.
+    /// @notice Thrown when an invalid URI is provided.
     error InvalidURI();
 
-    /// @notice Error thrown when trying to set max canonical nodes below current canonical count.
+    /// @notice Thrown when trying to set max canonical nodes below current canonical count.
     error MaxCanonicalNodesBelowCurrentCount();
 
-    /// @notice Error thrown when a node is already in the canonical network.
+    /// @notice Thrown when a node is already in the canonical network.
     error NodeAlreadyInCanonicalNetwork();
 
-    /// @notice Error thrown when a node is not in the canonical network.
+    /// @notice Thrown when a node is not in the canonical network.
     error NodeNotInCanonicalNetwork();
 
-    /// @notice Error thrown when the maximum number of canonical nodes is reached.
+    /// @notice Thrown when the maximum number of canonical nodes is reached.
     error MaxCanonicalNodesReached();
 
-    /// @notice Error thrown when there is no change to an updated parameter.
+    /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
-    /// @notice Error thrown when the caller is not the admin.
+    /// @notice Thrown when the caller is not the admin.
     error NotAdmin();
 
-    /// @notice Error thrown when the caller is not the node manager.
+    /// @notice Thrown when the caller is not the node manager.
     error NotNodeManager();
 
     /* ============ Initialization ============ */
@@ -261,13 +261,13 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice The address of the node manager.
     function nodeManager() external view returns (address nodeManager_);
 
-    /// @notice The parameter registry key of the admin parameter.
+    /// @notice The parameter registry key used to fetch the admin.
     function adminParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key of the node manager parameter.
+    /// @notice The parameter registry key used to fetch the node manager.
     function nodeManagerParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the migrator.
+    /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
@@ -303,7 +303,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /**
      * @notice Retrieves whether a node is part of the canonical network.
-     * @param  nodeId_ The unique identifier of the node.
+     * @param  nodeId_          The unique identifier of the node.
      * @return isCanonicalNode_ A boolean indicating whether the node is part of the canonical network.
      */
     function getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_);

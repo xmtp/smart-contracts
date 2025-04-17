@@ -50,8 +50,8 @@ contract NodeRegistryTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(INodeRegistry.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(INodeRegistry.ZeroParameterRegistry.selector);
 
         new NodeRegistryHarness(address(0));
     }
@@ -64,6 +64,8 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
         assertEq(keccak256(_registry.nodeManagerParameterKey()), keccak256(_NODE_MANAGER_KEY));
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_registry.name(), "XMTP Node Operator");
+        assertEq(_registry.symbol(), "XMTP");
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.maxCanonicalNodes(), 20);
     }
@@ -706,6 +708,7 @@ contract NodeRegistryTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );

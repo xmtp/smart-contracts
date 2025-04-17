@@ -2,8 +2,7 @@
 pragma solidity 0.8.28;
 
 /**
- * @title  IERC1967
- * @notice Required interface for adhering to ERC1967.
+ * @title Minimal interface required for adhering to ERC1967.
  */
 interface IERC1967 {
     /**
