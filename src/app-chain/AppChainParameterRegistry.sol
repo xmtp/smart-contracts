@@ -6,6 +6,10 @@ import { IParameterRegistry } from "../abstract/interfaces/IParameterRegistry.so
 
 import { ParameterRegistry } from "../abstract/ParameterRegistry.sol";
 
+/**
+ * @title  Implementation for an App Chain Parameter Registry.
+ * @notice An AppChainParameterRegistry is a parameter registry used by the protocol contracts on an app chain.
+ */
 contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegistry {
     /* ============ View/Pure Functions ============ */
 

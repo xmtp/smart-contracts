@@ -3,9 +3,14 @@ pragma solidity 0.8.28;
 
 import { Strings } from "../../lib/oz/contracts/utils/Strings.sol";
 
+/**
+ * @title  Library for building parameter keys from components and non-bytes types
+ * @notice A parameter key is a string that uniquely identifies a parameter.
+ */
 library ParameterKeys {
     /* ============ Constants ============ */
 
+    /// @dev The delimiter used to combine key components.
     bytes internal constant DELIMITER = ".";
 
     /* ============ Custom Errors ============ */
@@ -15,6 +20,11 @@ library ParameterKeys {
 
     /* ============ View/Pure Functions ============ */
 
+    /**
+     * @notice Combines an array of key components into a single key, using the delimiter.
+     * @param  keyComponents_ The key components to combine.
+     * @return key_           The combined key.
+     */
     function getKey(bytes[] memory keyComponents_) internal pure returns (bytes memory key_) {
         require(keyComponents_.length > 0, NoKeyComponents());
 

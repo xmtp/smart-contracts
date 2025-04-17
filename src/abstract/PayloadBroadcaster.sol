@@ -9,7 +9,11 @@ import { IPayloadBroadcaster } from "./interfaces/IPayloadBroadcaster.sol";
 
 import { Migratable } from "./Migratable.sol";
 
-/// @title XMTP Abstract Payload Broadcaster Contract
+/**
+ * @title  Common abstract implementation for an XMTP Payload Broadcaster.
+ * @notice A payload broadcaster is a contract that broadcasts payloads as events, where payloads have a min and max
+ *         size, both of which can be updated from a parameter registry.
+ */
 abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
@@ -18,7 +22,14 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.PayloadBroadcaster
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.PayloadBroadcaster
+     * @notice The UUPS storage for the payload broadcaster.
+     * @param  minPayloadSize The minimum payload size.
+     * @param  maxPayloadSize The maximum payload size.
+     * @param  sequenceId     A sequence ID for uniquely ordering payloads (should be monotonically increasing).
+     * @param  paused         The paused status.
+     */
     struct PayloadBroadcasterStorage {
         uint256 minPayloadSize;
         uint256 maxPayloadSize;
@@ -47,11 +58,13 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for immutables.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
+     * @dev    The parameter registry must not be the zero address.
+     * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
         _disableInitializers();
     }
 
@@ -59,9 +72,11 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function initialize() public virtual initializer {
+        // Since both the min and max start at 0, the max must be updated before the min, since the min can never be
+        // set to be greater than the max.
         _updateMaxPayloadSize();
         _updateMinPayloadSize();
-        _updatePauseStatus();
+        _updatePauseStatus(); // The contract may start out paused, as needed.
     }
 
     /* ============ Interactive Functions ============ */
@@ -83,7 +98,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(address(uint160(uint256(_getRegistryParameter(migratorParameterKey())))));
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -117,6 +132,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /* ============ Internal Interactive Functions ============ */
 
+    /// @dev Sets the min payload size by fetching it from the parameter registry, returning whether i changed.
     function _updateMinPayloadSize() internal returns (bool changed_) {
         uint256 minPayloadSize_ = uint256(_getRegistryParameter(minPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
@@ -128,6 +144,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         emit MinPayloadSizeUpdated($.minPayloadSize = minPayloadSize_);
     }
 
+    /// @dev Sets the max payload size by fetching it from the parameter registry, returning whether it changed.
     function _updateMaxPayloadSize() internal returns (bool changed_) {
         uint256 maxPayloadSize_ = uint256(_getRegistryParameter(maxPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
@@ -139,6 +156,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         emit MaxPayloadSizeUpdated($.maxPayloadSize = maxPayloadSize_);
     }
 
+    /// @dev Sets the paused status by fetching it from the parameter registry, returning whether it changed.
     function _updatePauseStatus() internal returns (bool changed_) {
         bool paused_ = _getRegistryParameter(pausedParameterKey()) != bytes32(0);
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
@@ -167,6 +185,13 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
         if (payloadSize_ < $.minPayloadSize || payloadSize_ > $.maxPayloadSize) {
             revert InvalidPayloadSize(payloadSize_, $.minPayloadSize, $.maxPayloadSize);
+        }
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
         }
     }
 }

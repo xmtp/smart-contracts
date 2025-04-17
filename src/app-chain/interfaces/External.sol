@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 /**
- * @title  IParameterRegistryLike
- * @notice Subset interface for a ParameterRegistry.
+ * @title  Subset interface for a ParameterRegistry.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IParameterRegistryLike {
     function set(bytes calldata key_, bytes32 value_) external;

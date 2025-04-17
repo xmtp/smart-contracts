@@ -24,6 +24,9 @@ contract Initializable is IInitializable {
             sstore(_IMPLEMENTATION_SLOT, implementation_)
         }
 
+        // NOTE: If the `initializeCallData_` is empty, the proxy will not be called (i.e. no call to some `initialize`
+        // function), which may be the desired behavior, but if it is not, it does expose the proxy to be initialized
+        // by anyone, with any arguments, once this transaction is completed.
         if (initializeCallData_.length == 0) return;
 
         // slither-disable-start controlled-delegatecall

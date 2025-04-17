@@ -2,8 +2,7 @@
 pragma solidity 0.8.28;
 
 /**
- * @title IFactory
- * @notice Interface for a Factory contract that deterministically deploys implementations and proxies.
+ * @title Interface for a Factory contract that deterministically deploys implementations and proxies.
  */
 interface IFactory {
     /* ============ Events ============ */
@@ -11,13 +10,16 @@ interface IFactory {
     /**
      * @notice Emitted when the "initializable implementation" is deployed.
      * @param  implementation The address of the deployed "initializable implementation".
-     * @dev    This contract is the first proxied implementation of any proxy, and allows the factory to then set the
-     *         proxy's actual implementation, and initialize it with respect to that actual implementation.
      * @dev    This contract is only deployed once, when the factory itself is deployed.
      */
     event InitializableImplementationDeployed(address indexed implementation);
 
-    event ImplementationDeployed(address indexed implementation);
+    /**
+     * @notice Emitted when an implementation is deployed.
+     * @param  implementation The address of the deployed implementation.
+     * @param  bytecodeHash   The hash of the bytecode of the deployed implementation.
+     */
+    event ImplementationDeployed(address indexed implementation, bytes32 indexed bytecodeHash);
 
     /**
      * @notice Emitted when a proxy is deployed.
@@ -38,10 +40,10 @@ interface IFactory {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the bytecode is empty.
+    /// @notice Thrown when the bytecode is empty (i.e. of the implementation to deploy).
     error EmptyBytecode();
 
-    /// @notice Thrown when the deployment fails.
+    /// @notice Thrown when the deployment of a contract (e.g. an implementation or proxy) fails.
     error DeployFailed();
 
     /* ============ Interactive Functions ============ */
@@ -68,7 +70,15 @@ interface IFactory {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The address of the first temporary implementation that proxies will proxy.
+    /**
+     * @notice The address of the first temporary implementation that proxies will proxy.
+     * @dev    This contract is the first proxied implementation of any proxy, and allows the factory to then set the
+     *         proxy's actual implementation, and initialize it with respect to that actual implementation.
+     *         This ensures that:
+     *           - The address of a proxy is only defined by the nonce, and not by the implementation it will proxy.
+     *           - No contracts are deployed that are not used.
+     *           - The proxy can be easily initialized with respect to the actual implementation, atomically.
+     */
     function initializableImplementation() external view returns (address initializableImplementation_);
 
     /**
@@ -77,7 +87,7 @@ interface IFactory {
      * @return implementation_ The address of the implementation that would be deployed.
      * @dev    The address is determined only by the bytecode, and so the same bytecode results in the same address.
      */
-    function computeImplementationAddress(bytes memory bytecode_) external view returns (address implementation_);
+    function computeImplementationAddress(bytes calldata bytecode_) external view returns (address implementation_);
 
     /**
      * @notice Computes the address of a proxy contract that would be deployed from given a caller and salt.

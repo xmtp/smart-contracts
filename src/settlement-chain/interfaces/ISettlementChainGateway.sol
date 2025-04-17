@@ -4,8 +4,9 @@ pragma solidity 0.8.28;
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
 /**
- * @title  ISettlementChainGateway
- * @notice Interface for the SettlementChainGateway.
+ * @title  Interface for a Settlement Chain Gateway.
+ * @notice A SettlementChainGateway exposes the ability to send parameters to any app chain gateways, via their
+ *         respective inboxes on the settlement chain.
  */
 interface ISettlementChainGateway is IMigratable {
     /* ============ Events ============ */
@@ -29,14 +30,14 @@ interface ISettlementChainGateway is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the parameter registry address is zero.
-    error ZeroParameterRegistryAddress();
+    /// @notice Thrown when the parameter registry address is zero (i.e. address(0)).
+    error ZeroParameterRegistry();
 
-    /// @notice Thrown when the app chain gateway address is zero.
-    error ZeroAppChainGatewayAddress();
+    /// @notice Thrown when the app chain gateway address is zero (i.e. address(0)).
+    error ZeroAppChainGateway();
 
-    /// @notice Thrown when the app chain native token address is zero.
-    error ZeroAppChainNativeTokenAddress();
+    /// @notice Thrown when the app chain native token address is zero (i.e. address(0)).
+    error ZeroAppChainNativeToken();
 
     /**
      * @notice Thrown when the `ERC20.approve` call fails.
@@ -111,7 +112,7 @@ interface ISettlementChainGateway is IMigratable {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The key of the migrator parameter.
+    /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
@@ -120,9 +121,9 @@ interface ISettlementChainGateway is IMigratable {
     /// @notice The address of the app chain gateway.
     function appChainGateway() external view returns (address appChainGateway_);
 
-    /// @notice The alias this contracts address on the app chain.
+    /// @notice This contract's alias address on the L3 app chain.
     function appChainAlias() external view returns (address appChainAlias_);
 
-    /// @notice The address of token on the settlement app chain that is used as native gas token on the app chain.
+    /// @notice The address of token on the settlement app chain that is used as native gas token on the app chains.
     function appChainNativeToken() external view returns (address appChainNativeToken_);
 }

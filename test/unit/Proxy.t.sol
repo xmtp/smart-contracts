@@ -12,7 +12,7 @@ import { Utils } from "../utils/Utils.sol";
 contract Foo {
     error Reverting();
 
-    uint256 public constant constantValue = 123;
+    uint256 public constant CONSTANT_VALUE = 123;
 
     uint256 public immutable immutableValue;
 
@@ -45,7 +45,7 @@ contract ProxyTests is Test, Utils {
         address proxy_ = address(new Proxy(implementation_));
 
         assertEq(_getImplementationFromSlot(proxy_), implementation_);
-        assertEq(Foo(proxy_).constantValue(), 123);
+        assertEq(Foo(proxy_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy_).immutableValue(), 456);
         assertEq(Foo(proxy_).value(), 0);
     }
