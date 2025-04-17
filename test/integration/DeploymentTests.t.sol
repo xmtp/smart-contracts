@@ -15,6 +15,7 @@ import { IAppChainParameterRegistry } from "../../src/app-chain/interfaces/IAppC
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
+import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 
 import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
 import {
@@ -25,6 +26,7 @@ import { AppChainParameterRegistryDeployer } from "../../script/deployers/AppCha
 import { AppChainGatewayDeployer } from "../../script/deployers/AppChainGatewayDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
+import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
@@ -50,21 +52,32 @@ contract DeploymentTests is Test {
     bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
+    bytes internal constant _PAYER_REGISTRY_SETTLER_KEY = "xmtp.payerRegistry.settler";
+    bytes internal constant _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
+    bytes internal constant _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
+    bytes internal constant _PAYER_REGISTRY_WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
+
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
     uint256 internal constant _IDENTITY_UPDATE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
+    uint256 internal constant _PAYER_REGISTRY_STARTING_MINIMUM_DEPOSIT = 10_000000;
+    uint256 internal constant _PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD = 2 days;
+
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
     bytes32 internal constant _GATEWAY_PROXY_SALT = bytes32(uint256(1));
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
+    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
 
     uint8 internal constant _RETRYABLE_TICKET_KIND = 9;
 
     address internal _admin = makeAddr("admin");
     address internal _alice = makeAddr("alice");
+    address internal _settler = makeAddr("settler");
+    address internal _feeDistributor = makeAddr("feeDistributor");
 
     uint256 internal _baseForkId;
     uint256 internal _appchainForkId;
@@ -80,6 +93,8 @@ contract DeploymentTests is Test {
 
     IGroupMessageBroadcaster internal _groupMessageBroadcasterProxy;
     IIdentityUpdateBroadcaster internal _identityUpdateBroadcasterProxy;
+
+    IPayerRegistry internal _payerRegistryProxy;
 
     function setUp() external {
         vm.recordLogs();
@@ -166,6 +181,17 @@ contract DeploymentTests is Test {
         _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(
             identityUpdateBroadcasterImplementation_
         );
+
+        // Set the parameters as need for the Payer Registry.
+        _setPayerRegistryStartingParameters();
+
+        // Deploy the Payer Registry on the base (settlement) chain.
+        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
+            address(_settlementChainParameterRegistryProxy),
+            _APPCHAIN_NATIVE_TOKEN
+        );
+
+        _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
     }
 
     /* ============ Factory Deployer Helpers ============ */
@@ -401,6 +427,42 @@ contract DeploymentTests is Test {
         assertEq(broadcaster_.implementation(), implementation_);
     }
 
+    /* ============ Payer Registry Deployer Helpers ============ */
+
+    function _deployPayerRegistryImplementation(
+        address parameterRegistry_,
+        address token_
+    ) internal returns (address implementation_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (implementation_, ) = PayerRegistryDeployer.deployImplementation(
+            address(_settlementChainFactory),
+            parameterRegistry_,
+            token_
+        );
+        vm.stopPrank();
+
+        assertEq(IPayerRegistry(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(IPayerRegistry(implementation_).token(), token_);
+    }
+
+    function _deployPayerRegistryProxy(address implementation_) internal returns (IPayerRegistry registry_) {
+        vm.selectFork(_baseForkId);
+
+        vm.startPrank(_admin);
+        (address proxy_, , ) = PayerRegistryDeployer.deployProxy(
+            address(_settlementChainFactory),
+            implementation_,
+            _PAYER_REGISTRY_PROXY_SALT
+        );
+        vm.stopPrank();
+
+        registry_ = IPayerRegistry(proxy_);
+
+        assertEq(registry_.implementation(), implementation_);
+    }
+
     /* ============ Generic Deployer Helpers ============ */
 
     function _deployImplementation(
@@ -439,6 +501,30 @@ contract DeploymentTests is Test {
         values_[1] = bytes32(_GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
         values_[2] = bytes32(_IDENTITY_UPDATE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE);
         values_[3] = bytes32(_IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
+
+        vm.prank(_admin);
+        _settlementChainParameterRegistryProxy.set(keys_, values_);
+
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
+    }
+
+    function _setPayerRegistryStartingParameters() internal {
+        vm.selectFork(_baseForkId);
+
+        bytes[] memory keys_ = new bytes[](4);
+        keys_[0] = _PAYER_REGISTRY_SETTLER_KEY;
+        keys_[1] = _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY;
+        keys_[2] = _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY;
+        keys_[3] = _PAYER_REGISTRY_WITHDRAW_LOCK_PERIOD_KEY;
+
+        bytes32[] memory values_ = new bytes32[](4);
+        values_[0] = bytes32(uint256(uint160(_settler)));
+        values_[1] = bytes32(uint256(uint160(_feeDistributor)));
+        values_[2] = bytes32(_PAYER_REGISTRY_STARTING_MINIMUM_DEPOSIT);
+        values_[3] = bytes32(_PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD);
 
         vm.prank(_admin);
         _settlementChainParameterRegistryProxy.set(keys_, values_);

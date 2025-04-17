@@ -19,10 +19,9 @@ contract ParameterRegistryTests is Test, Utils {
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.parameterRegistry.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.parameterRegistry.migrator";
 
-    address internal _implementation;
-
     ParameterRegistryHarness internal _registry;
 
+    address internal _implementation;
     address internal _unauthorized = makeAddr("unauthorized");
     address internal _admin1 = address(0x1111111111111111111111111111111111111111);
     address internal _admin2 = address(0x2222222222222222222222222222222222222222);

@@ -23,10 +23,9 @@ contract PayloadBroadcasterTests is Test, Utils {
     bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
     bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.maxPayloadSize";
 
-    address internal _implementation;
-
     PayloadBroadcasterHarness internal _broadcaster;
 
+    address internal _implementation;
     address internal _parameterRegistry;
 
     function setUp() external {

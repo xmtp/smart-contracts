@@ -22,10 +22,9 @@ contract AppChainGatewayTests is Test, Utils {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
 
-    address internal _implementation;
-
     AppChainGatewayHarness internal _gateway;
 
+    address internal _implementation;
     address internal _parameterRegistry;
 
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
