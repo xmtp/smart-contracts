@@ -42,7 +42,7 @@ interface IPayloadBroadcaster is IMigratable {
     /// @notice Thrown when the minimum payload size is invalid.
     error InvalidMinPayloadSize();
 
-    /// @notice Thrown when there is no change.
+    /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
     /// @notice Thrown when the implementation address is zero.

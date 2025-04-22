@@ -196,14 +196,18 @@ contract RateRegistryHarness is RateRegistry {
 contract PayerRegistryHarness is PayerRegistry {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    constructor(address token_) PayerRegistry(token_) {}
+    constructor(address registry_, address token_) PayerRegistry(registry_, token_) {}
 
-    function __pause() external {
-        _pause();
+    function __setSettler(address settler_) external {
+        _getPayerRegistryStorage().settler = settler_;
     }
 
-    function __unpause() external {
-        _unpause();
+    function __setFeeDistributor(address feeDistributor_) external {
+        _getPayerRegistryStorage().feeDistributor = feeDistributor_;
+    }
+
+    function __setPauseStatus(bool paused_) external {
+        _getPayerRegistryStorage().paused = paused_;
     }
 
     function __setMinimumDeposit(uint256 newMinimumDeposit_) external {

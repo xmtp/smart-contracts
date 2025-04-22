@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-interface IPayerRegistry {
+import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+
+interface IPayerRegistry is IMigratable {
     /* ============ Structs ============ */
 
     /**
@@ -20,34 +22,28 @@ interface IPayerRegistry {
     /* ============ Events ============ */
 
     /**
-     * @notice Emitted when the admin is set.
-     * @param  admin The address of the new admin.
-     */
-    event AdminSet(address indexed admin);
-
-    /**
-     * @notice Emitted when the settler is set.
+     * @notice Emitted when the settler is updated.
      * @param  settler The address of the new settler.
      */
-    event SettlerSet(address indexed settler);
+    event SettlerUpdated(address indexed settler);
 
     /**
-     * @notice Emitted when the fee distributor is set.
+     * @notice Emitted when the fee distributor is updated.
      * @param  feeDistributor The address of the new fee distributor.
      */
-    event FeeDistributorSet(address indexed feeDistributor);
+    event FeeDistributorUpdated(address indexed feeDistributor);
 
     /**
-     * @notice Emitted when the minimum deposit is set.
+     * @notice Emitted when the minimum deposit is updated.
      * @param  minimumDeposit The new minimum deposit amount.
      */
-    event MinimumDepositSet(uint96 minimumDeposit);
+    event MinimumDepositUpdated(uint96 minimumDeposit);
 
     /**
-     * @notice Emitted when the withdraw lock period is set.
+     * @notice Emitted when the withdraw lock period is updated.
      * @param  withdrawLockPeriod The new withdraw lock period.
      */
-    event WithdrawLockPeriodSet(uint32 withdrawLockPeriod);
+    event WithdrawLockPeriodUpdated(uint32 withdrawLockPeriod);
 
     /**
      * @notice Emitted when a deposit of tokens occurs for a payer.
@@ -89,19 +85,22 @@ interface IPayerRegistry {
      */
     event FeesTransferred(uint96 amount);
 
-    /* ============ Custom Errors ============ */
+    /**
+     * @notice Emitted when the pause status is set.
+     * @param  paused The new pause status.
+     */
+    event PauseStatusUpdated(bool indexed paused);
 
-    /// @notice Error thrown when caller is not the admin.
-    error NotAdmin();
+    /* ============ Custom Errors ============ */
 
     /// @notice Error thrown when caller is not the settler.
     error NotSettler();
 
+    /// @notice Error thrown when the parameter registry address is being set to 0x0.
+    error ZeroParameterRegistryAddress();
+
     /// @notice Error thrown when the token address is being set to 0x0.
     error ZeroTokenAddress();
-
-    /// @notice Error thrown when the admin address is being set to 0x0.
-    error ZeroAdminAddress();
 
     /// @notice Error thrown when the settler address is being set to 0x0.
     error ZeroSettlerAddress();
@@ -109,8 +108,8 @@ interface IPayerRegistry {
     /// @notice Error thrown when the fee distributor address is being set to 0x0.
     error ZeroFeeDistributorAddress();
 
-    /// @notice Error thrown when the implementation address is being set to 0x0.
-    error ZeroImplementationAddress();
+    /// @notice Error thrown when the minimum deposit is being set to 0.
+    error ZeroMinimumDeposit();
 
     /// @notice Error thrown when a `transfer` of tokens fails.
     error ERC20TransferFailed();
@@ -150,23 +149,18 @@ interface IPayerRegistry {
     /// @notice Error thrown when trying to finalize a withdrawal while in debt.
     error PayerInDebt();
 
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
+
+    /// @notice Thrown when the payer registry is paused.
+    error Paused();
+
     /* ============ Initialization ============ */
 
     /**
      * @notice Initializes the contract.
-     * @param  admin_              The address of the admin.
-     * @param  settler_            The address of the settler.
-     * @param  feeDistributor_     The address of the fee distributor.
-     * @param  minimumDeposit_     The minimum deposit amount.
-     * @param  withdrawLockPeriod_ The withdraw lock period.
      */
-    function initialize(
-        address admin_,
-        address settler_,
-        address feeDistributor_,
-        uint96 minimumDeposit_,
-        uint32 withdrawLockPeriod_
-    ) external;
+    function initialize() external;
 
     /* ============ Interactive Functions ============ */
 
@@ -205,51 +199,55 @@ interface IPayerRegistry {
      */
     function settleUsage(address[] calldata payers_, uint96[] calldata fees_) external;
 
-    /* ============ Admin functionality ============ */
-
-    /// @notice Pauses the contract, restricting certain actions.
-    function pause() external;
-
-    /// @notice Unpauses the contract, allowing normal operations.
-    function unpause() external;
+    /**
+     * @notice Updates the settler of the contract.
+     * @dev    Ensures the new settler is not zero.
+     */
+    function updateSettler() external;
 
     /**
-     * @notice Sets the admin of the contract.
-     * @param  newAdmin_ The address of the new admin.
+     * @notice Updates the fee distributor of the contract.
+     * @dev    Ensures the new fee distributor is not zero.
      */
-    function setAdmin(address newAdmin_) external;
+    function updateFeeDistributor() external;
 
     /**
-     * @notice Sets the settler of the contract.
-     * @param  newSettler_ The address of the new settler.
+     * @notice Updates the minimum deposit amount.
+     * @dev    Ensures the new minimum deposit is not zero.
      */
-    function setSettler(address newSettler_) external;
+    function updateMinimumDeposit() external;
 
-    /**
-     * @notice Sets the fee distributor of the contract.
-     * @param  newFeeDistributor_ The address of the new fee distributor.
-     */
-    function setFeeDistributor(address newFeeDistributor_) external;
+    /// @notice Updates the withdraw lock period.
+    function updateWithdrawLockPeriod() external;
 
-    /**
-     * @notice Sets the minimum deposit amount.
-     * @param  newMinimumDeposit_ The new minimum deposit amount.
-     */
-    function setMinimumDeposit(uint96 newMinimumDeposit_) external;
-
-    /**
-     * @notice Sets the withdraw lock period.
-     * @param  newWithdrawLockPeriod_ The new withdraw lock period.
-     */
-    function setWithdrawLockPeriod(uint32 newWithdrawLockPeriod_) external;
+    /// @notice Updates the pause status.
+    function updatePauseStatus() external;
 
     /* ============ View/Pure Functions ============ */
 
+    /// @notice The parameter registry key for the settler.
+    function settlerParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key for the fee distributor.
+    function feeDistributorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key for the minimum deposit.
+    function minimumDepositParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key for the withdraw lock period.
+    function withdrawLockPeriodParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key for the paused status.
+    function pausedParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key for the migrator.
+    function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The address of the parameter registry.
+    function parameterRegistry() external view returns (address parameterRegistry_);
+
     /// @notice The address of the token contract used for deposits and withdrawals.
     function token() external view returns (address token_);
-
-    /// @notice The address of the admin that can call admin functions.
-    function admin() external view returns (address admin_);
 
     /// @notice The address of the settler that can call `settleUsage`.
     function settler() external view returns (address settler_);
@@ -259,6 +257,9 @@ interface IPayerRegistry {
 
     /// @notice The sum of all payer balances and pending withdrawals.
     function totalDeposits() external view returns (int104 totalDeposits_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
 
     /// @notice The sum of all payer debts.
     function totalDebt() external view returns (uint96 totalDebt_);

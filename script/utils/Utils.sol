@@ -32,6 +32,9 @@ library Utils {
         bytes32 rateRegistrySalt;
         address rateRegistryAdmin;
         address rateRegistryProxy;
+        address payerRegistryImplementation;
+        bytes32 payerRegistrySalt;
+        address payerRegistryProxy;
     }
 
     error InvalidProxyAddress(string outputJson_);
@@ -56,6 +59,7 @@ library Utils {
     string internal constant IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON = "IdentityUpdateBroadcaster";
     string internal constant NODE_REGISTRY_OUTPUT_JSON = "NodeRegistry";
     string internal constant RATE_REGISTRY_OUTPUT_JSON = "RateRegistry";
+    string internal constant PAYER_REGISTRY_OUTPUT_JSON = "PayerRegistry";
 
     function readInput(string memory inputFileName_) internal view returns (string memory input_) {
         string memory file_ = getInputPath(inputFileName_);

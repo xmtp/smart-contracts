@@ -25,10 +25,9 @@ contract RateRegistryTests is Test, Utils {
     uint64 constant CONGESTION_FEE = 300;
     uint64 constant TARGET_RATE_PER_MINUTE = 100 * 60;
 
-    address implementation;
-
     RateRegistryHarness registry;
 
+    address implementation;
     address admin = makeAddr("admin");
     address unauthorized = makeAddr("unauthorized");
 
