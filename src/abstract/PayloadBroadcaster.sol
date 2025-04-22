@@ -52,6 +52,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
      */
     constructor(address parameterRegistry_) {
         require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        _disableInitializers();
     }
 
     /* ============ Initialization ============ */

@@ -19,7 +19,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
     error ParameterRegistryProxyNotSet();
     error GatewayProxyNotSet();
     error AppChainNativeTokenNotSet();
-    error GatewayProxySaltNotSet();
+    error ProxySaltNotSet();
 
     function deployImplementation() public {
         require(_deploymentData.settlementChainGatewayImplementation != address(0), ImplementationNotSet());
@@ -73,7 +73,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
         require(_deploymentData.gatewayProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.settlementChainGatewayImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.gatewayProxySalt != bytes32(0), GatewayProxySaltNotSet());
+        require(_deploymentData.gatewayProxySalt != bytes32(0), ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -118,7 +118,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.gatewayProxySalt != bytes32(0), GatewayProxySaltNotSet());
+        require(_deploymentData.gatewayProxySalt != bytes32(0), ProxySaltNotSet());
 
         address proxy_ = SettlementChainGatewayDeployer.getProxy(
             _deploymentData.factory,

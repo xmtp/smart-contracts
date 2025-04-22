@@ -19,13 +19,13 @@
     "identityUpdateBroadcasterImplementation": "0x0000000000000000000000000000000000000000",
     "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
     "identityUpdateBroadcasterProxy": "0x0000000000000000000000000000000000000000",
-    "nodeRegistryAdmin": "0x0000000000000000000000000000000000000000",
     "nodeRegistryImplementation": "0x0000000000000000000000000000000000000000",
+    "nodeRegistryProxySalt": "NodeRegistry_0",
+    "nodeRegistryProxy": "0x0000000000000000000000000000000000000000",
     "rateRegistryImplementation": "0x0000000000000000000000000000000000000000",
-    "rateRegistrySalt": "RateRegistry_0",
-    "rateRegistryAdmin": "0x0000000000000000000000000000000000000000",
+    "rateRegistryProxySalt": "RateRegistry_0",
     "rateRegistryProxy": "0x0000000000000000000000000000000000000000",
     "payerRegistryImplementation": "0x0000000000000000000000000000000000000000",
-    "payerRegistrySalt": "PayerRegistry_0",
+    "payerRegistryProxySalt": "PayerRegistry_0",
     "payerRegistryProxy": "0x0000000000000000000000000000000000000000"
 }
