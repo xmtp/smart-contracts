@@ -5,6 +5,8 @@ import { console } from "../lib/forge-std/src/Script.sol";
 
 import { RateRegistryDeployer } from "./deployers/RateRegistryDeployer.sol";
 
+import { IRateRegistry } from "../src/settlement-chain/interfaces/IRateRegistry.sol";
+
 import { ScriptBase } from "./ScriptBase.s.sol";
 import { Utils } from "./utils/Utils.sol";
 
@@ -14,20 +16,27 @@ contract RateRegistryScripts is ScriptBase {
     error UnexpectedImplementation();
     error UnexpectedProxy();
     error FactoryNotSet();
-    error AdminNotSet();
     error RateRegistrySaltNotSet();
+    error ParameterRegistryProxyNotSet();
 
     function deployImplementation() public {
         require(_deploymentData.rateRegistryImplementation != address(0), ImplementationNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
+        require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = RateRegistryDeployer.deployImplementation(
-            _deploymentData.factory
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy
         );
 
         require(implementation_ == _deploymentData.rateRegistryImplementation, UnexpectedImplementation());
+
+        require(
+            IRateRegistry(implementation_).parameterRegistry() == _deploymentData.parameterRegistryProxy,
+            UnexpectedImplementation()
+        );
 
         vm.stopBroadcast();
 
@@ -47,7 +56,6 @@ contract RateRegistryScripts is ScriptBase {
         require(_deploymentData.rateRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.rateRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.rateRegistryAdmin != address(0), AdminNotSet());
         require(_deploymentData.rateRegistrySalt != bytes32(0), RateRegistrySaltNotSet());
 
         vm.startBroadcast(_privateKey);
@@ -55,11 +63,15 @@ contract RateRegistryScripts is ScriptBase {
         (address proxy_, bytes memory constructorArguments_, ) = RateRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.rateRegistryImplementation,
-            _deploymentData.rateRegistrySalt,
-            _deploymentData.rateRegistryAdmin
+            _deploymentData.rateRegistrySalt
         );
 
         require(proxy_ == _deploymentData.rateRegistryProxy, UnexpectedProxy());
+
+        require(
+            IRateRegistry(proxy_).implementation() == _deploymentData.rateRegistryImplementation,
+            UnexpectedProxy()
+        );
 
         vm.stopBroadcast();
 
@@ -70,8 +82,12 @@ contract RateRegistryScripts is ScriptBase {
 
     function getImplementation() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
+        require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
 
-        address implementation_ = RateRegistryDeployer.getImplementation(_deploymentData.factory);
+        address implementation_ = RateRegistryDeployer.getImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy
+        );
 
         console.log("Implementation: %s", implementation_);
     }
