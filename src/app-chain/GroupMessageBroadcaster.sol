@@ -7,12 +7,15 @@ import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
 
 import { IGroupMessageBroadcaster } from "./interfaces/IGroupMessageBroadcaster.sol";
 
-/// @title XMTP Group Message Broadcaster Contract
+/**
+ * @title  Implementation for an App Chain Group Message Broadcaster.
+ * @notice A GroupMessageBroadcaster is a group message payload broadcaster on an app chain.
+ */
 contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for immutables.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
      */
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -23,7 +26,6 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
     function addMessage(bytes32 groupId_, bytes calldata message_) external whenNotPaused {
         _revertIfInvalidPayloadSize(message_.length);
 
-        // Increment sequence ID safely using unchecked to save gas.
         unchecked {
             emit MessageSent(groupId_, message_, ++_getPayloadBroadcasterStorage().sequenceId);
         }

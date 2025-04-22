@@ -3,6 +3,10 @@ pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
+/**
+ * @title  Interface for the Rate Registry.
+ * @notice This interface exposes functionality for updating the rates, tracking them historically.
+ */
 interface IRateRegistry is IMigratable {
     /* ============ Structs ============ */
 
@@ -42,8 +46,8 @@ interface IRateRegistry is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when the parameter registry address is being set to 0x0.
-    error ZeroParameterRegistryAddress();
+    /// @notice Error thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    error ZeroParameterRegistry();
 
     /// @notice Thrown when the `fromIndex` is out of range.
     error FromIndexOutOfRange();
@@ -82,19 +86,19 @@ interface IRateRegistry is IMigratable {
     /// @notice The total number of Rates stored.
     function getRatesCount() external view returns (uint256 count_);
 
-    /// @notice The parameter registry key for the message fee.
+    /// @notice The parameter registry key used to fetch the message fee.
     function messageFeeParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the storage fee.
+    /// @notice The parameter registry key used to fetch the storage fee.
     function storageFeeParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the congestion fee.
+    /// @notice The parameter registry key used to fetch the congestion fee.
     function congestionFeeParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the rate per minute.
+    /// @notice The parameter registry key used to fetch the target rate per minute.
     function targetRatePerMinuteParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the migrator.
+    /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.

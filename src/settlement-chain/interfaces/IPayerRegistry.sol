@@ -3,6 +3,13 @@ pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 
+/**
+ * @title  Interface for the Payer Registry.
+ * @notice This interfaces exposes functionality:
+ *           - for payers to deposit, request withdrawals, and finalize withdrawals of an ERC20 token,
+ *           - for some settler contract to settle usage fees for payers,
+ *           - anyone to send excess tokens in the contract to the fee distributor.
+ */
 interface IPayerRegistry is IMigratable {
     /* ============ Structs ============ */
 
@@ -75,7 +82,7 @@ interface IPayerRegistry is IMigratable {
     /**
      * @notice Emitted when a payer's usage is settled.
      * @param  payer  The address of the payer.
-     * @param  amount The amount of tokens settled (the fee deducted form their balance).
+     * @param  amount The amount of tokens settled (the fee deducted from their balance).
      */
     event UsageSettled(address indexed payer, uint96 amount);
 
@@ -93,22 +100,22 @@ interface IPayerRegistry is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when caller is not the settler.
+    /// @notice Thrown when caller is not the settler.
     error NotSettler();
 
-    /// @notice Error thrown when the parameter registry address is being set to 0x0.
-    error ZeroParameterRegistryAddress();
+    /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    error ZeroParameterRegistry();
 
-    /// @notice Error thrown when the token address is being set to 0x0.
-    error ZeroTokenAddress();
+    /// @notice Thrown when the token address is being set to zero (i.e. address(0)).
+    error ZeroToken();
 
-    /// @notice Error thrown when the settler address is being set to 0x0.
-    error ZeroSettlerAddress();
+    /// @notice Thrown when the settler address is being set to zero (i.e. address(0)).
+    error ZeroSettler();
 
-    /// @notice Error thrown when the fee distributor address is 0x0.
-    error ZeroFeeDistributorAddress();
+    /// @notice Thrown when the fee distributor address is zero (i.e. address(0)).
+    error ZeroFeeDistributor();
 
-    /// @notice Error thrown when the minimum deposit is being set to 0.
+    /// @notice Thrown when the minimum deposit is being set to 0.
     error ZeroMinimumDeposit();
 
     /**
@@ -124,35 +131,35 @@ interface IPayerRegistry is IMigratable {
     error TransferFromFailed();
 
     /**
-     * @notice Error thrown when the deposit amount is less than the minimum deposit.
+     * @notice Thrown when the deposit amount is less than the minimum deposit.
      * @param  amount         The amount of tokens being deposited.
      * @param  minimumDeposit The minimum deposit amount.
      */
     error InsufficientDeposit(uint96 amount, uint96 minimumDeposit);
 
-    /// @notice Error thrown when a payer has insufficient balance for a withdrawal request.
+    /// @notice Thrown when a payer has insufficient balance for a withdrawal request.
     error InsufficientBalance();
 
-    /// @notice Error thrown when for a withdrawal request of 0.
+    /// @notice Thrown when for a withdrawal request of 0.
     error ZeroWithdrawalAmount();
 
-    /// @notice Error thrown when a withdrawal is pending for a payer.
+    /// @notice Thrown when a withdrawal is pending for a payer.
     error PendingWithdrawalExists();
 
-    /// @notice Error thrown when a withdrawal is not pending for a payer.
+    /// @notice Thrown when a withdrawal is not pending for a payer.
     error NoPendingWithdrawal();
 
     /**
-     * @notice Error thrown when trying to finalize a withdrawal before the withdraw lock period has passed.
+     * @notice Thrown when trying to finalize a withdrawal before the withdraw lock period has passed.
      * @param  timestamp             The current timestamp.
      * @param  withdrawableTimestamp The timestamp when the withdrawal can be finalized.
      */
     error WithdrawalNotReady(uint32 timestamp, uint32 withdrawableTimestamp);
 
-    /// @notice Error thrown when the lengths or array arguments do not match.
+    /// @notice Thrown when the lengths or array arguments do not match.
     error ArrayLengthMismatch();
 
-    /// @notice Error thrown when trying to finalize a withdrawal while in debt.
+    /// @notice Thrown when trying to finalize a withdrawal while in debt.
     error PayerInDebt();
 
     /// @notice Thrown when there is no change to an updated parameter.
@@ -189,6 +196,7 @@ interface IPayerRegistry is IMigratable {
     /**
      * @notice Requests a withdrawal of `amount` tokens.
      * @param  amount_ The amount of tokens to withdraw.
+     * @dev    The caller must have enough balance to cover the withdrawal.
      */
     function requestWithdrawal(uint96 amount_) external;
 
@@ -198,6 +206,7 @@ interface IPayerRegistry is IMigratable {
     /**
      * @notice Finalizes a pending withdrawal of tokens, transferring the amount to the recipient.
      * @param  recipient_ The address to receive the withdrawn tokens.
+     * @dev    The caller must not be currently in debt.
      */
     function finalizeWithdrawal(address recipient_) external;
 
@@ -216,19 +225,19 @@ interface IPayerRegistry is IMigratable {
 
     /**
      * @notice Updates the settler of the contract.
-     * @dev    Ensures the new settler is not zero.
+     * @dev    Ensures the new settler is not zero (i.e. address(0)).
      */
     function updateSettler() external;
 
     /**
      * @notice Updates the fee distributor of the contract.
-     * @dev    Ensures the new fee distributor is not zero.
+     * @dev    Ensures the new fee distributor is not zero (i.e. address(0)).
      */
     function updateFeeDistributor() external;
 
     /**
      * @notice Updates the minimum deposit amount.
-     * @dev    Ensures the new minimum deposit is not zero.
+     * @dev    Ensures the new minimum deposit is not zero (i.e. address(0)).
      */
     function updateMinimumDeposit() external;
 
@@ -240,22 +249,22 @@ interface IPayerRegistry is IMigratable {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The parameter registry key for the settler.
+    /// @notice The parameter registry key used to fetch the settler.
     function settlerParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the fee distributor.
+    /// @notice The parameter registry key used to fetch the fee distributor.
     function feeDistributorParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the minimum deposit.
+    /// @notice The parameter registry key used to fetch the minimum deposit.
     function minimumDepositParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the withdraw lock period.
+    /// @notice The parameter registry key used to fetch the withdraw lock period.
     function withdrawLockPeriodParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the paused status.
+    /// @notice The parameter registry key used to fetch the paused status.
     function pausedParameterKey() external pure returns (bytes memory key_);
 
-    /// @notice The parameter registry key for the migrator.
+    /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.

@@ -43,8 +43,8 @@ contract PayloadBroadcasterTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(IPayloadBroadcaster.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(IPayloadBroadcaster.ZeroParameterRegistry.selector);
         new PayloadBroadcasterHarness(address(0));
     }
 
@@ -196,6 +196,7 @@ contract PayloadBroadcasterTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );

@@ -12,19 +12,19 @@ import { Migratable } from "../abstract/Migratable.sol";
 // TODO: `nodeOperatorCommissionPercent` (and thus `MAX_BPS`) likely does not belong in this contract.
 
 /**
- * @title XMTP Nodes Registry
+ * @title  Implementation of the Node Registry
  *
  * @notice This contract is responsible for minting NFTs and assigning them to node operators.
- * Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
- * In addition to the standard ERC721 functionality, the contract supports node-specific features,
- * including node property updates.
+ *         Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
+ *         In addition to the standard ERC721 functionality, the contract supports node-specific features,
+ *         including node property updates.
  *
- * @dev All nodes on the network periodically check this contract to determine which nodes they should connect to.
- * The contract owner is responsible for:
- *   - minting and transferring NFTs to node operators.
- *   - updating the node operator's HTTP address and MTLS certificate.
- *   - updating the node operator's minimum monthly fee.
- *   - updating the node operator's API enabled flag.
+ * @dev    All nodes on the network periodically check this contract to determine which nodes they should connect to.
+ *         The contract owner is responsible for:
+ *           - minting and transferring NFTs to node operators.
+ *           - updating the node operator's HTTP address and MTLS certificate.
+ *           - updating the node operator's minimum monthly fee.
+ *           - updating the node operator's API enabled flag.
  */
 contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /* ============ Constants/Immutables ============ */
@@ -37,11 +37,23 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     bytes1 internal constant _FORWARD_SLASH = 0x2f;
 
+    /// @inheritdoc INodeRegistry
     address public immutable parameterRegistry;
 
     /* ============ UUPS Storage ============ */
 
-    /// @custom:storage-location erc7201:xmtp.storage.NodeRegistry
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.NodeRegistry
+     * @notice The UUPS storage for the node registry.
+     * @param  baseURI                       The base component of the token URI.
+     * @param  maxCanonicalNodes             The maximum number of canonical nodes.
+     * @param  canonicalNodesCount           The current number of canonical nodes.
+     * @param  nodeCount                     The current number of nodes.
+     * @param  nodeOperatorCommissionPercent The node operator commission percentage.
+     * @param  nodes                         A mapping of node/token IDs to nodes.
+     * @param  admin                         The admin address.
+     * @param  nodeManager                   The node manager address.
+     */
     struct NodeRegistryStorage {
         string baseURI;
         uint8 maxCanonicalNodes;
@@ -79,11 +91,13 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /* ============ Constructor ============ */
 
     /**
-     * @notice Constructor for the NodeRegistry contract.
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
+     * @dev    The parameter registry must not be the zero address.
+     * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistryAddress());
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
         _disableInitializers();
     }
 
@@ -112,8 +126,11 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        nodeId_ = uint256(++$.nodeCount) * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
+        unchecked {
+            nodeId_ = uint256(++$.nodeCount) * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
+        }
 
+        // Nodes start off as non-canonical.
         $.nodes[nodeId_] = Node(signingKeyPub_, httpAddress_, false, minMonthlyFee_);
 
         _mint(to_, nodeId_);
@@ -123,7 +140,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function addToNetwork(uint256 nodeId_) external onlyAdmin {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
@@ -137,7 +154,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function removeFromNetwork(uint256 nodeId_) external onlyAdmin {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
@@ -174,14 +191,14 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function setHttpAddress(uint256 nodeId_, string calldata httpAddress_) external onlyNodeManager {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
         require(bytes(httpAddress_).length > 0, InvalidHttpAddress());
         emit HttpAddressUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].httpAddress = httpAddress_);
     }
 
     /// @inheritdoc INodeRegistry
     function setMinMonthlyFee(uint256 nodeId_, uint256 minMonthlyFee_) external onlyNodeManager {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
         emit MinMonthlyFeeUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].minMonthlyFee = minMonthlyFee_);
     }
 
@@ -214,7 +231,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
     }
 
-    /* ============ Getters ============ */
+    /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc INodeRegistry
     function admin() external view returns (address admin_) {
@@ -275,13 +292,13 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function getNode(uint256 nodeId_) external view returns (Node memory node_) {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
         return _getNodeRegistryStorage().nodes[nodeId_];
     }
 
     /// @inheritdoc INodeRegistry
     function getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_) {
-        _requireOwned(nodeId_);
+        _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
         return _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
     }
 
@@ -306,6 +323,10 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         }
     }
 
+    /**
+     * @dev Overrides the `ERC721Upgradeable._isAuthorized` function to allow the node manager to transfer a token on
+     *      behalf of any nodeId/tokenId. If the spender is not the node manager, default ERC721 permissioning is used.
+     */
     function _isAuthorized(
         address owner_,
         address spender_,

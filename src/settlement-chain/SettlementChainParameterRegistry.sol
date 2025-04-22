@@ -6,6 +6,11 @@ import { IParameterRegistry } from "../abstract/interfaces/IParameterRegistry.so
 
 import { ParameterRegistry } from "../abstract/ParameterRegistry.sol";
 
+/**
+ * @title  Implementation for a Settlement Chain Parameter Registry.
+ * @notice A SettlementChainParameterRegistry is a parameter registry used by the protocol contracts on the settlement
+ *         chain.
+ */
 contract SettlementChainParameterRegistry is ISettlementChainParameterRegistry, ParameterRegistry {
     /* ============ View/Pure Functions ============ */
 

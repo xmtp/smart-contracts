@@ -4,18 +4,19 @@ pragma solidity 0.8.28;
 // TODO: `calculateRetryableSubmissionFee` might actually be part of the counterpart inbox. Investigate.
 
 /**
- * @title  IERC20Like
- * @notice Subset interface for ERC20 tokens.
+ * @title  Subset interface for ERC20 tokens.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IERC20Like {
     function balanceOf(address account) external view returns (uint256 balance);
 }
 
 /**
- * @title  IERC20InboxLike
- * @notice Subset interface for Arbitrum ERC20-based Inbox.
+ * @title  Subset interface for Arbitrum ERC20-based Inbox.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IERC20InboxLike {
+    /// @notice Sends a contract transaction to the L2 inbox, with a single-try execution on the L3.
     function sendContractTransaction(
         uint256 gasLimit_,
         uint256 maxFeePerGas_,
@@ -25,7 +26,7 @@ interface IERC20InboxLike {
     ) external returns (uint256 messageNumber_);
 
     /**
-     * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts.
+     * @notice Put a message in the L2 inbox that can be re-executed for some fixed amount of time if it reverts.
      * @dev    All tokenTotalFeeAmount will be deposited to callValueRefundAddress on L2.
      * @dev    Gas limit and maxFeePerGas should not be set to 1 as that is used to trigger the RetryableData error
      * @dev    In case of native token having non-18 decimals: tokenTotalFeeAmount is denominated in native token's
@@ -61,8 +62,10 @@ interface IERC20InboxLike {
         bytes calldata data_
     ) external returns (uint256 messageNumber_);
 
+    /// @notice Deposits an ERC20 token into the L2 inbox, to be sent to the L3 where it is the gas token of that chain.
     function depositERC20(uint256 amount_) external returns (uint256 messageNumber_);
 
+    /// @notice Calculates the submission fee for a retryable ticket.
     function calculateRetryableSubmissionFee(
         uint256 dataLength_,
         uint256 baseFee_
@@ -70,16 +73,16 @@ interface IERC20InboxLike {
 }
 
 /**
- * @title  IAppChainGatewayLike
- * @notice Subset interface for an AppChainGateway.
+ * @title  Subset interface for an AppChainGateway.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IAppChainGatewayLike {
     function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
 }
 
 /**
- * @title  IParameterRegistryLike
- * @notice Subset interface for a ParameterRegistry.
+ * @title  Subset interface for a ParameterRegistry.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IParameterRegistryLike {
     function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);

@@ -54,18 +54,18 @@ contract SettlementChainGatewayTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(ISettlementChainGateway.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(ISettlementChainGateway.ZeroParameterRegistry.selector);
         new SettlementChainGatewayHarness(address(0), address(0), address(0));
     }
 
-    function test_constructor_zeroAppChainGatewayAddress() external {
-        vm.expectRevert(ISettlementChainGateway.ZeroAppChainGatewayAddress.selector);
+    function test_constructor_zeroAppChainGateway() external {
+        vm.expectRevert(ISettlementChainGateway.ZeroAppChainGateway.selector);
         new SettlementChainGatewayHarness(_parameterRegistry, address(0), _appChainNativeToken);
     }
 
-    function test_constructor_zeroAppChainNativeTokenAddress() external {
-        vm.expectRevert(ISettlementChainGateway.ZeroAppChainNativeTokenAddress.selector);
+    function test_constructor_zeroAppChainNativeToken() external {
+        vm.expectRevert(ISettlementChainGateway.ZeroAppChainNativeToken.selector);
         new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, address(0));
     }
 
@@ -313,6 +313,7 @@ contract SettlementChainGatewayTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );

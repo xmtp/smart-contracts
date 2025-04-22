@@ -42,13 +42,13 @@ contract AppChainGatewayTests is Test, Utils {
 
     /* ============ constructor ============ */
 
-    function test_constructor_zeroParameterRegistryAddress() external {
-        vm.expectRevert(IAppChainGateway.ZeroParameterRegistryAddress.selector);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(IAppChainGateway.ZeroParameterRegistry.selector);
         new AppChainGatewayHarness(address(0), address(0));
     }
 
-    function test_constructor_zeroSettlementChainGatewayAddress() external {
-        vm.expectRevert(IAppChainGateway.ZeroSettlementChainGatewayAddress.selector);
+    function test_constructor_zeroSettlementChainGateway() external {
+        vm.expectRevert(IAppChainGateway.ZeroSettlementChainGateway.selector);
         new AppChainGatewayHarness(_parameterRegistry, address(0));
     }
 
@@ -129,6 +129,7 @@ contract AppChainGatewayTests is Test, Utils {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IMigratable.MigrationFailed.selector,
+                migrator_,
                 abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
             )
         );
