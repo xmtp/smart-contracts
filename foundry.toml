@@ -6,14 +6,15 @@ out = "out"
 libs = ["lib"]
 gas_reports = ["*"]
 optimizer = true
-optimizer_runs = 10_000
+optimizer_runs = 999_999
 fs_permissions = [
     { access = "read-write", path = "deployments/anvil_localnet"},
     { access = "read-write", path = "deployments/xmtp_testnet"},
     { access = "read-write", path = "deployments/xmtp_testnet-playground"},
     { access = "read-write", path = "deployments/xmtp_testnet-staging"},
     { access = "read-write", path = "deployments/base_sepolia"},
-    { access = "read-write", path = "deployments/unknown"}
+    { access = "read-write", path = "deployments/unknown"},
+    { access = "read", path = "config"}
 ]
 
 [profile.default.fuzz]
@@ -21,3 +22,7 @@ runs = 1_000
 
 [profile.ci.fuzz]
 runs = 10_000
+
+[rpc_endpoints]
+base_sepolia = "${BASE_TESTNET_RPC_URL}"
+xmtp_testnet = "${XMTP_TESTNET_RPC_URL}"

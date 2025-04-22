@@ -1,6 +1,6 @@
 {
     "name": "@xmtp/smart-contracts",
-    "version": "0.2.2",
+    "version": "0.4.0",
     "description": "XMTP Smart Contracts",
     "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
     "repository": {
@@ -14,18 +14,22 @@
     "scripts": {
         "build": "forge build",
         "clean": "forge clean",
-        "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 2000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
+        "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 3000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
         "gas-report": "forge test --gas-report --gas-limit 2000000000 > gasreport.ansi",
         "doc": "forge doc --serve --port 4000",
         "lint-staged": "lint-staged",
         "prettier": "prettier --write 'script/**/*.sol' 'src/**/*.sol' 'test/**/*.sol'",
         "prettier-check": "prettier --check 'script/**/*.sol' 'src/**/*.sol' 'test/**/*.sol'",
-        "slither": "forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
+        "slither": "forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --sarif output.sarif --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
         "solhint": "solhint -f stylish 'src/**/*.sol'",
         "solhint-fix": "solhint --fix 'src/**/*.sol'",
         "test": "forge test"
     },
     "devDependencies": {
+        "@arbitrum/sdk": "^4.0.3",
+        "@ethersproject/bignumber": "^5.8.0",
+        "dotenv": "^16.4.7",
+        "ethers": "5.8.0",
         "lint-staged": "^15.5.0",
         "prettier": "^3.5.3",
         "prettier-plugin-solidity": "^1.4.2",
