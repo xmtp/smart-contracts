@@ -31,6 +31,9 @@ library SequentialMerkleProofs {
     /// @notice Thrown when the proof is invalid.
     error InvalidProof();
 
+    /// @notice Thrown when no proof elements are provided.
+    error NoProofElements();
+
     /* ============ Main Functions ============ */
 
     /**
@@ -64,8 +67,6 @@ library SequentialMerkleProofs {
         bytes[] calldata leaves_,
         uint256[] calldata proofElements_
     ) internal pure returns (uint256 root_) {
-        require(leaves_.length > 0, NoLeaves());
-
         return _getRoot(startingIndex_, _getReversedLeafNodesFromLeaves(leaves_), proofElements_);
     }
 
@@ -114,6 +115,11 @@ library SequentialMerkleProofs {
         return n_ + 1;
     }
 
+    /**
+     * @notice Gets the balanced leaf count for a sequential merkle proof.
+     * @param  leafCount_         The number of leaves in the merkle tree.
+     * @return balancedLeafCount_ The balanced leaf count.
+     */
     function _getBalancedLeafCount(uint256 leafCount_) internal pure returns (uint256 balancedLeafCount_) {
         require(leafCount_ != 0, NoLeaves());
 
@@ -132,6 +138,10 @@ library SequentialMerkleProofs {
         uint256[] memory hashes_,
         uint256[] calldata proofElements_
     ) internal pure returns (uint256 root_) {
+        require(hashes_.length > 0, NoLeaves());
+        require(proofElements_.length > 0, NoProofElements());
+        require(startingIndex_ + hashes_.length <= proofElements_[0], InvalidProof());
+
         uint256 count_ = hashes_.length;
         uint256[] memory treeIndices_ = new uint256[](count_);
 
@@ -227,33 +237,55 @@ library SequentialMerkleProofs {
         return _isEven(nodeIndex_) || (nextNodeIndex_ == nodeIndex_ - 1);
     }
 
-    function _hashLeaf(bytes calldata leaf_) internal pure returns (uint256 node_) {
+    /**
+     * @notice Hashes a leaf of arbitrary size into a 32-byte leaf node.
+     * @param  leaf_ The leaf to hash.
+     * @return hash_ The hash of the leaf.
+     */
+    function _hashLeaf(bytes calldata leaf_) internal pure returns (uint256 hash_) {
         return uint256(keccak256(abi.encodePacked(LEAF_PREFIX, leaf_)));
     }
 
+    /**
+     * @notice Hashes a pair of 32-byte nodes into a 32-byte parent node.
+     * @param  leftNode_  The left node to hash.
+     * @param  rightNode_ The right node to hash.
+     * @return hash_      The hash of the pair of nodes.
+     */
     function _hashNodePair(uint256 leftNode_, uint256 rightNode_) internal pure returns (uint256 hash_) {
         return uint256(keccak256(abi.encodePacked(NODE_PREFIX, leftNode_, rightNode_)));
     }
 
+    /**
+     * @notice Hashes a 32-byte node, without a right paired node, into a 32-byte parent node.
+     * @param  node_ The node to hash.
+     * @return hash_ The hash of the node.
+     */
     function _hashPairlessNode(uint256 node_) internal pure returns (uint256 hash_) {
         return uint256(keccak256(abi.encodePacked(NODE_PREFIX, node_)));
     }
 
-    function _hashRoot(uint256 leafCount_, uint256 root_) internal pure returns (uint256 hash_) {
-        return uint256(keccak256(abi.encodePacked(ROOT_PREFIX, leafCount_, root_)));
+    /**
+     * @notice Hashes the topmost 32-byte node in the tree, combined with the tree's lead count, into a 32-byte root.
+     * @param  leafCount_ The number of leaves in the merkle tree.
+     * @param  node_      The topmost node in the tree.
+     * @return hash_      The root hash of the tree.
+     */
+    function _hashRoot(uint256 leafCount_, uint256 node_) internal pure returns (uint256 hash_) {
+        return uint256(keccak256(abi.encodePacked(ROOT_PREFIX, leafCount_, node_)));
     }
 
-    /// @notice Get leaf nodes from bytes leaves in calldata, in reverse order.
+    /// @notice Get leaf nodes from arbitrary size leaves in calldata, in reverse order.
     function _getReversedLeafNodesFromLeaves(
         bytes[] calldata leaves_
     ) internal pure returns (uint256[] memory leafNodes_) {
         uint256 count_ = leaves_.length;
         leafNodes_ = new uint256[](count_);
-        uint256 readIndex = count_;
-        uint256 writeIndex;
+        uint256 readIndex_ = count_;
+        uint256 writeIndex_;
 
-        while (writeIndex < count_) {
-            leafNodes_[writeIndex++] = _hashLeaf(leaves_[--readIndex]);
+        while (writeIndex_ < count_) {
+            leafNodes_[writeIndex_++] = _hashLeaf(leaves_[--readIndex_]);
         }
     }
 }

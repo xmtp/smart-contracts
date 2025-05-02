@@ -381,7 +381,7 @@ contract SequentialMerkleProofsTests is Test {
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
         _sequentialMerkleProofs.verify(root_ + 1, startingIndex_, leaves_, proofElements_);
 
-        vm.expectRevert(stdError.indexOOBError);
+        vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
         _sequentialMerkleProofs.verify(root_, startingIndex_ + 1, leaves_, proofElements_);
 
         leaves_[0] = bytes(hex"6330b989705733cc5c1f7285b8a5b892e08be86ed6fbe9d254713a4277bc5bd3");
@@ -634,6 +634,16 @@ contract SequentialMerkleProofsTests is Test {
     function test_getRoot_noLeaves() external {
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
         _sequentialMerkleProofs.getRoot(0, new bytes[](0), new uint256[](0));
+    }
+
+    function test_getRoot_noProofElements() external {
+        vm.expectRevert(SequentialMerkleProofs.NoProofElements.selector);
+        _sequentialMerkleProofs.getRoot(0, new bytes[](1), new uint256[](0));
+    }
+
+    function test_getRoot_invalidProof() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
+        _sequentialMerkleProofs.getRoot(0, new bytes[](1), new uint256[](1));
     }
 
     function test_getRoot_invalidRoundUpToPowerOf2Input() external {
