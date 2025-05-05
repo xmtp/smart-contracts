@@ -1,0 +1,369 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import { ECDSA } from "../../lib/solady/src/utils/ECDSA.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { SequentialMerkleProofs } from "../libraries/SequentialMerkleProofs.sol";
+
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IParameterRegistryLike, INodeRegistryLike, IPayerRegistryLike } from "./interfaces/External.sol";
+import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
+
+import { ERC5267 } from "../abstract/ERC5267.sol";
+import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: If a node signer can sign for more than one node, their signature for a payer report will be identical, and
+//       therefore replayable across their nodes. This may not be ideal, so it might be necessary to include the node id
+//       of the signing node in the digest.
+
+/**
+ * @title  Implementation of the Payer Report Manager.
+ * @notice This contract handles functionality for submitting and settling payer reports.
+ */
+contract PayerReportManager is IPayerReportManager, Initializable, Migratable, ERC5267 {
+    /* ============ Constants/Immutables ============ */
+
+    // solhint-disable-next-line max-line-length
+    /// @dev keccak256("PayerReport(uint256 originatorNodeId,uint256 startSequenceId,uint256 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
+    bytes32 public constant PAYER_REPORT_TYPEHASH = 0x738138a39f1e6e7e63a210bee5419f59c5508096a6120bdf31559f9b87dc395e;
+
+    /// @inheritdoc IPayerReportManager
+    address public immutable parameterRegistry;
+
+    /// @inheritdoc IPayerReportManager
+    address public immutable nodeRegistry;
+
+    /// @inheritdoc IPayerReportManager
+    address public immutable payerRegistry;
+
+    /* ============ UUPS Storage ============ */
+
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.PayerReportManager
+     * @notice The UUPS storage for the payer report manager.
+     * @param  payerReportsByOriginator The mapping of arrays of payer reports by originator node ID.
+     */
+    struct PayerReportManagerStorage {
+        mapping(uint32 originatorId => PayerReport[] payerReports) payerReportsByOriginator;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayerReportManager")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant _PAYER_REPORT_MANAGER_STORAGE_LOCATION =
+        0x26b057ee8e4d60685198828fdf1c618ab8e36b0ab85f54a47b18319f6f718e00;
+
+    function _getPayerReportManagerStorage() internal pure returns (PayerReportManagerStorage storage $) {
+        // slither-disable-next-line assembly
+        assembly {
+            $.slot := _PAYER_REPORT_MANAGER_STORAGE_LOCATION
+        }
+    }
+
+    /* ============ Constructor ============ */
+
+    /**
+     * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
+     * @param  parameterRegistry_ The address of the parameter registry.
+     * @param  nodeRegistry_      The address of the node registry.
+     * @param  payerRegistry_     The address of the payer registry.
+     * @dev    The parameter registry, node registry, and payer registry must not be the zero address.
+     * @dev    The parameter registry, node registry, and payer registry are immutable so that they are inlined in the
+     *         contract code, and have minimal gas cost.
+     */
+    constructor(address parameterRegistry_, address nodeRegistry_, address payerRegistry_) ERC5267() {
+        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        require(_isNotZero(nodeRegistry = nodeRegistry_), ZeroNodeRegistry());
+        require(_isNotZero(payerRegistry = payerRegistry_), ZeroPayerRegistry());
+
+        _disableInitializers();
+    }
+
+    /* ============ Initialization ============ */
+
+    /// @inheritdoc IPayerReportManager
+    function initialize() public initializer {
+        _initializeERC5267();
+    }
+
+    /* ============ Interactive Functions ============ */
+
+    /// @inheritdoc IPayerReportManager
+    function submit(
+        uint32 originatorNodeId_,
+        uint32 startSequenceId_,
+        uint32 endSequenceId_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_,
+        PayerReportSignature[] calldata signatures_
+    ) external returns (uint256 payerReportIndex_) {
+        PayerReport[] storage payerReports_ = _getPayerReportManagerStorage().payerReportsByOriginator[
+            originatorNodeId_
+        ];
+
+        payerReportIndex_ = payerReports_.length;
+
+        uint32 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
+
+        // Enforces that the start sequence ID is the last end sequence ID.
+        if (startSequenceId_ != lastSequenceId_) {
+            revert InvalidStartSequenceId(startSequenceId_, lastSequenceId_);
+        }
+
+        // Enforces that the end sequence ID is greater than or equal to the start sequence ID.
+        if (endSequenceId_ < startSequenceId_) revert InvalidSequenceIds();
+
+        // Verifies the signatures and gets the array of valid signing node IDs.
+        uint32[] memory validSigningNodeIds_ = _verifySignatures({
+            originatorNodeId_: originatorNodeId_,
+            startSequenceId_: startSequenceId_,
+            endSequenceId_: endSequenceId_,
+            payersMerkleRoot_: payersMerkleRoot_,
+            nodeIds_: nodeIds_,
+            signatures_: signatures_
+        });
+
+        payerReports_.push(
+            PayerReport({
+                startSequenceId: startSequenceId_,
+                endSequenceId: endSequenceId_,
+                feesSettled: 0,
+                offset: 0,
+                isSettled: payersMerkleRoot_ == SequentialMerkleProofs.EMPTY_TREE_ROOT,
+                payersMerkleRoot: payersMerkleRoot_,
+                nodeIds: nodeIds_
+            })
+        );
+
+        emit PayerReportSubmitted({
+            originatorNodeId: originatorNodeId_,
+            payerReportIndex: payerReportIndex_,
+            startSequenceId: startSequenceId_,
+            endSequenceId: endSequenceId_,
+            payersMerkleRoot: payersMerkleRoot_,
+            nodeIds: nodeIds_,
+            signingNodeIds: validSigningNodeIds_
+        });
+
+        if (payersMerkleRoot_ == SequentialMerkleProofs.EMPTY_TREE_ROOT) {
+            emit PayerReportSubsetSettled(originatorNodeId_, payerReportIndex_, 0, 0, 0);
+        }
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function settle(
+        uint32 originatorNodeId_,
+        uint256 payerReportIndex_,
+        bytes[] calldata payerFees_,
+        bytes32[] calldata proofElements_
+    ) external {
+        PayerReport[] storage payerReports_ = _getPayerReportManagerStorage().payerReportsByOriginator[
+            originatorNodeId_
+        ];
+
+        if (payerReportIndex_ >= payerReports_.length) revert PayerReportIndexOutOfBounds();
+
+        PayerReport storage payerReport_ = payerReports_[payerReportIndex_];
+
+        if (payerReport_.isSettled) revert PayerReportEntirelySettled();
+
+        // Verify the payer fees provided are the next sequential payer fees from the last settled offset.
+        SequentialMerkleProofs.verify(payerReport_.payersMerkleRoot, payerReport_.offset, payerFees_, proofElements_);
+
+        payerReport_.offset += uint32(payerFees_.length);
+
+        uint32 leafCount_ = SequentialMerkleProofs.getLeafCount(proofElements_);
+
+        payerReport_.isSettled = leafCount_ == payerReport_.offset;
+
+        // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically
+        // decoded as the required structs by the payer registry's `settleUsage` function.
+        // slither-disable-next-line low-level-calls
+        (bool success_, bytes memory returnData_) = payerRegistry.call(
+            abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, payerFees_)
+        );
+
+        if (!success_) revert SettleUsageFailed(returnData_);
+
+        uint96 feesSettled_ = abi.decode(returnData_, (uint96));
+
+        // slither-disable-next-line reentrancy-events
+        emit PayerReportSubsetSettled(
+            originatorNodeId_,
+            payerReportIndex_,
+            uint32(payerFees_.length),
+            leafCount_ - payerReport_.offset,
+            feesSettled_
+        );
+
+        payerReport_.feesSettled += feesSettled_;
+    }
+
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+    }
+
+    /* ============ View/Pure Functions ============ */
+
+    /// @inheritdoc IPayerReportManager
+    function migratorParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerReportManager.migrator";
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function getPayerReportDigest(
+        uint32 originatorNodeId_,
+        uint32 startSequenceId_,
+        uint32 endSequenceId_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_
+    ) external view returns (bytes32 digest_) {
+        return _getPayerReportDigest(originatorNodeId_, startSequenceId_, endSequenceId_, payersMerkleRoot_, nodeIds_);
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function getPayerReports(uint32 originatorNodeId_) external view returns (PayerReport[] memory payerReports_) {
+        return _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_];
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function getPayerReport(
+        uint32 originatorNodeId_,
+        uint256 payerReportIndex_
+    ) external view returns (PayerReport memory payerReport_) {
+        return _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_][payerReportIndex_];
+    }
+
+    /* ============ Internal View/Pure Functions ============ */
+
+    function _name() internal pure override returns (string memory name_) {
+        return "PayerReportManager";
+    }
+
+    function _version() internal pure override returns (string memory version_) {
+        return "1";
+    }
+
+    /**
+     * @dev    Returns the EIP-712 digest for a payer report.
+     * @param  originatorNodeId_ The id of the node originator.
+     * @param  startSequenceId_  The start sequence ID.
+     * @param  endSequenceId_    The end sequence ID.
+     * @param  payersMerkleRoot_ The payers merkle root.
+     * @param  nodeIds_          The active node IDs during the reporting period.
+     * @return digest_           The EIP-712 digest.
+     */
+    function _getPayerReportDigest(
+        uint256 originatorNodeId_,
+        uint256 startSequenceId_,
+        uint256 endSequenceId_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_
+    ) internal view returns (bytes32 digest_) {
+        return
+            _getDigest(
+                keccak256(
+                    abi.encode(
+                        PAYER_REPORT_TYPEHASH,
+                        originatorNodeId_,
+                        startSequenceId_,
+                        endSequenceId_,
+                        payersMerkleRoot_,
+                        keccak256(abi.encodePacked(nodeIds_))
+                    )
+                )
+            );
+    }
+
+    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
+        return IParameterRegistryLike(parameterRegistry).get(key_);
+    }
+
+    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
+        return input_ != address(0);
+    }
+
+    function _toAddress(bytes32 value_) internal pure returns (address address_) {
+        // slither-disable-next-line assembly
+        assembly {
+            address_ := value_
+        }
+    }
+
+    /**
+     * @dev Verifies that enough of the signatures are valid and provided by canonical node operators and returns the
+     *      array of valid signing node IDs.
+     */
+    function _verifySignatures(
+        uint32 originatorNodeId_,
+        uint32 startSequenceId_,
+        uint32 endSequenceId_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_,
+        PayerReportSignature[] calldata signatures_
+    ) internal view returns (uint32[] memory validSigningNodeIds_) {
+        bytes32 digest_ = _getPayerReportDigest(
+            originatorNodeId_,
+            startSequenceId_,
+            endSequenceId_,
+            payersMerkleRoot_,
+            nodeIds_
+        );
+
+        // Need to determine how many of the signatures are valid and provided by canonical node operators.
+        uint8 validSignatureCount_ = 0;
+
+        // This array will help in constructing the `validSigningNodeIds_` array, who's length may be less than
+        // the length of the `signatures_` array if some of the signatures are invalid.
+        bool[] memory isValid_ = new bool[](signatures_.length);
+
+        for (uint256 index_; index_ < signatures_.length; ++index_) {
+            uint32 nodeId_ = signatures_[index_].nodeId;
+
+            // Enforces that the signing node IDs are ordered and unique.
+            if (index_ != 0 && nodeId_ <= signatures_[index_ - 1].nodeId) revert UnorderedNodeIds();
+
+            // If the signature is invalid, ignore it.
+            if (!(isValid_[index_] = _verifySignature(digest_, nodeId_, signatures_[index_].signature))) continue;
+
+            ++validSignatureCount_;
+        }
+
+        uint8 requiredSignatureCount_ = (INodeRegistryLike(nodeRegistry).canonicalNodesCount() / 2) + 1;
+
+        // Enforces that the number of valid signatures is greater than one more than half of the canonical node count.
+        if (validSignatureCount_ < requiredSignatureCount_) {
+            revert InsufficientSignatures(validSignatureCount_, requiredSignatureCount_);
+        }
+
+        validSigningNodeIds_ = new uint32[](validSignatureCount_);
+
+        uint256 writeIndex_ = 0;
+
+        for (uint256 index_; index_ < isValid_.length; ++index_) {
+            if (!isValid_[index_]) continue; // Skip invalid signatures.
+
+            unchecked {
+                validSigningNodeIds_[writeIndex_++] = signatures_[index_].nodeId;
+            }
+        }
+    }
+
+    /// @dev Returns true if the signature is from the signer of a canonical node.
+    function _verifySignature(
+        bytes32 digest_,
+        uint32 nodeId_,
+        bytes calldata signature_
+    ) internal view returns (bool isValid_) {
+        // TODO: A combined fetch of `getIsCanonicalNode` and `getSigner` would be optimal.
+
+        // If the node is not canonical, the signature is invalid.
+        if (!INodeRegistryLike(nodeRegistry).getIsCanonicalNode(nodeId_)) return false;
+
+        // Try to recover the signer from the signature. We don't want to revert if the signature is invalid.
+        address signer_ = ECDSA.tryRecoverCalldata(digest_, signature_);
+
+        // The signature is valid if the recovered signer is not `address(0)` and is the signer of the node.
+        return (signer_ != address(0)) && (signer_ == INodeRegistryLike(nodeRegistry).getSigner(nodeId_));
+    }
+}
