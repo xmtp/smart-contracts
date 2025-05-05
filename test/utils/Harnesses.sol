@@ -360,10 +360,10 @@ contract ParameterKeysHarness {
 
 contract SequentialMerkleProofsHarness {
     function verify(
-        uint256 root_,
+        bytes32 root_,
         uint256 startingIndex_,
         bytes[] calldata leaves_,
-        uint256[] calldata proofElements_
+        bytes32[] calldata proofElements_
     ) external pure {
         SequentialMerkleProofs.verify(root_, startingIndex_, leaves_, proofElements_);
     }
@@ -371,8 +371,8 @@ contract SequentialMerkleProofsHarness {
     function getRoot(
         uint256 startingIndex_,
         bytes[] calldata leaves_,
-        uint256[] calldata proofElements_
-    ) external pure returns (uint256 root_) {
+        bytes32[] calldata proofElements_
+    ) external pure returns (bytes32 root_) {
         return SequentialMerkleProofs.getRoot(startingIndex_, leaves_, proofElements_);
     }
 
@@ -388,25 +388,25 @@ contract SequentialMerkleProofsHarness {
         return SequentialMerkleProofs._getBalancedLeafCount(leafCount_);
     }
 
-    function __hashLeaf(bytes calldata leaf_) external pure returns (uint256 hash_) {
+    function __hashLeaf(bytes calldata leaf_) external pure returns (bytes32 hash_) {
         return SequentialMerkleProofs._hashLeaf(leaf_);
     }
 
-    function __hashNodePair(uint256 leftNode_, uint256 rightNode_) external pure returns (uint256 hash_) {
+    function __hashNodePair(bytes32 leftNode_, bytes32 rightNode_) external pure returns (bytes32 hash_) {
         return SequentialMerkleProofs._hashNodePair(leftNode_, rightNode_);
     }
 
-    function __hashPairlessNode(uint256 node_) external pure returns (uint256 hash_) {
+    function __hashPairlessNode(bytes32 node_) external pure returns (bytes32 hash_) {
         return SequentialMerkleProofs._hashPairlessNode(node_);
     }
 
-    function __hashRoot(uint256 leafCount_, uint256 root_) external pure returns (uint256 hash_) {
+    function __hashRoot(uint256 leafCount_, bytes32 root_) external pure returns (bytes32 hash_) {
         return SequentialMerkleProofs._hashRoot(leafCount_, root_);
     }
 
     function __getReversedLeafNodesFromLeaves(
         bytes[] calldata leaves_
-    ) external pure returns (uint256[] memory reversedLeaves_) {
+    ) external pure returns (bytes32[] memory reversedLeaves_) {
         return SequentialMerkleProofs._getReversedLeafNodesFromLeaves(leaves_);
     }
 }

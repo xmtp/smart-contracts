@@ -8,18 +8,18 @@ pragma solidity 0.8.28;
 library SequentialMerkleProofs {
     /* ============ Constants ============ */
 
-    /// @notice The leaf prefix used to hash to a leaf.
-    bytes internal constant LEAF_PREFIX = bytes("leaf|");
+    /// @notice The leaf prefix used to hash to a leaf ("leaf|").
+    bytes5 internal constant LEAF_PREFIX = 0x6c6561667c;
 
-    /// @notice The node prefix used to hash to a node.
-    bytes internal constant NODE_PREFIX = bytes("node|");
+    /// @notice The node prefix used to hash to a node ("node|").
+    bytes5 internal constant NODE_PREFIX = 0x6e6f64657c;
 
     /// @notice The root prefix used to hash to a root.
-    bytes internal constant ROOT_PREFIX = bytes("root|");
+    bytes5 internal constant ROOT_PREFIX = 0x726f6f747c;
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the no leaves are passed.
+    /// @notice Thrown when no leaves are provided.
     error NoLeaves();
 
     /// @notice Thrown when the input to _roundUpToPowerOf2 is greater than type(uint64).max.
@@ -46,10 +46,10 @@ library SequentialMerkleProofs {
      * @dev    Can also revert with an array out-of-bounds access panic.
      */
     function verify(
-        uint256 root_,
+        bytes32 root_,
         uint256 startingIndex_,
         bytes[] calldata leaves_,
-        uint256[] calldata proofElements_
+        bytes32[] calldata proofElements_
     ) internal pure {
         require(getRoot(startingIndex_, leaves_, proofElements_) == root_, InvalidProof());
     }
@@ -65,8 +65,8 @@ library SequentialMerkleProofs {
     function getRoot(
         uint256 startingIndex_,
         bytes[] calldata leaves_,
-        uint256[] calldata proofElements_
-    ) internal pure returns (uint256 root_) {
+        bytes32[] calldata proofElements_
+    ) internal pure returns (bytes32 root_) {
         return _getRoot(startingIndex_, _getReversedLeafNodesFromLeaves(leaves_), proofElements_);
     }
 
@@ -83,14 +83,16 @@ library SequentialMerkleProofs {
     function _bitCount64(uint256 n_) internal pure returns (uint256 bitCount_) {
         require(n_ <= type(uint64).max, InvalidBitCount64Input());
 
-        n_ -= (n_ >> 1) & 0x5555555555555555;
-        n_ = (n_ & 0x3333333333333333) + ((n_ >> 2) & 0x3333333333333333);
-        n_ = (n_ + (n_ >> 4)) & 0x0f0f0f0f0f0f0f0f;
-        n_ += n_ >> 8;
-        n_ += n_ >> 16;
-        n_ += n_ >> 32;
+        unchecked {
+            n_ -= (n_ >> 1) & 0x5555555555555555;
+            n_ = (n_ & 0x3333333333333333) + ((n_ >> 2) & 0x3333333333333333);
+            n_ = (n_ + (n_ >> 4)) & 0x0f0f0f0f0f0f0f0f;
+            n_ += n_ >> 8;
+            n_ += n_ >> 16;
+            n_ += n_ >> 32;
 
-        return n_ & 0x7f;
+            return n_ & 0x7f;
+        }
     }
 
     /**
@@ -105,14 +107,16 @@ library SequentialMerkleProofs {
 
         if (_bitCount64(n_) == 1) return n_;
 
-        n_ |= n_ >> 1;
-        n_ |= n_ >> 2;
-        n_ |= n_ >> 4;
-        n_ |= n_ >> 8;
-        n_ |= n_ >> 16;
-        n_ |= n_ >> 32;
+        unchecked {
+            n_ |= n_ >> 1;
+            n_ |= n_ >> 2;
+            n_ |= n_ >> 4;
+            n_ |= n_ >> 8;
+            n_ |= n_ >> 16;
+            n_ |= n_ >> 32;
 
-        return n_ + 1;
+            return n_ + 1;
+        }
     }
 
     /**
@@ -135,25 +139,36 @@ library SequentialMerkleProofs {
      */
     function _getRoot(
         uint256 startingIndex_,
-        uint256[] memory hashes_,
-        uint256[] calldata proofElements_
-    ) internal pure returns (uint256 root_) {
+        bytes32[] memory hashes_,
+        bytes32[] calldata proofElements_
+    ) internal pure returns (bytes32 root_) {
         require(hashes_.length > 0, NoLeaves());
         require(proofElements_.length > 0, NoProofElements());
-        require(startingIndex_ + hashes_.length <= proofElements_[0], InvalidProof());
+        require(startingIndex_ + hashes_.length <= uint256(proofElements_[0]), InvalidProof());
 
         uint256 count_ = hashes_.length;
         uint256[] memory treeIndices_ = new uint256[](count_);
 
+        /**
+         * @dev The following variables are used while iterating through the root reconstruction from the proof.
+         * @dev `readIndex_` is the index of `hashes_` circular queue currently being read from.
+         * @dev `writeIndex_` is the index of `hashes_` circular queue currently being written to.
+         * @dev `proofIndex_` is the index of `proofElements_` array that is to be read from.
+         * @dev `upperBound_` is the rightmost tree index, of the current level of the tree, such that all nodes to the
+         *         right, if any, are non-existent.
+         * @dev `lowestTreeIndex_` is the tree index, of the current level of the tree, of the leftmost node we have.
+         * @dev `highestLeafNodeIndex_` is the tree index of the rightmost leaf node we have.
+         */
         uint256 readIndex_;
         uint256 writeIndex_;
         uint256 proofIndex_ = 1; // proofElements_[0] is the total leaf count, and is already consumed.
-        uint256 upperBound_ = _getBalancedLeafCount(proofElements_[0]) + proofElements_[0] - 1;
-        uint256 lowestTreeIndex_ = _getBalancedLeafCount(proofElements_[0]) + startingIndex_;
+        uint256 upperBound_ = _getBalancedLeafCount(uint256(proofElements_[0])) + uint256(proofElements_[0]) - 1;
+        uint256 lowestTreeIndex_ = _getBalancedLeafCount(uint256(proofElements_[0])) + startingIndex_;
         uint256 highestLeafNodeIndex_ = lowestTreeIndex_ + count_ - 1;
 
         while (true) {
-            // Instead of doing aa full pass through the empty tree indices array to build a starting sequential set of
+            /// @dev `nodeIndex_` is the tree index of the current node we are handling.
+            // Instead of doing a full pass through the empty tree indices array to build a starting sequential set of
             // indices, we can just check if we are in that "first pass" by checking if `readIndex_ < count_`, and if so
             // compute the index as needed given the `highestLeafNodeIndex_` and the `readIndex_`.
             uint256 nodeIndex_ = readIndex_ < count_
@@ -162,13 +177,18 @@ library SequentialMerkleProofs {
 
             // If we reach the sub-root (i.e. `nodeIndex_ == 1`), we can return the root (i.e. `nodeIndex_ == 0`) by
             // hashing the tree's leaf count with the last computed hash.
-            if (nodeIndex_ == 1) return _hashRoot(proofElements_[0], hashes_[(writeIndex_ - 1) % count_]);
+            if (nodeIndex_ == 1) return _hashRoot(uint256(proofElements_[0]), hashes_[(writeIndex_ - 1) % count_]);
 
             // If node index we are handling is the upper bound and is even, then it's sibling to the right does not
             // exist (since this is an unbalanced tree), so we can just copy the hash up one level.
             if ((nodeIndex_ == upperBound_) && _isEven(nodeIndex_)) {
-                hashes_[writeIndex_ % count_] = _hashPairlessNode(hashes_[readIndex_++ % count_]);
-                treeIndices_[writeIndex_++ % count_] = nodeIndex_ >> 1;
+                hashes_[writeIndex_ % count_] = _hashPairlessNode(hashes_[readIndex_ % count_]);
+                treeIndices_[writeIndex_ % count_] = nodeIndex_ >> 1;
+
+                unchecked {
+                    ++readIndex_;
+                    ++writeIndex_;
+                }
 
                 // If we are not at the lowest tree index (i.e. there are nodes to the left that we have yet to process
                 // at this level), then continue.
@@ -182,28 +202,41 @@ library SequentialMerkleProofs {
                 continue;
             }
 
-            // Instead of doing aa full pass through the empty tree indices array to build a starting sequential set of
+            /// @dev `nextNodeIndex_` is the tree index of the next node we may be handling.
+            // Instead of doing a full pass through the empty tree indices array to build a starting sequential set of
             // indices, we can just check if we are in that "first pass" by checking if `readIndex_ + 1 < count_`, and
             // if so compute the next index as needed given the `highestLeafNodeIndex_` and the `readIndex_`.
             uint256 nextNodeIndex_ = (readIndex_ + 1) < count_
                 ? highestLeafNodeIndex_ - (readIndex_ + 1)
                 : treeIndices_[(readIndex_ + 1) % count_];
 
+            /// @dev `root_` will temporarily be used as the right part of the node pair hash, it is being used to
+            ///      save much needed stack space.
             // Since we are processing nodes from right to left, then if the current node index is even, and there
             // exists nodes to the right (or else the previous if-continue would have been hit), then the right part of
             // the hash is a decommitment. If the current node index is odd, then the right part of the hash we already
             // have computed.
-            // NOTE: This is the right part, but reusing the return `root_` variable to save much needed stack space.
-            root_ = _isEven(nodeIndex_) ? proofElements_[proofIndex_++] : hashes_[readIndex_++ % count_];
+            unchecked {
+                root_ = _isEven(nodeIndex_) ? proofElements_[proofIndex_++] : hashes_[readIndex_++ % count_];
+            }
+
+            /// @dev `left_` is the left part of the node pair hash.
+            bytes32 left_;
 
             // Based on the current node index and the next node index, we can determine if the left part of the hash
             // is an existing computed hash or a decommitment.
-            uint256 left_ = _isLeftAnExistingHash(nodeIndex_, nextNodeIndex_)
-                ? hashes_[readIndex_++ % count_]
-                : proofElements_[proofIndex_++];
+            unchecked {
+                left_ = _isLeftAnExistingHash(nodeIndex_, nextNodeIndex_)
+                    ? hashes_[readIndex_++ % count_]
+                    : proofElements_[proofIndex_++];
+            }
 
             hashes_[writeIndex_ % count_] = _hashNodePair(left_, root_);
-            treeIndices_[writeIndex_++ % count_] = nodeIndex_ >> 1;
+            treeIndices_[writeIndex_ % count_] = nodeIndex_ >> 1;
+
+            unchecked {
+                ++writeIndex_;
+            }
 
             // If we are not at the lowest tree index (i.e. there are nodes to the left that we have yet to process
             // at this level), then continue.
@@ -234,7 +267,9 @@ library SequentialMerkleProofs {
         uint256 nodeIndex_,
         uint256 nextNodeIndex_
     ) internal pure returns (bool isLeftAnExistingHash_) {
-        return _isEven(nodeIndex_) || (nextNodeIndex_ == nodeIndex_ - 1);
+        unchecked {
+            return _isEven(nodeIndex_) || (nextNodeIndex_ == nodeIndex_ - 1);
+        }
     }
 
     /**
@@ -242,8 +277,8 @@ library SequentialMerkleProofs {
      * @param  leaf_ The leaf to hash.
      * @return hash_ The hash of the leaf.
      */
-    function _hashLeaf(bytes calldata leaf_) internal pure returns (uint256 hash_) {
-        return uint256(keccak256(abi.encodePacked(LEAF_PREFIX, leaf_)));
+    function _hashLeaf(bytes calldata leaf_) internal pure returns (bytes32 hash_) {
+        return keccak256(abi.encodePacked(LEAF_PREFIX, leaf_));
     }
 
     /**
@@ -252,8 +287,8 @@ library SequentialMerkleProofs {
      * @param  rightNode_ The right node to hash.
      * @return hash_      The hash of the pair of nodes.
      */
-    function _hashNodePair(uint256 leftNode_, uint256 rightNode_) internal pure returns (uint256 hash_) {
-        return uint256(keccak256(abi.encodePacked(NODE_PREFIX, leftNode_, rightNode_)));
+    function _hashNodePair(bytes32 leftNode_, bytes32 rightNode_) internal pure returns (bytes32 hash_) {
+        return keccak256(abi.encodePacked(NODE_PREFIX, leftNode_, rightNode_));
     }
 
     /**
@@ -261,8 +296,8 @@ library SequentialMerkleProofs {
      * @param  node_ The node to hash.
      * @return hash_ The hash of the node.
      */
-    function _hashPairlessNode(uint256 node_) internal pure returns (uint256 hash_) {
-        return uint256(keccak256(abi.encodePacked(NODE_PREFIX, node_)));
+    function _hashPairlessNode(bytes32 node_) internal pure returns (bytes32 hash_) {
+        return keccak256(abi.encodePacked(NODE_PREFIX, node_));
     }
 
     /**
@@ -271,21 +306,23 @@ library SequentialMerkleProofs {
      * @param  node_      The topmost node in the tree.
      * @return hash_      The root hash of the tree.
      */
-    function _hashRoot(uint256 leafCount_, uint256 node_) internal pure returns (uint256 hash_) {
-        return uint256(keccak256(abi.encodePacked(ROOT_PREFIX, leafCount_, node_)));
+    function _hashRoot(uint256 leafCount_, bytes32 node_) internal pure returns (bytes32 hash_) {
+        return keccak256(abi.encodePacked(ROOT_PREFIX, leafCount_, node_));
     }
 
     /// @notice Get leaf nodes from arbitrary size leaves in calldata, in reverse order.
     function _getReversedLeafNodesFromLeaves(
         bytes[] calldata leaves_
-    ) internal pure returns (uint256[] memory leafNodes_) {
+    ) internal pure returns (bytes32[] memory leafNodes_) {
         uint256 count_ = leaves_.length;
-        leafNodes_ = new uint256[](count_);
+        leafNodes_ = new bytes32[](count_);
         uint256 readIndex_ = count_;
         uint256 writeIndex_;
 
         while (writeIndex_ < count_) {
-            leafNodes_[writeIndex_++] = _hashLeaf(leaves_[--readIndex_]);
+            unchecked {
+                leafNodes_[writeIndex_++] = _hashLeaf(leaves_[--readIndex_]);
+            }
         }
     }
 }
