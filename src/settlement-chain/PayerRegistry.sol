@@ -183,19 +183,20 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /// @inheritdoc IPayerRegistry
-    function settleUsage(address[] calldata payers_, uint96[] calldata fees_) external onlySettler whenNotPaused {
-        require(payers_.length == fees_.length, ArrayLengthMismatch());
-
+    function settleUsage(
+        PayerFee[] calldata payerFees_
+    ) external onlySettler whenNotPaused returns (uint96 feesSettled_) {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
         int104 totalDeposits_ = $.totalDeposits;
         uint96 totalDebt_ = $.totalDebt;
 
-        for (uint256 index_; index_ < payers_.length; ++index_) {
-            address payer_ = payers_[index_];
-            uint96 fee_ = fees_[index_];
+        for (uint256 index_; index_ < payerFees_.length; ++index_) {
+            address payer_ = payerFees_[index_].payer;
+            uint96 fee_ = payerFees_[index_].fee;
 
             emit UsageSettled(payer_, fee_);
 
+            feesSettled_ += fee_;
             totalDeposits_ -= _toInt104(fee_);
             totalDebt_ += _decreaseBalance(payer_, fee_);
         }

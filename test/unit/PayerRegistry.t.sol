@@ -531,7 +531,7 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectRevert(IPayerRegistry.NotSettler.selector);
 
         vm.prank(_unauthorized);
-        _registry.settleUsage(new address[](0), new uint96[](0));
+        _registry.settleUsage(new IPayerRegistry.PayerFee[](0));
     }
 
     function test_settleUsage_paused() external {
@@ -540,21 +540,14 @@ contract PayerRegistryTests is Test, Utils {
         vm.expectRevert(IPayerRegistry.Paused.selector);
 
         vm.prank(_settler);
-        _registry.settleUsage(new address[](0), new uint96[](0));
-    }
-
-    function test_settleUsage_arrayLengthMismatch() external {
-        vm.expectRevert(IPayerRegistry.ArrayLengthMismatch.selector);
-
-        vm.prank(_settler);
-        _registry.settleUsage(new address[](0), new uint96[](1));
+        _registry.settleUsage(new IPayerRegistry.PayerFee[](0));
     }
 
     function test_settleUsage() external {
-        address[] memory payers = new address[](3);
-        payers[0] = _alice;
-        payers[1] = _bob;
-        payers[2] = _charlie;
+        IPayerRegistry.PayerFee[] memory payerFees_ = new IPayerRegistry.PayerFee[](3);
+        payerFees_[0] = IPayerRegistry.PayerFee({ payer: _alice, fee: 10e6 });
+        payerFees_[1] = IPayerRegistry.PayerFee({ payer: _bob, fee: 20e6 });
+        payerFees_[2] = IPayerRegistry.PayerFee({ payer: _charlie, fee: 30e6 });
 
         _registry.__setBalance(_alice, 30e6);
         _registry.__setBalance(_bob, 10e6);
@@ -562,11 +555,6 @@ contract PayerRegistryTests is Test, Utils {
 
         _registry.__setTotalDeposits(30e6 + 10e6 - 10e6); // Sum of Alice, Bob, and Charlie's balances.
         _registry.__setTotalDebt(10e6); // Charlie's debt.
-
-        uint96[] memory fees = new uint96[](3);
-        fees[0] = 10e6;
-        fees[1] = 20e6;
-        fees[2] = 30e6;
 
         // TODO: `_expectAndMockCall`.
         vm.mockCall(
@@ -585,7 +573,9 @@ contract PayerRegistryTests is Test, Utils {
         emit IPayerRegistry.UsageSettled(_charlie, 30e6);
 
         vm.prank(_settler);
-        _registry.settleUsage(payers, fees);
+        uint96 feesSettled_ = _registry.settleUsage(payerFees_);
+
+        assertEq(feesSettled_, 10e6 + 20e6 + 30e6);
 
         assertEq(_registry.getBalance(_alice), 30e6 - 10e6);
         assertEq(_registry.getBalance(_bob), 10e6 - 20e6);
