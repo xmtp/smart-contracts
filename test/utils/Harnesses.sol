@@ -125,30 +125,22 @@ contract NodeRegistryHarness is NodeRegistry {
         _getNodeRegistryStorage().admin = admin_;
     }
 
-    function __setNodeManager(address nodeManager_) external {
-        _getNodeRegistryStorage().nodeManager = nodeManager_;
-    }
-
-    function __setNodeOperatorCommissionPercent(uint256 nodeOperatorCommissionPercent_) external {
-        _getNodeRegistryStorage().nodeOperatorCommissionPercent = uint16(nodeOperatorCommissionPercent_);
-    }
-
     function __addNodeToCanonicalNetwork(uint256 nodeId_) external {
-        _getNodeRegistryStorage().nodes[nodeId_].isCanonical = true;
+        _getNodeRegistryStorage().nodes[uint32(nodeId_)].isCanonical = true;
     }
 
     function __removeNodeFromCanonicalNetwork(uint256 nodeId_) external {
-        delete _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
+        delete _getNodeRegistryStorage().nodes[uint32(nodeId_)].isCanonical;
     }
 
     function __setNode(
         uint256 nodeId_,
-        bytes calldata signingKeyPub_,
-        string calldata httpAddress_,
+        address signer_,
         bool inCanonical_,
-        uint256 minMonthlyFee_
+        bytes calldata signingKeyPub_,
+        string calldata httpAddress_
     ) external {
-        _getNodeRegistryStorage().nodes[nodeId_] = Node(signingKeyPub_, httpAddress_, inCanonical_, minMonthlyFee_);
+        _getNodeRegistryStorage().nodes[uint32(nodeId_)] = Node(signer_, inCanonical_, signingKeyPub_, httpAddress_);
     }
 
     function __setApproval(address to_, uint256 tokenId_, address authorizer_) external {
@@ -160,7 +152,7 @@ contract NodeRegistryHarness is NodeRegistry {
     }
 
     function __getNode(uint256 nodeId_) external view returns (Node memory node_) {
-        return _getNodeRegistryStorage().nodes[nodeId_];
+        return _getNodeRegistryStorage().nodes[uint32(nodeId_)];
     }
 
     function __getOwner(uint256 nodeId_) external view returns (address owner_) {
@@ -176,7 +168,7 @@ contract NodeRegistryHarness is NodeRegistry {
     }
 
     function __getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_) {
-        return _getNodeRegistryStorage().nodes[nodeId_].isCanonical;
+        return _getNodeRegistryStorage().nodes[uint32(nodeId_)].isCanonical;
     }
 }
 
