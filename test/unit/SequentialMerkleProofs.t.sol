@@ -117,14 +117,14 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.verify(0, 0, new bytes[](0), new bytes32[](0));
     }
 
-    function test_verify_invalidRoundUpToPowerOf2Input() external {
+    function test_verify_invalidBitCount64Input() external {
         bytes[] memory leaves_ = new bytes[](1);
         leaves_[0] = bytes(hex"00");
 
         bytes32[] memory proofElements_ = new bytes32[](1);
         proofElements_[0] = bytes32(uint256(type(uint64).max) + 1);
 
-        vm.expectRevert(SequentialMerkleProofs.InvalidRoundUpToPowerOf2Input.selector);
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
         _sequentialMerkleProofs.verify(0, 0, leaves_, proofElements_);
     }
 
@@ -620,14 +620,14 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.getRoot(0, new bytes[](1), new bytes32[](1));
     }
 
-    function test_getRoot_invalidRoundUpToPowerOf2Input() external {
+    function test_getRoot_invalidBitCount64Input() external {
         bytes[] memory leaves_ = new bytes[](1);
         leaves_[0] = bytes(hex"00");
 
         bytes32[] memory proofElements_ = new bytes32[](1);
         proofElements_[0] = bytes32(uint256(type(uint64).max) + 1);
 
-        vm.expectRevert(SequentialMerkleProofs.InvalidRoundUpToPowerOf2Input.selector);
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
         _sequentialMerkleProofs.getRoot(0, leaves_, proofElements_);
     }
 
@@ -814,8 +814,8 @@ contract SequentialMerkleProofsTests is Test {
         }
     }
 
-    function test_roundUpToPowerOf2_invalidRoundUpToPowerOf2Input() external {
-        vm.expectRevert(SequentialMerkleProofs.InvalidRoundUpToPowerOf2Input.selector);
+    function test_roundUpToPowerOf2_invalidBitCount64Input() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
         _sequentialMerkleProofs.__roundUpToPowerOf2(uint256(type(uint64).max) + 1);
     }
 
@@ -834,8 +834,8 @@ contract SequentialMerkleProofsTests is Test {
 
         for (uint256 i_ = 4; i_ < 64; ++i_) {
             assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(1 << i_), 1 << i_); // Exact power of 2
-            assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << i_) - 1), 1 << i_); // One less than
-            assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << (i_ - 1)) + 1), 1 << i_); // One more than prev
+            assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << i_) - 1), 1 << i_); // 1 less than
+            assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << (i_ - 1)) + 1), 1 << i_); // 1 more than prev
         }
     }
 
@@ -844,8 +844,8 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.__getBalancedLeafCount(0);
     }
 
-    function test_getBalancedLeafCount_invalidRoundUpToPowerOf2Input() external {
-        vm.expectRevert(SequentialMerkleProofs.InvalidRoundUpToPowerOf2Input.selector);
+    function test_getBalancedLeafCount_invalidBitCount64Input() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
         _sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint64).max) + 1);
     }
 
@@ -863,8 +863,8 @@ contract SequentialMerkleProofsTests is Test {
 
         for (uint256 i_ = 4; i_ < 64; ++i_) {
             assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(1 << i_), 1 << i_); // Exact power of 2
-            assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << i_) - 1), 1 << i_); // One less than
-            assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << (i_ - 1)) + 1), 1 << i_); // One more than prev
+            assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << i_) - 1), 1 << i_); // 1 less than
+            assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << (i_ - 1)) + 1), 1 << i_); // 1 more than prev
         }
     }
 

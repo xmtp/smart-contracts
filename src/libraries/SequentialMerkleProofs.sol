@@ -22,9 +22,6 @@ library SequentialMerkleProofs {
     /// @notice Thrown when no leaves are provided.
     error NoLeaves();
 
-    /// @notice Thrown when the input to _roundUpToPowerOf2 is greater than type(uint64).max.
-    error InvalidRoundUpToPowerOf2Input();
-
     /// @notice Thrown when the input to _bitCount64 is greater than type(uint64).max.
     error InvalidBitCount64Input();
 
@@ -103,8 +100,6 @@ library SequentialMerkleProofs {
      *         readability, given their patterns.
      */
     function _roundUpToPowerOf2(uint256 n_) internal pure returns (uint256 powerOf2_) {
-        require(n_ <= type(uint64).max, InvalidRoundUpToPowerOf2Input());
-
         if (_bitCount64(n_) == 1) return n_;
 
         unchecked {
@@ -301,7 +296,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Hashes the topmost 32-byte node in the tree, combined with the tree's lead count, into a 32-byte root.
+     * @notice Hashes the topmost 32-byte node in the tree, combined with the tree's leaf count, into a 32-byte root.
      * @param  leafCount_ The number of leaves in the merkle tree.
      * @param  node_      The topmost node in the tree.
      * @return hash_      The root hash of the tree.
