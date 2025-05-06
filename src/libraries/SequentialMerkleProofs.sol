@@ -92,7 +92,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Rounds a 632-bit unsigned integer up to the nearest power of 2.
+     * @notice Rounds a 32-bit unsigned integer up to the nearest power of 2.
      * @param  n_        The number to round up to the nearest power of 2.
      * @return powerOf2_ The nearest power of 2 to `n_`.
      * @dev    Literals are inlined as they are very specific to this algorithm/function, and actually improve
