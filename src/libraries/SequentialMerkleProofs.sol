@@ -22,8 +22,8 @@ library SequentialMerkleProofs {
     /// @notice Thrown when no leaves are provided.
     error NoLeaves();
 
-    /// @notice Thrown when the input to _bitCount64 is greater than type(uint64).max.
-    error InvalidBitCount64Input();
+    /// @notice Thrown when the input to _bitCount32 is greater than type(uint32).max.
+    error InvalidBitCount32Input();
 
     /// @notice Thrown when the proof is invalid.
     error InvalidProof();
@@ -70,37 +70,36 @@ library SequentialMerkleProofs {
     /* ============ Helper Functions ============ */
 
     /**
-     * @notice Counts number of set bits (1's) in 64-bit unsigned integer.
+     * @notice Counts number of set bits (1's) in 32-bit unsigned integer.
      * @dev    See https://en.wikipedia.org/wiki/Hamming_weight implementation `popcount64b`.
      * @param  n_        The number to count the set bits of.
      * @return bitCount_ The number of set bits in `n_`.
      * @dev    Literals are inlined as they are very specific to this algorithm/function, and actually improve
      *         readability, given their patterns.
      */
-    function _bitCount64(uint256 n_) internal pure returns (uint256 bitCount_) {
-        require(n_ <= type(uint64).max, InvalidBitCount64Input());
+    function _bitCount32(uint256 n_) internal pure returns (uint256 bitCount_) {
+        require(n_ <= type(uint32).max, InvalidBitCount32Input());
 
         unchecked {
-            n_ -= (n_ >> 1) & 0x5555555555555555;
-            n_ = (n_ & 0x3333333333333333) + ((n_ >> 2) & 0x3333333333333333);
-            n_ = (n_ + (n_ >> 4)) & 0x0f0f0f0f0f0f0f0f;
+            n_ -= (n_ >> 1) & 0x55555555;
+            n_ = (n_ & 0x33333333) + ((n_ >> 2) & 0x33333333);
+            n_ = (n_ + (n_ >> 4)) & 0x0f0f0f0f;
             n_ += n_ >> 8;
             n_ += n_ >> 16;
-            n_ += n_ >> 32;
 
             return n_ & 0x7f;
         }
     }
 
     /**
-     * @notice Rounds a 64-bit unsigned integer up to the nearest power of 2.
+     * @notice Rounds a 632-bit unsigned integer up to the nearest power of 2.
      * @param  n_        The number to round up to the nearest power of 2.
      * @return powerOf2_ The nearest power of 2 to `n_`.
      * @dev    Literals are inlined as they are very specific to this algorithm/function, and actually improve
      *         readability, given their patterns.
      */
     function _roundUpToPowerOf2(uint256 n_) internal pure returns (uint256 powerOf2_) {
-        if (_bitCount64(n_) == 1) return n_;
+        if (_bitCount32(n_) == 1) return n_;
 
         unchecked {
             n_ |= n_ >> 1;
@@ -108,7 +107,6 @@ library SequentialMerkleProofs {
             n_ |= n_ >> 4;
             n_ |= n_ >> 8;
             n_ |= n_ >> 16;
-            n_ |= n_ >> 32;
 
             return n_ + 1;
         }

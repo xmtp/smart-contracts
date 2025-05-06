@@ -376,8 +376,8 @@ contract SequentialMerkleProofsHarness {
         return SequentialMerkleProofs.getRoot(startingIndex_, leaves_, proofElements_);
     }
 
-    function __bitCount64(uint256 n_) external pure returns (uint256 bitCount_) {
-        return SequentialMerkleProofs._bitCount64(n_);
+    function __bitCount32(uint256 n_) external pure returns (uint256 bitCount_) {
+        return SequentialMerkleProofs._bitCount32(n_);
     }
 
     function __roundUpToPowerOf2(uint256 n_) external pure returns (uint256 powerOf2_) {

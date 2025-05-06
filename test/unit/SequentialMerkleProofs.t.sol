@@ -14,6 +14,8 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs = new SequentialMerkleProofsHarness();
     }
 
+    /* ============ hashLeaf ============ */
+
     function test_hashLeaf() external view {
         assertEq(
             _sequentialMerkleProofs.__hashLeaf("Hello"),
@@ -35,6 +37,8 @@ contract SequentialMerkleProofsTests is Test {
             0xa5fe16054246ec55b4c4f376e432cce9f5d7e9c6859bf2801c1d05e0a187341c
         );
     }
+
+    /* ============ hashNodePair ============ */
 
     function test_hashNodePair() external view {
         assertEq(
@@ -61,6 +65,8 @@ contract SequentialMerkleProofsTests is Test {
             0xcf86af75a8a3ad149001943d69c6f6baf87e648e765e365f9aea84c06a306fea
         );
     }
+
+    /* ============ hashPairlessNode ============ */
 
     function test_hashPairlessNode() external view {
         assertEq(
@@ -92,6 +98,8 @@ contract SequentialMerkleProofsTests is Test {
         );
     }
 
+    /* ============ hashRoot ============ */
+
     function test_hashRoot() external view {
         assertEq(
             _sequentialMerkleProofs.__hashRoot(1, 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f),
@@ -112,19 +120,21 @@ contract SequentialMerkleProofsTests is Test {
         );
     }
 
+    /* ============ verify ============ */
+
     function test_verify_noLeafs() external {
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
         _sequentialMerkleProofs.verify(0, 0, new bytes[](0), new bytes32[](0));
     }
 
-    function test_verify_invalidBitCount64Input() external {
+    function test_verify_invalidBitCount32Input() external {
         bytes[] memory leaves_ = new bytes[](1);
         leaves_[0] = bytes(hex"00");
 
         bytes32[] memory proofElements_ = new bytes32[](1);
-        proofElements_[0] = bytes32(uint256(type(uint64).max) + 1);
+        proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
 
-        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
         _sequentialMerkleProofs.verify(0, 0, leaves_, proofElements_);
     }
 
@@ -605,6 +615,8 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.verify(root_, startingIndex_, leaves_, proofElements_);
     }
 
+    /* ============ getRoot ============ */
+
     function test_getRoot_noLeaves() external {
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
         _sequentialMerkleProofs.getRoot(0, new bytes[](0), new bytes32[](0));
@@ -620,14 +632,14 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.getRoot(0, new bytes[](1), new bytes32[](1));
     }
 
-    function test_getRoot_invalidBitCount64Input() external {
+    function test_getRoot_invalidBitCount32Input() external {
         bytes[] memory leaves_ = new bytes[](1);
         leaves_[0] = bytes(hex"00");
 
         bytes32[] memory proofElements_ = new bytes32[](1);
-        proofElements_[0] = bytes32(uint256(type(uint64).max) + 1);
+        proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
 
-        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
         _sequentialMerkleProofs.getRoot(0, leaves_, proofElements_);
     }
 
@@ -799,24 +811,28 @@ contract SequentialMerkleProofsTests is Test {
         assertEq(_sequentialMerkleProofs.getRoot(startingIndex_, leaves_, proofElements_), expectedRoot_);
     }
 
-    function test_bitCount64_invalidBitCount64Input() external {
-        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
-        _sequentialMerkleProofs.__bitCount64(uint256(type(uint64).max) + 1);
+    /* ============ bitCount32 ============ */
+
+    function test_bitCount32_invalidBitCount32Input() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
+        _sequentialMerkleProofs.__bitCount32(uint256(type(uint32).max) + 1);
     }
 
-    function test_bitCount64() external view {
-        assertEq(_sequentialMerkleProofs.__bitCount64(1 >> 1), 0);
-        assertEq(_sequentialMerkleProofs.__bitCount64(uint256(type(uint64).max)), 64);
+    function test_bitCount32() external view {
+        assertEq(_sequentialMerkleProofs.__bitCount32(1 >> 1), 0);
+        assertEq(_sequentialMerkleProofs.__bitCount32(uint256(type(uint32).max)), 32);
 
-        for (uint256 i_ = 0; i_ < 64; ++i_) {
-            assertEq(_sequentialMerkleProofs.__bitCount64(1 << i_), 1); // One bit set
-            assertEq(_sequentialMerkleProofs.__bitCount64((1 << i_) - 1), i_); // i_ bits set
+        for (uint256 i_ = 0; i_ < 32; ++i_) {
+            assertEq(_sequentialMerkleProofs.__bitCount32(1 << i_), 1); // One bit set
+            assertEq(_sequentialMerkleProofs.__bitCount32((1 << i_) - 1), i_); // i_ bits set
         }
     }
 
-    function test_roundUpToPowerOf2_invalidBitCount64Input() external {
-        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
-        _sequentialMerkleProofs.__roundUpToPowerOf2(uint256(type(uint64).max) + 1);
+    /* ============ roundUpToPowerOf2 ============ */
+
+    function test_roundUpToPowerOf2_invalidBitCount32Input() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
+        _sequentialMerkleProofs.__roundUpToPowerOf2(uint256(type(uint32).max) + 1);
     }
 
     function test_roundUpToPowerOf2() external view {
@@ -830,23 +846,25 @@ contract SequentialMerkleProofsTests is Test {
         assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(7), 8);
         assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(8), 8);
 
-        assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(uint256(type(uint64).max)), 1 << 64);
+        assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(uint256(type(uint32).max)), 1 << 32);
 
-        for (uint256 i_ = 4; i_ < 64; ++i_) {
+        for (uint256 i_ = 4; i_ < 32; ++i_) {
             assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2(1 << i_), 1 << i_); // Exact power of 2
             assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << i_) - 1), 1 << i_); // 1 less than
             assertEq(_sequentialMerkleProofs.__roundUpToPowerOf2((1 << (i_ - 1)) + 1), 1 << i_); // 1 more than prev
         }
     }
 
+    /* ============ getBalancedLeafCount ============ */
+
     function test_getBalancedLeafCount_noLeaves() external {
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
         _sequentialMerkleProofs.__getBalancedLeafCount(0);
     }
 
-    function test_getBalancedLeafCount_invalidBitCount64Input() external {
-        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount64Input.selector);
-        _sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint64).max) + 1);
+    function test_getBalancedLeafCount_invalidBitCount32Input() external {
+        vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
+        _sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint32).max) + 1);
     }
 
     function test_getBalancedLeafCount() external view {
@@ -859,14 +877,16 @@ contract SequentialMerkleProofsTests is Test {
         assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(7), 8);
         assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(8), 8);
 
-        assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint64).max)), 1 << 64);
+        assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint32).max)), 1 << 32);
 
-        for (uint256 i_ = 4; i_ < 64; ++i_) {
+        for (uint256 i_ = 4; i_ < 32; ++i_) {
             assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(1 << i_), 1 << i_); // Exact power of 2
             assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << i_) - 1), 1 << i_); // 1 less than
             assertEq(_sequentialMerkleProofs.__getBalancedLeafCount((1 << (i_ - 1)) + 1), 1 << i_); // 1 more than prev
         }
     }
+
+    /* ============ getReversedLeafNodesFromLeaves ============ */
 
     function test_getReversedLeafNodesFromLeaves() external view {
         bytes[] memory leaves_ = new bytes[](4);
