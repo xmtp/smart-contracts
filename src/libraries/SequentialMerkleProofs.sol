@@ -118,9 +118,7 @@ library SequentialMerkleProofs {
      * @return balancedLeafCount_ The balanced leaf count.
      */
     function _getBalancedLeafCount(uint256 leafCount_) internal pure returns (uint256 balancedLeafCount_) {
-        require(leafCount_ != 0, NoLeaves());
-
-        return leafCount_ == 1 ? 2 : _roundUpToPowerOf2(leafCount_);
+        return leafCount_ <= 1 ? (leafCount_ * 2) : _roundUpToPowerOf2(leafCount_);
     }
 
     /**
@@ -135,8 +133,11 @@ library SequentialMerkleProofs {
         bytes32[] memory hashes_,
         bytes32[] calldata proofElements_
     ) internal pure returns (bytes32 root_) {
-        require(hashes_.length > 0, NoLeaves());
         require(proofElements_.length > 0, NoProofElements());
+
+        if (startingIndex_ == 0 && hashes_.length == 0 && uint256(proofElements_[0]) == 0) return bytes32(0);
+
+        require(hashes_.length > 0, NoLeaves());
         require(startingIndex_ + hashes_.length <= uint256(proofElements_[0]), InvalidProof());
 
         uint256 count_ = hashes_.length;

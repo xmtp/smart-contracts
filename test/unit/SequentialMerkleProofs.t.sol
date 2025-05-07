@@ -122,9 +122,22 @@ contract SequentialMerkleProofsTests is Test {
 
     /* ============ verify ============ */
 
-    function test_verify_noLeafs() external {
-        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+    function test_verify_noProofElements() external {
+        vm.expectRevert(SequentialMerkleProofs.NoProofElements.selector);
         _sequentialMerkleProofs.verify(0, 0, new bytes[](0), new bytes32[](0));
+    }
+
+    function test_verify_noLeafs_nonZeroStartingIndex() external {
+        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+        _sequentialMerkleProofs.verify(0, 1, new bytes[](0), new bytes32[](1));
+    }
+
+    function test_verify_noLeafs_nonZeroLeafCount() external {
+        bytes32[] memory proofElements_ = new bytes32[](1);
+        proofElements_[0] = bytes32(uint256(1));
+
+        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+        _sequentialMerkleProofs.verify(0, 0, new bytes[](0), proofElements_);
     }
 
     function test_verify_invalidBitCount32Input() external {
@@ -136,6 +149,10 @@ contract SequentialMerkleProofsTests is Test {
 
         vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
         _sequentialMerkleProofs.verify(0, 0, leaves_, proofElements_);
+    }
+
+    function test_verify_noLeafs() external {
+        _sequentialMerkleProofs.verify(0, 0, new bytes[](0), new bytes32[](1));
     }
 
     function test_verify_balanced_sample1() external view {
@@ -617,14 +634,22 @@ contract SequentialMerkleProofsTests is Test {
 
     /* ============ getRoot ============ */
 
-    function test_getRoot_noLeaves() external {
-        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+    function test_getRoot_noProofElements() external {
+        vm.expectRevert(SequentialMerkleProofs.NoProofElements.selector);
         _sequentialMerkleProofs.getRoot(0, new bytes[](0), new bytes32[](0));
     }
 
-    function test_getRoot_noProofElements() external {
-        vm.expectRevert(SequentialMerkleProofs.NoProofElements.selector);
-        _sequentialMerkleProofs.getRoot(0, new bytes[](1), new bytes32[](0));
+    function test_getRoot_noLeafs_nonZeroStartingIndex() external {
+        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+        (_sequentialMerkleProofs.getRoot(1, new bytes[](0), new bytes32[](1)));
+    }
+
+    function test_getRoot_noLeafs_nonZeroLeafCount() external {
+        bytes32[] memory proofElements_ = new bytes32[](1);
+        proofElements_[0] = bytes32(uint256(1));
+
+        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+        _sequentialMerkleProofs.getRoot(0, new bytes[](0), proofElements_);
     }
 
     function test_getRoot_invalidProof() external {
@@ -641,6 +666,10 @@ contract SequentialMerkleProofsTests is Test {
 
         vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
         _sequentialMerkleProofs.getRoot(0, leaves_, proofElements_);
+    }
+
+    function test_getRoot_noLeaves() external {
+        assertEq(_sequentialMerkleProofs.getRoot(0, new bytes[](0), new bytes32[](1)), bytes32(0));
     }
 
     function test_getRoot_balanced_sample1() external view {
@@ -857,17 +886,13 @@ contract SequentialMerkleProofsTests is Test {
 
     /* ============ getBalancedLeafCount ============ */
 
-    function test_getBalancedLeafCount_noLeaves() external {
-        vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
-        _sequentialMerkleProofs.__getBalancedLeafCount(0);
-    }
-
     function test_getBalancedLeafCount_invalidBitCount32Input() external {
         vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
         _sequentialMerkleProofs.__getBalancedLeafCount(uint256(type(uint32).max) + 1);
     }
 
     function test_getBalancedLeafCount() external view {
+        assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(0), 0);
         assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(1), 2);
         assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(2), 2);
         assertEq(_sequentialMerkleProofs.__getBalancedLeafCount(3), 4);
