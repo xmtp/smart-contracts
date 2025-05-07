@@ -14,6 +14,8 @@ contract MockErc20 {
         return true;
     }
 
+    function permit(address, address, uint256, uint256, uint8, bytes32, bytes32) external {}
+
     function balanceOf(address) external view returns (uint256 balance_) {
         return 0;
     }

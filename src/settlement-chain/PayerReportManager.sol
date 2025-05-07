@@ -25,8 +25,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /* ============ Constants/Immutables ============ */
 
     // solhint-disable-next-line max-line-length
-    /// @dev keccak256("PayerReport(uint256 originatorNodeId,uint256 startSequenceId,uint256 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
-    bytes32 public constant PAYER_REPORT_TYPEHASH = 0x738138a39f1e6e7e63a210bee5419f59c5508096a6120bdf31559f9b87dc395e;
+    /// @dev keccak256("PayerReport(uint32 originatorNodeId,uint32 startSequenceId,uint32 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
+    bytes32 public constant PAYER_REPORT_TYPEHASH = 0xfbb9f0351ed83428cdf60d26ec3b535e6e16daff660a48308d7e0c22c53fba78;
 
     /// @inheritdoc IPayerReportManager
     address public immutable parameterRegistry;
