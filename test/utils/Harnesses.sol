@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
+import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProofs.sol";
 
 import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
@@ -354,5 +355,62 @@ contract ParameterKeysHarness {
 
     function uint256ToKeyComponent(uint256 value_) external pure returns (bytes memory keyComponent_) {
         return ParameterKeys.uint256ToKeyComponent(value_);
+    }
+}
+
+contract SequentialMerkleProofsHarness {
+    function verify(
+        bytes32 root_,
+        uint256 startingIndex_,
+        bytes[] calldata leaves_,
+        bytes32[] calldata proofElements_
+    ) external pure {
+        SequentialMerkleProofs.verify(root_, startingIndex_, leaves_, proofElements_);
+    }
+
+    function getRoot(
+        uint256 startingIndex_,
+        bytes[] calldata leaves_,
+        bytes32[] calldata proofElements_
+    ) external pure returns (bytes32 root_) {
+        return SequentialMerkleProofs.getRoot(startingIndex_, leaves_, proofElements_);
+    }
+
+    function getLeafCount(bytes32[] calldata proofElements_) external pure returns (uint256 leafCount_) {
+        return SequentialMerkleProofs.getLeafCount(proofElements_);
+    }
+
+    function __bitCount32(uint256 n_) external pure returns (uint256 bitCount_) {
+        return SequentialMerkleProofs._bitCount32(n_);
+    }
+
+    function __roundUpToPowerOf2(uint256 n_) external pure returns (uint256 powerOf2_) {
+        return SequentialMerkleProofs._roundUpToPowerOf2(n_);
+    }
+
+    function __getBalancedLeafCount(uint256 leafCount_) external pure returns (uint256 balancedLeafCount_) {
+        return SequentialMerkleProofs._getBalancedLeafCount(leafCount_);
+    }
+
+    function __hashLeaf(bytes calldata leaf_) external pure returns (bytes32 hash_) {
+        return SequentialMerkleProofs._hashLeaf(leaf_);
+    }
+
+    function __hashNodePair(bytes32 leftNode_, bytes32 rightNode_) external pure returns (bytes32 hash_) {
+        return SequentialMerkleProofs._hashNodePair(leftNode_, rightNode_);
+    }
+
+    function __hashPairlessNode(bytes32 node_) external pure returns (bytes32 hash_) {
+        return SequentialMerkleProofs._hashPairlessNode(node_);
+    }
+
+    function __hashRoot(uint256 leafCount_, bytes32 root_) external pure returns (bytes32 hash_) {
+        return SequentialMerkleProofs._hashRoot(leafCount_, root_);
+    }
+
+    function __getReversedLeafNodesFromLeaves(
+        bytes[] calldata leaves_
+    ) external pure returns (bytes32[] memory reversedLeaves_) {
+        return SequentialMerkleProofs._getReversedLeafNodesFromLeaves(leaves_);
     }
 }
