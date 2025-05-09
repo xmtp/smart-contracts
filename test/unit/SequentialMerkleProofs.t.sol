@@ -277,6 +277,35 @@ contract SequentialMerkleProofsTests is Test {
         }
     }
 
+    /* ============ getLeafCount ============ */
+
+    function test_getLeafCount_noProofElements() external {
+        vm.expectRevert(SequentialMerkleProofs.NoProofElements.selector);
+        _sequentialMerkleProofs.getLeafCount(new bytes32[](0));
+    }
+
+    function test_getLeafCount_invalidLeafCount() external {
+        bytes32[] memory proofElements_ = new bytes32[](1);
+        proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
+
+        vm.expectRevert(SequentialMerkleProofs.InvalidLeafCount.selector);
+        _sequentialMerkleProofs.getLeafCount(proofElements_);
+    }
+
+    function test_getLeafCount() external view {
+        bytes32[] memory proofElements_ = new bytes32[](1);
+
+        assertEq(_sequentialMerkleProofs.getLeafCount(proofElements_), 0);
+
+        proofElements_[0] = bytes32(uint256(1));
+
+        assertEq(_sequentialMerkleProofs.getLeafCount(proofElements_), 1);
+
+        proofElements_[0] = bytes32(uint256(1111));
+
+        assertEq(_sequentialMerkleProofs.getLeafCount(proofElements_), 1111);
+    }
+
     /* ============ bitCount32 ============ */
 
     function test_bitCount32_invalidBitCount32Input() external {

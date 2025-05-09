@@ -376,6 +376,10 @@ contract SequentialMerkleProofsHarness {
         return SequentialMerkleProofs.getRoot(startingIndex_, leaves_, proofElements_);
     }
 
+    function getLeafCount(bytes32[] calldata proofElements_) external pure returns (uint256 leafCount_) {
+        return SequentialMerkleProofs.getLeafCount(proofElements_);
+    }
+
     function __bitCount32(uint256 n_) external pure returns (uint256 bitCount_) {
         return SequentialMerkleProofs._bitCount32(n_);
     }

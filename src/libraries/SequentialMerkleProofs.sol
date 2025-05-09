@@ -8,6 +8,8 @@ pragma solidity 0.8.28;
 library SequentialMerkleProofs {
     /* ============ Constants ============ */
 
+    bytes32 internal constant EMPTY_TREE_ROOT = bytes32(0);
+
     /// @notice The leaf prefix used to hash to a leaf ("leaf|").
     bytes5 internal constant LEAF_PREFIX = 0x6c6561667c;
 
@@ -30,6 +32,9 @@ library SequentialMerkleProofs {
 
     /// @notice Thrown when no proof elements are provided.
     error NoProofElements();
+
+    /// @notice Thrown when the leaf count is greater than type(uint32).max.
+    error InvalidLeafCount();
 
     /* ============ Main Functions ============ */
 
@@ -65,6 +70,20 @@ library SequentialMerkleProofs {
         bytes32[] calldata proofElements_
     ) internal pure returns (bytes32 root_) {
         return _getRoot(startingIndex_, _getReversedLeafNodesFromLeaves(leaves_), proofElements_);
+    }
+
+    /**
+     * @notice Extracts the leaf count from a sequential merkle proof, without verifying the proof.
+     * @param  proofElements_ The merkle proof data.
+     * @dev    proofElements_[0] is the total number of leaves in the merkle tree.
+     * @dev    Does not verify the proof. Only extracts the leaf count from the proof elements.
+     */
+    function getLeafCount(bytes32[] calldata proofElements_) internal pure returns (uint32 leafCount_) {
+        require(proofElements_.length > 0, NoProofElements());
+
+        if (uint256(proofElements_[0]) > type(uint32).max) revert InvalidLeafCount();
+
+        return uint32(uint256(proofElements_[0]));
     }
 
     /* ============ Helper Functions ============ */
@@ -135,7 +154,7 @@ library SequentialMerkleProofs {
     ) internal pure returns (bytes32 root_) {
         require(proofElements_.length > 0, NoProofElements());
 
-        if (startingIndex_ == 0 && hashes_.length == 0 && uint256(proofElements_[0]) == 0) return bytes32(0);
+        if (startingIndex_ == 0 && hashes_.length == 0 && uint256(proofElements_[0]) == 0) return EMPTY_TREE_ROOT;
 
         require(hashes_.length > 0, NoLeaves());
         require(startingIndex_ + hashes_.length <= uint256(proofElements_[0]), InvalidProof());
@@ -153,8 +172,8 @@ library SequentialMerkleProofs {
          * @dev `lowestTreeIndex_` is the tree index, of the current level of the tree, of the leftmost node we have.
          * @dev `highestLeafNodeIndex_` is the tree index of the rightmost leaf node we have.
          */
-        uint256 readIndex_;
-        uint256 writeIndex_;
+        uint256 readIndex_ = 0;
+        uint256 writeIndex_ = 0;
         uint256 proofIndex_ = 1; // proofElements_[0] is the total leaf count, and is already consumed.
         uint256 upperBound_ = _getBalancedLeafCount(uint256(proofElements_[0])) + uint256(proofElements_[0]) - 1;
         uint256 lowestTreeIndex_ = _getBalancedLeafCount(uint256(proofElements_[0])) + startingIndex_;
