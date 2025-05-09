@@ -17,6 +17,7 @@ import { PayloadBroadcaster } from "../../src/abstract/PayloadBroadcaster.sol";
 import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
+import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
 
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -404,5 +405,63 @@ contract SequentialMerkleProofsHarness {
         bytes[] calldata leaves_
     ) external pure returns (bytes32[] memory reversedLeaves_) {
         return SequentialMerkleProofs._getReversedLeafNodesFromLeaves(leaves_);
+    }
+}
+
+contract PayerReportManagerHarness is PayerReportManager {
+    constructor(
+        address parameterRegistry_,
+        address nodeRegistry_,
+        address payerRegistry_
+    ) PayerReportManager(parameterRegistry_, nodeRegistry_, payerRegistry_) {}
+
+    function __pushPayerReport(
+        uint32 originatorNodeId_,
+        uint32 startSequenceId_,
+        uint32 endSequenceId_,
+        uint96 feesSettled_,
+        uint32 offset_,
+        bool isSettled_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_
+    ) external {
+        _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_].push(
+            PayerReport({
+                startSequenceId: startSequenceId_,
+                endSequenceId: endSequenceId_,
+                feesSettled: feesSettled_,
+                offset: offset_,
+                isSettled: isSettled_,
+                payersMerkleRoot: payersMerkleRoot_,
+                nodeIds: nodeIds_
+            })
+        );
+    }
+
+    function __verifySignatures(
+        uint32 originatorNodeId_,
+        uint32 startSequenceId_,
+        uint32 endSequenceId_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_,
+        PayerReportSignature[] calldata signatures_
+    ) external view returns (uint32[] memory validSigningNodeIds_) {
+        return
+            _verifySignatures(
+                originatorNodeId_,
+                startSequenceId_,
+                endSequenceId_,
+                payersMerkleRoot_,
+                nodeIds_,
+                signatures_
+            );
+    }
+
+    function __verifySignature(
+        bytes32 digest_,
+        uint32 nodeId_,
+        bytes calldata signature_
+    ) external view returns (bool isValid_) {
+        return _verifySignature(digest_, nodeId_, signature_);
     }
 }

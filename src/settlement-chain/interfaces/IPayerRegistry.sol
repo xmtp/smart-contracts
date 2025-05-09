@@ -26,6 +26,16 @@ interface IPayerRegistry is IMigratable {
         // 24 bits remaining in first slot
     }
 
+    /**
+     * @notice Represents a payer and their fee.
+     * @param  payer The address a payer.
+     * @param  fee   The fee to settle for the payer.
+     */
+    struct PayerFee {
+        address payer;
+        uint96 fee;
+    }
+
     /* ============ Events ============ */
 
     /**
@@ -156,9 +166,6 @@ interface IPayerRegistry is IMigratable {
      */
     error WithdrawalNotReady(uint32 timestamp, uint32 withdrawableTimestamp);
 
-    /// @notice Thrown when the lengths or array arguments do not match.
-    error ArrayLengthMismatch();
-
     /// @notice Thrown when trying to finalize a withdrawal while in debt.
     error PayerInDebt();
 
@@ -212,10 +219,10 @@ interface IPayerRegistry is IMigratable {
 
     /**
      * @notice Settles the usage fees for a list of payers.
-     * @param  payers_ The addresses of the payers.
-     * @param  fees_   The fees to settle for each payer.
+     * @param  payerFees_   An array of structs containing the payer and the fee to settle.
+     * @return feesSettled_ The total amount of fees settled.
      */
-    function settleUsage(address[] calldata payers_, uint96[] calldata fees_) external;
+    function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
 
     /**
      * @notice Sends the excess tokens in the contract to the fee distributor.
