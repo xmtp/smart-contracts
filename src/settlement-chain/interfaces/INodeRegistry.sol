@@ -191,7 +191,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      */
     function setBaseURI(string calldata newBaseURI_) external;
 
-    /* ============ Node Manager Functions ============ */
+    /* ============ Node Owner Functions ============ */
 
     /**
      * @notice Set the HTTP address of an existing node.

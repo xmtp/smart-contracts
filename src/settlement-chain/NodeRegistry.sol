@@ -43,7 +43,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
      * @param  admin               The admin address.
-     * @param  nodeManager         The node manager address.
      */
     struct NodeRegistryStorage {
         string baseURI;
@@ -52,7 +51,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
         address admin;
-        address nodeManager;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))

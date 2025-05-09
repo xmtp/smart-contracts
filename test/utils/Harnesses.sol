@@ -137,10 +137,10 @@ contract NodeRegistryHarness is NodeRegistry {
         uint256 nodeId_,
         address signer_,
         bool inCanonical_,
-        bytes calldata signingKeyPub_,
+        bytes calldata signingPublicKey_,
         string calldata httpAddress_
     ) external {
-        _getNodeRegistryStorage().nodes[uint32(nodeId_)] = Node(signer_, inCanonical_, signingKeyPub_, httpAddress_);
+        _getNodeRegistryStorage().nodes[uint32(nodeId_)] = Node(signer_, inCanonical_, signingPublicKey_, httpAddress_);
     }
 
     function __setApproval(address to_, uint256 tokenId_, address authorizer_) external {

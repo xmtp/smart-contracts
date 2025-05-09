@@ -33,6 +33,7 @@ abstract contract Migratable is IMigratable {
      * @param migrator_ The address of a migrator contract.
      * @dev   The migrator fallback code defines the entire migration process, and takes no user-defined arguments.
      */
+    // slither-disable-next-line controlled-delegatecall
     function _migrate(address migrator_) internal {
         require(migrator_ != address(0), ZeroMigrator());
 
