@@ -20,12 +20,9 @@ import { Utils } from "../utils/Utils.sol";
 
 contract NodeRegistryTests is Test, Utils {
     bytes internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
-    bytes internal constant _NODE_MANAGER_KEY = "xmtp.nodeRegistry.nodeManager";
     bytes internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
 
     uint32 internal constant _NODE_INCREMENT = 100;
-
-    uint16 internal constant _MAX_BPS = 10_000;
 
     NodeRegistryHarness internal _registry;
 
@@ -33,7 +30,6 @@ contract NodeRegistryTests is Test, Utils {
     address internal _parameterRegistry;
 
     address internal _admin = makeAddr("admin");
-    address internal _manager = makeAddr("manager");
     address internal _unauthorized = makeAddr("unauthorized");
 
     address internal _alice = makeAddr("alice");
@@ -62,10 +58,9 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
-        assertEq(keccak256(_registry.nodeManagerParameterKey()), keccak256(_NODE_MANAGER_KEY));
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
-        assertEq(_registry.name(), "XMTP Node Operator");
-        assertEq(_registry.symbol(), "XMTP");
+        assertEq(_registry.name(), "XMTP Nodes");
+        assertEq(_registry.symbol(), "nXMTP");
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.maxCanonicalNodes(), 20);
     }
@@ -85,25 +80,25 @@ contract NodeRegistryTests is Test, Utils {
         vm.expectRevert(INodeRegistry.NotAdmin.selector);
 
         vm.prank(_unauthorized);
-        _registry.addNode(address(0), hex"", "", 0);
+        _registry.addNode(address(0), hex"", "");
     }
 
-    function test_addNode_invalidAddress() external {
+    function test_addNode_invalidOwner() external {
         _registry.__setAdmin(_admin);
 
-        vm.expectRevert(INodeRegistry.InvalidAddress.selector);
+        vm.expectRevert(INodeRegistry.InvalidOwner.selector);
 
         vm.prank(_admin);
-        _registry.addNode(address(0), hex"", "", 0);
+        _registry.addNode(address(0), hex"", "");
     }
 
-    function test_addNode_invalidSigningKey() external {
+    function test_addNode_invalidSigningPublicKey() external {
         _registry.__setAdmin(_admin);
 
-        vm.expectRevert(INodeRegistry.InvalidSigningKey.selector);
+        vm.expectRevert(INodeRegistry.InvalidSigningPublicKey.selector);
 
         vm.prank(_admin);
-        _registry.addNode(address(1), hex"", "", 1000);
+        _registry.addNode(address(1), hex"", "");
     }
 
     function test_addNode_invalidHttpAddress() external {
@@ -112,7 +107,17 @@ contract NodeRegistryTests is Test, Utils {
         vm.expectRevert(INodeRegistry.InvalidHttpAddress.selector);
 
         vm.prank(_admin);
-        _registry.addNode(address(1), hex"1F", "", 1000);
+        _registry.addNode(address(1), hex"1f", "");
+    }
+
+    function test_addNode_maxNodesReached() external {
+        _registry.__setAdmin(_admin);
+        _registry.__setNodeCount((type(uint32).max / _NODE_INCREMENT) + 1);
+
+        vm.expectRevert(INodeRegistry.MaxNodesReached.selector);
+
+        vm.prank(_admin);
+        _registry.addNode(address(1), hex"1f", "http://example.com");
     }
 
     function test_addNode_first() external {
@@ -122,27 +127,27 @@ contract NodeRegistryTests is Test, Utils {
         emit INodeRegistry.NodeAdded(
             _NODE_INCREMENT,
             address(1),
-            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
-            "http://example.com",
-            1000
+            0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC,
+            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+            "http://example.com"
         );
 
         vm.prank(_admin);
-        uint256 nodeId_ = _registry.addNode(
+        (uint32 nodeId_, address signer_) = _registry.addNode(
             address(1),
-            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
-            "http://example.com",
-            1000
+            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+            "http://example.com"
         );
 
         assertEq(nodeId_, _NODE_INCREMENT);
+        assertEq(signer_, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
 
         assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(_registry.__getNode(nodeId_).signingKeyPub, hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F");
-        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
+        assertEq(_registry.__getNode(nodeId_).signer, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
         assertEq(_registry.__getNode(nodeId_).isCanonical, false);
-        assertEq(_registry.__getNode(nodeId_).minMonthlyFee, 1000);
+        assertEq(_registry.__getNode(nodeId_).signingPublicKey, hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f");
+        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
 
         assertEq(_registry.__getNodeCount(), 1);
         assertEq(_registry.canonicalNodesCount(), 0);
@@ -156,27 +161,27 @@ contract NodeRegistryTests is Test, Utils {
         emit INodeRegistry.NodeAdded(
             _NODE_INCREMENT * 12,
             address(1),
-            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
-            "http://example.com",
-            1000
+            0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC,
+            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+            "http://example.com"
         );
 
         vm.prank(_admin);
-        uint256 nodeId_ = _registry.addNode(
+        (uint32 nodeId_, address signer_) = _registry.addNode(
             address(1),
-            hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F",
-            "http://example.com",
-            1000
+            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
+            "http://example.com"
         );
 
         assertEq(nodeId_, _NODE_INCREMENT * 12);
+        assertEq(signer_, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
 
         assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(_registry.__getNode(nodeId_).signingKeyPub, hex"1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F1F");
-        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
+        assertEq(_registry.__getNode(nodeId_).signer, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
         assertEq(_registry.__getNode(nodeId_).isCanonical, false);
-        assertEq(_registry.__getNode(nodeId_).minMonthlyFee, 1000);
+        assertEq(_registry.__getNode(nodeId_).signingPublicKey, hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f");
+        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
 
         assertEq(_registry.__getNodeCount(), 12);
         assertEq(_registry.canonicalNodesCount(), 0);
@@ -204,7 +209,7 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_addToNetwork_alreadyInCanonicalNetwork() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, "", "", true, 0);
+        _addNode(1, _alice, address(0), true, "", "");
 
         vm.expectRevert(INodeRegistry.NodeAlreadyInCanonicalNetwork.selector);
 
@@ -214,7 +219,7 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_addToNetwork_maxActiveNodesReached() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, "", "", false, 0);
+        _addNode(1, _alice, address(0), false, "", "");
 
         _registry.__setMaxCanonicalNodes(0);
 
@@ -234,7 +239,7 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_addToNetwork() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, "", "", false, 0);
+        _addNode(1, _alice, address(0), false, "", "");
 
         vm.expectEmit(address(_registry));
         emit INodeRegistry.NodeAddedToCanonicalNetwork(1);
@@ -259,7 +264,7 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_removeFromNetwork_notInCanonicalNetwork() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, "", "", false, 0);
+        _addNode(1, _alice, address(0), false, "", "");
 
         vm.expectRevert(INodeRegistry.NodeNotInCanonicalNetwork.selector);
 
@@ -278,7 +283,7 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_removeFromNetwork() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, "", "", true, 0);
+        _addNode(1, _alice, address(0), true, "", "");
 
         _registry.__addNodeToCanonicalNetwork(1);
         _registry.__setCanonicalNodesCount(1);
@@ -293,122 +298,44 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(_registry.canonicalNodesCount(), 0);
     }
 
-    /* ============ transferFrom ============ */
-
-    function test_transferFrom_unauthorized() external {
-        _addNode(1, _alice, "", "", false, 0);
-
-        vm.expectRevert();
-
-        vm.prank(_unauthorized);
-        _registry.transferFrom(_alice, _bob, 1);
-    }
-
-    function test_transferFrom_asOperator() external {
-        _addNode(1, _alice, "", "", false, 0);
-
-        vm.expectEmit(address(_registry));
-        emit IERC721.Transfer(_alice, _bob, 1);
-
-        vm.prank(_alice);
-        _registry.transferFrom(_alice, _bob, 1);
-
-        assertEq(_registry.ownerOf(1), _bob);
-    }
-
-    function test_transferFrom_asNodeManager() external {
-        _registry.__setNodeManager(_manager);
-        _addNode(1, _alice, "", "", false, 0);
-
-        vm.expectEmit(address(_registry));
-        emit IERC721.Transfer(_alice, _bob, 1);
-
-        vm.prank(_manager);
-        _registry.transferFrom(_alice, _bob, 1);
-
-        assertEq(_registry.ownerOf(1), _bob);
-    }
-
     /* ============ setHttpAddress ============ */
 
-    function test_setHttpAddress_notManager() external {
-        _registry.__setNodeManager(_manager);
+    function test_setHttpAddress_notNodeOwner() external {
+        _addNode(1, _alice, address(0), false, "", "");
 
-        _addNode(1, _alice, "", "", false, 0);
-
-        vm.expectRevert(INodeRegistry.NotNodeManager.selector);
+        vm.expectRevert(INodeRegistry.NotNodeOwner.selector);
 
         vm.prank(_unauthorized);
         _registry.setHttpAddress(1, "");
     }
 
     function test_setHttpAddress_nonexistentToken() external {
-        _registry.__setNodeManager(_manager);
-
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
 
-        vm.prank(_manager);
+        vm.prank(_alice);
         _registry.setHttpAddress(1, "");
     }
 
     function test_setHttpAddress_invalidHttpAddress() external {
-        _registry.__setNodeManager(_manager);
-
-        _addNode(1, _alice, "", "", false, 0);
+        _addNode(1, _alice, address(0), false, "", "");
 
         vm.expectRevert(INodeRegistry.InvalidHttpAddress.selector);
 
-        vm.prank(_manager);
+        vm.prank(_alice);
         _registry.setHttpAddress(1, "");
     }
 
     function test_setHttpAddress() external {
-        _registry.__setNodeManager(_manager);
-
-        _addNode(1, _alice, "", "", false, 0);
+        _addNode(1, _alice, address(0), false, "", "");
 
         vm.expectEmit(address(_registry));
 
         emit INodeRegistry.HttpAddressUpdated(1, "http://example.com");
 
-        vm.prank(_manager);
+        vm.prank(_alice);
         _registry.setHttpAddress(1, "http://example.com");
 
         assertEq(_registry.__getNode(1).httpAddress, "http://example.com");
-    }
-
-    /* ============ setMinMonthlyFee ============ */
-
-    function test_setMinMonthlyFee_notManager() external {
-        _registry.__setNodeManager(_manager);
-
-        vm.expectRevert(INodeRegistry.NotNodeManager.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setMinMonthlyFee(1, 0);
-    }
-
-    function test_setMinMonthlyFee_nonexistentToken() external {
-        _registry.__setNodeManager(_manager);
-
-        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
-
-        vm.prank(_manager);
-        _registry.setMinMonthlyFee(1, 0);
-    }
-
-    function test_setMinMonthlyFee() external {
-        _registry.__setNodeManager(_manager);
-
-        _addNode(1, _alice, "", "", false, 0);
-
-        vm.expectEmit(address(_registry));
-        emit INodeRegistry.MinMonthlyFeeUpdated(1, 1000);
-
-        vm.prank(_manager);
-        _registry.setMinMonthlyFee(1, 1000);
-
-        assertEq(_registry.__getNode(1).minMonthlyFee, 1000);
     }
 
     /* ============ setMaxCanonicalNodes ============ */
@@ -441,38 +368,6 @@ contract NodeRegistryTests is Test, Utils {
         _registry.setMaxCanonicalNodes(10);
 
         assertEq(_registry.maxCanonicalNodes(), 10);
-    }
-
-    /* ============ setNodeOperatorCommissionPercent ============ */
-
-    function test_setNodeOperatorCommissionPercent_notAdmin() external {
-        _registry.__setAdmin(_admin);
-
-        vm.expectRevert(INodeRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setNodeOperatorCommissionPercent(0);
-    }
-
-    function test_setNodeOperatorCommissionPercent_invalidCommissionPercent() external {
-        _registry.__setAdmin(_admin);
-
-        vm.expectRevert(INodeRegistry.InvalidCommissionPercent.selector);
-
-        vm.prank(_admin);
-        _registry.setNodeOperatorCommissionPercent(_MAX_BPS + 1);
-    }
-
-    function test_setNodeOperatorCommissionPercent() external {
-        _registry.__setAdmin(_admin);
-
-        vm.expectEmit(address(_registry));
-        emit INodeRegistry.NodeOperatorCommissionPercentUpdated(1000);
-
-        vm.prank(_admin);
-        _registry.setNodeOperatorCommissionPercent(1000);
-
-        assertEq(_registry.nodeOperatorCommissionPercent(), 1000);
     }
 
     /* ============ setBaseURI ============ */
@@ -539,29 +434,6 @@ contract NodeRegistryTests is Test, Utils {
         _registry.updateAdmin();
     }
 
-    /* ============ updateNodeManager ============ */
-
-    function test_updateNodeManager_noChange() external {
-        _registry.__setNodeManager(_manager);
-
-        _mockParameterRegistryCall(_NODE_MANAGER_KEY, _manager);
-
-        vm.expectRevert(INodeRegistry.NoChange.selector);
-
-        _registry.updateNodeManager();
-    }
-
-    function test_updateNodeManager() external {
-        _registry.__setNodeManager(_manager);
-
-        _mockParameterRegistryCall(_NODE_MANAGER_KEY, address(1));
-
-        vm.expectEmit(address(_registry));
-        emit INodeRegistry.NodeManagerUpdated(address(1));
-
-        _registry.updateNodeManager();
-    }
-
     /* ============ maxCanonicalNodes ============ */
 
     function test_maxCanonicalNodes() external {
@@ -586,24 +458,12 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(_registry.canonicalNodesCount(), 20);
     }
 
-    /* ============ nodeOperatorCommissionPercent ============ */
-
-    function test_nodeOperatorCommissionPercent() external {
-        _registry.__setNodeOperatorCommissionPercent(1000);
-
-        assertEq(_registry.nodeOperatorCommissionPercent(), 1000);
-
-        _registry.__setNodeOperatorCommissionPercent(2000);
-
-        assertEq(_registry.nodeOperatorCommissionPercent(), 2000);
-    }
-
     /* ============ getAllNodes ============ */
 
     function test_getAllNodes() external {
         INodeRegistry.NodeWithId[] memory allNodes_;
 
-        _addNode(_NODE_INCREMENT, _alice, "", "", false, 0);
+        _addNode(_NODE_INCREMENT, _alice, address(0), false, "", "");
         _registry.__setNodeCount(1);
 
         allNodes_ = _registry.getAllNodes();
@@ -611,7 +471,7 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(allNodes_.length, 1);
         assertEq(allNodes_[0].nodeId, _NODE_INCREMENT);
 
-        _addNode(_NODE_INCREMENT * 2, _alice, "", "", false, 0);
+        _addNode(_NODE_INCREMENT * 2, _alice, address(0), false, "", "");
         _registry.__setNodeCount(2);
 
         allNodes_ = _registry.getAllNodes();
@@ -641,14 +501,14 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_getNode() external {
-        _addNode(1, _alice, hex"1F1F1F", "httpAddress", true, 1000);
+        _addNode(1, _alice, address(2), true, hex"1f1f1f", "httpAddress");
 
         INodeRegistry.Node memory node_ = _registry.getNode(1);
 
-        assertEq(node_.signingKeyPub, hex"1F1F1F");
-        assertEq(node_.httpAddress, "httpAddress");
-        assertEq(node_.minMonthlyFee, 1000);
+        assertEq(node_.signer, address(2));
         assertTrue(node_.isCanonical);
+        assertEq(node_.signingPublicKey, hex"1f1f1f");
+        assertEq(node_.httpAddress, "httpAddress");
     }
 
     /* ============ getIsCanonicalNode ============ */
@@ -660,13 +520,31 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_getIsCanonicalNode() external {
-        _addNode(1, _alice, hex"1F1F1F", "httpAddress", true, 1000);
+        _addNode(1, _alice, address(0), true, hex"", "");
 
         assertTrue(_registry.getIsCanonicalNode(1));
 
         _registry.__removeNodeFromCanonicalNetwork(1);
 
         assertFalse(_registry.getIsCanonicalNode(1));
+    }
+
+    /* ============ getSigner ============ */
+
+    function test_getSigner_nonexistentToken() external {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
+
+        _registry.getSigner(1);
+    }
+
+    function test_getSigner() external {
+        _addNode(1, _alice, address(2), false, hex"", "");
+
+        assertEq(_registry.getSigner(1), address(2));
+
+        _registry.__removeNodeFromCanonicalNetwork(1);
+
+        assertEq(_registry.getSigner(1), address(2));
     }
 
     /* ============ admin ============ */
@@ -679,18 +557,6 @@ contract NodeRegistryTests is Test, Utils {
         _registry.__setAdmin(address(1));
 
         assertEq(_registry.admin(), address(1));
-    }
-
-    /* ============ nodeManager ============ */
-
-    function test_nodeManager() external {
-        _registry.__setNodeManager(_manager);
-
-        assertEq(_registry.nodeManager(), _manager);
-
-        _registry.__setNodeManager(address(1));
-
-        assertEq(_registry.nodeManager(), address(1));
     }
 
     /* ============ migrate ============ */
@@ -726,7 +592,6 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_migrate() external {
         _registry.__setNodeCount(100);
-        _registry.__setNodeOperatorCommissionPercent(50);
 
         address newImplementation_ = address(new NodeRegistryHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
@@ -745,21 +610,20 @@ contract NodeRegistryTests is Test, Utils {
         assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.__getNodeCount(), 100);
-        assertEq(_registry.nodeOperatorCommissionPercent(), 50);
     }
 
     /* ============ helper functions ============ */
 
     function _addNode(
         uint256 nodeId_,
-        address operator_,
-        bytes memory signingKeyPub_,
-        string memory httpAddress_,
+        address owner_,
+        address signer_,
         bool inCanonical_,
-        uint256 minMonthlyFee_
+        bytes memory signingPublicKey_,
+        string memory httpAddress_
     ) internal {
-        _registry.__setNode(nodeId_, signingKeyPub_, httpAddress_, inCanonical_, minMonthlyFee_);
-        _registry.__mint(operator_, nodeId_);
+        _registry.__setNode(nodeId_, signer_, inCanonical_, signingPublicKey_, httpAddress_);
+        _registry.__mint(owner_, nodeId_);
     }
 
     function _mockParameterRegistryCall(bytes memory key_, address value_) internal {

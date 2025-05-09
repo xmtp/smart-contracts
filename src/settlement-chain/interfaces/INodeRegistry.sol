@@ -19,16 +19,16 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /**
      * @notice Struct representing a node in the registry.
-     * @param  signingKeyPub The public key used for node signing/verification.
-     * @param  httpAddress   The HTTP endpoint address for the node.
-     * @param  isCanonical   A flag indicating whether the node is part of the canonical network.
-     * @param  minMonthlyFee The minimum monthly fee collected by the node operator.
+     * @param  signer           The address derived by the signing public key, for convenience.
+     * @param  isCanonical      A flag indicating whether the node is part of the canonical network.
+     * @param  signingPublicKey The public key used for node signing/verification.
+     * @param  httpAddress      The HTTP endpoint address for the node.
      */
     struct Node {
-        bytes signingKeyPub;
-        string httpAddress;
+        address signer;
         bool isCanonical;
-        uint256 minMonthlyFee;
+        bytes signingPublicKey;
+        string httpAddress;
     }
 
     /**
@@ -37,7 +37,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      * @param  node   The node struct.
      */
     struct NodeWithId {
-        uint256 nodeId;
+        uint32 nodeId;
         Node node;
     }
 
@@ -50,12 +50,6 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     event AdminUpdated(address indexed admin);
 
     /**
-     * @notice Emitted when the node manager is updated.
-     * @param  nodeManager The new node manager.
-     */
-    event NodeManagerUpdated(address indexed nodeManager);
-
-    /**
      * @notice Emitted when the base URI is updated.
      * @param  baseURI The new base URI.
      */
@@ -66,7 +60,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      * @param  nodeId      The identifier of the node.
      * @param  httpAddress The new HTTP address.
      */
-    event HttpAddressUpdated(uint256 indexed nodeId, string httpAddress);
+    event HttpAddressUpdated(uint32 indexed nodeId, string httpAddress);
 
     /**
      * @notice Emitted when the maximum number of canonical nodes is updated.
@@ -75,45 +69,32 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     event MaxCanonicalNodesUpdated(uint8 maxCanonicalNodes);
 
     /**
-     * @notice Emitted when the minimum monthly fee for a node is updated.
-     * @param  nodeId        The identifier of the node.
-     * @param  minMonthlyFee The updated minimum fee.
-     */
-    event MinMonthlyFeeUpdated(uint256 indexed nodeId, uint256 minMonthlyFee);
-
-    /**
      * @notice Emitted when a new node is added and its NFT minted.
-     * @param  nodeId        The unique identifier for the node (starts at 100, increments by 100).
-     * @param  owner         The address that receives the new node NFT.
-     * @param  signingKeyPub The node’s signing key public value.
-     * @param  httpAddress   The node’s HTTP endpoint.
-     * @param  minMonthlyFee The minimum monthly fee for the node.
+     * @param  nodeId           The unique identifier for the node (starts at 100, increments by 100).
+     * @param  owner            The address that receives the new node NFT.
+     * @param  signer           The address derived by the signing public key, for convenience.
+     * @param  signingPublicKey The public key used for node signing/verification.
+     * @param  httpAddress      The node’s HTTP endpoint.
      */
     event NodeAdded(
-        uint256 indexed nodeId,
+        uint32 indexed nodeId,
         address indexed owner,
-        bytes signingKeyPub,
-        string httpAddress,
-        uint256 minMonthlyFee
+        address indexed signer,
+        bytes signingPublicKey,
+        string httpAddress
     );
 
     /**
      * @notice Emitted when a node is added to the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeAddedToCanonicalNetwork(uint256 indexed nodeId);
+    event NodeAddedToCanonicalNetwork(uint32 indexed nodeId);
 
     /**
      * @notice Emitted when a node is removed from the canonical network.
      * @param  nodeId The identifier of the node.
      */
-    event NodeRemovedFromCanonicalNetwork(uint256 indexed nodeId);
-
-    /**
-     * @notice Emitted when the node operator commission percent is updated.
-     * @param  commissionPercent The new commission percentage.
-     */
-    event NodeOperatorCommissionPercentUpdated(uint16 commissionPercent);
+    event NodeRemovedFromCanonicalNetwork(uint32 indexed nodeId);
 
     /* ============ Custom Errors ============ */
 
@@ -126,17 +107,14 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice Thrown when failing to remove a node from the canonical network.
     error FailedToRemoveNodeFromCanonicalNetwork();
 
-    /// @notice Thrown when an invalid address is provided.
-    error InvalidAddress();
-
-    /// @notice Thrown when an invalid commission percentage is provided.
-    error InvalidCommissionPercent();
+    /// @notice Thrown when an invalid owner is provided.
+    error InvalidOwner();
 
     /// @notice Thrown when an invalid HTTP address is provided.
     error InvalidHttpAddress();
 
-    /// @notice Thrown when an invalid signing key is provided.
-    error InvalidSigningKey();
+    /// @notice Thrown when an invalid signing public key is provided.
+    error InvalidSigningPublicKey();
 
     /// @notice Thrown when an invalid URI is provided.
     error InvalidURI();
@@ -159,8 +137,11 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice Thrown when the caller is not the admin.
     error NotAdmin();
 
-    /// @notice Thrown when the caller is not the node manager.
-    error NotNodeManager();
+    /// @notice Thrown when the maximum number of nodes is reached.
+    error MaxNodesReached();
+
+    /// @notice Thrown when the caller is not the node owner.
+    error NotNodeOwner();
 
     /* ============ Initialization ============ */
 
@@ -173,37 +154,30 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /**
      * @notice Adds a new node to the registry and mints its corresponding ERC721 token.
+     * @param  owner_            The address that will own the new node node/NFT.
+     * @param  signingPublicKey_ The public key used for node signing/verification.
+     * @param  httpAddress_      The node’s HTTP address.
+     * @return nodeId_           The unique identifier of the newly added node.
+     * @return signer_           The address derived by the signing public key, for convenience.
      * @dev    Node IDs start at 100 and increase by 100 for each new node.
-     * @param  to_            The address that will own the new node NFT.
-     * @param  signingKeyPub_ The public signing key for the node.
-     * @param  httpAddress_   The node’s HTTP address.
-     * @param  minMonthlyFee_ The minimum monthly fee that the node operator collects.
-     * @return nodeId_        The unique identifier of the newly added node.
      */
     function addNode(
-        address to_,
-        bytes calldata signingKeyPub_,
-        string calldata httpAddress_,
-        uint256 minMonthlyFee_
-    ) external returns (uint256 nodeId_);
+        address owner_,
+        bytes calldata signingPublicKey_,
+        string calldata httpAddress_
+    ) external returns (uint32 nodeId_, address signer_);
 
     /**
      * @notice Adds a node to the canonical network.
      * @param  nodeId_ The unique identifier of the node.
      */
-    function addToNetwork(uint256 nodeId_) external;
+    function addToNetwork(uint32 nodeId_) external;
 
     /**
      * @notice Removes a node from the canonical network.
      * @param  nodeId_ The unique identifier of the node.
      */
-    function removeFromNetwork(uint256 nodeId_) external;
-
-    /**
-     * @notice Sets the commission percentage that the node operator receives.
-     * @param  newCommissionPercent_ The new commission percentage.
-     */
-    function setNodeOperatorCommissionPercent(uint16 newCommissionPercent_) external;
+    function removeFromNetwork(uint32 nodeId_) external;
 
     /**
      * @notice Sets the maximum number of canonical nodes.
@@ -217,21 +191,14 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      */
     function setBaseURI(string calldata newBaseURI_) external;
 
-    /* ============ Node Manager Functions ============ */
+    /* ============ Node Owner Functions ============ */
 
     /**
      * @notice Set the HTTP address of an existing node.
      * @param  nodeId_      The unique identifier of the node.
      * @param  httpAddress_ The new HTTP address.
      */
-    function setHttpAddress(uint256 nodeId_, string calldata httpAddress_) external;
-
-    /**
-     * @notice Set the minimum monthly fee for a node.
-     * @param  nodeId_        The unique identifier of the node.
-     * @param  minMonthlyFee_ The new minimum monthly fee.
-     */
-    function setMinMonthlyFee(uint256 nodeId_, uint256 minMonthlyFee_) external;
+    function setHttpAddress(uint32 nodeId_, string calldata httpAddress_) external;
 
     /* ============ Interactive Functions ============ */
 
@@ -240,16 +207,7 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      */
     function updateAdmin() external;
 
-    /**
-     * @notice Updates the node manager by referring to the last node manager parameter from the parameter registry.
-     */
-    function updateNodeManager() external;
-
     /* ============ View/Pure Functions ============ */
-
-    /// @notice The maximum commission percentage that the node operator can receive (100% in basis points).
-    // slither-disable-next-line naming-convention
-    function MAX_BPS() external pure returns (uint16 maxBps_);
 
     /// @notice The increment for node IDs, which allows for 100 shard node IDs per node in the future (modulus 100).
     // slither-disable-next-line naming-convention
@@ -258,14 +216,8 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice The address of the admin.
     function admin() external view returns (address admin_);
 
-    /// @notice The address of the node manager.
-    function nodeManager() external view returns (address nodeManager_);
-
     /// @notice The parameter registry key used to fetch the admin.
     function adminParameterKey() external pure returns (bytes memory key_);
-
-    /// @notice The parameter registry key used to fetch the node manager.
-    function nodeManagerParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
@@ -279,9 +231,6 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice The number of nodes that are part of the canonical network.
     function canonicalNodesCount() external view returns (uint8 canonicalNodesCount_);
 
-    /// @notice The commission percentage that the node operator receives.
-    function nodeOperatorCommissionPercent() external view returns (uint16 commissionPercent_);
-
     /**
      * @notice Gets all nodes regardless of their health status.
      * @return allNodes_ An array of all nodes in the registry.
@@ -292,19 +241,26 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
      * @notice Gets the total number of nodes in the registry.
      * @return nodeCount_ The total number of nodes.
      */
-    function getAllNodesCount() external view returns (uint256 nodeCount_);
+    function getAllNodesCount() external view returns (uint32 nodeCount_);
 
     /**
      * @notice Retrieves the details of a given node.
      * @param  nodeId_ The unique identifier of the node.
      * @return node_   The Node struct containing the node's details.
      */
-    function getNode(uint256 nodeId_) external view returns (Node memory node_);
+    function getNode(uint32 nodeId_) external view returns (Node memory node_);
 
     /**
      * @notice Retrieves whether a node is part of the canonical network.
      * @param  nodeId_          The unique identifier of the node.
      * @return isCanonicalNode_ A boolean indicating whether the node is part of the canonical network.
      */
-    function getIsCanonicalNode(uint256 nodeId_) external view returns (bool isCanonicalNode_);
+    function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_);
+
+    /**
+     * @notice Retrieves the signer of a node.
+     * @param  nodeId_ The unique identifier of the node.
+     * @return signer_ The address of the signer.
+     */
+    function getSigner(uint32 nodeId_) external view returns (address signer_);
 }

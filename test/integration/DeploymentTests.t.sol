@@ -67,7 +67,6 @@ contract DeploymentTests is Test {
     bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
 
     bytes internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
-    bytes internal constant _NODE_REGISTRY_NODE_MANAGER_KEY = "xmtp.nodeRegistry.nodeManager";
 
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
@@ -94,7 +93,6 @@ contract DeploymentTests is Test {
     uint8 internal constant _RETRYABLE_TICKET_KIND = 9;
 
     address internal _admin = makeAddr("admin");
-    address internal _nodeManager = makeAddr("nodeManager");
     address internal _alice = makeAddr("alice");
     address internal _settler = makeAddr("settler");
     address internal _feeDistributor = makeAddr("feeDistributor");
@@ -237,8 +235,8 @@ contract DeploymentTests is Test {
         // Set the parameters as need for the Node Registry.
         _setNodeRegistryStartingParameters();
 
-        // Update the Node Registry admin and node manager.
-        _updateNodeRegistryAdminAndNodeManager();
+        // Update the Node Registry admin.
+        _updateNodeRegistryAdmin();
     }
 
     /* ============ Factory Deployer Helpers ============ */
@@ -605,16 +603,13 @@ contract DeploymentTests is Test {
         assertEq(registry_.implementation(), implementation_);
     }
 
-    function _updateNodeRegistryAdminAndNodeManager() internal {
+    function _updateNodeRegistryAdmin() internal {
         vm.selectFork(_baseForkId);
 
-        vm.startPrank(_alice);
+        vm.prank(_alice);
         _nodeRegistryProxy.updateAdmin();
-        _nodeRegistryProxy.updateNodeManager();
-        vm.stopPrank();
 
         assertEq(_nodeRegistryProxy.admin(), _admin);
-        assertEq(_nodeRegistryProxy.nodeManager(), _nodeManager);
     }
 
     /* ============ Generic Deployer Helpers ============ */
@@ -716,19 +711,16 @@ contract DeploymentTests is Test {
     function _setNodeRegistryStartingParameters() internal {
         vm.selectFork(_baseForkId);
 
-        bytes[] memory keys_ = new bytes[](2);
+        bytes[] memory keys_ = new bytes[](1);
         keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
-        keys_[1] = _NODE_REGISTRY_NODE_MANAGER_KEY;
 
-        bytes32[] memory values_ = new bytes32[](2);
+        bytes32[] memory values_ = new bytes32[](1);
         values_[0] = bytes32(uint256(uint160(_admin)));
-        values_[1] = bytes32(uint256(uint160(_nodeManager)));
 
         vm.prank(_admin);
         _settlementChainParameterRegistryProxy.set(keys_, values_);
 
         assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
     }
 
     function _bridgeBroadcasterStartingParameters() internal {
