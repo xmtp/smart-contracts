@@ -171,7 +171,7 @@ contract SequentialMerkleProofsTests is Test {
 
     function test_verify_balancedSamples() external view {
         for (uint256 index_; index_ < _balancedSamples.length; ++index_) {
-            Sample storage sample_ = _balancedSamples[0];
+            Sample storage sample_ = _balancedSamples[index_];
             _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
         }
     }
@@ -194,7 +194,7 @@ contract SequentialMerkleProofsTests is Test {
 
     function test_verify_unbalancedSamples() external view {
         for (uint256 index_; index_ < _unbalancedSamples.length; ++index_) {
-            Sample storage sample_ = _unbalancedSamples[0];
+            Sample storage sample_ = _unbalancedSamples[index_];
             _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
         }
     }
@@ -257,7 +257,7 @@ contract SequentialMerkleProofsTests is Test {
 
     function test_getRoot_balancedSamples() external view {
         for (uint256 index_; index_ < _balancedSamples.length; ++index_) {
-            Sample storage sample_ = _balancedSamples[0];
+            Sample storage sample_ = _balancedSamples[index_];
 
             assertEq(
                 _sequentialMerkleProofs.getRoot(sample_.startingIndex, sample_.leaves, sample_.proofElements),
@@ -268,7 +268,7 @@ contract SequentialMerkleProofsTests is Test {
 
     function test_getRoot_unbalancedSamples() external view {
         for (uint256 index_; index_ < _unbalancedSamples.length; ++index_) {
-            Sample storage sample_ = _unbalancedSamples[0];
+            Sample storage sample_ = _unbalancedSamples[index_];
 
             assertEq(
                 _sequentialMerkleProofs.getRoot(sample_.startingIndex, sample_.leaves, sample_.proofElements),
@@ -555,7 +555,7 @@ contract SequentialMerkleProofsTests is Test {
         _unbalancedSamples[3].leaves[20] = bytes(hex"44fb0e55a04f4d5accd7a9e00fd5bbbf8926083ef169c0711f503ae16b589c20");
         _unbalancedSamples[3].leaves[21] = bytes(hex"2815ef424dd0613d69f70546821ebddf2fe1b7452510cd21d25f3e438863e8a3");
 
-        _unbalancedSamples[3].proofElements[0] = bytes32(_unbalancedSamples[2].leafCount);
+        _unbalancedSamples[3].proofElements[0] = bytes32(_unbalancedSamples[3].leafCount);
         _unbalancedSamples[3].proofElements[1] = 0x55f9b393403d39fdf3b35fe8f394e13a272509df05d5562e5da6937c11bb1214;
         _unbalancedSamples[3].proofElements[2] = 0xa4c0ad363d17cb84be9e3f757278de2b26843e918e48e33e1b00438764fefa2b;
         _unbalancedSamples[3].proofElements[3] = 0xafee522c5ba27318361dd426e355fa02e5821fbc8b2ba52dea3b36885d76ec94;
@@ -565,32 +565,44 @@ contract SequentialMerkleProofsTests is Test {
     }
 
     function _testVerifyWithIncorrectRoot(Sample storage sample_) internal {
-        sample_.root = bytes32(uint256(sample_.root) + 1);
+        unchecked {
+            sample_.root = bytes32(uint256(sample_.root) + 1);
+        }
 
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
-        sample_.root = bytes32(uint256(sample_.root) - 1);
+        unchecked {
+            sample_.root = bytes32(uint256(sample_.root) - 1);
+        }
     }
 
     function _testVerifyWithIncorrectStartingIndex(Sample storage sample_) internal {
-        sample_.startingIndex += 1;
+        unchecked {
+            sample_.startingIndex += 1;
+        }
 
         vm.expectRevert();
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
-        sample_.startingIndex -= 1;
+        unchecked {
+            sample_.startingIndex -= 1;
+        }
     }
 
     function _testVerifyWithOutOfBoundsStartingIndex(Sample storage sample_) internal {
         uint256 originalStartingIndex_ = sample_.startingIndex;
 
-        sample_.startingIndex = sample_.leafCount + 1;
+        unchecked {
+            sample_.startingIndex = sample_.leafCount + 1;
+        }
 
         vm.expectRevert();
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
-        sample_.startingIndex = originalStartingIndex_;
+        unchecked {
+            sample_.startingIndex = originalStartingIndex_;
+        }
     }
 
     function _testVerifyWithIncorrectLeaf(Sample storage sample_) internal {
@@ -605,20 +617,28 @@ contract SequentialMerkleProofsTests is Test {
     }
 
     function _testVerifyWithIncorrectLeafCount(Sample storage sample_) internal {
-        sample_.proofElements[0] = bytes32(uint256(sample_.proofElements[0]) + 1);
+        unchecked {
+            sample_.proofElements[0] = bytes32(uint256(sample_.proofElements[0]) + 1);
+        }
 
         vm.expectRevert();
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
-        sample_.proofElements[0] = bytes32(uint256(sample_.proofElements[0]) - 1);
+        unchecked {
+            sample_.proofElements[0] = bytes32(uint256(sample_.proofElements[0]) - 1);
+        }
     }
 
     function _testVerifyWithIncorrectProofElement(Sample storage sample_) internal {
-        sample_.proofElements[1] = bytes32(uint256(sample_.proofElements[1]) + 1);
+        unchecked {
+            sample_.proofElements[1] = bytes32(uint256(sample_.proofElements[1]) + 1);
+        }
 
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
-        sample_.proofElements[1] = bytes32(uint256(sample_.proofElements[1]) - 1);
+        unchecked {
+            sample_.proofElements[1] = bytes32(uint256(sample_.proofElements[1]) - 1);
+        }
     }
 }
