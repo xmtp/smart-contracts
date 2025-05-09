@@ -5,9 +5,8 @@ import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol"
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC20Like } from "./interfaces/External.sol";
+import { IERC20Like, IParameterRegistryLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -89,8 +88,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      *         minimal gas cost.
      */
     constructor(address parameterRegistry_, address token_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(token = token_), ZeroToken());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(token = token_)) revert ZeroToken();
         _disableInitializers();
     }
 
@@ -119,14 +118,14 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function requestWithdrawal(uint96 amount_) external whenNotPaused {
-        require(amount_ > 0, ZeroWithdrawalAmount());
+        if (amount_ == 0) revert ZeroWithdrawalAmount();
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
         Payer storage payer_ = $.payers[msg.sender];
 
         // NOTE: For some reason, slither complains that this is a `Dangerous comparisons: block-timestamp` issue.
         // slither-disable-next-line timestamp
-        require(payer_.pendingWithdrawal == 0, PendingWithdrawalExists());
+        if (payer_.pendingWithdrawal != 0) revert PendingWithdrawalExists();
 
         payer_.pendingWithdrawal = amount_;
         payer_.withdrawableTimestamp = uint32(block.timestamp) + $.withdrawLockPeriod;
@@ -136,7 +135,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         uint96 debtIncurred_ = _decreaseBalance(msg.sender, amount_);
 
         // If debt was incurred decreasing the payer's balance, then the payer's balance must have been insufficient.
-        require(debtIncurred_ == 0, InsufficientBalance());
+        if (debtIncurred_ != 0) revert InsufficientBalance();
     }
 
     /// @inheritdoc IPayerRegistry
@@ -145,7 +144,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         Payer storage payerInfo_ = $.payers[msg.sender];
         uint96 pendingWithdrawal_ = payerInfo_.pendingWithdrawal;
 
-        require(pendingWithdrawal_ != 0, NoPendingWithdrawal());
+        if (pendingWithdrawal_ == 0) revert NoPendingWithdrawal();
 
         emit WithdrawalCancelled(msg.sender);
 
@@ -163,14 +162,13 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         Payer storage payer_ = $.payers[msg.sender];
         uint96 pendingWithdrawal_ = payer_.pendingWithdrawal;
 
-        require(pendingWithdrawal_ > 0, NoPendingWithdrawal());
-        require(payer_.balance >= 0, PayerInDebt());
+        if (pendingWithdrawal_ == 0) revert NoPendingWithdrawal();
+        if (payer_.balance < 0) revert PayerInDebt();
 
         // slither-disable-next-line timestamp
-        require(
-            block.timestamp >= payer_.withdrawableTimestamp,
-            WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp)
-        );
+        if (block.timestamp < payer_.withdrawableTimestamp) {
+            revert WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp);
+        }
 
         delete payer_.pendingWithdrawal;
         delete payer_.withdrawableTimestamp;
@@ -207,11 +205,12 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function sendExcessToFeeDistributor() external whenNotPaused returns (uint96 excess_) {
-        require((excess_ = excess()) != 0, NoExcess());
+        // slither-disable-next-line incorrect-equality
+        if ((excess_ = excess()) == 0) revert NoExcess();
 
         address feeDistributor_ = _getPayerRegistryStorage().feeDistributor;
 
-        require(_isNotZero(feeDistributor_), ZeroFeeDistributor());
+        if (_isZero(feeDistributor_)) revert ZeroFeeDistributor();
 
         emit ExcessTransferred(excess_);
 
@@ -220,27 +219,27 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateSettler() external {
-        require(_updateSettler(), NoChange());
+        if (!_updateSettler()) revert NoChange();
     }
 
     /// @inheritdoc IPayerRegistry
     function updateFeeDistributor() external {
-        require(_updateFeeDistributor(), NoChange());
+        if (!_updateFeeDistributor()) revert NoChange();
     }
 
     /// @inheritdoc IPayerRegistry
     function updateMinimumDeposit() external {
-        require(_updateMinimumDeposit(), NoChange());
+        if (!_updateMinimumDeposit()) revert NoChange();
     }
 
     /// @inheritdoc IPayerRegistry
     function updateWithdrawLockPeriod() external {
-        require(_updateWithdrawLockPeriod(), NoChange());
+        if (!_updateWithdrawLockPeriod()) revert NoChange();
     }
 
     /// @inheritdoc IPayerRegistry
     function updatePauseStatus() external {
-        require(_updatePauseStatus(), NoChange());
+        if (!_updatePauseStatus()) revert NoChange();
     }
 
     /// @inheritdoc IMigratable
@@ -391,54 +390,70 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @dev Transfers `amount_` of tokens from `from_` to this contract to satisfy a deposit for `payer_`.
      */
     function _deposit(address from_, address payer_, uint96 amount_) internal {
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        if (amount_ < _getPayerRegistryStorage().minimumDeposit) {
+            revert InsufficientDeposit(amount_, _getPayerRegistryStorage().minimumDeposit);
+        }
 
-        require(amount_ >= $.minimumDeposit, InsufficientDeposit(amount_, $.minimumDeposit));
-
-        emit Deposit(payer_, amount_);
+        SafeTransferLib.safeTransferFrom(token, from_, address(this), amount_);
 
         uint96 debtRepaid_ = _increaseBalance(payer_, amount_);
 
-        $.totalDeposits += _toInt104(amount_);
-        $.totalDebt -= debtRepaid_;
+        _getPayerRegistryStorage().totalDebt -= debtRepaid_;
+        _getPayerRegistryStorage().totalDeposits += _toInt104(amount_);
 
-        SafeTransferLib.safeTransferFrom(token, from_, address(this), amount_);
+        // slither-disable-next-line reentrancy-events
+        emit Deposit(payer_, amount_);
     }
 
     /// @dev Sets the settler address by fetching it from the parameter registry, returning whether it changed.
     function _updateSettler() internal returns (bool changed_) {
         address newSettler_ = _toAddress(_getRegistryParameter(settlerParameterKey()));
+
+        if (_isZero(newSettler_)) revert ZeroSettler();
+
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        require(_isNotZero(newSettler_), ZeroSettler());
+        if ($.settler == newSettler_) return false;
 
-        changed_ = newSettler_ != $.settler;
+        $.settler = newSettler_;
 
-        emit SettlerUpdated($.settler = newSettler_);
+        emit SettlerUpdated(newSettler_);
+
+        return true;
     }
 
     /// @dev Sets the fee distributor address by fetching it from the parameter registry, returning whether it changed.
     function _updateFeeDistributor() internal returns (bool changed_) {
         address newFeeDistributor_ = _toAddress(_getRegistryParameter(feeDistributorParameterKey()));
+
+        if (_isZero(newFeeDistributor_)) revert ZeroFeeDistributor();
+
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        require(_isNotZero(newFeeDistributor_), ZeroFeeDistributor());
+        if ($.feeDistributor == newFeeDistributor_) return false;
 
-        changed_ = newFeeDistributor_ != $.feeDistributor;
+        $.feeDistributor = newFeeDistributor_;
 
-        emit FeeDistributorUpdated($.feeDistributor = newFeeDistributor_);
+        emit FeeDistributorUpdated(newFeeDistributor_);
+
+        return true;
     }
 
     /// @dev Sets the minimum deposit by fetching it from the parameter registry, returning whether it changed.
     function _updateMinimumDeposit() internal returns (bool changed_) {
         uint96 newMinimumDeposit_ = _toUint96(_getRegistryParameter(minimumDepositParameterKey()));
+
+        if (newMinimumDeposit_ == 0) revert ZeroMinimumDeposit();
+
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        require(newMinimumDeposit_ != 0, ZeroMinimumDeposit());
+        if ($.minimumDeposit == newMinimumDeposit_) return false;
 
-        changed_ = newMinimumDeposit_ != $.minimumDeposit;
+        $.minimumDeposit = newMinimumDeposit_;
 
-        emit MinimumDepositUpdated($.minimumDeposit = newMinimumDeposit_);
+        emit MinimumDepositUpdated(newMinimumDeposit_);
+
+        return true;
     }
 
     /// @dev Sets the withdraw lock period by fetching it from the parameter registry, returning whether it changed.
@@ -478,8 +493,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         return uint96(uint104(totalDeposits_ + _toInt104(totalDebt_)));
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {
@@ -511,10 +526,10 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     function _revertIfNotSettler() internal view {
-        require(msg.sender == _getPayerRegistryStorage().settler, NotSettler());
+        if (msg.sender != _getPayerRegistryStorage().settler) revert NotSettler();
     }
 
     function _revertIfPaused() internal view {
-        require(!_getPayerRegistryStorage().paused, Paused());
+        if (_getPayerRegistryStorage().paused) revert Paused();
     }
 }

@@ -26,7 +26,7 @@ library ParameterKeys {
      * @return key_           The combined key.
      */
     function getKey(bytes[] memory keyComponents_) internal pure returns (bytes memory key_) {
-        require(keyComponents_.length > 0, NoKeyComponents());
+        if (keyComponents_.length == 0) revert NoKeyComponents();
 
         // TODO: Perhaps compute the final size of the key and allocate the memory in one go. Best in assembly.
         for (uint256 index_; index_ < keyComponents_.length; ++index_) {

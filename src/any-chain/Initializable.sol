@@ -17,7 +17,7 @@ contract Initializable is IInitializable {
 
     /// @inheritdoc IInitializable
     function initialize(address implementation_, bytes calldata initializeCallData_) external {
-        require(implementation_ != address(0), ZeroImplementation());
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         // slither-disable-next-line assembly
         assembly {
@@ -35,7 +35,7 @@ contract Initializable is IInitializable {
         // slither-disable-end controlled-delegatecall
         // slither-disable-end low-level-calls
 
-        require(success_, InitializationFailed(returnData_));
+        if (!success_) revert InitializationFailed(returnData_);
 
         // If the call was successful and the return data is empty, the target is not a contract.
         if (returnData_.length == 0 && implementation_.code.length == 0) revert EmptyCode(implementation_);

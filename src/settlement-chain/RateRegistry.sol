@@ -11,7 +11,6 @@ import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
-// TODO: Technically, the `startTime` in the `RatesUpdated` event is not needed, but it's kept for now.
 
 /**
  * @title  Implementation of the Rate Registry.
@@ -57,7 +56,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
      * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         _disableInitializers();
     }
 
@@ -82,7 +81,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
-        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_);
+        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
     }
 
     /// @inheritdoc IMigratable
@@ -129,14 +128,14 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         // TODO: Fix unexpected behavior that an out of bounds query is not an error when the list is empty.
         if ($.allRates.length == 0 && fromIndex_ == 0) return (new Rates[](0), false);
 
-        require(fromIndex_ < $.allRates.length, FromIndexOutOfRange());
+        if (fromIndex_ >= $.allRates.length) revert FromIndexOutOfRange();
 
         uint256 toIndex_ = _min(fromIndex_ + PAGE_SIZE, $.allRates.length);
 
         rates_ = new Rates[](toIndex_ - fromIndex_);
 
-        for (uint256 i_; i_ < rates_.length; ++i_) {
-            rates_[i_] = $.allRates[fromIndex_ + i_];
+        for (uint256 index_; index_ < rates_.length; ++index_) {
+            rates_[index_] = $.allRates[fromIndex_ + index_];
         }
 
         hasMore_ = toIndex_ < $.allRates.length;
@@ -155,8 +154,8 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {

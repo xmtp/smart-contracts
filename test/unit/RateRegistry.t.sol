@@ -96,13 +96,7 @@ contract RateRegistryTests is Test, Utils {
         _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(
-            messageFee_,
-            storageFee_,
-            congestionFee_,
-            targetRatePerMinute_,
-            uint64(vm.getBlockTimestamp())
-        );
+        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();
@@ -135,13 +129,7 @@ contract RateRegistryTests is Test, Utils {
         _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(
-            messageFee_,
-            storageFee_,
-            congestionFee_,
-            targetRatePerMinute_,
-            uint64(vm.getBlockTimestamp())
-        );
+        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();

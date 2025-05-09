@@ -69,8 +69,8 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
      *         that they are inlined in the contract code, and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address settlementChainGateway_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(settlementChainGateway = settlementChainGateway_), ZeroSettlementChainGateway());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(settlementChainGateway = settlementChainGateway_)) revert ZeroSettlementChainGateway();
 
         // Despite the `L1ToL2Alias` naming, this function is also used to get the L3 alias address of an L2 account.
         // Save gas at runtime by inlining the alias address as an immutable.
@@ -130,12 +130,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _revertIfNotSettlementChainGateway() internal view {
-        require(msg.sender == settlementChainGatewayAlias, NotSettlementChainGateway());
+        if (msg.sender != settlementChainGatewayAlias) revert NotSettlementChainGateway();
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {

@@ -74,8 +74,8 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /// @inheritdoc IParameterRegistry
     function set(bytes[] calldata keys_, bytes32[] calldata values_) external onlyAdmin {
-        require(keys_.length > 0, NoKeys());
-        require(keys_.length == values_.length, ArrayLengthMismatch());
+        if (keys_.length == 0) revert NoKeys();
+        if (keys_.length != values_.length) revert ArrayLengthMismatch();
 
         ParameterRegistryStorage storage $ = _getParameterRegistryStorage();
 
@@ -109,7 +109,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /// @inheritdoc IParameterRegistry
     function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_) {
-        require(keys_.length > 0, NoKeys());
+        if (keys_.length == 0) revert NoKeys();
 
         values_ = new bytes32[](keys_.length);
         ParameterRegistryStorage storage $ = _getParameterRegistryStorage();
@@ -147,7 +147,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     }
 
     function _revertIfNotAdmin() internal view {
-        require(isAdmin(msg.sender), NotAdmin());
+        if (!isAdmin(msg.sender)) revert NotAdmin();
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {

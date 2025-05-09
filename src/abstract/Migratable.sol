@@ -35,7 +35,7 @@ abstract contract Migratable is IMigratable {
      */
     // slither-disable-next-line controlled-delegatecall
     function _migrate(address migrator_) internal {
-        require(migrator_ != address(0), ZeroMigrator());
+        if (migrator_ == address(0)) revert ZeroMigrator();
 
         // NOTE: Can merge into `Upgraded` event since it must conform to the EIP-1967 standard.
         emit Migrated(migrator_);
@@ -43,7 +43,7 @@ abstract contract Migratable is IMigratable {
         // slither-disable-next-line low-level-calls
         (bool success_, bytes memory returnData_) = migrator_.delegatecall("");
 
-        require(success_, MigrationFailed(migrator_, returnData_));
+        if (!success_) revert MigrationFailed(migrator_, returnData_);
 
         // If the call was successful and the return data is empty, the target is not a contract.
         if (returnData_.length == 0 && migrator_.code.length == 0) revert EmptyCode(migrator_);
