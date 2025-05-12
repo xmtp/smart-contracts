@@ -111,6 +111,9 @@ interface IPayerReportManager is IMigratable, IERC5267 {
     /// @notice Error thrown when failing to settle usage via the payer registry.
     error SettleUsageFailed(bytes returnData_);
 
+    /// @notice Thrown when the array length mismatch (e.g. when setting multiple parameters).
+    error ArrayLengthMismatch();
+
     /* ============ Initialization ============ */
 
     /**
@@ -168,11 +171,16 @@ interface IPayerReportManager is IMigratable, IERC5267 {
     function payerRegistry() external view returns (address payerRegistry_);
 
     /**
-     * @notice Returns the payer reports for an originator node.
-     * @param  originatorNodeId_ The originator node ID.
-     * @return payerReports_     The array of payer reports.
+     * @notice Returns an array of specific payer reports.
+     * @param  originatorNodeIds_  An array of originator node IDs.
+     * @param  payerReportIndices_ An array of payer report indices for each of the respective originator node IDs.
+     * @return payerReports_       The array of payer reports.
+     * @dev    The node IDs in `originatorNodeIds_` do not need to be unique.
      */
-    function getPayerReports(uint32 originatorNodeId_) external view returns (PayerReport[] memory payerReports_);
+    function getPayerReports(
+        uint32[] calldata originatorNodeIds_,
+        uint256[] calldata payerReportIndices_
+    ) external view returns (PayerReport[] memory payerReports_);
 
     /**
      * @notice Returns a payer report.

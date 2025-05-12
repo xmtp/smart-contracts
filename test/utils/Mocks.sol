@@ -79,6 +79,7 @@ contract MockERC20Inbox {
 
 contract MockNodeRegistry {
     uint8 public canonicalNodesCount;
+    mapping(uint256 tokenId => address owner) public ownerOf;
 
     function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_) {
         return true;
@@ -94,4 +95,21 @@ contract MockPayerRegistry {
     }
 
     function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_) {}
+}
+
+contract MockPayerReportManager {
+    struct PayerReport {
+        uint32 startSequenceId;
+        uint32 endSequenceId;
+        uint96 feesSettled;
+        uint32 offset;
+        bool isSettled;
+        bytes32 payersMerkleRoot;
+        uint32[] nodeIds;
+    }
+
+    function getPayerReports(
+        uint32[] calldata originatorNodeIds_,
+        uint256[] calldata payerReportIndices_
+    ) external view returns (PayerReport[] memory payerReports_) {}
 }

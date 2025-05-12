@@ -222,8 +222,22 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     }
 
     /// @inheritdoc IPayerReportManager
-    function getPayerReports(uint32 originatorNodeId_) external view returns (PayerReport[] memory payerReports_) {
-        return _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_];
+    function getPayerReports(
+        uint32[] calldata originatorNodeIds_,
+        uint256[] calldata payerReportIndices_
+    ) external view returns (PayerReport[] memory payerReports_) {
+        if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
+
+        payerReports_ = new PayerReport[](originatorNodeIds_.length);
+
+        PayerReportManagerStorage storage $ = _getPayerReportManagerStorage();
+
+        for (uint256 i; i < originatorNodeIds_.length; ++i) {
+            uint32 originatorNodeId_ = originatorNodeIds_[i];
+            uint256 payerReportIndex_ = payerReportIndices_[i];
+
+            payerReports_[i] = $.payerReportsByOriginator[originatorNodeId_][payerReportIndex_];
+        }
     }
 
     /// @inheritdoc IPayerReportManager
