@@ -32,7 +32,7 @@ contract Foo {
     }
 }
 
-contract ProxyTests is Test, Utils {
+contract ProxyTests is Test {
     /* ============ constructor ============ */
 
     function test_constructor_zeroImplementation() external {
@@ -44,7 +44,7 @@ contract ProxyTests is Test, Utils {
         address implementation_ = address(new Foo(456, 789));
         address proxy_ = address(new Proxy(implementation_));
 
-        assertEq(_getImplementationFromSlot(proxy_), implementation_);
+        assertEq(Utils.getImplementationFromSlot(proxy_), implementation_);
         assertEq(Foo(proxy_).CONSTANT_VALUE(), 123);
         assertEq(Foo(proxy_).immutableValue(), 456);
         assertEq(Foo(proxy_).value(), 0);
@@ -66,13 +66,7 @@ contract ProxyTests is Test, Utils {
         address proxy_ = address(new Proxy(implementation_));
 
         vm.expectRevert(Foo.Reverting.selector);
+
         Foo(proxy_).revertingFunction();
-    }
-
-    /* ============ helper functions ============ */
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

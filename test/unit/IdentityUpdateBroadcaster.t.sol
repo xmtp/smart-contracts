@@ -14,7 +14,9 @@ import { IdentityUpdateBroadcasterHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract IdentityUpdateBroadcasterTests is Test, Utils {
+contract IdentityUpdateBroadcasterTests is Test {
+    bytes32 internal constant ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
     uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
 
@@ -32,8 +34,17 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
         _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new IdentityUpdateBroadcasterHarness(_parameterRegistry));
 
-        _mockParameterRegistryCall(_MAX_PAYLOAD_SIZE_KEY, _STARTING_MAX_PAYLOAD_SIZE);
-        _mockParameterRegistryCall(_MIN_PAYLOAD_SIZE_KEY, _STARTING_MIN_PAYLOAD_SIZE);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MAX_PAYLOAD_SIZE_KEY,
+            bytes32(_STARTING_MAX_PAYLOAD_SIZE)
+        );
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIN_PAYLOAD_SIZE_KEY,
+            bytes32(_STARTING_MIN_PAYLOAD_SIZE)
+        );
 
         _broadcaster = IdentityUpdateBroadcasterHarness(address(new Proxy(_implementation)));
 
@@ -57,7 +68,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_broadcaster)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_broadcaster)), _implementation);
         assertEq(_broadcaster.implementation(), _implementation);
         assertEq(keccak256(_broadcaster.minPayloadSizeParameterKey()), keccak256(_MIN_PAYLOAD_SIZE_KEY));
         assertEq(keccak256(_broadcaster.maxPayloadSizeParameterKey()), keccak256(_MAX_PAYLOAD_SIZE_KEY));
@@ -73,7 +84,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     /* ============ addIdentityUpdate ============ */
 
     function test_addIdentityUpdate_minPayload() external {
-        bytes memory message_ = _generatePayload(_broadcaster.minPayloadSize());
+        bytes memory message_ = Utils.generatePayload(_broadcaster.minPayloadSize());
 
         vm.expectEmit(address(_broadcaster));
         emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(ID, message_, 1);
@@ -84,7 +95,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     }
 
     function test_addIdentityUpdate_maxPayload() external {
-        bytes memory message_ = _generatePayload(_broadcaster.maxPayloadSize());
+        bytes memory message_ = Utils.generatePayload(_broadcaster.maxPayloadSize());
 
         vm.expectEmit(address(_broadcaster));
         emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(ID, message_, 1);
@@ -95,7 +106,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     }
 
     function test_addIdentityUpdate_payloadTooSmall() external {
-        bytes memory message_ = _generatePayload(_broadcaster.minPayloadSize() - 1);
+        bytes memory message_ = Utils.generatePayload(_broadcaster.minPayloadSize() - 1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -110,7 +121,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     }
 
     function test_addIdentityUpdate_payloadTooLarge() external {
-        bytes memory message_ = _generatePayload(_broadcaster.maxPayloadSize() + 1);
+        bytes memory message_ = Utils.generatePayload(_broadcaster.maxPayloadSize() + 1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -127,7 +138,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
     function test_addIdentityUpdate_whenPaused() external {
         _broadcaster.__setPauseStatus(true);
 
-        bytes memory message_ = _generatePayload(_broadcaster.minPayloadSize());
+        bytes memory message_ = Utils.generatePayload(_broadcaster.minPayloadSize());
 
         vm.expectRevert(IPayloadBroadcaster.Paused.selector);
 
@@ -153,7 +164,7 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
         _broadcaster.__setMaxPayloadSize(maxPayloadSize_);
         _broadcaster.__setPauseStatus(paused_);
 
-        bytes memory message_ = _generatePayload(payloadSize_);
+        bytes memory message_ = Utils.generatePayload(payloadSize_);
 
         bool shouldFail_ = (payloadSize_ < minPayloadSize_) || (payloadSize_ > maxPayloadSize_) || paused_;
 
@@ -169,28 +180,5 @@ contract IdentityUpdateBroadcasterTests is Test, Utils {
         if (shouldFail_) return;
 
         assertEq(_broadcaster.__getSequenceId(), sequenceId_ + 1);
-    }
-
-    /* ============ helper functions ============ */
-
-    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
-        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(value_));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
-    }
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

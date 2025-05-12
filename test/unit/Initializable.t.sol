@@ -19,7 +19,7 @@ contract Foo {
     }
 }
 
-contract InitializableTests is Test, Utils {
+contract InitializableTests is Test {
     Initializable internal _initializable;
 
     address internal _implementation;
@@ -38,7 +38,7 @@ contract InitializableTests is Test, Utils {
 
     function test_initialize_noInitializeCallData() external {
         _initializable.initialize(address(1), "");
-        assertEq(_getImplementationFromSlot(address(_initializable)), address(1));
+        assertEq(Utils.getImplementationFromSlot(address(_initializable)), address(1));
     }
 
     function test_initialize_initializationFailed() external {
@@ -63,14 +63,6 @@ contract InitializableTests is Test, Utils {
 
     function test_initialize_emptyCode() external {
         vm.expectRevert(abi.encodeWithSelector(IInitializable.EmptyCode.selector, address(1)));
-
         _initializable.initialize(address(1), abi.encodeWithSelector(Foo.initialize.selector, uint256(1)));
-    }
-
-    /* ============ helper functions ============ */
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

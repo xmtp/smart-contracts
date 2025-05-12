@@ -18,7 +18,7 @@ import { NodeRegistryHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract NodeRegistryTests is Test, Utils {
+contract NodeRegistryTests is Test {
     bytes internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
 
@@ -48,14 +48,13 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_constructor_zeroParameterRegistry() external {
         vm.expectRevert(INodeRegistry.ZeroParameterRegistry.selector);
-
         new NodeRegistryHarness(address(0));
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
@@ -416,7 +415,7 @@ contract NodeRegistryTests is Test, Utils {
     function test_updateAdmin_noChange() external {
         _registry.__setAdmin(_admin);
 
-        _mockParameterRegistryCall(_ADMIN_KEY, _admin);
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(uint160(_admin))));
 
         vm.expectRevert(INodeRegistry.NoChange.selector);
 
@@ -426,7 +425,7 @@ contract NodeRegistryTests is Test, Utils {
     function test_updateAdmin() external {
         _registry.__setAdmin(_admin);
 
-        _mockParameterRegistryCall(_ADMIN_KEY, address(1));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(1)));
 
         vm.expectEmit(address(_registry));
         emit INodeRegistry.AdminUpdated(address(1));
@@ -515,7 +514,6 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_getIsCanonicalNode_nonexistentToken() external {
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
-
         _registry.getIsCanonicalNode(1);
     }
 
@@ -533,7 +531,6 @@ contract NodeRegistryTests is Test, Utils {
 
     function test_getSigner_nonexistentToken() external {
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 1));
-
         _registry.getSigner(1);
     }
 
@@ -569,7 +566,11 @@ contract NodeRegistryTests is Test, Utils {
     function test_migrate_migrationFailed() external {
         address migrator_ = address(new MockFailingMigrator());
 
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -583,7 +584,7 @@ contract NodeRegistryTests is Test, Utils {
     }
 
     function test_migrate_emptyCode() external {
-        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -596,8 +597,11 @@ contract NodeRegistryTests is Test, Utils {
         address newImplementation_ = address(new NodeRegistryHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        // TODO: `_expectAndMockParameterRegistryCall`.
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectEmit(address(_registry));
         emit IMigratable.Migrated(migrator_);
@@ -607,7 +611,7 @@ contract NodeRegistryTests is Test, Utils {
 
         _registry.migrate();
 
-        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), newImplementation_);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.__getNodeCount(), 100);
     }
@@ -624,26 +628,5 @@ contract NodeRegistryTests is Test, Utils {
     ) internal {
         _registry.__setNode(nodeId_, signer_, inCanonical_, signingPublicKey_, httpAddress_);
         _registry.__mint(owner_, nodeId_);
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
-        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(value_));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
-    }
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }
