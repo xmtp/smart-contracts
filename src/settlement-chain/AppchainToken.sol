@@ -158,7 +158,7 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
     // slither-disable-end naming-convention
 
     /// @inheritdoc IERC20Metadata
-    function decimals() public view override(IERC20Metadata, ERC20Upgradeable) returns (uint8) {
+    function decimals() public view override(IERC20Metadata, ERC20Upgradeable) returns (uint8 decimals_) {
         return 6;
     }
 
