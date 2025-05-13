@@ -33,37 +33,43 @@ interface IDistributionManager is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
-    /// @notice Error thrown when the node registry address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the node registry address is being set to zero (i.e. address(0)).
     error ZeroNodeRegistry();
 
-    /// @notice Error thrown when the payer report manager address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the payer report manager address is being set to zero (i.e. address(0)).
     error ZeroPayerReportManager();
 
-    /// @notice Error thrown when the token address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the payer registry address is being set to zero (i.e. address(0)).
+    error ZeroPayerRegistry();
+
+    /// @notice Thrown when the token address is being set to zero (i.e. address(0)).
     error ZeroToken();
 
-    /// @notice Error thrown when the caller is not the owner of the specified node.
+    /// @notice Thrown when the caller is not the owner of the specified node.
     error NotNodeOwner();
 
-    /// @notice Error thrown when a payer report has already been claimed.
+    /// @notice Thrown when the length of two input arrays do not match when they should.
+    error ArrayLengthMismatch();
+
+    /// @notice Thrown when a payer report has already been claimed.
     error AlreadyClaimed(uint32 originatorNodeId, uint256 payerReportIndex);
 
-    /// @notice Error thrown when the payer report is not settled.
+    /// @notice Thrown when the payer report is not settled.
     error PayerReportNotSettled(uint32 originatorNodeId, uint256 payerReportIndex);
 
-    /// @notice Error thrown when the node ID is not in a payer report.
+    /// @notice Thrown when the node ID is not in a payer report.
     error NotInPayerReport(uint32 originatorNodeId, uint256 payerReportIndex);
 
-    /// @notice Error thrown when the destination address is zero (i.e. address(0)).
+    /// @notice Thrown when the destination address is zero (i.e. address(0)).
     error ZeroDestination();
 
-    /// @notice Error thrown when the node has no fees owed.
+    /// @notice Thrown when the node has no fees owed.
     error NoFeesOwed();
 
-    /// @notice Error thrown when the contract's available balance is zero.
+    /// @notice Thrown when the contract's available balance is zero.
     error ZeroAvailableBalance();
 
     /**
@@ -116,6 +122,9 @@ interface IDistributionManager is IMigratable {
 
     /// @notice The address of the payer report manager.
     function payerReportManager() external view returns (address payerReportManager_);
+
+    /// @notice The address of the payer registry.
+    function payerRegistry() external view returns (address payerRegistry_);
 
     /// @notice The address of the token.
     function token() external view returns (address token_);

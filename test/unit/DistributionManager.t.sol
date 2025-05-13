@@ -18,6 +18,7 @@ import {
     MockParameterRegistry,
     MockNodeRegistry,
     MockPayerReportManager,
+    MockPayerRegistry,
     MockErc20,
     MockMigrator,
     MockFailingMigrator
@@ -34,6 +35,7 @@ contract DistributionManagerTests is Test {
     address internal _parameterRegistry;
     address internal _nodeRegistry;
     address internal _payerReportManager;
+    address internal _payerRegistry;
     address internal _token;
 
     address internal _alice = makeAddr("alice");
@@ -44,10 +46,17 @@ contract DistributionManagerTests is Test {
         _parameterRegistry = address(new MockParameterRegistry());
         _nodeRegistry = address(new MockNodeRegistry());
         _payerReportManager = address(new MockPayerReportManager());
+        _payerRegistry = address(new MockPayerRegistry());
         _token = address(new MockErc20());
 
         _implementation = address(
-            new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, _payerReportManager, _token)
+            new DistributionManagerHarness(
+                _parameterRegistry,
+                _nodeRegistry,
+                _payerReportManager,
+                _payerRegistry,
+                _token
+            )
         );
 
         _manager = DistributionManagerHarness(address(new Proxy(_implementation)));
@@ -59,22 +68,33 @@ contract DistributionManagerTests is Test {
 
     function test_constructor_zeroParameterRegistry() external {
         vm.expectRevert(IDistributionManager.ZeroParameterRegistry.selector);
-        new DistributionManagerHarness(address(0), address(0), address(0), address(0));
+        new DistributionManagerHarness(address(0), address(0), address(0), address(0), address(0));
     }
 
     function test_constructor_zeroNodeRegistry() external {
         vm.expectRevert(IDistributionManager.ZeroNodeRegistry.selector);
-        new DistributionManagerHarness(_parameterRegistry, address(0), address(0), address(0));
+        new DistributionManagerHarness(_parameterRegistry, address(0), address(0), address(0), address(0));
     }
 
     function test_constructor_zeroPayerReportManager() external {
         vm.expectRevert(IDistributionManager.ZeroPayerReportManager.selector);
-        new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, address(0), address(0));
+        new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, address(0), address(0), address(0));
+    }
+
+    function test_constructor_zeroPayerRegistry() external {
+        vm.expectRevert(IDistributionManager.ZeroPayerRegistry.selector);
+        new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, _payerReportManager, address(0), address(0));
     }
 
     function test_constructor_zeroToken() external {
         vm.expectRevert(IDistributionManager.ZeroToken.selector);
-        new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, _payerReportManager, address(0));
+        new DistributionManagerHarness(
+            _parameterRegistry,
+            _nodeRegistry,
+            _payerReportManager,
+            _payerRegistry,
+            address(0)
+        );
     }
 
     /* ============ initial state ============ */
@@ -105,6 +125,15 @@ contract DistributionManagerTests is Test {
 
         vm.prank(_bob);
         _manager.claim(1, new uint32[](0), new uint256[](0));
+    }
+
+    function test_claim_arrayLengthMismatch() external {
+        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
+
+        vm.expectRevert(IDistributionManager.ArrayLengthMismatch.selector);
+
+        vm.prank(_alice);
+        _manager.claim(1, new uint32[](0), new uint256[](1));
     }
 
     function test_claim_alreadyClaimed() external {
@@ -355,10 +384,11 @@ contract DistributionManagerTests is Test {
     }
 
     function test_withdraw_zeroAvailableBalance() external {
-        _manager.__setOwedFees(1, 1);
+        _manager.__setOwedFees(1, 3);
 
         vm.mockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
         vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(0));
+        vm.mockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(0));
 
         vm.expectRevert(IDistributionManager.ZeroAvailableBalance.selector);
 
@@ -366,7 +396,7 @@ contract DistributionManagerTests is Test {
         _manager.withdraw(1, _alice);
     }
 
-    function test_withdraw_partial() external {
+    function test_withdraw_partial_noPayerRegistryExcess() external {
         _manager.__setOwedFees(1, 10);
         _manager.__setTotalOwedFees(20);
 
@@ -377,6 +407,8 @@ contract DistributionManagerTests is Test {
             abi.encodeWithSignature("balanceOf(address)", address(_manager)),
             abi.encode(5)
         );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(0));
 
         vm.expectEmit(address(_manager));
         emit IDistributionManager.Withdrawal(1, 5);
@@ -389,7 +421,7 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.totalOwedFees(), 15);
     }
 
-    function test_withdraw_full() external {
+    function test_withdraw_full_noPayerRegistryExcess() external {
         _manager.__setOwedFees(1, 10);
         _manager.__setTotalOwedFees(20);
 
@@ -410,6 +442,111 @@ contract DistributionManagerTests is Test {
         assertEq(withdrawn_, 10);
         assertEq(_manager.getOwedFees(1), 0);
         assertEq(_manager.totalOwedFees(), 10);
+    }
+
+    function test_withdraw_partial_withPayerRegistryExcess() external {
+        _manager.__setOwedFees(1, 10);
+        _manager.__setTotalOwedFees(20);
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(5)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(3));
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.Withdrawal(1, 8);
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdraw(1, _alice);
+
+        assertEq(withdrawn_, 8);
+        assertEq(_manager.getOwedFees(1), 2);
+        assertEq(_manager.totalOwedFees(), 12);
+    }
+
+    function test_withdraw_full_withPayerRegistryExcess() external {
+        _manager.__setOwedFees(1, 15);
+        _manager.__setTotalOwedFees(20);
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(10)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(5));
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.Withdrawal(1, 15);
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdraw(1, _alice);
+
+        assertEq(withdrawn_, 15);
+        assertEq(_manager.getOwedFees(1), 0);
+        assertEq(_manager.totalOwedFees(), 5);
+    }
+
+    function testFuzz_withdraw(
+        uint96 totalOwedFees_,
+        uint96 owedFees_,
+        uint96 availableBalance_,
+        uint96 payerRegistryExcess_
+    ) external {
+        owedFees_ = uint96(_bound(owedFees_, 0, type(uint96).max));
+        totalOwedFees_ = uint96(_bound(totalOwedFees_, owedFees_, type(uint96).max));
+        availableBalance_ = uint96(_bound(availableBalance_, 0, type(uint96).max));
+        payerRegistryExcess_ = uint96(_bound(payerRegistryExcess_, 0, type(uint96).max - availableBalance_));
+
+        _manager.__setOwedFees(1, owedFees_);
+        _manager.__setTotalOwedFees(totalOwedFees_);
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
+
+        if (owedFees_ > 0) {
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+                abi.encode(uint256(availableBalance_))
+            );
+        }
+
+        if (owedFees_ > 0 && availableBalance_ < owedFees_) {
+            Utils.expectAndMockCall(
+                _payerRegistry,
+                abi.encodeWithSignature("sendExcessToFeeDistributor()"),
+                abi.encode(uint256(payerRegistryExcess_))
+            );
+        }
+
+        uint96 expectedWithdrawal_ = availableBalance_ + payerRegistryExcess_ > owedFees_
+            ? owedFees_
+            : availableBalance_ + payerRegistryExcess_;
+
+        if (owedFees_ == 0) {
+            vm.expectRevert(IDistributionManager.NoFeesOwed.selector);
+        } else if (availableBalance_ + payerRegistryExcess_ == 0) {
+            vm.expectRevert(IDistributionManager.ZeroAvailableBalance.selector);
+        } else {
+            vm.expectEmit(address(_manager));
+            emit IDistributionManager.Withdrawal(1, expectedWithdrawal_);
+        }
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdraw(1, _alice);
+
+        if (owedFees_ == 0 || availableBalance_ + payerRegistryExcess_ == 0) return;
+
+        assertEq(withdrawn_, expectedWithdrawal_);
+        assertEq(_manager.getOwedFees(1), owedFees_ - expectedWithdrawal_);
+        assertEq(_manager.totalOwedFees(), totalOwedFees_ - expectedWithdrawal_);
     }
 
     /* ============ migrate ============ */
@@ -456,7 +593,13 @@ contract DistributionManagerTests is Test {
         _manager.__setHasClaimed(1, 2, 0, true);
 
         address newImplementation_ = address(
-            new DistributionManagerHarness(_parameterRegistry, _nodeRegistry, _payerReportManager, _token)
+            new DistributionManagerHarness(
+                _parameterRegistry,
+                _nodeRegistry,
+                _payerReportManager,
+                _payerRegistry,
+                _token
+            )
         );
 
         address migrator_ = address(new MockMigrator(newImplementation_));
@@ -479,6 +622,7 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.parameterRegistry(), _parameterRegistry);
         assertEq(_manager.nodeRegistry(), _nodeRegistry);
         assertEq(_manager.payerReportManager(), _payerReportManager);
+        assertEq(_manager.payerRegistry(), _payerRegistry);
         assertEq(_manager.token(), _token);
 
         assertEq(_manager.getOwedFees(1), 2);

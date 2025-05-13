@@ -152,10 +152,10 @@ contract GroupMessageBroadcasterTests is Test {
         uint64 sequenceId_,
         bool paused_
     ) external {
-        minPayloadSize_ = bound(minPayloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
-        maxPayloadSize_ = bound(maxPayloadSize_, minPayloadSize_, _STARTING_MAX_PAYLOAD_SIZE);
-        payloadSize_ = bound(payloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
-        sequenceId_ = uint64(bound(sequenceId_, 0, type(uint64).max - 1));
+        minPayloadSize_ = _bound(minPayloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
+        maxPayloadSize_ = _bound(maxPayloadSize_, minPayloadSize_, _STARTING_MAX_PAYLOAD_SIZE);
+        payloadSize_ = _bound(payloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
+        sequenceId_ = uint64(_bound(sequenceId_, 0, type(uint64).max - 1));
 
         _broadcaster.__setSequenceId(sequenceId_);
         _broadcaster.__setMinPayloadSize(minPayloadSize_);

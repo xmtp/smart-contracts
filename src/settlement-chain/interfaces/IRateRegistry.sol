@@ -39,7 +39,7 @@ interface IRateRegistry is IMigratable {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
     /// @notice Thrown when the `fromIndex` is out of range.

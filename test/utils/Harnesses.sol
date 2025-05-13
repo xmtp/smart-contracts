@@ -472,8 +472,9 @@ contract DistributionManagerHarness is DistributionManager {
         address parameterRegistry_,
         address nodeRegistry_,
         address payerReportManager_,
+        address payerRegistry_,
         address token_
-    ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, token_) {}
+    ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, payerRegistry_, token_) {}
 
     function __setOwedFees(uint256 nodeId_, uint256 owedFees_) external {
         _getDistributionManagerStorage().owedFees[uint32(nodeId_)] = uint96(owedFees_);

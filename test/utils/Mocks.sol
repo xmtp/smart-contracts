@@ -95,6 +95,8 @@ contract MockPayerRegistry {
     }
 
     function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_) {}
+
+    function sendExcessToFeeDistributor() external returns (uint96 excess_) {}
 }
 
 contract MockPayerReportManager {

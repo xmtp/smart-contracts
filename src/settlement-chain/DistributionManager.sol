@@ -10,6 +10,7 @@ import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
 import {
     IParameterRegistryLike,
     INodeRegistryLike,
+    IPayerRegistryLike,
     IPayerReportManagerLike,
     IERC20Like
 } from "./interfaces/External.sol";
@@ -31,6 +32,9 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IDistributionManager
     address public immutable payerReportManager;
+
+    /// @inheritdoc IDistributionManager
+    address public immutable payerRegistry;
 
     /// @inheritdoc IDistributionManager
     address public immutable token;
@@ -65,15 +69,24 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
      * @param  parameterRegistry_  The address of the parameter registry.
      * @param  nodeRegistry_       The address of the node registry.
      * @param  payerReportManager_ The address of the payer report manager.
+     * @param  payerRegistry_      The address of the payer registry.
      * @param  token_              The address of the token.
-     * @dev    The parameter registry, node registry, and payer report manager must not be the zero address.
-     * @dev    The parameter registry, node registry, and payer report manager are immutable so that they are inlined
-     *         in the contract code, and have minimal gas cost.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token must not be the
+     *         zero address.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token are immutable so
+     *         that they are inlined in the contract code, and have minimal gas cost.
      */
-    constructor(address parameterRegistry_, address nodeRegistry_, address payerReportManager_, address token_) {
+    constructor(
+        address parameterRegistry_,
+        address nodeRegistry_,
+        address payerReportManager_,
+        address payerRegistry_,
+        address token_
+    ) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(nodeRegistry = nodeRegistry_)) revert ZeroNodeRegistry();
         if (_isZero(payerReportManager = payerReportManager_)) revert ZeroPayerReportManager();
+        if (_isZero(payerRegistry = payerRegistry_)) revert ZeroPayerRegistry();
         if (_isZero(token = token_)) revert ZeroToken();
 
         _disableInitializers();
@@ -93,6 +106,8 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint256[] calldata payerReportIndices_
     ) external returns (uint96 claimed_) {
         _revertIfNotNodeOwner(nodeId_);
+
+        if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
 
         IPayerReportManagerLike.PayerReport[] memory payerReports_ = IPayerReportManagerLike(payerReportManager)
             .getPayerReports(originatorNodeIds_, payerReportIndices_);
@@ -151,6 +166,12 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
         uint96 availableBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
 
+        if (owedFees_ > availableBalance_) {
+            unchecked {
+                availableBalance_ += IPayerRegistryLike(payerRegistry).sendExcessToFeeDistributor();
+            }
+        }
+
         // slither-disable-next-line incorrect-equality
         if (availableBalance_ == 0) revert ZeroAvailableBalance();
 
@@ -163,6 +184,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
             $.totalOwedFees -= withdrawn_;
         }
 
+        // slither-disable-next-line reentrancy-events
         emit Withdrawal(nodeId_, withdrawn_);
 
         SafeTransferLib.safeTransfer(token, destination_, withdrawn_);
