@@ -14,11 +14,17 @@ import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
 interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
     /* ============ Custom Errors ============ */
 
-    /// @notice Error thrown when the parameter registry address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
-    /// @notice Error thrown when the underlying token address is being set to zero (i.e. address(0)).
+    /// @notice Thrown when the underlying token address is being set to zero (i.e. address(0)).
     error ZeroUnderlying();
+
+    /// @notice Thrown when the amount to wrap or unwrap is zero.
+    error ZeroAmount();
+
+    /// @notice Thrown when the recipient address is zero (i.e. address(0)).
+    error ZeroRecipient();
 
     /**
      * @notice Thrown when the `ERC20.transfer` call fails.

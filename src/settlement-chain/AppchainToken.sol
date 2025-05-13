@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {
     ERC20PermitUpgradeable
 } from "../../lib/oz-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+
 import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
@@ -207,12 +208,20 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
     }
 
     function _wrap(address recipient_, uint256 amount_) internal {
+        if (amount_ == 0) revert ZeroAmount();
+        if (recipient_ == address(0)) revert ZeroRecipient();
+
         SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount_);
+
         _mint(recipient_, amount_);
     }
 
     function _unwrap(address recipient_, uint256 amount_) internal {
+        if (amount_ == 0) revert ZeroAmount();
+        if (recipient_ == address(0)) revert ZeroRecipient();
+
         _burn(msg.sender, amount_);
+
         SafeTransferLib.safeTransfer(underlying, recipient_, amount_);
     }
 

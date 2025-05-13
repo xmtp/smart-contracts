@@ -7,6 +7,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
+
 import {
     IParameterRegistryLike,
     INodeRegistryLike,

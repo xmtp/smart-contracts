@@ -107,6 +107,11 @@ contract AppchainTokenTests is Test {
 
     /* ============ wrap ============ */
 
+    function test_wrap_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.wrap(0);
+    }
+
     function test_wrap_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
@@ -150,6 +155,11 @@ contract AppchainTokenTests is Test {
     }
 
     /* ============ wrapWithPermit ============ */
+
+    function test_wrapWithPermit_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.wrapWithPermit(0, 0, 0, 0, 0);
+    }
 
     function test_wrapWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
@@ -209,6 +219,16 @@ contract AppchainTokenTests is Test {
 
     /* ============ depositFor ============ */
 
+    function test_depositFor_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.depositFor(_bob, 0);
+    }
+
+    function test_depositFor_zeroRecipient() external {
+        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        _token.depositFor(address(0), 100);
+    }
+
     function test_depositFor_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
@@ -252,6 +272,16 @@ contract AppchainTokenTests is Test {
     }
 
     /* ============ depositForWithPermit ============ */
+
+    function test_depositForWithPermit_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.depositForWithPermit(_bob, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositForWithPermit_zeroRecipient() external {
+        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        _token.depositForWithPermit(address(0), 100, 0, 0, 0, 0);
+    }
 
     function test_depositForWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
@@ -311,6 +341,11 @@ contract AppchainTokenTests is Test {
 
     /* ============ unwrap ============ */
 
+    function test_unwrap_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.unwrap(0);
+    }
+
     function test_unwrap_insufficientBalance() external {
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, _alice, 0, 100));
 
@@ -359,6 +394,16 @@ contract AppchainTokenTests is Test {
     }
 
     /* ============ withdrawTo ============ */
+
+    function test_withdrawTo_zeroAmount() external {
+        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        _token.withdrawTo(_bob, 0);
+    }
+
+    function test_withdrawTo_zeroRecipient() external {
+        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        _token.withdrawTo(address(0), 100);
+    }
 
     function test_withdrawTo_insufficientBalance() external {
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, _alice, 0, 100));

@@ -150,7 +150,7 @@ interface IPayerRegistry is IMigratable {
     /// @notice Thrown when a payer has insufficient balance for a withdrawal request.
     error InsufficientBalance();
 
-    /// @notice Thrown when for a withdrawal request of 0.
+    /// @notice Thrown when a withdrawal request of zero is made.
     error ZeroWithdrawalAmount();
 
     /// @notice Thrown when a withdrawal is pending for a payer.
