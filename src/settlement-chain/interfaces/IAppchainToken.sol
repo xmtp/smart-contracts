@@ -20,7 +20,7 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
     /// @notice Thrown when the underlying token address is being set to zero (i.e. address(0)).
     error ZeroUnderlying();
 
-    /// @notice Thrown when the amount to wrap or unwrap is zero.
+    /// @notice Thrown when the amount to deposit or withdraw is zero.
     error ZeroAmount();
 
     /// @notice Thrown when the recipient address is zero (i.e. address(0)).
@@ -68,36 +68,40 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
     ) external;
 
     /**
-     * @notice Wraps `amount_` of the underlying token.
-     * @param  amount_ The amount of the underlying token to wrap.
+     * @notice Deposits `amount_` of the underlying token.
+     * @param  amount_ The amount of the underlying token to deposit.
      */
-    function wrap(uint256 amount_) external;
+    function deposit(uint256 amount_) external;
 
     /**
-     * @notice Wraps `amount_` of the underlying token, given `owner_`'s signed approval.
-     * @param  amount_   The amount of the underlying token to wrap.
+     * @notice Deposits `amount_` of the underlying token, given `owner_`'s signed approval.
+     * @notice The permit signature must be for the underlying token, not for this token.
+     * @param  amount_   The amount of the underlying token to deposit.
      * @param  deadline_ The deadline of the permit (must be a timestamp in the future).
      * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  s_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
-    function wrapWithPermit(uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external;
+    function depositWithPermit(uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external;
 
     /**
-     * @notice Wraps `amount_` of the underlying token for `recipient_`.
+     * @notice Deposits `amount_` of the underlying token for `recipient_`.
      * @param  recipient_ The recipient of the underlying token.
-     * @param  amount_    The amount of the underlying token to wrap.
+     * @param  amount_    The amount of the underlying token to deposit.
+     * @dev    This function conforms to `ERC20Wrapper.depositFor`.
      */
     function depositFor(address recipient_, uint256 amount_) external returns (bool success_);
 
     /**
-     * @notice Wraps `amount_` of the underlying token for `recipient_`, given `owner_`'s signed approval.
+     * @notice Deposits `amount_` of the underlying token for `recipient_`, given `owner_`'s signed approval.
+     * @notice The permit signature must be for the underlying token, not for this token.
      * @param  recipient_ The recipient of the underlying token.
-     * @param  amount_    The amount of the underlying token to wrap.
+     * @param  amount_    The amount of the underlying token to deposit.
      * @param  deadline_  The deadline of the permit (must be a timestamp in the future).
      * @param  v_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  s_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @dev    This function conforms to `ERC20Wrapper.depositFor`.
      */
     function depositForWithPermit(
         address recipient_,
@@ -109,15 +113,16 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
     ) external returns (bool success_);
 
     /**
-     * @notice Unwraps `amount_` of the underlying token.
-     * @param  amount_ The amount of the underlying token to unwrap.
+     * @notice Withdraws `amount_` of the underlying token.
+     * @param  amount_ The amount of the underlying token to withdraw.
      */
-    function unwrap(uint256 amount_) external;
+    function withdraw(uint256 amount_) external;
 
     /**
-     * @notice Unwraps `amount_` of the underlying token for `recipient_`.
+     * @notice Withdraws `amount_` of the underlying token for `recipient_`.
      * @param  recipient_ The recipient of the underlying token.
-     * @param  amount_    The amount of the underlying token to unwrap.
+     * @param  amount_    The amount of the underlying token to withdraw.
+     * @dev    This function conforms to `ERC20Wrapper.withdrawTo`.
      */
     function withdrawTo(address recipient_, uint256 amount_) external returns (bool success_);
 

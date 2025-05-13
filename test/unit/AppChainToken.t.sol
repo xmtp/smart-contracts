@@ -105,14 +105,14 @@ contract AppchainTokenTests is Test {
         assertEq(_token.nonces(_bob), 1);
     }
 
-    /* ============ wrap ============ */
+    /* ============ deposit ============ */
 
-    function test_wrap_zeroAmount() external {
+    function test_deposit_zeroAmount() external {
         vm.expectRevert(IAppchainToken.ZeroAmount.selector);
-        _token.wrap(0);
+        _token.deposit(0);
     }
 
-    function test_wrap_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_deposit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
@@ -122,10 +122,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _token.wrap(100);
+        _token.deposit(100);
     }
 
-    function test_wrap_erc20TransferFromFailed_tokenReverts() external {
+    function test_deposit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
@@ -135,10 +135,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _token.wrap(100);
+        _token.deposit(100);
     }
 
-    function test_wrap() external {
+    function test_deposit() external {
         Utils.expectAndMockCall(
             _underlying,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
@@ -149,19 +149,19 @@ contract AppchainTokenTests is Test {
         emit IERC20.Transfer(address(0), _alice, 100);
 
         vm.prank(_alice);
-        _token.wrap(100);
+        _token.deposit(100);
 
         assertEq(_token.balanceOf(_alice), 100);
     }
 
-    /* ============ wrapWithPermit ============ */
+    /* ============ depositWithPermit ============ */
 
-    function test_wrapWithPermit_zeroAmount() external {
+    function test_depositWithPermit_zeroAmount() external {
         vm.expectRevert(IAppchainToken.ZeroAmount.selector);
-        _token.wrapWithPermit(0, 0, 0, 0, 0);
+        _token.depositWithPermit(0, 0, 0, 0, 0);
     }
 
-    function test_wrapWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_depositWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
@@ -171,10 +171,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _token.wrapWithPermit(100, 0, 0, 0, 0);
+        _token.depositWithPermit(100, 0, 0, 0, 0);
     }
 
-    function test_wrapWithPermit_erc20TransferFromFailed_tokenReverts() external {
+    function test_depositWithPermit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
@@ -184,10 +184,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _token.wrapWithPermit(100, 0, 0, 0, 0);
+        _token.depositWithPermit(100, 0, 0, 0, 0);
     }
 
-    function test_wrapWithPermit() external {
+    function test_depositWithPermit() external {
         vm.expectCall(
             _underlying,
             abi.encodeWithSelector(
@@ -212,7 +212,7 @@ contract AppchainTokenTests is Test {
         emit IERC20.Transfer(address(0), _alice, 100);
 
         vm.prank(_alice);
-        _token.wrapWithPermit(100, 0, 0, 0, 0);
+        _token.depositWithPermit(100, 0, 0, 0, 0);
 
         assertEq(_token.balanceOf(_alice), 100);
     }
@@ -339,21 +339,21 @@ contract AppchainTokenTests is Test {
         assertEq(_token.balanceOf(_bob), 100);
     }
 
-    /* ============ unwrap ============ */
+    /* ============ withdraw ============ */
 
-    function test_unwrap_zeroAmount() external {
+    function test_withdraw_zeroAmount() external {
         vm.expectRevert(IAppchainToken.ZeroAmount.selector);
-        _token.unwrap(0);
+        _token.withdraw(0);
     }
 
-    function test_unwrap_insufficientBalance() external {
+    function test_withdraw_insufficientBalance() external {
         vm.expectRevert(abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, _alice, 0, 100));
 
         vm.prank(_alice);
-        _token.unwrap(100);
+        _token.withdraw(100);
     }
 
-    function test_unwrap_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_withdraw_erc20TransferFromFailed_tokenReturnsFalse() external {
         _token.__mint(_alice, 100);
 
         vm.mockCall(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 100), abi.encode(false));
@@ -361,10 +361,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFailed.selector);
 
         vm.prank(_alice);
-        _token.unwrap(100);
+        _token.withdraw(100);
     }
 
-    function test_unwrap_erc20TransferFromFailed_tokenReverts() external {
+    function test_withdraw_erc20TransferFromFailed_tokenReverts() external {
         _token.__mint(_alice, 100);
 
         vm.mockCallRevert(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 100), "");
@@ -372,10 +372,10 @@ contract AppchainTokenTests is Test {
         vm.expectRevert(IAppchainToken.TransferFailed.selector);
 
         vm.prank(_alice);
-        _token.unwrap(100);
+        _token.withdraw(100);
     }
 
-    function test_unwrap() external {
+    function test_withdraw() external {
         _token.__mint(_alice, 100);
 
         Utils.expectAndMockCall(
@@ -388,7 +388,7 @@ contract AppchainTokenTests is Test {
         emit IERC20.Transfer(_alice, address(0), 100);
 
         vm.prank(_alice);
-        _token.unwrap(100);
+        _token.withdraw(100);
 
         assertEq(_token.balanceOf(_alice), 0);
     }
@@ -574,6 +574,12 @@ contract AppchainTokenTests is Test {
         assertEq(verifyingContract_, address(_token));
         assertEq(salt_, bytes32(0));
         assertEq(extensions_.length, 0);
+    }
+
+    /* ============ decimals ============ */
+
+    function test_decimals() external view {
+        assertEq(_token.decimals(), 6);
     }
 
     /* ============ __placeholder ============ */

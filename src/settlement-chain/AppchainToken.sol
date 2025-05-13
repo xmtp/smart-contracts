@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
+
 import {
     ERC20PermitUpgradeable
 } from "../../lib/oz-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
-import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
+import { ERC20Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+
+import { IERC20Metadata } from "../../lib/oz/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IParameterRegistryLike, IPermitErc20Like } from "./interfaces/External.sol";
@@ -95,18 +99,18 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IAppchainToken
-    function wrap(uint256 amount_) external {
-        _wrap(msg.sender, amount_);
+    function deposit(uint256 amount_) external {
+        _deposit(msg.sender, amount_);
     }
 
     /// @inheritdoc IAppchainToken
-    function wrapWithPermit(uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external {
-        _wrapWithPermit(msg.sender, amount_, deadline_, v_, r_, s_);
+    function depositWithPermit(uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external {
+        _depositWithPermit(msg.sender, amount_, deadline_, v_, r_, s_);
     }
 
     /// @inheritdoc IAppchainToken
     function depositFor(address recipient_, uint256 amount_) external returns (bool success_) {
-        _wrap(recipient_, amount_);
+        _deposit(recipient_, amount_);
         return true;
     }
 
@@ -119,18 +123,18 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         bytes32 r_,
         bytes32 s_
     ) external returns (bool success_) {
-        _wrapWithPermit(recipient_, amount_, deadline_, v_, r_, s_);
+        _depositWithPermit(recipient_, amount_, deadline_, v_, r_, s_);
         return true;
     }
 
     /// @inheritdoc IAppchainToken
-    function unwrap(uint256 amount_) external {
-        _unwrap(msg.sender, amount_);
+    function withdraw(uint256 amount_) external {
+        _withdraw(msg.sender, amount_);
     }
 
     /// @inheritdoc IAppchainToken
     function withdrawTo(address recipient_, uint256 amount_) external returns (bool success_) {
-        _unwrap(recipient_, amount_);
+        _withdraw(recipient_, amount_);
         return true;
     }
 
@@ -152,6 +156,11 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         return _domainSeparatorV4();
     }
     // slither-disable-end naming-convention
+
+    /// @inheritdoc IERC20Metadata
+    function decimals() public view override(IERC20Metadata, ERC20Upgradeable) returns (uint8) {
+        return 6;
+    }
 
     /// @inheritdoc IAppchainToken
     function migratorParameterKey() public pure returns (bytes memory key_) {
@@ -178,7 +187,7 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
 
     /* ============ Internal Interactive Functions ============ */
 
-    function _wrapWithPermit(
+    function _depositWithPermit(
         address recipient_,
         uint256 amount_,
         uint256 deadline_,
@@ -204,10 +213,10 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         // slither-disable-end unchecked-lowlevel
         // slither-disable-end low-level-calls
 
-        _wrap(recipient_, amount_);
+        _deposit(recipient_, amount_);
     }
 
-    function _wrap(address recipient_, uint256 amount_) internal {
+    function _deposit(address recipient_, uint256 amount_) internal {
         if (amount_ == 0) revert ZeroAmount();
         if (recipient_ == address(0)) revert ZeroRecipient();
 
@@ -216,7 +225,7 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         _mint(recipient_, amount_);
     }
 
-    function _unwrap(address recipient_, uint256 amount_) internal {
+    function _withdraw(address recipient_, uint256 amount_) internal {
         if (amount_ == 0) revert ZeroAmount();
         if (recipient_ == address(0)) revert ZeroRecipient();
 
