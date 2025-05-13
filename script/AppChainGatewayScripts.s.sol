@@ -64,7 +64,7 @@ contract AppChainGatewayScripts is ScriptBase {
         require(_deploymentData.gatewayProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.appChainGatewayImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.gatewayProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.gatewayProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -107,7 +107,7 @@ contract AppChainGatewayScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.gatewayProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.gatewayProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = AppChainGatewayDeployer.getProxy(
             _deploymentData.factory,

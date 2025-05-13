@@ -8,17 +8,15 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayloadBroadcaster } from "../../src/abstract/interfaces/IPayloadBroadcaster.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { PayloadBroadcasterHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract PayloadBroadcasterTests is Test {
-    uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
-    uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
-
     bytes internal constant _PAUSED_KEY = "xmtp.payloadBroadcaster.paused";
     bytes internal constant _MIGRATOR_KEY = "xmtp.payloadBroadcaster.migrator";
     bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
@@ -27,24 +25,11 @@ contract PayloadBroadcasterTests is Test {
     PayloadBroadcasterHarness internal _broadcaster;
 
     address internal _implementation;
-    address internal _parameterRegistry;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new PayloadBroadcasterHarness(_parameterRegistry));
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _MAX_PAYLOAD_SIZE_KEY,
-            bytes32(_STARTING_MAX_PAYLOAD_SIZE)
-        );
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _MIN_PAYLOAD_SIZE_KEY,
-            bytes32(_STARTING_MIN_PAYLOAD_SIZE)
-        );
-
         _broadcaster = PayloadBroadcasterHarness(address(new Proxy(_implementation)));
 
         _broadcaster.initialize();
@@ -75,17 +60,29 @@ contract PayloadBroadcasterTests is Test {
         assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
         assertFalse(_broadcaster.paused());
         assertEq(_broadcaster.parameterRegistry(), _parameterRegistry);
-        assertEq(_broadcaster.minPayloadSize(), _STARTING_MIN_PAYLOAD_SIZE);
-        assertEq(_broadcaster.maxPayloadSize(), _STARTING_MAX_PAYLOAD_SIZE);
+        assertEq(_broadcaster.minPayloadSize(), 0);
+        assertEq(_broadcaster.maxPayloadSize(), 0);
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
     /* ============ updateMinPayloadSize ============ */
 
+    function test_updateMinPayloadSize_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIN_PAYLOAD_SIZE_KEY,
+            bytes32(uint256(type(uint32).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _broadcaster.updateMinPayloadSize();
+    }
+
     function test_updateMinPayloadSize_greaterThanMax() external {
         _broadcaster.__setMaxPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
 
         vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
 
@@ -93,9 +90,10 @@ contract PayloadBroadcasterTests is Test {
     }
 
     function test_updateMinPayloadSize_noChange() external {
+        _broadcaster.__setMaxPayloadSize(100);
         _broadcaster.__setMinPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(100)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(100)));
 
         vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
 
@@ -103,9 +101,10 @@ contract PayloadBroadcasterTests is Test {
     }
 
     function test_updateMinPayloadSize() external {
+        _broadcaster.__setMaxPayloadSize(200);
         _broadcaster.__setMinPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
 
         vm.expectEmit(address(_broadcaster));
         emit IPayloadBroadcaster.MinPayloadSizeUpdated(101);
@@ -117,10 +116,22 @@ contract PayloadBroadcasterTests is Test {
 
     /* ============ updateMaxPayloadSize ============ */
 
+    function test_updateMaxPayloadSize_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MAX_PAYLOAD_SIZE_KEY,
+            bytes32(uint256(type(uint32).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _broadcaster.updateMaxPayloadSize();
+    }
+
     function test_updateMaxPayloadSize_lessThanMin() external {
         _broadcaster.__setMinPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(99)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(99)));
 
         vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
 
@@ -130,7 +141,7 @@ contract PayloadBroadcasterTests is Test {
     function test_updateMaxPayloadSize_noChange() external {
         _broadcaster.__setMaxPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(100)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(100)));
 
         vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
 
@@ -140,7 +151,7 @@ contract PayloadBroadcasterTests is Test {
     function test_updateMaxPayloadSize() external {
         _broadcaster.__setMaxPayloadSize(100);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(101)));
 
         vm.expectEmit(address(_broadcaster));
         emit IPayloadBroadcaster.MaxPayloadSizeUpdated(101);
@@ -152,12 +163,22 @@ contract PayloadBroadcasterTests is Test {
 
     /* ============ updatePauseStatus ============ */
 
+    function test_updatePauseStatus_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(2)));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _broadcaster.updatePauseStatus();
+    }
+
     function test_updatePauseStatus_noChange() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
         vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
 
         _broadcaster.updatePauseStatus();
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
 
         _broadcaster.__setPauseStatus(true);
 
@@ -170,7 +191,7 @@ contract PayloadBroadcasterTests is Test {
         vm.expectEmit(address(_broadcaster));
         emit IPayloadBroadcaster.PauseStatusUpdated(true);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
 
         _broadcaster.updatePauseStatus();
 
@@ -179,7 +200,7 @@ contract PayloadBroadcasterTests is Test {
         vm.expectEmit(address(_broadcaster));
         emit IPayloadBroadcaster.PauseStatusUpdated(false);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(0));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
 
         _broadcaster.updatePauseStatus();
 
@@ -188,33 +209,44 @@ contract PayloadBroadcasterTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _broadcaster.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _broadcaster.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _broadcaster.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(uint160(1))));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(uint160(1))));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -229,7 +261,7 @@ contract PayloadBroadcasterTests is Test {
         address newImplementation_ = address(new PayloadBroadcasterHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))

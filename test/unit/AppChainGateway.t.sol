@@ -7,14 +7,15 @@ import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenb
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { AppChainGatewayHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract AppChainGatewayTests is Test {
@@ -24,15 +25,13 @@ contract AppChainGatewayTests is Test {
     AppChainGatewayHarness internal _gateway;
 
     address internal _implementation;
-    address internal _parameterRegistry;
 
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
     address internal _settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(_settlementChainGateway);
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new AppChainGatewayHarness(_parameterRegistry, _settlementChainGateway));
-
         _gateway = AppChainGatewayHarness(address(new Proxy(_implementation)));
 
         _gateway.initialize();
@@ -89,16 +88,18 @@ contract AppChainGatewayTests is Test {
         values_[1] = bytes32(uint256(23232));
         values_[2] = bytes32(uint256(98765));
 
-        vm.expectCall(
+        Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSelector(MockParameterRegistry.set.selector, keys_[0], values_[0])
+            abi.encodeWithSignature("set(bytes,bytes32)", keys_[0], values_[0]),
+            ""
         );
 
         // NOTE: (keys_[1], values_[1]) is skipped because the nonce is lower than the key's nonce.
 
-        vm.expectCall(
+        Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSelector(MockParameterRegistry.set.selector, keys_[2], values_[2])
+            abi.encodeWithSignature("set(bytes,bytes32)", keys_[2], values_[2]),
+            ""
         );
 
         vm.expectEmit(address(_gateway));
@@ -114,33 +115,44 @@ contract AppChainGatewayTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _gateway.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _gateway.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _gateway.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -157,7 +169,7 @@ contract AppChainGatewayTests is Test {
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))

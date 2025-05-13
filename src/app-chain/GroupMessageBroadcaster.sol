@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IGroupMessageBroadcaster } from "./interfaces/IGroupMessageBroadcaster.sol";
 import { IPayloadBroadcaster } from "../abstract/interfaces/IPayloadBroadcaster.sol";
 
 import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
-
-import { IGroupMessageBroadcaster } from "./interfaces/IGroupMessageBroadcaster.sol";
 
 /**
  * @title  Implementation for an App Chain Group Message Broadcaster.

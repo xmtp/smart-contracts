@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IIdentityUpdateBroadcaster } from "./interfaces/IIdentityUpdateBroadcaster.sol";
 import { IPayloadBroadcaster } from "../abstract/interfaces/IPayloadBroadcaster.sol";
 
 import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
-
-import { IIdentityUpdateBroadcaster } from "./interfaces/IIdentityUpdateBroadcaster.sol";
 
 /**
  * @title  Implementation for an App Chain Identity Update Broadcaster.

@@ -4,22 +4,23 @@ pragma solidity 0.8.28;
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
 import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
+import { RegistryParameters } from "../../src/libraries/RegistryParameters.sol";
 import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProofs.sol";
 
 import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
+import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
+import { FeeToken } from "../../src/settlement-chain/FeeToken.sol";
 import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
 import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
 import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
 import { ParameterRegistry } from "../../src/abstract/ParameterRegistry.sol";
 import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
+import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
 import { PayloadBroadcaster } from "../../src/abstract/PayloadBroadcaster.sol";
 import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
-import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
-import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
-import { AppchainToken } from "../../src/settlement-chain/AppchainToken.sol";
 
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -49,11 +50,11 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
     }
 
     function __setMinPayloadSize(uint256 minPayloadSize_) external {
-        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
+        _getPayloadBroadcasterStorage().minPayloadSize = uint32(minPayloadSize_);
     }
 
     function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
-        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
+        _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
     }
 
     function __getSequenceId() external view returns (uint64 sequenceId_) {
@@ -73,11 +74,11 @@ contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
     }
 
     function __setMinPayloadSize(uint256 minPayloadSize_) external {
-        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
+        _getPayloadBroadcasterStorage().minPayloadSize = uint32(minPayloadSize_);
     }
 
     function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
-        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
+        _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
     }
 
     function __getSequenceId() external view returns (uint64 sequenceId_) {
@@ -97,11 +98,11 @@ contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
     }
 
     function __setMinPayloadSize(uint256 minPayloadSize_) external {
-        _getPayloadBroadcasterStorage().minPayloadSize = minPayloadSize_;
+        _getPayloadBroadcasterStorage().minPayloadSize = uint32(minPayloadSize_);
     }
 
     function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
-        _getPayloadBroadcasterStorage().maxPayloadSize = maxPayloadSize_;
+        _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
     }
 
     function __getSequenceId() external view returns (uint64 sequenceId_) {
@@ -497,18 +498,69 @@ contract DistributionManagerHarness is DistributionManager {
     }
 }
 
-contract AppchainTokenHarness is AppchainToken {
-    constructor(address parameterRegistry_, address underlying_) AppchainToken(parameterRegistry_, underlying_) {}
+contract FeeTokenHarness is FeeToken {
+    constructor(address parameterRegistry_, address underlying_) FeeToken(parameterRegistry_, underlying_) {}
 
     function __mint(address recipient_, uint256 amount_) external {
         _mint(recipient_, amount_);
     }
 
     function __setPlaceholder(uint256 placeholder_) external {
-        _getAppchainTokenStorage().__placeholder = placeholder_;
+        _getFeeTokenStorage().__placeholder = placeholder_;
     }
 
     function __getPlaceholder() external view returns (uint256 placeholder_) {
-        return _getAppchainTokenStorage().__placeholder;
+        return _getFeeTokenStorage().__placeholder;
+    }
+}
+
+contract RegistryParametersHarness {
+    function setRegistryParameter(address parameterRegistry_, bytes calldata key_, bytes32 value_) external {
+        RegistryParameters.setRegistryParameter(parameterRegistry_, key_, value_);
+    }
+
+    function getRegistryParameters(
+        address parameterRegistry_,
+        bytes[] calldata keys_
+    ) external view returns (bytes32[] memory values_) {
+        return RegistryParameters.getRegistryParameters(parameterRegistry_, keys_);
+    }
+
+    function getRegistryParameter(
+        address parameterRegistry_,
+        bytes calldata key_
+    ) external view returns (bytes32 value_) {
+        return RegistryParameters.getRegistryParameter(parameterRegistry_, key_);
+    }
+
+    function getAddressParameter(
+        address parameterRegistry_,
+        bytes calldata key_
+    ) external view returns (address value_) {
+        return RegistryParameters.getAddressParameter(parameterRegistry_, key_);
+    }
+
+    function getBoolParameter(address parameterRegistry_, bytes calldata key_) external view returns (bool value_) {
+        return RegistryParameters.getBoolParameter(parameterRegistry_, key_);
+    }
+
+    function getUint8Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint8 value_) {
+        return RegistryParameters.getUint8Parameter(parameterRegistry_, key_);
+    }
+
+    function getUint32Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint32 value_) {
+        return RegistryParameters.getUint32Parameter(parameterRegistry_, key_);
+    }
+
+    function getUint64Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint64 value_) {
+        return RegistryParameters.getUint64Parameter(parameterRegistry_, key_);
+    }
+
+    function getUint96Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint96 value_) {
+        return RegistryParameters.getUint96Parameter(parameterRegistry_, key_);
+    }
+
+    function getAddressFromRawParameter(bytes32 parameter_) external view returns (address value_) {
+        return RegistryParameters.getAddressFromRawParameter(parameter_);
     }
 }

@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { ParameterKeys } from "../libraries/ParameterKeys.sol";
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IMigratable } from "./interfaces/IMigratable.sol";
 import { IParameterRegistry } from "./interfaces/IParameterRegistry.sol";
@@ -91,7 +92,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressFromRawParameter(_getRegistryParameter(migratorParameterKey())));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -148,12 +149,5 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     function _revertIfNotAdmin() internal view {
         if (!isAdmin(msg.sender)) revert NotAdmin();
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 }

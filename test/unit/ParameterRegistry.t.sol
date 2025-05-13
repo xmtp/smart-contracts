@@ -6,13 +6,14 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { ParameterRegistryHarness } from "../utils/Harnesses.sol";
-import { MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract ParameterRegistryTests is Test {
@@ -23,6 +24,7 @@ contract ParameterRegistryTests is Test {
     ParameterRegistryHarness internal _registry;
 
     address internal _implementation;
+
     address internal _unauthorized = makeAddr("unauthorized");
     address internal _admin1 = address(0x1111111111111111111111111111111111111111);
     address internal _admin2 = address(0x2222222222222222222222222222222222222222);
@@ -117,7 +119,7 @@ contract ParameterRegistryTests is Test {
     function test_set_one_notAdmin() external {
         vm.expectRevert(IParameterRegistry.NotAdmin.selector);
         vm.prank(_unauthorized);
-        _registry.set("", bytes32(0));
+        _registry.set("", 0);
     }
 
     function test_set_one() external {
@@ -132,23 +134,28 @@ contract ParameterRegistryTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        _registry.__setRegistryParameter(_MIGRATOR_KEY, bytes32(uint256(type(uint160).max) + 1));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+        _registry.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
         _registry.__setRegistryParameter(_MIGRATOR_KEY, migrator_);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _registry.migrate();
     }

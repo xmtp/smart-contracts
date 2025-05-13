@@ -3,12 +3,14 @@ pragma solidity 0.8.28;
 
 import { IERC5267 } from "../../abstract/interfaces/IERC5267.sol";
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
+import { ISequentialMerkleProofsErrors } from "../../libraries/interfaces/ISequentialMerkleProofsErrors.sol";
 
 /**
  * @title  The interface for the Payer Report Manager.
  * @notice This interface exposes functionality for submitting and settling payer reports.
  */
-interface IPayerReportManager is IMigratable, IERC5267 {
+interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersErrors, ISequentialMerkleProofsErrors {
     /* ============ Structs ============ */
 
     /**

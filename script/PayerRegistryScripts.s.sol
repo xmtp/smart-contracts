@@ -64,7 +64,7 @@ contract PayerRegistryScripts is ScriptBase {
         require(_deploymentData.payerRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.payerRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.payerRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.payerRegistryProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -107,7 +107,7 @@ contract PayerRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.payerRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.payerRegistryProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = PayerRegistryDeployer.getProxy(
             _deploymentData.factory,

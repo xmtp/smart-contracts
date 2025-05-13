@@ -44,7 +44,7 @@ abstract contract ERC5267 is IERC5267, ERC712 {
             _version(),
             block.chainid,
             address(this),
-            bytes32(0),
+            0,
             new uint256[](0)
         );
     }

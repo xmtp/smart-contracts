@@ -54,7 +54,7 @@ contract IdentityUpdateBroadcasterScripts is ScriptBase {
         require(_deploymentData.identityUpdateBroadcasterProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.identityUpdateBroadcasterImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.identityUpdateBroadcasterProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.identityUpdateBroadcasterProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -96,7 +96,7 @@ contract IdentityUpdateBroadcasterScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.identityUpdateBroadcasterProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.identityUpdateBroadcasterProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = IdentityUpdateBroadcasterDeployer.getProxy(
             _deploymentData.factory,

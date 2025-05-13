@@ -8,11 +8,12 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { PayerRegistryHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockErc20, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract PayerRegistryTests is Test {
@@ -26,46 +27,21 @@ contract PayerRegistryTests is Test {
     PayerRegistryHarness internal _registry;
 
     address internal _implementation;
-    address internal _parameterRegistry;
-    address internal _token;
 
-    address internal _settler = makeAddr("settler");
     address internal _feeDistributor = makeAddr("feeDistributor");
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _settler = makeAddr("settler");
+    address internal _token = makeAddr("token");
+
     address internal _unauthorized = makeAddr("unauthorized");
+
     address internal _alice = makeAddr("alice");
     address internal _bob = makeAddr("bob");
     address internal _charlie = makeAddr("charlie");
     address internal _dave = makeAddr("dave");
 
-    uint96 internal _minimumDeposit = 10e6;
-    uint32 internal _withdrawLockPeriod = 2 days;
-
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
-        _token = address(new MockErc20());
-
         _implementation = address(new PayerRegistryHarness(_parameterRegistry, _token));
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _MINIMUM_DEPOSIT_KEY,
-            bytes32(uint256(_minimumDeposit))
-        );
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _WITHDRAW_LOCK_PERIOD_KEY,
-            bytes32(uint256(_withdrawLockPeriod))
-        );
-
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _SETTLER_KEY, bytes32(uint256(uint160(_settler))));
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _FEE_DISTRIBUTOR_KEY,
-            bytes32(uint256(uint160(_feeDistributor)))
-        );
-
         _registry = PayerRegistryHarness(address(new Proxy(_implementation)));
 
         _registry.initialize();
@@ -97,10 +73,10 @@ contract PayerRegistryTests is Test {
         assertFalse(_registry.paused());
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.token(), _token);
-        assertEq(_registry.settler(), _settler);
-        assertEq(_registry.feeDistributor(), _feeDistributor);
-        assertEq(_registry.minimumDeposit(), _minimumDeposit);
-        assertEq(_registry.withdrawLockPeriod(), _withdrawLockPeriod);
+        assertEq(_registry.settler(), address(0));
+        assertEq(_registry.feeDistributor(), address(0));
+        assertEq(_registry.minimumDeposit(), 0);
+        assertEq(_registry.withdrawLockPeriod(), 0);
     }
 
     /* ============ initializer ============ */
@@ -110,104 +86,9 @@ contract PayerRegistryTests is Test {
         _registry.initialize();
     }
 
-    /* ============ deposit to self ============ */
+    /* ============ deposit ============ */
 
     function test_deposit_paused() external {
-        _registry.__setPauseStatus(true);
-
-        vm.expectRevert(IPayerRegistry.Paused.selector);
-
-        vm.prank(_alice);
-        _registry.deposit(0);
-    }
-
-    function test_deposit_toSelf_insufficientDeposit() external {
-        vm.expectRevert(
-            abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, _minimumDeposit - 1, _minimumDeposit)
-        );
-
-        vm.prank(_alice);
-        _registry.deposit(_minimumDeposit - 1);
-    }
-
-    function test_deposit_toSelf_erc20TransferFromFailed_tokenReturnsFalse() external {
-        vm.mockCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
-            abi.encode(false)
-        );
-
-        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
-
-        vm.prank(_alice);
-        _registry.deposit(_minimumDeposit);
-    }
-
-    function test_deposit_toSelf_erc20TransferFromFailed_tokenReverts() external {
-        vm.mockCallRevert(
-            _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
-            ""
-        );
-
-        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
-
-        vm.prank(_alice);
-        _registry.deposit(_minimumDeposit);
-    }
-
-    function test_deposit_toSelf() external {
-        vm.expectCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit)
-        );
-
-        vm.expectEmit(address(_registry));
-        emit IPayerRegistry.Deposit(_alice, _minimumDeposit);
-
-        vm.prank(_alice);
-        _registry.deposit(_minimumDeposit);
-
-        assertEq(_registry.getBalance(_alice), int256(uint256(_minimumDeposit)));
-    }
-
-    function testFuzz_deposit_toSelf(int104 startingBalance_, uint96 amount_) external {
-        int104 limit_ = int104(uint104(type(uint96).max));
-
-        startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(amount_)));
-
-        _registry.__setBalance(_alice, startingBalance_);
-        _registry.__setTotalDeposits(startingBalance_);
-
-        if (startingBalance_ < 0) {
-            _registry.__setTotalDebt(uint104(-startingBalance_));
-        }
-
-        int104 expectedBalance_ = startingBalance_ + _toInt104(amount_);
-        uint96 expectedTotalDebt_ = expectedBalance_ < 0 ? uint96(uint104(-expectedBalance_)) : 0;
-
-        if (amount_ < _minimumDeposit) {
-            vm.expectRevert(
-                abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, amount_, _minimumDeposit)
-            );
-        } else {
-            vm.expectEmit(address(_registry));
-            emit IPayerRegistry.Deposit(_alice, amount_);
-        }
-
-        vm.prank(_alice);
-        _registry.deposit(amount_);
-
-        if (amount_ < _minimumDeposit) return;
-
-        assertEq(_registry.getBalance(_alice), expectedBalance_);
-        assertEq(_registry.totalDeposits(), expectedBalance_);
-        assertEq(_registry.totalDebt(), expectedTotalDebt_);
-    }
-
-    /* ============ deposit to payer ============ */
-
-    function test_deposit_toPayer_paused() external {
         _registry.__setPauseStatus(true);
 
         vm.expectRevert(IPayerRegistry.Paused.selector);
@@ -216,62 +97,65 @@ contract PayerRegistryTests is Test {
         _registry.deposit(_bob, 0);
     }
 
-    function test_deposit_toPayer_insufficientDeposit() external {
-        vm.expectRevert(
-            abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, _minimumDeposit - 1, _minimumDeposit)
-        );
+    function test_deposit_insufficientDeposit() external {
+        _registry.__setMinimumDeposit(10);
+
+        vm.expectRevert(abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, 9, 10));
 
         vm.prank(_alice);
-        _registry.deposit(_bob, _minimumDeposit - 1);
+        _registry.deposit(_bob, 9);
     }
 
-    function test_deposit_toPayer_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_deposit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
             abi.encode(false)
         );
 
         vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _registry.deposit(_bob, _minimumDeposit);
+        _registry.deposit(_bob, 1);
     }
 
-    function test_deposit_toPayer_erc20TransferFromFailed_tokenReverts() external {
+    function test_deposit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
             ""
         );
 
         vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _registry.deposit(_bob, _minimumDeposit);
+        _registry.deposit(_bob, 1);
     }
 
-    function test_deposit_toPayer() external {
-        vm.expectCall(
+    function test_deposit() external {
+        Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_registry), _minimumDeposit)
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
+            abi.encode(true)
         );
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.Deposit(_bob, _minimumDeposit);
+        emit IPayerRegistry.Deposit(_bob, 1);
 
         vm.prank(_alice);
-        _registry.deposit(_bob, _minimumDeposit);
+        _registry.deposit(_bob, 1);
 
         assertEq(_registry.getBalance(_alice), 0);
-        assertEq(_registry.getBalance(_bob), int256(uint256(_minimumDeposit)));
+        assertEq(_registry.getBalance(_bob), int256(uint256(1)));
     }
 
-    function testFuzz_deposit_toPayer(int104 startingBalance_, uint96 amount_) external {
+    function testFuzz_deposit(int104 startingBalance_, uint96 amount_, uint96 minimumDeposit_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
+        minimumDeposit_ = uint96(_bound(minimumDeposit_, 0, type(uint96).max));
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(amount_)));
 
+        _registry.__setMinimumDeposit(minimumDeposit_);
         _registry.__setBalance(_bob, startingBalance_);
         _registry.__setTotalDeposits(startingBalance_);
 
@@ -282,11 +166,17 @@ contract PayerRegistryTests is Test {
         int104 expectedBalance_ = startingBalance_ + _toInt104(amount_);
         uint96 expectedTotalDebt_ = expectedBalance_ < 0 ? uint96(uint104(-expectedBalance_)) : 0;
 
-        if (amount_ < _minimumDeposit) {
+        if (amount_ < minimumDeposit_) {
             vm.expectRevert(
-                abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, amount_, _minimumDeposit)
+                abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, amount_, minimumDeposit_)
             );
         } else {
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), amount_),
+                abi.encode(true)
+            );
+
             vm.expectEmit(address(_registry));
             emit IPayerRegistry.Deposit(_bob, amount_);
         }
@@ -294,12 +184,90 @@ contract PayerRegistryTests is Test {
         vm.prank(_alice);
         _registry.deposit(_bob, amount_);
 
-        if (amount_ < _minimumDeposit) return;
+        if (amount_ < minimumDeposit_) return;
 
         assertEq(_registry.getBalance(_alice), 0);
         assertEq(_registry.getBalance(_bob), expectedBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
+    }
+
+    /* ============ depositWithPermit ============ */
+
+    function test_depositWithPermit_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_insufficientDeposit() external {
+        _registry.__setMinimumDeposit(10);
+
+        vm.expectRevert(abi.encodeWithSelector(IPayerRegistry.InsufficientDeposit.selector, 9, 10));
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 9, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
+        vm.mockCall(
+            _token,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 1, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_erc20TransferFromFailed_tokenReverts() external {
+        vm.mockCallRevert(
+            _token,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
+            ""
+        );
+
+        vm.expectRevert(IPayerRegistry.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 1, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit() external {
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_registry),
+                1,
+                0,
+                0,
+                0,
+                0
+            ),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
+            abi.encode(true)
+        );
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.Deposit(_bob, 1);
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 1, 0, 0, 0, 0);
+
+        assertEq(_registry.getBalance(_alice), 0);
+        assertEq(_registry.getBalance(_bob), int256(uint256(1)));
     }
 
     /* ============ requestWithdrawal ============ */
@@ -339,8 +307,9 @@ contract PayerRegistryTests is Test {
 
     function test_requestWithdrawal() external {
         _registry.__setBalance(_alice, 10e6);
+        _registry.__setWithdrawLockPeriod(2 days);
 
-        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
+        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + 2 days;
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.WithdrawalRequested(_alice, 10e6, expectedPendingWithdrawableTimestamp_);
@@ -353,11 +322,13 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), expectedPendingWithdrawableTimestamp_);
     }
 
-    function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_) external {
+    function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_, uint32 withdrawLockPeriod_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_));
+        withdrawLockPeriod_ = uint32(_bound(withdrawLockPeriod_, 0, 10 days));
 
+        _registry.__setWithdrawLockPeriod(withdrawLockPeriod_);
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setTotalDeposits(startingBalance_);
 
@@ -366,7 +337,7 @@ contract PayerRegistryTests is Test {
         }
 
         int104 expectedBalance_ = startingBalance_ - _toInt104(amount_);
-        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + _withdrawLockPeriod;
+        uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + withdrawLockPeriod_;
         uint96 expectedTotalDebt_ = expectedBalance_ < 0 ? uint96(uint104(-expectedBalance_)) : 0;
 
         if (amount_ == 0 || expectedBalance_ < 0) {
@@ -499,7 +470,7 @@ contract PayerRegistryTests is Test {
         _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.mockCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), abi.encode(false));
+        vm.mockCall(_token, abi.encodeWithSignature("transfer(address,uint256)", _alice, 1), abi.encode(false));
 
         vm.expectRevert(IPayerRegistry.TransferFailed.selector);
 
@@ -511,7 +482,7 @@ contract PayerRegistryTests is Test {
         _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 1), "");
+        vm.mockCallRevert(_token, abi.encodeWithSignature("transfer(address,uint256)", _alice, 1), "");
 
         vm.expectRevert(IPayerRegistry.TransferFailed.selector);
 
@@ -523,7 +494,11 @@ contract PayerRegistryTests is Test {
         _registry.__setPendingWithdrawal(_alice, 10e6);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
 
-        vm.expectCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 10e6));
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 10e6),
+            abi.encode(true)
+        );
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.WithdrawalFinalized(_alice);
@@ -538,12 +513,15 @@ contract PayerRegistryTests is Test {
     /* ============ settleUsage ============ */
 
     function test_settleUsage_notSettler() external {
+        _registry.__setSettler(_settler);
+
         vm.expectRevert(IPayerRegistry.NotSettler.selector);
         vm.prank(_unauthorized);
         _registry.settleUsage(new IPayerRegistry.PayerFee[](0));
     }
 
     function test_settleUsage_paused() external {
+        _registry.__setSettler(_settler);
         _registry.__setPauseStatus(true);
 
         vm.expectRevert(IPayerRegistry.Paused.selector);
@@ -557,6 +535,8 @@ contract PayerRegistryTests is Test {
         payerFees_[0] = IPayerRegistry.PayerFee({ payer: _alice, fee: 10e6 });
         payerFees_[1] = IPayerRegistry.PayerFee({ payer: _bob, fee: 20e6 });
         payerFees_[2] = IPayerRegistry.PayerFee({ payer: _charlie, fee: 30e6 });
+
+        _registry.__setSettler(_settler);
 
         _registry.__setBalance(_alice, 30e6);
         _registry.__setBalance(_bob, 10e6);
@@ -598,27 +578,19 @@ contract PayerRegistryTests is Test {
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
 
-        vm.mockCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
-            abi.encode(100e6)
-        );
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_registry)), abi.encode(100e6));
 
         vm.expectRevert(IPayerRegistry.NoExcess.selector);
 
         _registry.sendExcessToFeeDistributor();
     }
 
-    function test_sendExcessToFeeDistributor_ZeroFeeDistributor() external {
+    function test_sendExcessToFeeDistributor_zeroFeeDistributor() external {
         _registry.__setFeeDistributor(address(0));
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
 
-        vm.mockCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
-            abi.encode(200e6)
-        );
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_registry)), abi.encode(200e6));
 
         vm.expectRevert(IPayerRegistry.ZeroFeeDistributor.selector);
 
@@ -626,18 +598,15 @@ contract PayerRegistryTests is Test {
     }
 
     function test_sendExcessToFeeDistributor_erc20TransferFailed_tokenReturnsFalse() external {
+        _registry.__setFeeDistributor(_feeDistributor);
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
 
-        vm.mockCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
-            abi.encode(200e6)
-        );
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_registry)), abi.encode(200e6));
 
         vm.mockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6),
+            abi.encodeWithSignature("transfer(address,uint256)", _feeDistributor, 100e6),
             abi.encode(false)
         );
 
@@ -647,16 +616,13 @@ contract PayerRegistryTests is Test {
     }
 
     function test_sendExcessToFeeDistributor_erc20TransferFailed_tokenReverts() external {
+        _registry.__setFeeDistributor(_feeDistributor);
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
 
-        vm.mockCall(
-            _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
-            abi.encode(200e6)
-        );
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_registry)), abi.encode(200e6));
 
-        vm.mockCallRevert(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6), "");
+        vm.mockCallRevert(_token, abi.encodeWithSignature("transfer(address,uint256)", _feeDistributor, 100e6), "");
 
         vm.expectRevert(IPayerRegistry.TransferFailed.selector);
 
@@ -664,16 +630,17 @@ contract PayerRegistryTests is Test {
     }
 
     function test_sendExcessToFeeDistributor() external {
+        _registry.__setFeeDistributor(_feeDistributor);
         _registry.__setTotalDeposits(100e6);
         _registry.__setTotalDebt(0);
 
         Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
             abi.encode(200e6)
         );
 
-        vm.expectCall(_token, abi.encodeWithSelector(MockErc20.transfer.selector, _feeDistributor, 100e6));
+        vm.expectCall(_token, abi.encodeWithSignature("transfer(address,uint256)", _feeDistributor, 100e6));
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.ExcessTransferred(100e6);
@@ -683,8 +650,20 @@ contract PayerRegistryTests is Test {
 
     /* ============ updateSettler ============ */
 
+    function test_updateSettler_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _SETTLER_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateSettler();
+    }
+
     function test_updateSettler_zeroSettler() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _SETTLER_KEY, bytes32(0));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _SETTLER_KEY, 0);
 
         vm.expectRevert(IPayerRegistry.ZeroSettler.selector);
 
@@ -694,7 +673,7 @@ contract PayerRegistryTests is Test {
     function test_updateSettler_noChange() external {
         _registry.__setSettler(address(1));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _SETTLER_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -708,7 +687,7 @@ contract PayerRegistryTests is Test {
     function test_updateSettler() external {
         _registry.__setSettler(address(1));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _SETTLER_KEY,
             bytes32(uint256(uint160(address(2))))
@@ -724,8 +703,20 @@ contract PayerRegistryTests is Test {
 
     /* ============ updateFeeDistributor ============ */
 
+    function test_updateFeeDistributor_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _FEE_DISTRIBUTOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateFeeDistributor();
+    }
+
     function test_updateFeeDistributor_zeroFeeDistributor() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _FEE_DISTRIBUTOR_KEY, bytes32(0));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _FEE_DISTRIBUTOR_KEY, 0);
 
         vm.expectRevert(IPayerRegistry.ZeroFeeDistributor.selector);
 
@@ -735,7 +726,7 @@ contract PayerRegistryTests is Test {
     function test_updateFeeDistributor_noChange() external {
         _registry.__setFeeDistributor(address(1));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _FEE_DISTRIBUTOR_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -749,7 +740,7 @@ contract PayerRegistryTests is Test {
     function test_updateFeeDistributor() external {
         _registry.__setFeeDistributor(address(1));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _FEE_DISTRIBUTOR_KEY,
             bytes32(uint256(uint160(address(2))))
@@ -765,8 +756,20 @@ contract PayerRegistryTests is Test {
 
     /* ============ updateMinimumDeposit ============ */
 
+    function test_updateMinimumDeposit_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MINIMUM_DEPOSIT_KEY,
+            bytes32(uint256(type(uint96).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateMinimumDeposit();
+    }
+
     function test_updateMinimumDeposit_zeroMinimumDeposit() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, bytes32(0));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, 0);
 
         vm.expectRevert(IPayerRegistry.ZeroMinimumDeposit.selector);
 
@@ -776,7 +779,7 @@ contract PayerRegistryTests is Test {
     function test_updateMinimumDeposit_noChange() external {
         _registry.__setMinimumDeposit(1);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(IPayerRegistry.NoChange.selector);
 
@@ -786,7 +789,7 @@ contract PayerRegistryTests is Test {
     function test_updateMinimumDeposit() external {
         _registry.__setMinimumDeposit(1);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, bytes32(uint256(2)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MINIMUM_DEPOSIT_KEY, bytes32(uint256(2)));
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.MinimumDepositUpdated(2);
@@ -798,10 +801,22 @@ contract PayerRegistryTests is Test {
 
     /* ============ updateWithdrawLockPeriod ============ */
 
+    function test_updateWithdrawLockPeriod_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _WITHDRAW_LOCK_PERIOD_KEY,
+            bytes32(uint256(type(uint32).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateWithdrawLockPeriod();
+    }
+
     function test_updateWithdrawLockPeriod_noChange() external {
         _registry.__setWithdrawLockPeriod(1);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _WITHDRAW_LOCK_PERIOD_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _WITHDRAW_LOCK_PERIOD_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(IPayerRegistry.NoChange.selector);
 
@@ -811,7 +826,7 @@ contract PayerRegistryTests is Test {
     function test_updateWithdrawLockPeriod() external {
         _registry.__setWithdrawLockPeriod(1);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _WITHDRAW_LOCK_PERIOD_KEY, bytes32(uint256(2)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _WITHDRAW_LOCK_PERIOD_KEY, bytes32(uint256(2)));
 
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.WithdrawLockPeriodUpdated(2);
@@ -823,12 +838,22 @@ contract PayerRegistryTests is Test {
 
     /* ============ updatePauseStatus ============ */
 
+    function test_updatePauseStatus_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(2)));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updatePauseStatus();
+    }
+
     function test_updatePauseStatus_noChange() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
         vm.expectRevert(IPayerRegistry.NoChange.selector);
 
         _registry.updatePauseStatus();
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
 
         _registry.__setPauseStatus(true);
 
@@ -841,7 +866,7 @@ contract PayerRegistryTests is Test {
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.PauseStatusUpdated(true);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
 
         _registry.updatePauseStatus();
 
@@ -850,7 +875,7 @@ contract PayerRegistryTests is Test {
         vm.expectEmit(address(_registry));
         emit IPayerRegistry.PauseStatusUpdated(false);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _PAUSED_KEY, bytes32(0));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
 
         _registry.updatePauseStatus();
 
@@ -924,7 +949,7 @@ contract PayerRegistryTests is Test {
 
         Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
             abi.encode(100e6)
         );
 
@@ -935,7 +960,7 @@ contract PayerRegistryTests is Test {
 
         Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
             abi.encode(200e6)
         );
 
@@ -946,7 +971,7 @@ contract PayerRegistryTests is Test {
 
         Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
             abi.encode(100e6)
         );
 
@@ -957,7 +982,7 @@ contract PayerRegistryTests is Test {
 
         Utils.expectAndMockCall(
             _token,
-            abi.encodeWithSelector(MockErc20.balanceOf.selector, address(_registry)),
+            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
             abi.encode(100e6)
         );
 
@@ -966,33 +991,44 @@ contract PayerRegistryTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _registry.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -1004,13 +1040,15 @@ contract PayerRegistryTests is Test {
     }
 
     function test_migrate() external {
+        _registry.__setSettler(_settler);
+        _registry.__setFeeDistributor(_feeDistributor);
         _registry.__setMinimumDeposit(100);
         _registry.__setWithdrawLockPeriod(50);
 
         address newImplementation_ = address(new PayerRegistryHarness(_parameterRegistry, _token));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))

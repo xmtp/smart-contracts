@@ -2,13 +2,14 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "./IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Common interface for an XMTP Payload Broadcaster.
  * @notice A payload broadcaster is a contract that broadcasts payloads as events, where payloads have a min and max
  *         size, both of which can be updated from a parameter registry.
  */
-interface IPayloadBroadcaster is IMigratable {
+interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**
@@ -96,10 +97,10 @@ interface IPayloadBroadcaster is IMigratable {
     function parameterRegistry() external view returns (address parameterRegistry_);
 
     /// @notice Minimum valid payload size (in bytes).
-    function minPayloadSize() external view returns (uint256 size_);
+    function minPayloadSize() external view returns (uint32 size_);
 
     /// @notice Maximum valid payload size (in bytes).
-    function maxPayloadSize() external view returns (uint256 size_);
+    function maxPayloadSize() external view returns (uint32 size_);
 
     /// @notice The pause status.
     function paused() external view returns (bool paused_);

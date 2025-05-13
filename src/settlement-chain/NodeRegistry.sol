@@ -3,13 +3,12 @@ pragma solidity 0.8.28;
 
 import { ERC721Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
-
-// TODO: Make the rest of the parameters come from the parameter registry.
 
 /**
  * @title  Implementation of the Node Registry
@@ -37,20 +36,20 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /**
      * @custom:storage-location erc7201:xmtp.storage.NodeRegistry
      * @notice The UUPS storage for the node registry.
-     * @param  baseURI             The base component of the token URI.
+     * @param  admin               The admin address.
      * @param  maxCanonicalNodes   The maximum number of canonical nodes.
      * @param  canonicalNodesCount The current number of canonical nodes.
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
-     * @param  admin               The admin address.
+     * @param  baseURI             The base component of the token URI.
      */
     struct NodeRegistryStorage {
-        string baseURI;
+        address admin;
         uint8 maxCanonicalNodes;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
-        address admin;
+        string baseURI;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -89,9 +88,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function initialize() public initializer {
         __ERC721_init("XMTP Nodes", "nXMTP");
-
-        // TODO: This should probably come from the parameter registry.
-        _getNodeRegistryStorage().maxCanonicalNodes = 20;
     }
 
     /* ============ Admin Functions ============ */
@@ -114,7 +110,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
             nodeId_ = ++$.nodeCount * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
         }
 
-        signer_ = _toAddress(keccak256(signingPublicKey_));
+        signer_ = address(uint160(uint256(keccak256(signingPublicKey_))));
 
         // Nodes start off as non-canonical.
         $.nodes[nodeId_] = Node(signer_, false, signingPublicKey_, httpAddress_);
@@ -130,7 +126,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if ($.nodes[nodeId_].isCanonical) revert NodeAlreadyInCanonicalNetwork();
+        if ($.nodes[nodeId_].isCanonical) return;
+
         if (++$.canonicalNodesCount > $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
 
         $.nodes[nodeId_].isCanonical = true;
@@ -144,19 +141,12 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if (!$.nodes[nodeId_].isCanonical) revert NodeNotInCanonicalNetwork();
+        if (!$.nodes[nodeId_].isCanonical) return;
 
         delete $.nodes[nodeId_].isCanonical;
         --$.canonicalNodesCount;
 
         emit NodeRemovedFromCanonicalNetwork(nodeId_);
-    }
-
-    /// @inheritdoc INodeRegistry
-    function setMaxCanonicalNodes(uint8 newMaxCanonicalNodes_) external onlyAdmin {
-        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
-        if (newMaxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
-        emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = newMaxCanonicalNodes_);
     }
 
     /// @inheritdoc INodeRegistry
@@ -179,18 +169,33 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function updateAdmin() external {
-        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+        address newAdmin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
 
-        address newAdmin_ = _toAddress(_getRegistryParameter(adminParameterKey()));
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
         if (newAdmin_ == $.admin) revert NoChange();
 
         emit AdminUpdated($.admin = newAdmin_);
     }
 
+    /// @inheritdoc INodeRegistry
+    function updateMaxCanonicalNodes() external {
+        uint8 newMaxCanonicalNodes_ = RegistryParameters.getUint8Parameter(
+            parameterRegistry,
+            maxCanonicalNodesParameterKey()
+        );
+
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        if (newMaxCanonicalNodes_ == $.maxCanonicalNodes) revert NoChange();
+        if (newMaxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
+
+        emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = newMaxCanonicalNodes_);
+    }
+
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -203,6 +208,11 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function adminParameterKey() public pure returns (bytes memory key_) {
         return bytes("xmtp.nodeRegistry.admin");
+    }
+
+    /// @inheritdoc INodeRegistry
+    function maxCanonicalNodesParameterKey() public pure returns (bytes memory key_) {
+        return bytes("xmtp.nodeRegistry.maxCanonicalNodes");
     }
 
     /// @inheritdoc INodeRegistry
@@ -261,19 +271,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         return _getNodeRegistryStorage().baseURI;
     }
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 
     function _revertIfNotAdmin() internal view {

@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Payer Registry.
@@ -10,7 +11,7 @@ import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
  *           - for some settler contract to settle usage fees for payers,
  *           - anyone to send excess tokens in the contract to the fee distributor.
  */
-interface IPayerRegistry is IMigratable {
+interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**
@@ -188,20 +189,32 @@ interface IPayerRegistry is IMigratable {
     /* ============ Interactive Functions ============ */
 
     /**
-     * @notice Deposits `amount` tokens into the registry for `payer`.
+     * @notice Deposits `amount_` tokens into the registry for `payer_`.
      * @param  payer_  The address of the payer.
      * @param  amount_ The amount of tokens to deposit.
      */
     function deposit(address payer_, uint96 amount_) external;
 
     /**
-     * @notice Deposits `amount` tokens into the registry.
-     * @param  amount_ The amount of tokens to deposit.
+     * @notice Deposits `amount_` tokens into the registry for `payer_`, given caller's signed approval.
+     * @param  payer_    The address of the payer.
+     * @param  amount_   The amount of tokens to deposit.
+     * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
+     * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
-    function deposit(uint96 amount_) external;
+    function depositWithPermit(
+        address payer_,
+        uint96 amount_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external;
 
     /**
-     * @notice Requests a withdrawal of `amount` tokens.
+     * @notice Requests a withdrawal of `amount_` tokens.
      * @param  amount_ The amount of tokens to withdraw.
      * @dev    The caller must have enough balance to cover the withdrawal.
      */

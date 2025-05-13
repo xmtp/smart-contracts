@@ -56,7 +56,7 @@ contract NodeRegistryScripts is ScriptBase {
         require(_deploymentData.nodeRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.nodeRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.nodeRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.nodeRegistryProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -94,7 +94,7 @@ contract NodeRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.nodeRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.nodeRegistryProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = NodeRegistryDeployer.getProxy(
             _deploymentData.factory,

@@ -37,11 +37,7 @@ library Utils {
         return string(genBytes(length));
     }
 
-    function expectAndMockParameterRegistryCall(
-        address parameterRegistry_,
-        bytes memory key_,
-        bytes32 value_
-    ) internal {
+    function expectAndMockParameterRegistryGet(address parameterRegistry_, bytes memory key_, bytes32 value_) internal {
         expectAndMockCall(parameterRegistry_, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
     }
 

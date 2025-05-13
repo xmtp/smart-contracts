@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import { Strings } from "../../lib/oz/contracts/utils/Strings.sol";
 
+import { IParameterKeysErrors } from "./interfaces/IParameterKeysErrors.sol";
+
 /**
  * @title  Library for building parameter keys from components and non-bytes types
  * @notice A parameter key is a string that uniquely identifies a parameter.
@@ -13,11 +15,6 @@ library ParameterKeys {
     /// @dev The delimiter used to combine key components.
     bytes internal constant DELIMITER = ".";
 
-    /* ============ Custom Errors ============ */
-
-    /// @notice Thrown when no key components are provided.
-    error NoKeyComponents();
-
     /* ============ View/Pure Functions ============ */
 
     /**
@@ -26,7 +23,7 @@ library ParameterKeys {
      * @return key_           The combined key.
      */
     function getKey(bytes[] memory keyComponents_) internal pure returns (bytes memory key_) {
-        if (keyComponents_.length == 0) revert NoKeyComponents();
+        if (keyComponents_.length == 0) revert IParameterKeysErrors.NoKeyComponents();
 
         // TODO: Perhaps compute the final size of the key and allocate the memory in one go. Best in assembly.
         for (uint256 index_; index_ < keyComponents_.length; ++index_) {

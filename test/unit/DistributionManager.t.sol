@@ -1,28 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test, console } from "../../lib/forge-std/src/Test.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
-import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IPayerReportManagerLike } from "../../src/settlement-chain/interfaces/External.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { DistributionManagerHarness } from "../utils/Harnesses.sol";
 
-import {
-    MockParameterRegistry,
-    MockNodeRegistry,
-    MockPayerReportManager,
-    MockPayerRegistry,
-    MockErc20,
-    MockMigrator,
-    MockFailingMigrator
-} from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 
 import { Utils } from "../utils/Utils.sol";
 
@@ -32,23 +25,18 @@ contract DistributionManagerTests is Test {
     DistributionManagerHarness internal _manager;
 
     address internal _implementation;
-    address internal _parameterRegistry;
-    address internal _nodeRegistry;
-    address internal _payerReportManager;
-    address internal _payerRegistry;
-    address internal _token;
+
+    address internal _nodeRegistry = makeAddr("nodeRegistry");
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _payerRegistry = makeAddr("payerRegistry");
+    address internal _payerReportManager = makeAddr("payerReportManager");
+    address internal _token = makeAddr("token");
 
     address internal _alice = makeAddr("alice");
     address internal _bob = makeAddr("bob");
     address internal _charlie = makeAddr("charlie");
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
-        _nodeRegistry = address(new MockNodeRegistry());
-        _payerReportManager = address(new MockPayerReportManager());
-        _payerRegistry = address(new MockPayerRegistry());
-        _token = address(new MockErc20());
-
         _implementation = address(
             new DistributionManagerHarness(
                 _parameterRegistry,
@@ -158,7 +146,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -168,7 +156,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -210,7 +198,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -220,7 +208,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: false, // Second payer report is not settled.
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -264,7 +252,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIdsContainingNode1_
         });
 
@@ -274,7 +262,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIdsNotContainingNode1_ // Node 1 is not in the second payer report.
         });
 
@@ -317,7 +305,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 100,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -327,7 +315,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 200,
             offset: 0,
             isSettled: true,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
@@ -551,33 +539,44 @@ contract DistributionManagerTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _manager.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _manager.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _manager.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -604,7 +603,7 @@ contract DistributionManagerTests is Test {
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))

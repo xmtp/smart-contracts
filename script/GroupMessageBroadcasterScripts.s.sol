@@ -54,7 +54,7 @@ contract GroupMessageBroadcasterScripts is ScriptBase {
         require(_deploymentData.groupMessageBroadcasterProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.groupMessageBroadcasterImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.groupMessageBroadcasterProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.groupMessageBroadcasterProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -95,7 +95,7 @@ contract GroupMessageBroadcasterScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.groupMessageBroadcasterProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.groupMessageBroadcasterProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = GroupMessageBroadcasterDeployer.getProxy(
             _deploymentData.factory,
