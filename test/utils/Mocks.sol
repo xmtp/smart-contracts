@@ -76,3 +76,22 @@ contract MockERC20Inbox {
         bytes calldata data_
     ) external returns (uint256 messageNumber_) {}
 }
+
+contract MockNodeRegistry {
+    uint8 public canonicalNodesCount;
+
+    function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_) {
+        return true;
+    }
+
+    function getSigner(uint32 nodeId_) external view returns (address signer_) {}
+}
+
+contract MockPayerRegistry {
+    struct PayerFee {
+        address payer;
+        uint96 fee;
+    }
+
+    function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_) {}
+}

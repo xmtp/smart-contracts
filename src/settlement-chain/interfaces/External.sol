@@ -89,3 +89,28 @@ interface IParameterRegistryLike {
 
     function get(bytes calldata key_) external view returns (bytes32 value_);
 }
+
+/**
+ * @title  Subset interface for a NodeRegistry.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface INodeRegistryLike {
+    function canonicalNodesCount() external view returns (uint8 canonicalNodesCount_);
+
+    function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_);
+
+    function getSigner(uint32 nodeId_) external view returns (address signer_);
+}
+
+/**
+ * @title  Subset interface for a PayerRegistry.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface IPayerRegistryLike {
+    struct PayerFee {
+        address payer;
+        uint96 fee;
+    }
+
+    function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
+}
