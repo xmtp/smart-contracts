@@ -667,17 +667,15 @@ contract PayerReportManagerTests is Test {
         assertEq(Utils.getImplementationFromSlot(address(_manager)), newImplementation_);
         assertEq(_manager.parameterRegistry(), _parameterRegistry);
 
-        IPayerReportManager.PayerReport[] memory payerReports_ = _manager.getPayerReports(1);
+        IPayerReportManager.PayerReport memory payerReport_ = _manager.getPayerReport(1, 0);
 
-        assertEq(payerReports_.length, 1);
-
-        assertEq(payerReports_[0].startSequenceId, 2);
-        assertEq(payerReports_[0].endSequenceId, 3);
-        assertEq(payerReports_[0].feesSettled, 4);
-        assertEq(payerReports_[0].offset, 5);
-        assertTrue(payerReports_[0].isSettled);
-        assertEq(payerReports_[0].payersMerkleRoot, bytes32(uint256(6)));
-        assertEq(payerReports_[0].nodeIds.length, 7);
+        assertEq(payerReport_.startSequenceId, 2);
+        assertEq(payerReport_.endSequenceId, 3);
+        assertEq(payerReport_.feesSettled, 4);
+        assertEq(payerReport_.offset, 5);
+        assertTrue(payerReport_.isSettled);
+        assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(6)));
+        assertEq(payerReport_.nodeIds.length, 7);
     }
 
     /* ============ _verifySignatures ============ */
@@ -926,9 +924,12 @@ contract PayerReportManagerTests is Test {
 
     /* ============ getPayerReports ============ */
 
-    function test_getPayerReports() external {
-        assertEq(_manager.getPayerReports(1).length, 0);
+    function test_getPayerReports_arrayLengthMismatch() external {
+        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.ArrayLengthMismatch.selector));
+        _manager.getPayerReports(new uint32[](1), new uint256[](2));
+    }
 
+    function test_getPayerReports() external {
         uint32[] memory nodeIds_ = new uint32[](7);
 
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
@@ -946,9 +947,31 @@ contract PayerReportManagerTests is Test {
             nodeIds_: nodeIds_
         });
 
-        IPayerReportManager.PayerReport[] memory payerReports_ = _manager.getPayerReports(1);
+        _manager.__pushPayerReport({
+            originatorNodeId_: 10,
+            startSequenceId_: 20,
+            endSequenceId_: 30,
+            feesSettled_: 40,
+            offset_: 50,
+            isSettled_: true,
+            payersMerkleRoot_: bytes32(uint256(60)),
+            nodeIds_: nodeIds_
+        });
 
-        assertEq(payerReports_.length, 1);
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 1;
+        originatorNodeIds_[1] = 10;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 0;
+        payerReportIndices_[1] = 0;
+
+        IPayerReportManager.PayerReport[] memory payerReports_ = _manager.getPayerReports(
+            originatorNodeIds_,
+            payerReportIndices_
+        );
+
+        assertEq(payerReports_.length, 2);
 
         assertEq(payerReports_[0].startSequenceId, 2);
         assertEq(payerReports_[0].endSequenceId, 3);
@@ -958,8 +981,20 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReports_[0].payersMerkleRoot, bytes32(uint256(6)));
         assertEq(payerReports_[0].nodeIds.length, 7);
 
+        assertEq(payerReports_[1].startSequenceId, 20);
+        assertEq(payerReports_[1].endSequenceId, 30);
+        assertEq(payerReports_[1].feesSettled, 40);
+        assertEq(payerReports_[1].offset, 50);
+        assertTrue(payerReports_[1].isSettled);
+        assertEq(payerReports_[1].payersMerkleRoot, bytes32(uint256(60)));
+        assertEq(payerReports_[1].nodeIds.length, 7);
+
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             assertEq(payerReports_[0].nodeIds[index_], 10 + index_);
+        }
+
+        for (uint32 index_; index_ < nodeIds_.length; ++index_) {
+            assertEq(payerReports_[1].nodeIds[index_], 10 + index_);
         }
     }
 

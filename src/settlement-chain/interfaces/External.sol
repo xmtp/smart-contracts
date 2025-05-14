@@ -100,6 +100,8 @@ interface INodeRegistryLike {
     function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_);
 
     function getSigner(uint32 nodeId_) external view returns (address signer_);
+
+    function ownerOf(uint256 nodeId_) external view returns (address owner_);
 }
 
 /**
@@ -113,4 +115,27 @@ interface IPayerRegistryLike {
     }
 
     function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
+
+    function sendExcessToFeeDistributor() external returns (uint96 excess_);
+}
+
+/**
+ * @title  Subset interface for a PayerReportManager.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface IPayerReportManagerLike {
+    struct PayerReport {
+        uint32 startSequenceId;
+        uint32 endSequenceId;
+        uint96 feesSettled;
+        uint32 offset;
+        bool isSettled;
+        bytes32 payersMerkleRoot;
+        uint32[] nodeIds;
+    }
+
+    function getPayerReports(
+        uint32[] calldata originatorNodeIds_,
+        uint256[] calldata payerReportIndices_
+    ) external view returns (PayerReport[] memory payerReports_);
 }

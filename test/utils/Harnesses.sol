@@ -18,6 +18,7 @@ import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
 import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
+import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
 
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -463,5 +464,34 @@ contract PayerReportManagerHarness is PayerReportManager {
         bytes calldata signature_
     ) external view returns (bool isValid_) {
         return _verifySignature(digest_, nodeId_, signature_);
+    }
+}
+
+contract DistributionManagerHarness is DistributionManager {
+    constructor(
+        address parameterRegistry_,
+        address nodeRegistry_,
+        address payerReportManager_,
+        address payerRegistry_,
+        address token_
+    ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, payerRegistry_, token_) {}
+
+    function __setOwedFees(uint256 nodeId_, uint256 owedFees_) external {
+        _getDistributionManagerStorage().owedFees[uint32(nodeId_)] = uint96(owedFees_);
+    }
+
+    function __setTotalOwedFees(uint256 totalOwedFees_) external {
+        _getDistributionManagerStorage().totalOwedFees = uint96(totalOwedFees_);
+    }
+
+    function __setHasClaimed(
+        uint256 nodeId_,
+        uint256 originatorNodeId_,
+        uint256 payerReportIndex_,
+        bool hasClaimed_
+    ) external {
+        _getDistributionManagerStorage().hasClaimed[uint32(nodeId_)][uint32(originatorNodeId_)][
+            payerReportIndex_
+        ] = hasClaimed_;
     }
 }

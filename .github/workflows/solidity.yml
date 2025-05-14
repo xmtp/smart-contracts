@@ -165,7 +165,7 @@ jobs:
       - run: chmod +x /usr/local/bin/forge
 
       - name: Run Forge tests with gas report
-        run: forge test --gas-report --gas-limit 2000000000 > gasreport.ansi
+        run: forge test -fuzz-seed 10101 --gas-report --gas-limit 2000000000 > gasreport.ansi
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)

@@ -37,7 +37,6 @@
             "warn",
             6
         ],
-        "func-order": "warn",
         "func-param-name-mixedcase": "error",
         "func-visibility": [
             "error",
