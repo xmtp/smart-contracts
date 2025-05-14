@@ -22,7 +22,8 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IIdentityUpdateBroadcaster
-    function addIdentityUpdate(bytes32 inboxId_, bytes calldata identityUpdate_) external whenNotPaused {
+    function addIdentityUpdate(bytes32 inboxId_, bytes calldata identityUpdate_) external {
+        _revertIfPaused();
         _revertIfInvalidPayloadSize(identityUpdate_.length);
 
         unchecked {

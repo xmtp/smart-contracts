@@ -150,10 +150,10 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     }
 
     /// @inheritdoc INodeRegistry
-    function setBaseURI(string calldata newBaseURI_) external onlyAdmin {
-        if (bytes(newBaseURI_).length == 0) revert InvalidURI();
-        if (bytes(newBaseURI_)[bytes(newBaseURI_).length - 1] != _FORWARD_SLASH) revert InvalidURI();
-        emit BaseURIUpdated(_getNodeRegistryStorage().baseURI = newBaseURI_);
+    function setBaseURI(string calldata baseURI_) external onlyAdmin {
+        if (bytes(baseURI_).length == 0) revert InvalidURI();
+        if (bytes(baseURI_)[bytes(baseURI_).length - 1] != _FORWARD_SLASH) revert InvalidURI();
+        emit BaseURIUpdated(_getNodeRegistryStorage().baseURI = baseURI_);
     }
 
     /* ============ Node Owner Functions ============ */
@@ -169,28 +169,28 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function updateAdmin() external {
-        address newAdmin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
+        address admin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if (newAdmin_ == $.admin) revert NoChange();
+        if (admin_ == $.admin) revert NoChange();
 
-        emit AdminUpdated($.admin = newAdmin_);
+        emit AdminUpdated($.admin = admin_);
     }
 
     /// @inheritdoc INodeRegistry
     function updateMaxCanonicalNodes() external {
-        uint8 newMaxCanonicalNodes_ = RegistryParameters.getUint8Parameter(
+        uint8 maxCanonicalNodes_ = RegistryParameters.getUint8Parameter(
             parameterRegistry,
             maxCanonicalNodesParameterKey()
         );
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if (newMaxCanonicalNodes_ == $.maxCanonicalNodes) revert NoChange();
-        if (newMaxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
+        if (maxCanonicalNodes_ == $.maxCanonicalNodes) revert NoChange();
+        if (maxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
 
-        emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = newMaxCanonicalNodes_);
+        emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = maxCanonicalNodes_);
     }
 
     /// @inheritdoc IMigratable

@@ -49,6 +49,9 @@ interface IRateRegistry is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the `fromIndex` is out of range.
     error FromIndexOutOfRange();
 
+    /// @notice Thrown when the end index (as computed from the `fromIndex` and `count`) is out of range.
+    error EndIndexOutOfRange();
+
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 

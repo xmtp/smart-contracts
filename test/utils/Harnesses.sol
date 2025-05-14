@@ -140,11 +140,11 @@ contract NodeRegistryHarness is NodeRegistry {
     function __setNode(
         uint256 nodeId_,
         address signer_,
-        bool inCanonical_,
+        bool isCanonical_,
         bytes calldata signingPublicKey_,
         string calldata httpAddress_
     ) external {
-        _getNodeRegistryStorage().nodes[uint32(nodeId_)] = Node(signer_, inCanonical_, signingPublicKey_, httpAddress_);
+        _getNodeRegistryStorage().nodes[uint32(nodeId_)] = Node(signer_, isCanonical_, signingPublicKey_, httpAddress_);
     }
 
     function __setApproval(address to_, uint256 tokenId_, address authorizer_) external {
@@ -560,7 +560,7 @@ contract RegistryParametersHarness {
         return RegistryParameters.getUint96Parameter(parameterRegistry_, key_);
     }
 
-    function getAddressFromRawParameter(bytes32 parameter_) external view returns (address value_) {
+    function getAddressFromRawParameter(bytes32 parameter_) external pure returns (address value_) {
         return RegistryParameters.getAddressFromRawParameter(parameter_);
     }
 }

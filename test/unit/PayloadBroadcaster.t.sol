@@ -222,7 +222,7 @@ contract PayloadBroadcasterTests is Test {
     }
 
     function test_migrate_zeroMigrator() external {
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _broadcaster.migrate();
     }

@@ -125,6 +125,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         RateRegistryStorage storage $ = _getRateRegistryStorage();
 
         if (fromIndex_ >= $.allRates.length) revert FromIndexOutOfRange();
+        if (fromIndex_ + count_ > $.allRates.length) revert EndIndexOutOfRange();
 
         rates_ = new Rates[](count_);
 

@@ -78,7 +78,7 @@ library RegistryParameters {
         return uint96(parameter_);
     }
 
-    function getAddressFromRawParameter(bytes32 parameter_) internal view returns (address output_) {
+    function getAddressFromRawParameter(bytes32 parameter_) internal pure returns (address output_) {
         if (uint256(parameter_) > type(uint160).max) revert IRegistryParametersErrors.ParameterOutOfTypeBounds();
 
         return address(uint160(uint256(parameter_)));

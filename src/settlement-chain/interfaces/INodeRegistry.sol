@@ -176,9 +176,9 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
 
     /**
      * @notice Set the base URI for the node NFTs.
-     * @param  newBaseURI_ The new base URI. Has to end with a trailing slash.
+     * @param  baseURI_ The new base URI. Has to end with a trailing slash.
      */
-    function setBaseURI(string calldata newBaseURI_) external;
+    function setBaseURI(string calldata baseURI_) external;
 
     /* ============ Node Owner Functions ============ */
 

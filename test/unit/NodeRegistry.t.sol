@@ -242,11 +242,15 @@ contract NodeRegistryTests is Test {
 
     function test_addToNetwork_alreadyInCanonicalNetwork() external {
         _registry.__setAdmin(_admin);
-        _registry.__setMaxCanonicalNodes(1);
-        _addNode(1, _alice, address(0), false, "", "");
+        _registry.__setCanonicalNodesCount(1);
+        _addNode(1, _alice, address(0), true, "", "");
+
+        vm.recordLogs();
 
         vm.prank(_admin);
         _registry.addToNetwork(1);
+
+        assertEq(vm.getRecordedLogs().length, 0);
 
         assertTrue(_registry.__getNode(1).isCanonical);
         assertEq(_registry.canonicalNodesCount(), 1);
@@ -293,8 +297,15 @@ contract NodeRegistryTests is Test {
         _registry.__setAdmin(_admin);
         _addNode(1, _alice, address(0), false, "", "");
 
+        vm.recordLogs();
+
         vm.prank(_admin);
         _registry.removeFromNetwork(1);
+
+        assertEq(vm.getRecordedLogs().length, 0);
+
+        assertFalse(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 0);
     }
 
     /* ============ setHttpAddress ============ */
@@ -601,7 +612,7 @@ contract NodeRegistryTests is Test {
     }
 
     function test_migrate_zeroMigrator() external {
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }
@@ -663,11 +674,11 @@ contract NodeRegistryTests is Test {
         uint256 nodeId_,
         address owner_,
         address signer_,
-        bool inCanonical_,
+        bool isCanonical_,
         bytes memory signingPublicKey_,
         string memory httpAddress_
     ) internal {
-        _registry.__setNode(nodeId_, signer_, inCanonical_, signingPublicKey_, httpAddress_);
+        _registry.__setNode(nodeId_, signer_, isCanonical_, signingPublicKey_, httpAddress_);
         _registry.__mint(owner_, nodeId_);
     }
 }

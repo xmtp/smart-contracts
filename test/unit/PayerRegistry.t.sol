@@ -251,7 +251,7 @@ contract PayerRegistryTests is Test {
                 0,
                 0
             ),
-            abi.encode(true)
+            ""
         );
 
         Utils.expectAndMockCall(
@@ -885,42 +885,49 @@ contract PayerRegistryTests is Test {
     /* ============ totalWithdrawable ============ */
 
     function test_totalWithdrawable() external {
-        _registry.__setTotalDeposits(120e6); // Alice, Bob, and Charlie have a balance of 40 each.
-        _registry.__setTotalDebt(0); // Neither have debts.
+        int104[] memory totalDeposits_ = new int104[](4);
+        uint96[] memory totalDebts_ = new uint96[](4);
+        uint96[] memory totalWithdrawable_ = new uint96[](4);
 
-        assertEq(_registry.totalWithdrawable(), 120e6); // ALice, Bob, and Charlie can withdraw.
+        totalDeposits_[0] = 120e6; // Alice, Bob, and Charlie have a balance of 40 each.
+        totalDebts_[0] = 0; // Neither have debts.
+        totalWithdrawable_[0] = 120e6; // Alice, Bob, and Charlie can withdraw.
 
-        _registry.__setTotalDeposits(40e6); // Alice and Bob have a balance of 40 each, Charlie has 40 debt.
-        _registry.__setTotalDebt(40e6);
+        totalDeposits_[1] = 40e6; // Alice and Bob have a balance of 40 each, Charlie has 40 debt.
+        totalDebts_[1] = 40e6;
+        totalWithdrawable_[1] = 80e6; // Alice and Bob can withdraw.
 
-        assertEq(_registry.totalWithdrawable(), 80e6); // Alice and Bob can withdraw.
+        totalDeposits_[2] = -40e6; // Alice has a balance of 40, Bob and Charlie have 40 debt each.
+        totalDebts_[2] = 80e6;
+        totalWithdrawable_[2] = 40e6; // Alice can withdraw.
 
-        _registry.__setTotalDeposits(-40e6); // Alice has a balance of 40 each, Bob and Charlie have 40 debt each.
-        _registry.__setTotalDebt(80e6);
+        totalDeposits_[3] = -120e6; // Alice, Bob, and Charlie have 40 debt each.
+        totalDebts_[3] = 120e6;
+        totalWithdrawable_[3] = 0e6; // No one can withdraw.
 
-        assertEq(_registry.totalWithdrawable(), 40e6); // Alice can withdraw.
+        for (uint256 index_ = 0; index_ < 4; ++index_) {
+            _registry.__setTotalDeposits(totalDeposits_[index_]);
+            _registry.__setTotalDebt(totalDebts_[index_]);
 
-        _registry.__setTotalDeposits(-120e6); // Alice, Bob, and Charlie have 40 debt each.
-        _registry.__setTotalDebt(120e6);
-
-        assertEq(_registry.totalWithdrawable(), 0e6); // No one can withdraw.
+            assertEq(_registry.totalWithdrawable(), totalWithdrawable_[index_]);
+        }
     }
 
     /* ============ getBalances ============ */
 
     function test_getBalances() external {
-        address[] memory payers = new address[](4);
-        payers[0] = _alice;
-        payers[1] = _bob;
-        payers[2] = _charlie;
-        payers[3] = _dave;
+        address[] memory payers_ = new address[](4);
+        payers_[0] = _alice;
+        payers_[1] = _bob;
+        payers_[2] = _charlie;
+        payers_[3] = _dave;
 
         _registry.__setBalance(_alice, 10e6);
         _registry.__setBalance(_bob, 20e6);
         _registry.__setBalance(_charlie, 30e6);
         _registry.__setBalance(_dave, 40e6);
 
-        int104[] memory balances_ = _registry.getBalances(payers);
+        int104[] memory balances_ = _registry.getBalances(payers_);
 
         assertEq(balances_.length, 4);
         assertEq(balances_[0], 10e6);
@@ -944,49 +951,47 @@ contract PayerRegistryTests is Test {
     /* ============ excess ============ */
 
     function test_excess() external {
-        _registry.__setTotalDeposits(100e6);
-        _registry.__setTotalDebt(0);
+        int104[] memory totalDeposits_ = new int104[](4);
+        uint96[] memory totalDebts_ = new uint96[](4);
+        uint256[] memory balances_ = new uint256[](4);
+        uint96[] memory excesses_ = new uint96[](4);
 
-        Utils.expectAndMockCall(
-            _token,
-            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
-            abi.encode(100e6)
-        );
+        // 100 withdrawable, so none of balance is excess
+        totalDeposits_[0] = 100e6;
+        totalDebts_[0] = 0;
+        balances_[0] = 100e6;
+        excesses_[0] = 0;
 
-        assertEq(_registry.excess(), 0); // 100 withdrawable, so none of balance is excess
+        // 100 withdrawable, so 100 of balance is excess.
+        totalDeposits_[1] = 100e6;
+        totalDebts_[1] = 0;
+        balances_[1] = 200e6;
+        excesses_[1] = 100e6;
 
-        _registry.__setTotalDeposits(100e6);
-        _registry.__setTotalDebt(0);
+        // 0 withdrawable, so 100 of balance is excess.
+        totalDeposits_[2] = -100e6;
+        totalDebts_[2] = 100e6;
+        balances_[2] = 100e6;
+        excesses_[2] = 100e6;
 
-        Utils.expectAndMockCall(
-            _token,
-            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
-            abi.encode(200e6)
-        );
+        // 50 withdrawable, so 50 of balance is excess.
+        totalDeposits_[3] = -50e6;
+        totalDebts_[3] = 100e6;
+        balances_[3] = 100e6;
+        excesses_[3] = 50e6;
 
-        assertEq(_registry.excess(), 100e6); // 100 withdrawable, so 100 of balance is excess.
+        for (uint256 index_ = 0; index_ < 4; ++index_) {
+            _registry.__setTotalDeposits(totalDeposits_[index_]);
+            _registry.__setTotalDebt(totalDebts_[index_]);
 
-        _registry.__setTotalDeposits(-100e6);
-        _registry.__setTotalDebt(100e6);
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("balanceOf(address)", address(_registry)),
+                abi.encode(balances_[index_])
+            );
 
-        Utils.expectAndMockCall(
-            _token,
-            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
-            abi.encode(100e6)
-        );
-
-        assertEq(_registry.excess(), 100e6); // 0 withdrawable, so 100 of balance is excess.
-
-        _registry.__setTotalDeposits(-50e6);
-        _registry.__setTotalDebt(100e6);
-
-        Utils.expectAndMockCall(
-            _token,
-            abi.encodeWithSignature("balanceOf(address)", address(_registry)),
-            abi.encode(100e6)
-        );
-
-        assertEq(_registry.excess(), 50e6); // 50 withdrawable, so 50 of balance is excess.
+            assertEq(_registry.excess(), excesses_[index_]);
+        }
     }
 
     /* ============ migrate ============ */
@@ -1004,7 +1009,7 @@ contract PayerRegistryTests is Test {
     }
 
     function test_migrate_zeroMigrator() external {
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }

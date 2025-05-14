@@ -49,13 +49,6 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         }
     }
 
-    /* ============ Modifiers ============ */
-
-    modifier whenNotPaused() {
-        _revertIfPaused();
-        _;
-    }
-
     /* ============ Constructor ============ */
 
     /**

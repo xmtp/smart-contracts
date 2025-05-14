@@ -241,6 +241,12 @@ contract RateRegistryTests is Test {
         _registry.getRates(1, 1);
     }
 
+    function test_getRates_endIndexOutOfRange() external {
+        _registry.__pushRates(0, 0, 0, 0, 0);
+        vm.expectRevert(IRateRegistry.EndIndexOutOfRange.selector);
+        _registry.getRates(0, 2);
+    }
+
     function test_getRates_subset() external {
         for (uint256 i_; i_ < 10; ++i_) {
             _registry.__pushRates(i_, i_, i_, i_, i_);
@@ -303,7 +309,7 @@ contract RateRegistryTests is Test {
     }
 
     function test_migrate_zeroMigrator() external {
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }

@@ -185,37 +185,23 @@ contract SettlementChainGatewayTests is Test {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        Utils.expectAndMockCall(
-            inboxes_[0],
-            abi.encodeWithSignature(
-                "sendContractTransaction(uint256,uint256,address,uint256,bytes)",
-                100_000,
-                1_000_000,
-                _appChainGateway,
-                0,
-                abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
-            ),
-            abi.encode(uint256(11))
-        );
+        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            Utils.expectAndMockCall(
+                inboxes_[index_],
+                abi.encodeWithSignature(
+                    "sendContractTransaction(uint256,uint256,address,uint256,bytes)",
+                    100_000,
+                    1_000_000,
+                    _appChainGateway,
+                    0,
+                    abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
+                ),
+                abi.encode(uint256(11 * (index_ + 1)))
+            );
 
-        Utils.expectAndMockCall(
-            inboxes_[1],
-            abi.encodeWithSignature(
-                "sendContractTransaction(uint256,uint256,address,uint256,bytes)",
-                100_000,
-                1_000_000,
-                _appChainGateway,
-                0,
-                abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
-            ),
-            abi.encode(uint256(22))
-        );
-
-        vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.ParametersSent(inboxes_[0], 11, 1, keys_);
-
-        vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.ParametersSent(inboxes_[1], 22, 1, keys_);
+            vm.expectEmit(address(_gateway));
+            emit ISettlementChainGateway.ParametersSent(inboxes_[index_], 11 * (index_ + 1), 1, keys_);
+        }
 
         _gateway.sendParameters(inboxes_, keys_, 100_000, 1_000_000);
 
@@ -252,69 +238,39 @@ contract SettlementChainGatewayTests is Test {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        Utils.expectAndMockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
-            abi.encode(true)
-        );
+        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+            Utils.expectAndMockCall(
+                _appChainNativeToken,
+                abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
+                abi.encode(true)
+            );
 
-        Utils.expectAndMockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("approve(address,uint256)", inboxes_[0], 3_000_000),
-            abi.encode(true)
-        );
+            Utils.expectAndMockCall(
+                _appChainNativeToken,
+                abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
+                abi.encode(true)
+            );
 
-        Utils.expectAndMockCall(
-            inboxes_[0],
-            abi.encodeWithSignature(
-                "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
-                _appChainGateway,
-                0,
-                2_000_000,
-                appChainAlias_,
-                appChainAlias_,
-                100_000,
-                1_000_000,
-                3_000_000,
-                abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
-            ),
-            abi.encode(uint256(11))
-        );
+            Utils.expectAndMockCall(
+                inboxes_[index_],
+                abi.encodeWithSignature(
+                    "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
+                    _appChainGateway,
+                    0,
+                    2_000_000,
+                    appChainAlias_,
+                    appChainAlias_,
+                    100_000,
+                    1_000_000,
+                    3_000_000,
+                    abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
+                ),
+                abi.encode(uint256(11 * (index_ + 1)))
+            );
 
-        Utils.expectAndMockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("approve(address,uint256)", inboxes_[1], 3_000_000),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(
-            inboxes_[1],
-            abi.encodeWithSignature(
-                "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
-                _appChainGateway,
-                0,
-                2_000_000,
-                appChainAlias_,
-                appChainAlias_,
-                100_000,
-                1_000_000,
-                3_000_000,
-                abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
-            ),
-            abi.encode(uint256(22))
-        );
-
-        vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.ParametersSent(inboxes_[0], 11, 1, keys_);
-
-        vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.ParametersSent(inboxes_[1], 22, 1, keys_);
+            vm.expectEmit(address(_gateway));
+            emit ISettlementChainGateway.ParametersSent(inboxes_[index_], 11 * (index_ + 1), 1, keys_);
+        }
 
         vm.prank(_alice);
         _gateway.sendParametersAsRetryableTickets(inboxes_, keys_, 100_000, 1_000_000, 2_000_000, 3_000_000);
@@ -337,7 +293,7 @@ contract SettlementChainGatewayTests is Test {
     }
 
     function test_migrate_zeroMigrator() external {
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(0)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _gateway.migrate();
     }

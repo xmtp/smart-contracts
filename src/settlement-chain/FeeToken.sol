@@ -72,8 +72,12 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
      *         and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address underlying_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(underlying = underlying_), ZeroUnderlying());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(underlying = underlying_)) revert ZeroUnderlying();
+
+        parameterRegistry = parameterRegistry_;
+        underlying = underlying_;
+
         _disableInitializers();
     }
 
@@ -255,7 +259,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
         return _hashTypedDataV4(keccak256(abi.encode(PERMIT_TYPEHASH, owner_, spender_, value_, nonce_, deadline_)));
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 }

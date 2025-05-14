@@ -22,7 +22,8 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IGroupMessageBroadcaster
-    function addMessage(bytes32 groupId_, bytes calldata message_) external whenNotPaused {
+    function addMessage(bytes32 groupId_, bytes calldata message_) external {
+        _revertIfPaused();
         _revertIfInvalidPayloadSize(message_.length);
 
         unchecked {

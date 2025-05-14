@@ -238,61 +238,58 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateSettler() external {
-        address newSettler_ = RegistryParameters.getAddressParameter(parameterRegistry, settlerParameterKey());
+        address settler_ = RegistryParameters.getAddressParameter(parameterRegistry, settlerParameterKey());
 
-        if (_isZero(newSettler_)) revert ZeroSettler();
+        if (_isZero(settler_)) revert ZeroSettler();
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        if ($.settler == newSettler_) revert NoChange();
+        if ($.settler == settler_) revert NoChange();
 
-        emit SettlerUpdated($.settler = newSettler_);
+        emit SettlerUpdated($.settler = settler_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateFeeDistributor() external {
-        address newFeeDistributor_ = RegistryParameters.getAddressParameter(
+        address feeDistributor_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
             feeDistributorParameterKey()
         );
 
-        if (_isZero(newFeeDistributor_)) revert ZeroFeeDistributor();
+        if (_isZero(feeDistributor_)) revert ZeroFeeDistributor();
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        if ($.feeDistributor == newFeeDistributor_) revert NoChange();
+        if ($.feeDistributor == feeDistributor_) revert NoChange();
 
-        emit FeeDistributorUpdated($.feeDistributor = newFeeDistributor_);
+        emit FeeDistributorUpdated($.feeDistributor = feeDistributor_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateMinimumDeposit() external {
-        uint96 newMinimumDeposit_ = RegistryParameters.getUint96Parameter(
-            parameterRegistry,
-            minimumDepositParameterKey()
-        );
+        uint96 minimumDeposit_ = RegistryParameters.getUint96Parameter(parameterRegistry, minimumDepositParameterKey());
 
-        if (newMinimumDeposit_ == 0) revert ZeroMinimumDeposit();
+        if (minimumDeposit_ == 0) revert ZeroMinimumDeposit();
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        if ($.minimumDeposit == newMinimumDeposit_) revert NoChange();
+        if ($.minimumDeposit == minimumDeposit_) revert NoChange();
 
-        emit MinimumDepositUpdated($.minimumDeposit = newMinimumDeposit_);
+        emit MinimumDepositUpdated($.minimumDeposit = minimumDeposit_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateWithdrawLockPeriod() external {
-        uint32 newWithdrawLockPeriod_ = RegistryParameters.getUint32Parameter(
+        uint32 withdrawLockPeriod_ = RegistryParameters.getUint32Parameter(
             parameterRegistry,
             withdrawLockPeriodParameterKey()
         );
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        if (newWithdrawLockPeriod_ == $.withdrawLockPeriod) revert NoChange();
+        if (withdrawLockPeriod_ == $.withdrawLockPeriod) revert NoChange();
 
-        emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = newWithdrawLockPeriod_);
+        emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = withdrawLockPeriod_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -453,16 +450,18 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @dev Transfers `amount_` of tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
     function _deposit(address payer_, uint96 amount_) internal {
-        if (amount_ < _getPayerRegistryStorage().minimumDeposit) {
-            revert InsufficientDeposit(amount_, _getPayerRegistryStorage().minimumDeposit);
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if (amount_ < $.minimumDeposit) {
+            revert InsufficientDeposit(amount_, $.minimumDeposit);
         }
 
         SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount_);
 
         uint96 debtRepaid_ = _increaseBalance(payer_, amount_);
 
-        _getPayerRegistryStorage().totalDebt -= debtRepaid_;
-        _getPayerRegistryStorage().totalDeposits += _toInt104(amount_);
+        $.totalDebt -= debtRepaid_;
+        $.totalDeposits += _toInt104(amount_);
 
         // slither-disable-next-line reentrancy-events
         emit Deposit(payer_, amount_);
