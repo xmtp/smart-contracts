@@ -91,7 +91,7 @@ contract FactoryTests is Test {
         bytes memory initCode2_ = abi.encodePacked(type(Foo).creationCode, abi.encode(uint256(456), uint256(222)));
         address implementation2_ = _factory.deployImplementation(initCode2_);
 
-        address expectedProxy1_ = _factory.computeProxyAddress(_alice, bytes32(0));
+        address expectedProxy1_ = _factory.computeProxyAddress(_alice, 0);
 
         vm.prank(_alice);
         address proxy_ = _factory.deployProxy(

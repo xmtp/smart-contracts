@@ -51,7 +51,7 @@ contract AppChainParameterRegistryScripts is ScriptBase {
         require(_deploymentData.parameterRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.appChainParameterRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.parameterRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.parameterRegistryProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -90,7 +90,7 @@ contract AppChainParameterRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.parameterRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.parameterRegistryProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = AppChainParameterRegistryDeployer.getProxy(
             _deploymentData.factory,

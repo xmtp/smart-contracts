@@ -81,16 +81,6 @@ interface IAppChainGatewayLike {
 }
 
 /**
- * @title  Subset interface for a ParameterRegistry.
- * @notice This is the minimal interface needed by contracts within this subdirectory.
- */
-interface IParameterRegistryLike {
-    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);
-
-    function get(bytes calldata key_) external view returns (bytes32 value_);
-}
-
-/**
  * @title  Subset interface for a NodeRegistry.
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */

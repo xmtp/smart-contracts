@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test, console } from "../../lib/forge-std/src/Test.sol";
+import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { IERC20 } from "../../lib/oz/contracts/token/ERC20/IERC20.sol";
 import { IERC20Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
@@ -9,30 +9,30 @@ import { IERC20Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.s
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IFeeToken } from "../../src/settlement-chain/interfaces/IFeeToken.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
-import { IAppchainToken } from "../../src/settlement-chain/interfaces/IAppchainToken.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
-import { AppchainTokenHarness } from "../utils/Harnesses.sol";
-
-import { MockParameterRegistry, MockErc20, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
-
+import { FeeTokenHarness } from "../utils/Harnesses.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract AppchainTokenTests is Test {
+contract FeeTokenTests is Test {
     bytes32 internal constant _EIP712_DOMAIN_HASH =
         keccak256(
             abi.encodePacked("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
         );
 
-    bytes internal constant _MIGRATOR_KEY = "xmtp.appchainToken.migrator";
+    bytes internal constant _MIGRATOR_KEY = "xmtp.feeToken.migrator";
 
-    AppchainTokenHarness internal _token;
+    FeeTokenHarness internal _token;
 
     address internal _implementation;
-    address internal _parameterRegistry;
-    address internal _underlying;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _underlying = makeAddr("underlying");
 
     address internal _alice;
     uint256 internal _alicePk;
@@ -49,12 +49,8 @@ contract AppchainTokenTests is Test {
         (_charlie, _charliePk) = makeAddrAndKey("charlie");
         (_dave, _davePk) = makeAddrAndKey("dave");
 
-        _parameterRegistry = address(new MockParameterRegistry());
-        _underlying = address(new MockErc20());
-
-        _implementation = address(new AppchainTokenHarness(_parameterRegistry, _underlying));
-
-        _token = AppchainTokenHarness(address(new Proxy(_implementation)));
+        _implementation = address(new FeeTokenHarness(_parameterRegistry, _underlying));
+        _token = FeeTokenHarness(address(new Proxy(_implementation)));
 
         _token.initialize();
     }
@@ -62,13 +58,13 @@ contract AppchainTokenTests is Test {
     /* ============ constructor ============ */
 
     function test_constructor_zeroParameterRegistry() external {
-        vm.expectRevert(IAppchainToken.ZeroParameterRegistry.selector);
-        new AppchainTokenHarness(address(0), address(0));
+        vm.expectRevert(IFeeToken.ZeroParameterRegistry.selector);
+        new FeeTokenHarness(address(0), address(0));
     }
 
     function test_constructor_zeroUnderlying() external {
-        vm.expectRevert(IAppchainToken.ZeroUnderlying.selector);
-        new AppchainTokenHarness(_parameterRegistry, address(0));
+        vm.expectRevert(IFeeToken.ZeroUnderlying.selector);
+        new FeeTokenHarness(_parameterRegistry, address(0));
     }
 
     /* ============ initial state ============ */
@@ -79,6 +75,9 @@ contract AppchainTokenTests is Test {
         assertEq(_token.parameterRegistry(), _parameterRegistry);
         assertEq(_token.underlying(), _underlying);
         assertEq(_token.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_token.name(), "XMTP Fee Token");
+        assertEq(_token.symbol(), "fXMTP");
+        assertEq(_token.decimals(), 6);
     }
 
     /* ============ initializer ============ */
@@ -108,18 +107,18 @@ contract AppchainTokenTests is Test {
     /* ============ deposit ============ */
 
     function test_deposit_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.deposit(0);
     }
 
     function test_deposit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(false)
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.deposit(100);
@@ -128,11 +127,11 @@ contract AppchainTokenTests is Test {
     function test_deposit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             ""
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.deposit(100);
@@ -141,7 +140,7 @@ contract AppchainTokenTests is Test {
     function test_deposit() external {
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(true)
         );
 
@@ -157,18 +156,18 @@ contract AppchainTokenTests is Test {
     /* ============ depositWithPermit ============ */
 
     function test_depositWithPermit_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.depositWithPermit(0, 0, 0, 0, 0);
     }
 
     function test_depositWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(false)
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositWithPermit(100, 0, 0, 0, 0);
@@ -177,11 +176,11 @@ contract AppchainTokenTests is Test {
     function test_depositWithPermit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             ""
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositWithPermit(100, 0, 0, 0, 0);
@@ -190,21 +189,21 @@ contract AppchainTokenTests is Test {
     function test_depositWithPermit() external {
         vm.expectCall(
             _underlying,
-            abi.encodeWithSelector(
-                MockErc20.permit.selector,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
                 _alice,
                 address(_token),
                 100,
                 0,
                 0,
-                bytes32(0),
-                bytes32(0)
+                0,
+                0
             )
         );
 
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(true)
         );
 
@@ -220,23 +219,23 @@ contract AppchainTokenTests is Test {
     /* ============ depositFor ============ */
 
     function test_depositFor_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.depositFor(_bob, 0);
     }
 
     function test_depositFor_zeroRecipient() external {
-        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        vm.expectRevert(IFeeToken.ZeroRecipient.selector);
         _token.depositFor(address(0), 100);
     }
 
     function test_depositFor_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(false)
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositFor(_bob, 100);
@@ -245,11 +244,11 @@ contract AppchainTokenTests is Test {
     function test_depositFor_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             ""
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositFor(_bob, 100);
@@ -258,7 +257,7 @@ contract AppchainTokenTests is Test {
     function test_depositFor() external {
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(true)
         );
 
@@ -274,23 +273,23 @@ contract AppchainTokenTests is Test {
     /* ============ depositForWithPermit ============ */
 
     function test_depositForWithPermit_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.depositForWithPermit(_bob, 0, 0, 0, 0, 0);
     }
 
     function test_depositForWithPermit_zeroRecipient() external {
-        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        vm.expectRevert(IFeeToken.ZeroRecipient.selector);
         _token.depositForWithPermit(address(0), 100, 0, 0, 0, 0);
     }
 
     function test_depositForWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
         vm.mockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(false)
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositForWithPermit(_bob, 100, 0, 0, 0, 0);
@@ -299,11 +298,11 @@ contract AppchainTokenTests is Test {
     function test_depositForWithPermit_erc20TransferFromFailed_tokenReverts() external {
         vm.mockCallRevert(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             ""
         );
 
-        vm.expectRevert(IAppchainToken.TransferFromFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFromFailed.selector);
 
         vm.prank(_alice);
         _token.depositForWithPermit(_bob, 100, 0, 0, 0, 0);
@@ -312,21 +311,21 @@ contract AppchainTokenTests is Test {
     function test_depositForWithPermit() external {
         vm.expectCall(
             _underlying,
-            abi.encodeWithSelector(
-                MockErc20.permit.selector,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
                 _alice,
                 address(_token),
                 100,
                 0,
                 0,
-                bytes32(0),
-                bytes32(0)
+                0,
+                0
             )
         );
 
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transferFrom.selector, _alice, address(_token), 100),
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
             abi.encode(true)
         );
 
@@ -342,7 +341,7 @@ contract AppchainTokenTests is Test {
     /* ============ withdraw ============ */
 
     function test_withdraw_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.withdraw(0);
     }
 
@@ -356,9 +355,9 @@ contract AppchainTokenTests is Test {
     function test_withdraw_erc20TransferFromFailed_tokenReturnsFalse() external {
         _token.__mint(_alice, 100);
 
-        vm.mockCall(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 100), abi.encode(false));
+        vm.mockCall(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _alice, 100), abi.encode(false));
 
-        vm.expectRevert(IAppchainToken.TransferFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFailed.selector);
 
         vm.prank(_alice);
         _token.withdraw(100);
@@ -367,9 +366,9 @@ contract AppchainTokenTests is Test {
     function test_withdraw_erc20TransferFromFailed_tokenReverts() external {
         _token.__mint(_alice, 100);
 
-        vm.mockCallRevert(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 100), "");
+        vm.mockCallRevert(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _alice, 100), "");
 
-        vm.expectRevert(IAppchainToken.TransferFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFailed.selector);
 
         vm.prank(_alice);
         _token.withdraw(100);
@@ -380,7 +379,7 @@ contract AppchainTokenTests is Test {
 
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transfer.selector, _alice, 100),
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 100),
             abi.encode(true)
         );
 
@@ -396,12 +395,12 @@ contract AppchainTokenTests is Test {
     /* ============ withdrawTo ============ */
 
     function test_withdrawTo_zeroAmount() external {
-        vm.expectRevert(IAppchainToken.ZeroAmount.selector);
+        vm.expectRevert(IFeeToken.ZeroAmount.selector);
         _token.withdrawTo(_bob, 0);
     }
 
     function test_withdrawTo_zeroRecipient() external {
-        vm.expectRevert(IAppchainToken.ZeroRecipient.selector);
+        vm.expectRevert(IFeeToken.ZeroRecipient.selector);
         _token.withdrawTo(address(0), 100);
     }
 
@@ -415,9 +414,9 @@ contract AppchainTokenTests is Test {
     function test_withdrawTo_erc20TransferFromFailed_tokenReturnsFalse() external {
         _token.__mint(_alice, 100);
 
-        vm.mockCall(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _bob, 100), abi.encode(false));
+        vm.mockCall(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _bob, 100), abi.encode(false));
 
-        vm.expectRevert(IAppchainToken.TransferFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFailed.selector);
 
         vm.prank(_alice);
         _token.withdrawTo(_bob, 100);
@@ -426,9 +425,9 @@ contract AppchainTokenTests is Test {
     function test_withdrawTo_erc20TransferFromFailed_tokenReverts() external {
         _token.__mint(_alice, 100);
 
-        vm.mockCallRevert(_underlying, abi.encodeWithSelector(MockErc20.transfer.selector, _bob, 100), "");
+        vm.mockCallRevert(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _bob, 100), "");
 
-        vm.expectRevert(IAppchainToken.TransferFailed.selector);
+        vm.expectRevert(IFeeToken.TransferFailed.selector);
 
         vm.prank(_alice);
         _token.withdrawTo(_bob, 100);
@@ -439,7 +438,7 @@ contract AppchainTokenTests is Test {
 
         Utils.expectAndMockCall(
             _underlying,
-            abi.encodeWithSelector(MockErc20.transfer.selector, _bob, 100),
+            abi.encodeWithSignature("transfer(address,uint256)", _bob, 100),
             abi.encode(true)
         );
 
@@ -454,33 +453,44 @@ contract AppchainTokenTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _token.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _token.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _token.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -492,10 +502,10 @@ contract AppchainTokenTests is Test {
     }
 
     function test_migrate() external {
-        address newImplementation_ = address(new AppchainTokenHarness(_parameterRegistry, address(1)));
+        address newImplementation_ = address(new FeeTokenHarness(_parameterRegistry, address(1)));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
@@ -519,12 +529,12 @@ contract AppchainTokenTests is Test {
     function test_getPermitDigest() external view {
         assertEq(
             _token.getPermitDigest(address(1), address(2), 3, 4, 5),
-            0x7f5a3fbeb3c4629869017f0a2c85ede054b6f5edbaf4a91ce9bb65c4c7c2cfbc
+            0x3c4cff0a5a8822560856c7cd9e77f655ae8359848a9b04929664f14982445bf9
         );
 
         assertEq(
             _token.getPermitDigest(address(10), address(20), 30, 40, 50),
-            0x1d1bab673a32cf564a98cb654caff01b884e82b4bf42a72f6dc57934bc3d23d5
+            0x6b3cfa5c0d5686778d6c9cc81bc956e8b3c2e8f912280a9cd31535120a3048b0
         );
     }
 
@@ -536,7 +546,7 @@ contract AppchainTokenTests is Test {
             keccak256(
                 abi.encode(
                     _EIP712_DOMAIN_HASH,
-                    keccak256(bytes("XMTP Appchain Token")),
+                    keccak256(bytes("XMTP Fee Token")),
                     keccak256(bytes("1")),
                     block.chainid,
                     address(_token)
@@ -568,11 +578,11 @@ contract AppchainTokenTests is Test {
         ) = _token.eip712Domain();
 
         assertEq(fields_, hex"0f");
-        assertEq(name_, "XMTP Appchain Token");
+        assertEq(name_, "XMTP Fee Token");
         assertEq(version_, "1");
         assertEq(chainId_, block.chainid);
         assertEq(verifyingContract_, address(_token));
-        assertEq(salt_, bytes32(0));
+        assertEq(salt_, 0);
         assertEq(extensions_.length, 0);
     }
 

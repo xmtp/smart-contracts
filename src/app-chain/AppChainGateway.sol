@@ -5,9 +5,10 @@ import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenb
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike } from "./interfaces/External.sol";
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
@@ -107,14 +108,13 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
             $.keyNonces[key_] = nonce_;
 
-            // slither-disable-next-line calls-loop
-            IParameterRegistryLike(parameterRegistry).set(key_, values_[index_]);
+            RegistryParameters.setRegistryParameter(parameterRegistry, key_, values_[index_]);
         }
     }
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -126,22 +126,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /* ============ Internal View/Pure Functions ============ */
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
     }
 
     function _revertIfNotSettlementChainGateway() internal view {
         if (msg.sender != settlementChainGatewayAlias) revert NotSettlementChainGateway();
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 }

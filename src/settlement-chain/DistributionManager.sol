@@ -5,16 +5,11 @@ import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol"
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
-import {
-    IParameterRegistryLike,
-    INodeRegistryLike,
-    IPayerRegistryLike,
-    IPayerReportManagerLike,
-    IERC20Like
-} from "./interfaces/External.sol";
+import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
+import { IERC20Like, INodeRegistryLike, IPayerRegistryLike, IPayerReportManagerLike } from "./interfaces/External.sol";
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
@@ -193,7 +188,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -233,19 +228,8 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         return false;
     }
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 
     function _revertIfNotNodeOwner(uint32 nodeId_) internal view {

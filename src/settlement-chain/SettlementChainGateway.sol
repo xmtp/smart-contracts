@@ -6,11 +6,15 @@ import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol"
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
+import { IAppChainGatewayLike, IERC20InboxLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IERC20InboxLike, IAppChainGatewayLike, IParameterRegistryLike } from "./interfaces/External.sol";
 import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: Consider reentrancy prevention.
 
 /**
  * @title  Implementation for a Settlement Chain Gateway.
@@ -106,8 +110,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            // TODO: Should `_redirectFunds` be called here? If so, consider re-entrancy prevention.
-
             // slither-disable-next-line calls-loop
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
                 gasLimit_: gasLimit_,
@@ -143,7 +145,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address appChainAlias_ = appChainAlias();
 
         for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            _redirectFunds(inboxes_[index_], nativeTokensToSend_); // TODO: Consider re-entrancy prevention.
+            _redirectFunds(inboxes_[index_], nativeTokensToSend_);
 
             // slither-disable-next-line calls-loop
             uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
@@ -165,7 +167,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -190,10 +192,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ Internal View/Pure Functions ============ */
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     /**
      * @dev Encodes the parameters and their values, from the settlement chain parameter registry, as a batch to be
      *      sent to the app chain. The function to be called on the app chain is `IAppChainGateway.receiveParameters`.
@@ -207,18 +205,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return
             abi.encodeCall(
                 IAppChainGatewayLike.receiveParameters,
-                (nonce_, keys_, IParameterRegistryLike(parameterRegistry).get(keys_))
+                (nonce_, keys_, RegistryParameters.getRegistryParameters(parameterRegistry, keys_))
             );
     }
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 }

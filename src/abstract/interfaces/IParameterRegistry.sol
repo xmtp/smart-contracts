@@ -2,13 +2,15 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "./IMigratable.sol";
+import { IParameterKeysErrors } from "../../libraries/interfaces/IParameterKeysErrors.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Common interface for a Parameter Registry.
  * @notice A parameter registry allows admins to set parameters, including whether an account is an admin, and allows
  *         any account/contract to query the values of parameters.
  */
-interface IParameterRegistry is IMigratable {
+interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**

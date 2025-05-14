@@ -8,11 +8,12 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { RateRegistryHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract RateRegistryTests is Test {
@@ -22,17 +23,14 @@ contract RateRegistryTests is Test {
     bytes internal constant _TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
     bytes internal constant _MIGRATOR_KEY = "xmtp.rateRegistry.migrator";
 
-    uint256 internal constant _PAGE_SIZE = 50;
-
     RateRegistryHarness internal _registry;
 
     address internal _implementation;
-    address internal _parameterRegistry;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new RateRegistryHarness(_parameterRegistry));
-
         _registry = RateRegistryHarness(address(new Proxy(_implementation)));
 
         _registry.initialize();
@@ -51,7 +49,6 @@ contract RateRegistryTests is Test {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
-        assertEq(_registry.PAGE_SIZE(), _PAGE_SIZE);
         assertEq(_registry.messageFeeParameterKey(), _MESSAGE_FEE_KEY);
         assertEq(_registry.storageFeeParameterKey(), _STORAGE_FEE_KEY);
         assertEq(_registry.congestionFeeParameterKey(), _CONGESTION_FEE_KEY);
@@ -69,14 +66,75 @@ contract RateRegistryTests is Test {
 
     /* ============ updateRates ============ */
 
+    function test_updateRates_messageFeeOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MESSAGE_FEE_KEY,
+            bytes32(uint256(type(uint64).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_storageFeeOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, 0);
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _STORAGE_FEE_KEY,
+            bytes32(uint256(type(uint64).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_congestionFeeOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, 0);
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, 0);
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _CONGESTION_FEE_KEY,
+            bytes32(uint256(type(uint64).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_targetRatePerMinuteOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, 0);
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, 0);
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, 0);
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _TARGET_RATE_PER_MINUTE_KEY,
+            bytes32(uint256(type(uint64).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
     function test_updateRates_noChange() external {
         _registry.__pushRates(100, 200, 300, 100 * 60, 0);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(100)));
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(200)));
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(300)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(100)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(200)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(300)));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _TARGET_RATE_PER_MINUTE_KEY,
             bytes32(uint256(100 * 60))
@@ -88,23 +146,23 @@ contract RateRegistryTests is Test {
         _registry.updateRates();
     }
 
-    function test_updateRates_first() external {
+    function test_updateRates() external {
         uint64 messageFee_ = 100;
         uint64 storageFee_ = 200;
         uint64 congestionFee_ = 300;
         uint64 targetRatePerMinute_ = 100 * 60;
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _CONGESTION_FEE_KEY,
             bytes32(uint256(congestionFee_))
         );
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _TARGET_RATE_PER_MINUTE_KEY,
             bytes32(uint256(targetRatePerMinute_))
@@ -138,17 +196,17 @@ contract RateRegistryTests is Test {
         uint64 congestionFee_ = 300;
         uint64 targetRatePerMinute_ = 100 * 60;
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _CONGESTION_FEE_KEY,
             bytes32(uint256(congestionFee_))
         );
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _TARGET_RATE_PER_MINUTE_KEY,
             bytes32(uint256(targetRatePerMinute_))
@@ -173,47 +231,50 @@ contract RateRegistryTests is Test {
 
     /* ============ getRates ============ */
 
+    function test_getRates_zeroCount() external {
+        vm.expectRevert(IRateRegistry.ZeroCount.selector);
+        _registry.getRates(0, 0);
+    }
+
     function test_getRates_fromIndexOutOfRange() external {
         vm.expectRevert(IRateRegistry.FromIndexOutOfRange.selector);
-        _registry.getRates(1);
+        _registry.getRates(1, 1);
     }
 
-    function test_getRates_emptyArray() external view {
-        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
-
-        assertEq(rates_.length, 0);
-        assertFalse(hasMore_);
+    function test_getRates_endIndexOutOfRange() external {
+        _registry.__pushRates(0, 0, 0, 0, 0);
+        vm.expectRevert(IRateRegistry.EndIndexOutOfRange.selector);
+        _registry.getRates(0, 2);
     }
 
-    function test_getRates_withinPageSize() external {
-        for (uint256 i_; i_ < 3 * _PAGE_SIZE; ++i_) {
+    function test_getRates_subset() external {
+        for (uint256 i_; i_ < 10; ++i_) {
             _registry.__pushRates(i_, i_, i_, i_, i_);
         }
 
-        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates((3 * _PAGE_SIZE) - 10);
+        IRateRegistry.Rates[] memory rates_ = _registry.getRates(1, 4);
+
+        assertEq(rates_.length, 4);
+
+        for (uint256 i_; i_ < 4; ++i_) {
+            assertEq(rates_[i_].messageFee, i_ + 1);
+            assertEq(rates_[i_].storageFee, i_ + 1);
+            assertEq(rates_[i_].congestionFee, i_ + 1);
+            assertEq(rates_[i_].targetRatePerMinute, i_ + 1);
+            assertEq(rates_[i_].startTime, i_ + 1);
+        }
+    }
+
+    function test_getRates_entirety() external {
+        for (uint256 i_; i_ < 10; ++i_) {
+            _registry.__pushRates(i_, i_, i_, i_, i_);
+        }
+
+        IRateRegistry.Rates[] memory rates_ = _registry.getRates(0, 10);
 
         assertEq(rates_.length, 10);
-        assertFalse(hasMore_);
 
-        for (uint256 i_; i_ < rates_.length; ++i_) {
-            assertEq(rates_[i_].messageFee, i_ + (3 * _PAGE_SIZE) - 10);
-            assertEq(rates_[i_].storageFee, i_ + (3 * _PAGE_SIZE) - 10);
-            assertEq(rates_[i_].congestionFee, i_ + (3 * _PAGE_SIZE) - 10);
-            assertEq(rates_[i_].startTime, i_ + (3 * _PAGE_SIZE) - 10);
-        }
-    }
-
-    function test_getRates_pagination() external {
-        for (uint256 i_; i_ < 3 * _PAGE_SIZE; ++i_) {
-            _registry.__pushRates(i_, i_, i_, i_, i_);
-        }
-
-        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
-
-        assertEq(rates_.length, _PAGE_SIZE);
-        assertTrue(hasMore_);
-
-        for (uint256 i_; i_ < rates_.length; ++i_) {
+        for (uint256 i_; i_ < 10; ++i_) {
             assertEq(rates_[i_].messageFee, i_);
             assertEq(rates_[i_].storageFee, i_);
             assertEq(rates_[i_].congestionFee, i_);
@@ -235,33 +296,44 @@ contract RateRegistryTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _registry.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(address(1))))
@@ -278,7 +350,7 @@ contract RateRegistryTests is Test {
         address newImplementation_ = address(new RateRegistryHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
@@ -295,7 +367,9 @@ contract RateRegistryTests is Test {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), newImplementation_);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
 
-        (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
+        assertEq(_registry.getRatesCount(), 1);
+
+        IRateRegistry.Rates[] memory rates_ = _registry.getRates(0, 1);
 
         assertEq(rates_.length, 1);
 
@@ -304,7 +378,5 @@ contract RateRegistryTests is Test {
         assertEq(rates_[0].congestionFee, 300);
         assertEq(rates_[0].targetRatePerMinute, 100 * 60);
         assertEq(rates_[0].startTime, 500);
-
-        assertFalse(hasMore_);
     }
 }

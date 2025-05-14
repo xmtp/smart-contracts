@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import { Create2 } from "../../lib/oz/contracts/utils/Create2.sol";
 
-import { IInitializable } from "./interfaces/IInitializable.sol";
 import { IFactory } from "./interfaces/IFactory.sol";
+import { IInitializable } from "./interfaces/IInitializable.sol";
 
 import { Initializable } from "./Initializable.sol";
 import { Proxy } from "./Proxy.sol";

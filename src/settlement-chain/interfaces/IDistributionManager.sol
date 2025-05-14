@@ -2,12 +2,13 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  The interface for the Distribution Manager.
  * @notice This interface exposes functionality for distributing fees.
  */
-interface IDistributionManager is IMigratable {
+interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**

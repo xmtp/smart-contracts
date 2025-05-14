@@ -9,4 +9,6 @@ interface IParameterRegistryLike {
     function set(bytes calldata key_, bytes32 value_) external;
 
     function get(bytes calldata key_) external view returns (bytes32 value_);
+
+    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);
 }

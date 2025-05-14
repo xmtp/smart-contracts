@@ -4,10 +4,11 @@ pragma solidity 0.8.28;
 import { ECDSA } from "../../lib/solady/src/utils/ECDSA.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 import { SequentialMerkleProofs } from "../libraries/SequentialMerkleProofs.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike, INodeRegistryLike, IPayerRegistryLike } from "./interfaces/External.sol";
+import { INodeRegistryLike, IPayerRegistryLike } from "./interfaces/External.sol";
 import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
 import { ERC5267 } from "../abstract/ERC5267.sol";
@@ -200,7 +201,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -289,19 +290,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             );
     }
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
     }
 
     /**

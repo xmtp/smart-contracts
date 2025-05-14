@@ -5,23 +5,17 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProofs.sol";
-
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
+import { ISequentialMerkleProofsErrors } from "../../src/libraries/interfaces/ISequentialMerkleProofsErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { PayerReportManagerHarness } from "../utils/Harnesses.sol";
 
-import {
-    MockParameterRegistry,
-    MockNodeRegistry,
-    MockPayerRegistry,
-    MockMigrator,
-    MockFailingMigrator
-} from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 
 import { Utils } from "../utils/Utils.sol";
 
@@ -36,9 +30,10 @@ contract PayerReportManagerTests is Test {
     PayerReportManagerHarness internal _manager;
 
     address internal _implementation;
-    address internal _parameterRegistry;
-    address internal _nodeRegistry;
-    address internal _payerRegistry;
+
+    address internal _nodeRegistry = makeAddr("nodeRegistry");
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _payerRegistry = makeAddr("payerRegistry");
 
     address internal _signer1;
     uint256 internal _signer1Pk;
@@ -55,12 +50,7 @@ contract PayerReportManagerTests is Test {
         (_signer3, _signer3Pk) = makeAddrAndKey("signer3");
         (_signer4, _signer4Pk) = makeAddrAndKey("signer4");
 
-        _parameterRegistry = address(new MockParameterRegistry());
-        _nodeRegistry = address(new MockNodeRegistry());
-        _payerRegistry = address(new MockPayerRegistry());
-
         _implementation = address(new PayerReportManagerHarness(_parameterRegistry, _nodeRegistry, _payerRegistry));
-
         _manager = PayerReportManagerHarness(address(new Proxy(_implementation)));
 
         _manager.initialize();
@@ -111,7 +101,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
 
@@ -121,7 +111,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 11,
             endSequenceId_: 11,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
         });
@@ -135,7 +125,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
 
@@ -145,7 +135,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 10,
             endSequenceId_: 9,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
         });
@@ -159,13 +149,15 @@ contract PayerReportManagerTests is Test {
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: "" });
         signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 0, signature: "" });
 
+        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(false));
+
         vm.expectRevert(IPayerReportManager.UnorderedNodeIds.selector);
 
         _manager.submit({
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 1,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -176,7 +168,7 @@ contract PayerReportManagerTests is Test {
             1
         );
 
-        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer1Pk);
+        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk);
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: signature_ });
 
@@ -190,7 +182,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -204,7 +196,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
 
@@ -214,17 +206,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(0), new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(0), new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(0), new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory validSigningNodeIds_ = new uint32[](2);
@@ -262,7 +254,7 @@ contract PayerReportManagerTests is Test {
             payerReportIndex: 1,
             startSequenceId: 1,
             endSequenceId: 2,
-            payersMerkleRoot: bytes32(0),
+            payersMerkleRoot: 0,
             nodeIds: new uint32[](0),
             signingNodeIds: validSigningNodeIds_
         });
@@ -274,7 +266,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 1,
             endSequenceId_: 2,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -288,7 +280,7 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReport_.feesSettled, 0);
         assertEq(payerReport_.offset, 0);
         assertTrue(payerReport_.isSettled);
-        assertEq(payerReport_.payersMerkleRoot, bytes32(0));
+        assertEq(payerReport_.payersMerkleRoot, 0);
         assertEq(payerReport_.nodeIds.length, 0);
     }
 
@@ -300,7 +292,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
 
@@ -400,7 +392,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: true,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
 
@@ -435,7 +427,7 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0)
         });
 
-        vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
+        vm.expectRevert(ISequentialMerkleProofsErrors.InvalidProof.selector);
         _manager.settle(0, 0, payerFees_, proofElements_);
     }
 
@@ -599,33 +591,44 @@ contract PayerReportManagerTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _manager.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _manager.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _manager.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -650,7 +653,7 @@ contract PayerReportManagerTests is Test {
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
@@ -688,13 +691,15 @@ contract PayerReportManagerTests is Test {
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: "" });
         signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 0, signature: "" });
 
+        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(false));
+
         vm.expectRevert(IPayerReportManager.UnorderedNodeIds.selector);
 
         _manager.__verifySignatures({
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -703,11 +708,13 @@ contract PayerReportManagerTests is Test {
     function test_internal_verifySignatures_insufficientSignatures() external {
         vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.InsufficientSignatures.selector, 0, 1));
 
+        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(1));
+
         _manager.__verifySignatures({
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
         });
@@ -720,17 +727,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
@@ -766,7 +773,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -784,17 +791,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, bytes32(0), new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
@@ -830,7 +837,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
         });
@@ -850,7 +857,7 @@ contract PayerReportManagerTests is Test {
             abi.encode(false)
         );
 
-        assertFalse(_manager.__verifySignature(bytes32(0), 1, ""));
+        assertFalse(_manager.__verifySignature(0, 1, ""));
     }
 
     function test_internal_verifySignature_invalidSignature() external {
@@ -860,7 +867,7 @@ contract PayerReportManagerTests is Test {
             abi.encode(true)
         );
 
-        assertFalse(_manager.__verifySignature(bytes32(0), 1, ""));
+        assertFalse(_manager.__verifySignature(0, 1, ""));
     }
 
     function test_internal_verifySignature_notNodeOwner() external {
@@ -868,7 +875,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
-            payersMerkleRoot_: bytes32(0),
+            payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             privateKey_: _signer1Pk
         });
@@ -879,11 +886,13 @@ contract PayerReportManagerTests is Test {
             abi.encode(true)
         );
 
-        assertFalse(_manager.__verifySignature(bytes32(0), 1, signature_));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(0));
+
+        assertFalse(_manager.__verifySignature(0, 1, signature_));
     }
 
     function test_internal_verifySignature() external {
-        bytes memory signature_ = _getSignature(bytes32(0), _signer1Pk);
+        bytes memory signature_ = _getSignature(0, _signer1Pk);
 
         Utils.expectAndMockCall(
             _nodeRegistry,
@@ -893,7 +902,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
-        assertTrue(_manager.__verifySignature(bytes32(0), 1, signature_));
+        assertTrue(_manager.__verifySignature(0, 1, signature_));
     }
 
     /* ============ getPayerReportDigest ============ */
@@ -907,7 +916,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(4)),
                 nodeIds_: new uint32[](5)
             }),
-            0xbf09bdaeb24a76f0ab947a527805ba9f56f22462ac91d9db03ef4b230c3aca4d
+            0x4cf04a8aee0f79c7a8ca56676533991601c857b8c4d5311d4d48d3626a481c21
         );
 
         assertEq(
@@ -918,7 +927,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(40)),
                 nodeIds_: new uint32[](50)
             }),
-            0x1b7e79d4dcb404edf32daa7431199f901b2403392e088812287e16e26b112b6c
+            0x03762966f4c0a81b51620453d64965d2d7a8bc612d228a7e4f5aed595b1af7ef
         );
     }
 
@@ -1079,7 +1088,7 @@ contract PayerReportManagerTests is Test {
         assertEq(version_, "1");
         assertEq(chainId_, block.chainid);
         assertEq(verifyingContract_, address(_manager));
-        assertEq(salt_, bytes32(0));
+        assertEq(salt_, 0);
         assertEq(extensions_.length, 0);
     }
 

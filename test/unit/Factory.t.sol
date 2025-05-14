@@ -88,15 +88,15 @@ contract FactoryTests is Test {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
 
         // TODO: Try to mockCallRevert on the expected proxy to get the `create2` to fail, instead of this.
-        _factory.deployProxy(address(foo_), bytes32(0), "");
+        _factory.deployProxy(address(foo_), 0, "");
 
         vm.expectRevert(IFactory.DeployFailed.selector);
-        _factory.deployProxy(address(foo_), bytes32(0), "");
+        _factory.deployProxy(address(foo_), 0, "");
     }
 
     function test_deployProxy_initializationFailed() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
-        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
+        address expectedProxy_ = _getExpectedProxy(_alice, 0);
 
         vm.mockCallRevert(
             expectedProxy_,
@@ -107,20 +107,20 @@ contract FactoryTests is Test {
         vm.expectRevert();
 
         vm.prank(_alice);
-        _factory.deployProxy(address(foo_), bytes32(0), "");
+        _factory.deployProxy(address(foo_), 0, "");
     }
 
     function test_deployProxy() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
-        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
+        address expectedProxy_ = _getExpectedProxy(_alice, 0);
 
         bytes memory initializeCallData_ = abi.encodeWithSelector(Foo.initialize.selector, uint256(123));
 
         vm.expectEmit(address(_factory));
-        emit IFactory.ProxyDeployed(expectedProxy_, foo_, _alice, bytes32(0), initializeCallData_);
+        emit IFactory.ProxyDeployed(expectedProxy_, foo_, _alice, 0, initializeCallData_);
 
         vm.prank(_alice);
-        address proxy_ = _factory.deployProxy(foo_, bytes32(0), initializeCallData_);
+        address proxy_ = _factory.deployProxy(foo_, 0, initializeCallData_);
 
         assertEq(proxy_, expectedProxy_);
     }
@@ -142,8 +142,8 @@ contract FactoryTests is Test {
     /* ============ computeProxyAddress ============ */
 
     function test_computeProxyAddress() external view {
-        address expectedProxy_ = _getExpectedProxy(_alice, bytes32(0));
-        assertEq(_factory.computeProxyAddress(_alice, bytes32(0)), expectedProxy_);
+        address expectedProxy_ = _getExpectedProxy(_alice, 0);
+        assertEq(_factory.computeProxyAddress(_alice, 0), expectedProxy_);
     }
 
     /* ============ helper functions ============ */

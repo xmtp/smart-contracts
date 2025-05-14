@@ -3,13 +3,13 @@ pragma solidity 0.8.28;
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { IRateRegistry } from "./interfaces/IRateRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: PAGE_SIZE should be a default, but overridden by the caller.
 // TODO: Nodes should filter recent events to build rates array, without requiring contract to maintain it.
 
 /**
@@ -18,9 +18,6 @@ import { Migratable } from "../abstract/Migratable.sol";
  */
 contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
-
-    /// @inheritdoc IRateRegistry
-    uint256 public constant PAGE_SIZE = 50; // Fixed page size for reading rates.
 
     /// @inheritdoc IRateRegistry
     address public immutable parameterRegistry;
@@ -71,13 +68,18 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     function updateRates() external {
         RateRegistryStorage storage $ = _getRateRegistryStorage();
 
-        uint64 messageFee_ = _toUint64(_getRegistryParameter(messageFeeParameterKey()));
-        uint64 storageFee_ = _toUint64(_getRegistryParameter(storageFeeParameterKey()));
-        uint64 congestionFee_ = _toUint64(_getRegistryParameter(congestionFeeParameterKey()));
-        uint64 targetRatePerMinute_ = _toUint64(_getRegistryParameter(targetRatePerMinuteParameterKey()));
-        uint64 startTime_ = uint64(block.timestamp);
+        uint64 messageFee_ = RegistryParameters.getUint64Parameter(parameterRegistry, messageFeeParameterKey());
+        uint64 storageFee_ = RegistryParameters.getUint64Parameter(parameterRegistry, storageFeeParameterKey());
+        uint64 congestionFee_ = RegistryParameters.getUint64Parameter(parameterRegistry, congestionFeeParameterKey());
+
+        uint64 targetRatePerMinute_ = RegistryParameters.getUint64Parameter(
+            parameterRegistry,
+            targetRatePerMinuteParameterKey()
+        );
 
         _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+
+        uint64 startTime_ = uint64(block.timestamp);
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
@@ -86,7 +88,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -116,65 +118,31 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         return "xmtp.rateRegistry.migrator";
     }
 
-    /**
-     * @dev    Returns a slice of the Rates list for pagination.
-     * @param  fromIndex_ Index from which to start (must be < allRates.length).
-     * @return rates_     The subset of Rates.
-     * @return hasMore_   True if there are more items beyond this slice.
-     */
-    function getRates(uint256 fromIndex_) external view returns (Rates[] memory rates_, bool hasMore_) {
+    /// @inheritdoc IRateRegistry
+    function getRates(uint256 fromIndex_, uint256 count_) external view returns (Rates[] memory rates_) {
+        if (count_ == 0) revert ZeroCount();
+
         RateRegistryStorage storage $ = _getRateRegistryStorage();
 
-        // TODO: Fix unexpected behavior that an out of bounds query is not an error when the list is empty.
-        if ($.allRates.length == 0 && fromIndex_ == 0) return (new Rates[](0), false);
-
         if (fromIndex_ >= $.allRates.length) revert FromIndexOutOfRange();
+        if (fromIndex_ + count_ > $.allRates.length) revert EndIndexOutOfRange();
 
-        uint256 toIndex_ = _min(fromIndex_ + PAGE_SIZE, $.allRates.length);
+        rates_ = new Rates[](count_);
 
-        rates_ = new Rates[](toIndex_ - fromIndex_);
-
-        for (uint256 index_; index_ < rates_.length; ++index_) {
+        for (uint256 index_; index_ < count_; ++index_) {
             rates_[index_] = $.allRates[fromIndex_ + index_];
         }
-
-        hasMore_ = toIndex_ < $.allRates.length;
     }
 
-    /**
-     * @dev Returns the total number of Rates stored.
-     */
+    /// @inheritdoc IRateRegistry
     function getRatesCount() external view returns (uint256 count_) {
         return _getRateRegistryStorage().allRates.length;
     }
 
     /* ============ Internal View/Pure Functions ============ */
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
-    }
-
-    /// @dev Returns the minimum of two numbers.
-    function _min(uint256 a_, uint256 b_) internal pure returns (uint256 min_) {
-        return a_ < b_ ? a_ : b_;
-    }
-
-    function _toUint64(bytes32 value_) internal pure returns (uint64 output_) {
-        // slither-disable-next-line assembly
-        assembly {
-            output_ := value_
-        }
     }
 
     /// @dev Reverts if none of the rates have changed.

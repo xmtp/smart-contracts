@@ -11,50 +11,52 @@ import { ERC20Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC20
 
 import { IERC20Metadata } from "../../lib/oz/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
+import { IFeeToken } from "./interfaces/IFeeToken.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IParameterRegistryLike, IPermitErc20Like } from "./interfaces/External.sol";
-import { IAppchainToken } from "./interfaces/IAppchainToken.sol";
+import { IPermitErc20Like } from "./interfaces/External.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
 /**
- * @title  Implementation of the Appchain Token.
- * @notice This contract exposes functionality for wrapping and unwrapping tokens for use as appchain native gas.
+ * @title  Implementation of the Fee Token.
+ * @notice This contract exposes functionality for wrapping and unwrapping tokens for use as fees in the protocol.
  */
-contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
+contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
     /* ============ Constants/Immutables ============ */
 
     /**
-     * @inheritdoc IAppchainToken
+     * @inheritdoc IFeeToken
      * @dev        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
      */
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     address public immutable parameterRegistry;
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     address public immutable underlying;
 
     /* ============ UUPS Storage ============ */
 
     /**
-     * @custom:storage-location erc7201:xmtp.storage.AppchainToken
-     * @notice The UUPS storage for the appchain token.
+     * @custom:storage-location erc7201:xmtp.storage.FeeToken
+     * @notice The UUPS storage for the fee token.
      */
-    struct AppchainTokenStorage {
+    struct FeeTokenStorage {
         uint256 __placeholder;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.AppchainToken")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 internal constant _APPCHAIN_TOKEN_STORAGE_LOCATION =
-        0xf3113fb37d01584b69fb0553afaccecd5878bffdf9a02c0b156b2e4dcbafe000;
+    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.FeeToken")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant _FEE_TOKEN_STORAGE_LOCATION =
+        0x5671b09487cb30093710a244e87d44c3076fe3dd19f604be8dafc153e2d9cb00;
 
     // slither-disable-start dead-code
-    function _getAppchainTokenStorage() internal pure returns (AppchainTokenStorage storage $) {
+    function _getFeeTokenStorage() internal pure returns (FeeTokenStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
-            $.slot := _APPCHAIN_TOKEN_STORAGE_LOCATION
+            $.slot := _FEE_TOKEN_STORAGE_LOCATION
         }
     }
     // slither-disable-end dead-code
@@ -70,22 +72,23 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
      *         and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address underlying_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(underlying = underlying_), ZeroUnderlying());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(underlying = underlying_)) revert ZeroUnderlying();
+
         _disableInitializers();
     }
 
     /* ============ Initialization ============ */
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function initialize() public initializer {
-        __ERC20Permit_init("XMTP Appchain Token");
-        __ERC20_init("XMTP Appchain Token", "aXMTP");
+        __ERC20Permit_init("XMTP Fee Token");
+        __ERC20_init("XMTP Fee Token", "fXMTP");
     }
 
     /* ============ Interactive Functions ============ */
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function permit(
         address owner_,
         address spender_,
@@ -94,27 +97,27 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) public override(IAppchainToken, ERC20PermitUpgradeable) {
+    ) public override(IFeeToken, ERC20PermitUpgradeable) {
         super.permit(owner_, spender_, value_, deadline_, v_, r_, s_);
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function deposit(uint256 amount_) external {
         _deposit(msg.sender, amount_);
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function depositWithPermit(uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external {
         _depositWithPermit(msg.sender, amount_, deadline_, v_, r_, s_);
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function depositFor(address recipient_, uint256 amount_) external returns (bool success_) {
         _deposit(recipient_, amount_);
         return true;
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function depositForWithPermit(
         address recipient_,
         uint256 amount_,
@@ -127,12 +130,12 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         return true;
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function withdraw(uint256 amount_) external {
         _withdraw(msg.sender, amount_);
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function withdrawTo(address recipient_, uint256 amount_) external returns (bool success_) {
         _withdraw(recipient_, amount_);
         return true;
@@ -140,17 +143,17 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
 
     // slither-disable-start naming-convention
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function DOMAIN_SEPARATOR()
         external
         view
-        override(IAppchainToken, ERC20PermitUpgradeable)
+        override(IFeeToken, ERC20PermitUpgradeable)
         returns (bytes32 domainSeparator_)
     {
         return _domainSeparatorV4();
@@ -158,23 +161,21 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
     // slither-disable-end naming-convention
 
     /// @inheritdoc IERC20Metadata
-    function decimals() public view override(IERC20Metadata, ERC20Upgradeable) returns (uint8 decimals_) {
+    function decimals() public pure override(IERC20Metadata, ERC20Upgradeable) returns (uint8 decimals_) {
         return 6;
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function migratorParameterKey() public pure returns (bytes memory key_) {
-        return "xmtp.appchainToken.migrator";
+        return "xmtp.feeToken.migrator";
     }
 
-    /// @inheritdoc IAppchainToken
-    function nonces(
-        address owner_
-    ) public view override(IAppchainToken, ERC20PermitUpgradeable) returns (uint256 nonce_) {
+    /// @inheritdoc IFeeToken
+    function nonces(address owner_) public view override(IFeeToken, ERC20PermitUpgradeable) returns (uint256 nonce_) {
         return super.nonces(owner_);
     }
 
-    /// @inheritdoc IAppchainToken
+    /// @inheritdoc IFeeToken
     function getPermitDigest(
         address owner_,
         address spender_,
@@ -255,18 +256,7 @@ contract AppchainToken is IAppchainToken, Migratable, ERC20PermitUpgradeable {
         return _hashTypedDataV4(keccak256(abi.encode(PERMIT_TYPEHASH, owner_, spender_, value_, nonce_, deadline_)));
     }
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
-
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 }

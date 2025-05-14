@@ -2,16 +2,17 @@
 pragma solidity 0.8.28;
 
 import { IERC20 } from "../../../lib/oz/contracts/token/ERC20/IERC20.sol";
-import { IERC20Metadata } from "../../../lib/oz/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IERC20Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
+import { IERC20Metadata } from "../../../lib/oz/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
- * @title  Interface for the Appchain Token.
- * @notice This interface exposes functionality for wrapping and unwrapping tokens for use as appchain native gas.
+ * @title  Interface for the Fee Token.
+ * @notice This interface exposes functionality for wrapping and unwrapping tokens for use as fees in the protocol.
  */
-interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
+interface IFeeToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable, IRegistryParametersErrors {
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
@@ -52,7 +53,7 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
      * @param  owner_    The owner of the tokens.
      * @param  spender_  The spender of the tokens.
      * @param  value_    The value of the tokens.
-     * @param  deadline_ The deadline of the permit (must be a timestamp in the future).
+     * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
      * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  s_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -77,7 +78,7 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
      * @notice Deposits `amount_` of the underlying token, given `owner_`'s signed approval.
      * @notice The permit signature must be for the underlying token, not for this token.
      * @param  amount_   The amount of the underlying token to deposit.
-     * @param  deadline_ The deadline of the permit (must be a timestamp in the future).
+     * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
      * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  s_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -97,7 +98,7 @@ interface IAppchainToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable {
      * @notice The permit signature must be for the underlying token, not for this token.
      * @param  recipient_ The recipient of the underlying token.
      * @param  amount_    The amount of the underlying token to deposit.
-     * @param  deadline_  The deadline of the permit (must be a timestamp in the future).
+     * @param  deadline_  The deadline of the permit (must be the current or future timestamp).
      * @param  v_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  s_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).

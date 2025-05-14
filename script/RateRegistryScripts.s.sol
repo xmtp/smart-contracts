@@ -56,7 +56,7 @@ contract RateRegistryScripts is ScriptBase {
         require(_deploymentData.rateRegistryProxy != address(0), ProxyNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.rateRegistryImplementation != address(0), ImplementationNotSet());
-        require(_deploymentData.rateRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.rateRegistryProxySalt != 0, ProxySaltNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -94,7 +94,7 @@ contract RateRegistryScripts is ScriptBase {
 
     function getProxy() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
-        require(_deploymentData.rateRegistryProxySalt != bytes32(0), ProxySaltNotSet());
+        require(_deploymentData.rateRegistryProxySalt != 0, ProxySaltNotSet());
 
         address proxy_ = RateRegistryDeployer.getProxy(
             _deploymentData.factory,

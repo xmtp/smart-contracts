@@ -11,14 +11,10 @@ import { IPayloadBroadcaster } from "../../src/abstract/interfaces/IPayloadBroad
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { IdentityUpdateBroadcasterHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract IdentityUpdateBroadcasterTests is Test {
-    bytes32 internal constant ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
-
-    uint256 internal constant _STARTING_MIN_PAYLOAD_SIZE = 78;
-    uint256 internal constant _STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
+    bytes32 internal constant _ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
     bytes internal constant _PAUSED_KEY = "xmtp.identityUpdateBroadcaster.paused";
     bytes internal constant _MIGRATOR_KEY = "xmtp.identityUpdateBroadcaster.migrator";
@@ -28,24 +24,11 @@ contract IdentityUpdateBroadcasterTests is Test {
     IdentityUpdateBroadcasterHarness internal _broadcaster;
 
     address internal _implementation;
-    address internal _parameterRegistry;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new IdentityUpdateBroadcasterHarness(_parameterRegistry));
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _MAX_PAYLOAD_SIZE_KEY,
-            bytes32(_STARTING_MAX_PAYLOAD_SIZE)
-        );
-
-        Utils.expectAndMockParameterRegistryCall(
-            _parameterRegistry,
-            _MIN_PAYLOAD_SIZE_KEY,
-            bytes32(_STARTING_MIN_PAYLOAD_SIZE)
-        );
-
         _broadcaster = IdentityUpdateBroadcasterHarness(address(new Proxy(_implementation)));
 
         _broadcaster.initialize();
@@ -76,64 +59,12 @@ contract IdentityUpdateBroadcasterTests is Test {
         assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
         assertFalse(_broadcaster.paused());
         assertEq(_broadcaster.parameterRegistry(), _parameterRegistry);
-        assertEq(_broadcaster.minPayloadSize(), _STARTING_MIN_PAYLOAD_SIZE);
-        assertEq(_broadcaster.maxPayloadSize(), _STARTING_MAX_PAYLOAD_SIZE);
+        assertEq(_broadcaster.minPayloadSize(), 0);
+        assertEq(_broadcaster.maxPayloadSize(), 0);
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
     /* ============ addIdentityUpdate ============ */
-
-    function test_addIdentityUpdate_minPayload() external {
-        bytes memory message_ = Utils.generatePayload(_broadcaster.minPayloadSize());
-
-        vm.expectEmit(address(_broadcaster));
-        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(ID, message_, 1);
-
-        _broadcaster.addIdentityUpdate(ID, message_);
-
-        assertEq(_broadcaster.__getSequenceId(), 1);
-    }
-
-    function test_addIdentityUpdate_maxPayload() external {
-        bytes memory message_ = Utils.generatePayload(_broadcaster.maxPayloadSize());
-
-        vm.expectEmit(address(_broadcaster));
-        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(ID, message_, 1);
-
-        _broadcaster.addIdentityUpdate(ID, message_);
-
-        assertEq(_broadcaster.__getSequenceId(), 1);
-    }
-
-    function test_addIdentityUpdate_payloadTooSmall() external {
-        bytes memory message_ = Utils.generatePayload(_broadcaster.minPayloadSize() - 1);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPayloadBroadcaster.InvalidPayloadSize.selector,
-                message_.length,
-                _broadcaster.minPayloadSize(),
-                _broadcaster.maxPayloadSize()
-            )
-        );
-
-        _broadcaster.addIdentityUpdate(ID, message_);
-    }
-
-    function test_addIdentityUpdate_payloadTooLarge() external {
-        bytes memory message_ = Utils.generatePayload(_broadcaster.maxPayloadSize() + 1);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IPayloadBroadcaster.InvalidPayloadSize.selector,
-                message_.length,
-                _broadcaster.minPayloadSize(),
-                _broadcaster.maxPayloadSize()
-            )
-        );
-
-        _broadcaster.addIdentityUpdate(ID, message_);
-    }
 
     function test_addIdentityUpdate_whenPaused() external {
         _broadcaster.__setPauseStatus(true);
@@ -142,7 +73,56 @@ contract IdentityUpdateBroadcasterTests is Test {
 
         vm.expectRevert(IPayloadBroadcaster.Paused.selector);
 
-        _broadcaster.addIdentityUpdate(ID, message_);
+        _broadcaster.addIdentityUpdate(_ID, message_);
+    }
+
+    function test_addIdentityUpdate_payloadTooSmall() external {
+        _broadcaster.__setMinPayloadSize(78);
+
+        bytes memory message_ = Utils.generatePayload(77);
+
+        vm.expectRevert(abi.encodeWithSelector(IPayloadBroadcaster.InvalidPayloadSize.selector, 77, 78, 0));
+
+        _broadcaster.addIdentityUpdate(_ID, message_);
+    }
+
+    function test_addIdentityUpdate_payloadTooLarge() external {
+        _broadcaster.__setMaxPayloadSize(4_194_304);
+
+        bytes memory message_ = Utils.generatePayload(4_194_305);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IPayloadBroadcaster.InvalidPayloadSize.selector, 4_194_305, 0, 4_194_304)
+        );
+
+        _broadcaster.addIdentityUpdate(_ID, message_);
+    }
+
+    function test_addIdentityUpdate_minPayload() external {
+        _broadcaster.__setMinPayloadSize(1);
+        _broadcaster.__setMaxPayloadSize(1);
+
+        bytes memory message_ = Utils.generatePayload(1);
+
+        vm.expectEmit(address(_broadcaster));
+        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(_ID, message_, 1);
+
+        _broadcaster.addIdentityUpdate(_ID, message_);
+
+        assertEq(_broadcaster.__getSequenceId(), 1);
+    }
+
+    function test_addIdentityUpdate_maxPayload() external {
+        _broadcaster.__setMaxPayloadSize(4_194_304);
+
+        bytes memory message_ = Utils.generatePayload(4_194_304);
+
+        vm.expectEmit(address(_broadcaster));
+        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(_ID, message_, 1);
+
+        _broadcaster.addIdentityUpdate(_ID, message_);
+
+        assertEq(_broadcaster.__getSequenceId(), 1);
     }
 
     /// forge-config: default.fuzz.runs = 10
@@ -154,9 +134,9 @@ contract IdentityUpdateBroadcasterTests is Test {
         uint64 sequenceId_,
         bool paused_
     ) external {
-        minPayloadSize_ = _bound(minPayloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
-        maxPayloadSize_ = _bound(maxPayloadSize_, minPayloadSize_, _STARTING_MAX_PAYLOAD_SIZE);
-        payloadSize_ = _bound(payloadSize_, 1, _STARTING_MAX_PAYLOAD_SIZE);
+        minPayloadSize_ = _bound(minPayloadSize_, 1, 4_194_304);
+        maxPayloadSize_ = _bound(maxPayloadSize_, minPayloadSize_, 4_194_304);
+        payloadSize_ = _bound(payloadSize_, 1, 4_194_304);
         sequenceId_ = uint64(_bound(sequenceId_, 0, type(uint64).max - 1));
 
         _broadcaster.__setSequenceId(sequenceId_);
@@ -172,10 +152,10 @@ contract IdentityUpdateBroadcasterTests is Test {
             vm.expectRevert();
         } else {
             vm.expectEmit(address(_broadcaster));
-            emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(ID, message_, sequenceId_ + 1);
+            emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(_ID, message_, sequenceId_ + 1);
         }
 
-        _broadcaster.addIdentityUpdate(ID, message_);
+        _broadcaster.addIdentityUpdate(_ID, message_);
 
         if (shouldFail_) return;
 

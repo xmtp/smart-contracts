@@ -18,6 +18,7 @@ contract AppChainParameterRegistryTests is Test {
     AppChainParameterRegistryHarness internal _registry;
 
     address internal _implementation;
+
     address internal _admin1 = address(0x1111111111111111111111111111111111111111);
     address internal _admin2 = address(0x2222222222222222222222222222222222222222);
 

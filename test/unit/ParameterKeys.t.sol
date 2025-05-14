@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
+import { IParameterKeysErrors } from "../../src/libraries/interfaces/IParameterKeysErrors.sol";
 
 import { ParameterKeysHarness } from "../utils/Harnesses.sol";
 
@@ -14,8 +14,10 @@ contract ParameterKeysTests is Test {
         _parameterKeys = new ParameterKeysHarness();
     }
 
+    /* ============ getKey ============ */
+
     function test_getKey_noKeyComponents() external {
-        vm.expectRevert(ParameterKeys.NoKeyComponents.selector);
+        vm.expectRevert(IParameterKeysErrors.NoKeyComponents.selector);
         _parameterKeys.getKey(new bytes[](0));
     }
 
@@ -30,6 +32,8 @@ contract ParameterKeysTests is Test {
         assertEq(key_, "this.is.a.key");
     }
 
+    /* ============ combineKeyComponents ============ */
+
     function test_combineKeyComponents() external view {
         bytes memory left_ = "left";
         bytes memory right_ = "right";
@@ -37,6 +41,8 @@ contract ParameterKeysTests is Test {
         bytes memory key_ = _parameterKeys.combineKeyComponents(left_, right_);
         assertEq(key_, "left.right");
     }
+
+    /* ============ addressToKeyComponent ============ */
 
     function test_addressToKeyComponent() external view {
         assertEq(
@@ -49,6 +55,8 @@ contract ParameterKeysTests is Test {
             "0xabcdef1234567890abcdef1234567890abcdef12"
         );
     }
+
+    /* ============ uint256ToKeyComponent ============ */
 
     function test_uint256ToKeyComponent() external view {
         assertEq(_parameterKeys.uint256ToKeyComponent(uint256(1)), "1");

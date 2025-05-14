@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IERC721 } from "../../lib/oz/contracts/token/ERC721/IERC721.sol";
 import { IERC721Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
@@ -11,15 +10,17 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { NodeRegistryHarness } from "../utils/Harnesses.sol";
-import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract NodeRegistryTests is Test {
     bytes internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    bytes internal constant _MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
     bytes internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
 
     uint32 internal constant _NODE_INCREMENT = 100;
@@ -27,7 +28,8 @@ contract NodeRegistryTests is Test {
     NodeRegistryHarness internal _registry;
 
     address internal _implementation;
-    address internal _parameterRegistry;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
 
     address internal _admin = makeAddr("admin");
     address internal _unauthorized = makeAddr("unauthorized");
@@ -36,9 +38,7 @@ contract NodeRegistryTests is Test {
     address internal _bob = makeAddr("bob");
 
     function setUp() external {
-        _parameterRegistry = address(new MockParameterRegistry());
         _implementation = address(new NodeRegistryHarness(_parameterRegistry));
-
         _registry = NodeRegistryHarness(address(new Proxy(_implementation)));
 
         _registry.initialize();
@@ -57,11 +57,12 @@ contract NodeRegistryTests is Test {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
+        assertEq(keccak256(_registry.maxCanonicalNodesParameterKey()), keccak256(_MAX_CANONICAL_NODES_KEY));
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(_registry.name(), "XMTP Nodes");
         assertEq(_registry.symbol(), "nXMTP");
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
-        assertEq(_registry.maxCanonicalNodes(), 20);
+        assertEq(_registry.maxCanonicalNodes(), 0);
     }
 
     /* ============ initializer ============ */
@@ -206,21 +207,9 @@ contract NodeRegistryTests is Test {
         _registry.addToNetwork(1);
     }
 
-    function test_addToNetwork_alreadyInCanonicalNetwork() external {
-        _registry.__setAdmin(_admin);
-        _addNode(1, _alice, address(0), true, "", "");
-
-        vm.expectRevert(INodeRegistry.NodeAlreadyInCanonicalNetwork.selector);
-
-        vm.prank(_admin);
-        _registry.addToNetwork(1);
-    }
-
     function test_addToNetwork_maxActiveNodesReached() external {
         _registry.__setAdmin(_admin);
         _addNode(1, _alice, address(0), false, "", "");
-
-        _registry.__setMaxCanonicalNodes(0);
 
         vm.expectRevert(INodeRegistry.MaxCanonicalNodesReached.selector);
 
@@ -238,6 +227,7 @@ contract NodeRegistryTests is Test {
 
     function test_addToNetwork() external {
         _registry.__setAdmin(_admin);
+        _registry.__setMaxCanonicalNodes(1);
         _addNode(1, _alice, address(0), false, "", "");
 
         vm.expectEmit(address(_registry));
@@ -245,6 +235,22 @@ contract NodeRegistryTests is Test {
 
         vm.prank(_admin);
         _registry.addToNetwork(1);
+
+        assertTrue(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 1);
+    }
+
+    function test_addToNetwork_alreadyInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _registry.__setCanonicalNodesCount(1);
+        _addNode(1, _alice, address(0), true, "", "");
+
+        vm.recordLogs();
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
+
+        assertEq(vm.getRecordedLogs().length, 0);
 
         assertTrue(_registry.__getNode(1).isCanonical);
         assertEq(_registry.canonicalNodesCount(), 1);
@@ -259,16 +265,6 @@ contract NodeRegistryTests is Test {
 
         vm.prank(_unauthorized);
         _registry.removeFromNetwork(0);
-    }
-
-    function test_removeFromNetwork_notInCanonicalNetwork() external {
-        _registry.__setAdmin(_admin);
-        _addNode(1, _alice, address(0), false, "", "");
-
-        vm.expectRevert(INodeRegistry.NodeNotInCanonicalNetwork.selector);
-
-        vm.prank(_admin);
-        _registry.removeFromNetwork(1);
     }
 
     function test_removeFromNetwork_nonexistentToken() external {
@@ -292,6 +288,21 @@ contract NodeRegistryTests is Test {
 
         vm.prank(_admin);
         _registry.removeFromNetwork(1);
+
+        assertFalse(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 0);
+    }
+
+    function test_removeFromNetwork_notInCanonicalNetwork() external {
+        _registry.__setAdmin(_admin);
+        _addNode(1, _alice, address(0), false, "", "");
+
+        vm.recordLogs();
+
+        vm.prank(_admin);
+        _registry.removeFromNetwork(1);
+
+        assertEq(vm.getRecordedLogs().length, 0);
 
         assertFalse(_registry.__getNode(1).isCanonical);
         assertEq(_registry.canonicalNodesCount(), 0);
@@ -337,38 +348,6 @@ contract NodeRegistryTests is Test {
         assertEq(_registry.__getNode(1).httpAddress, "http://example.com");
     }
 
-    /* ============ setMaxCanonicalNodes ============ */
-
-    function test_setMaxActiveNodes_notAdmin() external {
-        _registry.__setAdmin(_admin);
-
-        vm.expectRevert(INodeRegistry.NotAdmin.selector);
-
-        vm.prank(_unauthorized);
-        _registry.setMaxCanonicalNodes(0);
-    }
-
-    function test_setMaxCanonicalNodes_lessThanActiveNodesLength() external {
-        _registry.__setAdmin(_admin);
-        _registry.__setCanonicalNodesCount(1);
-
-        vm.expectRevert(INodeRegistry.MaxCanonicalNodesBelowCurrentCount.selector);
-
-        vm.prank(_admin);
-        _registry.setMaxCanonicalNodes(0);
-    }
-
-    function test_setMaxCanonicalNodes() external {
-        _registry.__setAdmin(_admin);
-        vm.expectEmit(address(_registry));
-        emit INodeRegistry.MaxCanonicalNodesUpdated(10);
-
-        vm.prank(_admin);
-        _registry.setMaxCanonicalNodes(10);
-
-        assertEq(_registry.maxCanonicalNodes(), 10);
-    }
-
     /* ============ setBaseURI ============ */
 
     function test_setBaseURI_notAdmin() external {
@@ -412,10 +391,22 @@ contract NodeRegistryTests is Test {
 
     /* ============ updateAdmin ============ */
 
+    function test_updateAdmin_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _ADMIN_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateAdmin();
+    }
+
     function test_updateAdmin_noChange() external {
         _registry.__setAdmin(_admin);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(uint160(_admin))));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(uint160(_admin))));
 
         vm.expectRevert(INodeRegistry.NoChange.selector);
 
@@ -425,12 +416,62 @@ contract NodeRegistryTests is Test {
     function test_updateAdmin() external {
         _registry.__setAdmin(_admin);
 
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(1)));
 
         vm.expectEmit(address(_registry));
         emit INodeRegistry.AdminUpdated(address(1));
 
         _registry.updateAdmin();
+
+        assertEq(_registry.admin(), address(1));
+    }
+
+    /* ============ updateMaxCanonicalNodes ============ */
+
+    function test_updateMaxCanonicalNodes_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MAX_CANONICAL_NODES_KEY,
+            bytes32(uint256(type(uint8).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateMaxCanonicalNodes();
+    }
+
+    function test_updateMaxCanonicalNodes_noChange() external {
+        _registry.__setMaxCanonicalNodes(1);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_CANONICAL_NODES_KEY, bytes32(uint256(1)));
+
+        vm.expectRevert(INodeRegistry.NoChange.selector);
+
+        _registry.updateMaxCanonicalNodes();
+    }
+
+    function test_updateMaxCanonicalNodes_maxCanonicalNodesBelowCurrentCount() external {
+        _registry.__setMaxCanonicalNodes(2);
+        _registry.__setCanonicalNodesCount(2);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_CANONICAL_NODES_KEY, bytes32(uint256(1)));
+
+        vm.expectRevert(INodeRegistry.MaxCanonicalNodesBelowCurrentCount.selector);
+
+        _registry.updateMaxCanonicalNodes();
+    }
+
+    function test_updateMaxCanonicalNodes() external {
+        _registry.__setMaxCanonicalNodes(1);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_CANONICAL_NODES_KEY, bytes32(uint256(2)));
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.MaxCanonicalNodesUpdated(2);
+
+        _registry.updateMaxCanonicalNodes();
+
+        assertEq(_registry.maxCanonicalNodes(), 2);
     }
 
     /* ============ maxCanonicalNodes ============ */
@@ -558,33 +599,44 @@ contract NodeRegistryTests is Test {
 
     /* ============ migrate ============ */
 
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.migrate();
+    }
+
     function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
         vm.expectRevert(IMigratable.ZeroMigrator.selector);
         _registry.migrate();
     }
 
     function test_migrate_migrationFailed() external {
-        address migrator_ = address(new MockFailingMigrator());
+        address migrator_ = makeAddr("migrator");
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMigratable.MigrationFailed.selector,
-                migrator_,
-                abi.encodeWithSelector(MockFailingMigrator.Failed.selector)
-            )
-        );
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
 
         _registry.migrate();
     }
 
     function test_migrate_emptyCode() external {
-        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -597,7 +649,7 @@ contract NodeRegistryTests is Test {
         address newImplementation_ = address(new NodeRegistryHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        Utils.expectAndMockParameterRegistryCall(
+        Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
             _MIGRATOR_KEY,
             bytes32(uint256(uint160(migrator_)))
@@ -622,11 +674,11 @@ contract NodeRegistryTests is Test {
         uint256 nodeId_,
         address owner_,
         address signer_,
-        bool inCanonical_,
+        bool isCanonical_,
         bytes memory signingPublicKey_,
         string memory httpAddress_
     ) internal {
-        _registry.__setNode(nodeId_, signer_, inCanonical_, signingPublicKey_, httpAddress_);
+        _registry.__setNode(nodeId_, signer_, isCanonical_, signingPublicKey_, httpAddress_);
         _registry.__mint(owner_, nodeId_);
     }
 }

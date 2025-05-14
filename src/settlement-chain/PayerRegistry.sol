@@ -5,13 +5,13 @@ import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol"
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import { IERC20Like, IParameterRegistryLike } from "./interfaces/External.sol";
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
+import { IERC20Like, IPermitErc20Like } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
-
-// TODO: `depositWithPermit`.
 
 /**
  * @title  Implementation of the Payer Registry.
@@ -96,24 +96,43 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ Initialization ============ */
 
     /// @inheritdoc IPayerRegistry
-    function initialize() external initializer {
-        _updateSettler();
-        _updateFeeDistributor();
-        _updateMinimumDeposit();
-        _updateWithdrawLockPeriod();
-        _updatePauseStatus(); // The contract may start out paused, as needed.
-    }
+    function initialize() external initializer {}
 
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IPayerRegistry
     function deposit(address payer_, uint96 amount_) external whenNotPaused {
-        _deposit(msg.sender, payer_, amount_);
+        _deposit(payer_, amount_);
     }
 
     /// @inheritdoc IPayerRegistry
-    function deposit(uint96 amount_) external whenNotPaused {
-        _deposit(msg.sender, msg.sender, amount_);
+    function depositWithPermit(
+        address payer_,
+        uint96 amount_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external whenNotPaused {
+        // Ignore return value, as the permit may have already been used, and the allowance already approved.
+        // slither-disable-start unchecked-lowlevel
+        // slither-disable-start low-level-calls
+        address(token).call(
+            abi.encodeWithSelector(
+                IPermitErc20Like.permit.selector,
+                msg.sender,
+                address(this),
+                amount_,
+                deadline_,
+                v_,
+                r_,
+                s_
+            )
+        );
+        // slither-disable-end unchecked-lowlevel
+        // slither-disable-end low-level-calls
+
+        _deposit(payer_, amount_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -219,32 +238,73 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateSettler() external {
-        if (!_updateSettler()) revert NoChange();
+        address settler_ = RegistryParameters.getAddressParameter(parameterRegistry, settlerParameterKey());
+
+        if (_isZero(settler_)) revert ZeroSettler();
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if ($.settler == settler_) revert NoChange();
+
+        emit SettlerUpdated($.settler = settler_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateFeeDistributor() external {
-        if (!_updateFeeDistributor()) revert NoChange();
+        address feeDistributor_ = RegistryParameters.getAddressParameter(
+            parameterRegistry,
+            feeDistributorParameterKey()
+        );
+
+        if (_isZero(feeDistributor_)) revert ZeroFeeDistributor();
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if ($.feeDistributor == feeDistributor_) revert NoChange();
+
+        emit FeeDistributorUpdated($.feeDistributor = feeDistributor_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateMinimumDeposit() external {
-        if (!_updateMinimumDeposit()) revert NoChange();
+        uint96 minimumDeposit_ = RegistryParameters.getUint96Parameter(parameterRegistry, minimumDepositParameterKey());
+
+        if (minimumDeposit_ == 0) revert ZeroMinimumDeposit();
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if ($.minimumDeposit == minimumDeposit_) revert NoChange();
+
+        emit MinimumDepositUpdated($.minimumDeposit = minimumDeposit_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updateWithdrawLockPeriod() external {
-        if (!_updateWithdrawLockPeriod()) revert NoChange();
+        uint32 withdrawLockPeriod_ = RegistryParameters.getUint32Parameter(
+            parameterRegistry,
+            withdrawLockPeriodParameterKey()
+        );
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if (withdrawLockPeriod_ == $.withdrawLockPeriod) revert NoChange();
+
+        emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = withdrawLockPeriod_);
     }
 
     /// @inheritdoc IPayerRegistry
     function updatePauseStatus() external {
-        if (!_updatePauseStatus()) revert NoChange();
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
     }
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -387,100 +447,27 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /**
-     * @dev Transfers `amount_` of tokens from `from_` to this contract to satisfy a deposit for `payer_`.
+     * @dev Transfers `amount_` of tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
-    function _deposit(address from_, address payer_, uint96 amount_) internal {
-        if (amount_ < _getPayerRegistryStorage().minimumDeposit) {
-            revert InsufficientDeposit(amount_, _getPayerRegistryStorage().minimumDeposit);
+    function _deposit(address payer_, uint96 amount_) internal {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+
+        if (amount_ < $.minimumDeposit) {
+            revert InsufficientDeposit(amount_, $.minimumDeposit);
         }
 
-        SafeTransferLib.safeTransferFrom(token, from_, address(this), amount_);
+        SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount_);
 
         uint96 debtRepaid_ = _increaseBalance(payer_, amount_);
 
-        _getPayerRegistryStorage().totalDebt -= debtRepaid_;
-        _getPayerRegistryStorage().totalDeposits += _toInt104(amount_);
+        $.totalDebt -= debtRepaid_;
+        $.totalDeposits += _toInt104(amount_);
 
         // slither-disable-next-line reentrancy-events
         emit Deposit(payer_, amount_);
     }
 
-    /// @dev Sets the settler address by fetching it from the parameter registry, returning whether it changed.
-    function _updateSettler() internal returns (bool changed_) {
-        address newSettler_ = _toAddress(_getRegistryParameter(settlerParameterKey()));
-
-        if (_isZero(newSettler_)) revert ZeroSettler();
-
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-
-        if ($.settler == newSettler_) return false;
-
-        $.settler = newSettler_;
-
-        emit SettlerUpdated(newSettler_);
-
-        return true;
-    }
-
-    /// @dev Sets the fee distributor address by fetching it from the parameter registry, returning whether it changed.
-    function _updateFeeDistributor() internal returns (bool changed_) {
-        address newFeeDistributor_ = _toAddress(_getRegistryParameter(feeDistributorParameterKey()));
-
-        if (_isZero(newFeeDistributor_)) revert ZeroFeeDistributor();
-
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-
-        if ($.feeDistributor == newFeeDistributor_) return false;
-
-        $.feeDistributor = newFeeDistributor_;
-
-        emit FeeDistributorUpdated(newFeeDistributor_);
-
-        return true;
-    }
-
-    /// @dev Sets the minimum deposit by fetching it from the parameter registry, returning whether it changed.
-    function _updateMinimumDeposit() internal returns (bool changed_) {
-        uint96 newMinimumDeposit_ = _toUint96(_getRegistryParameter(minimumDepositParameterKey()));
-
-        if (newMinimumDeposit_ == 0) revert ZeroMinimumDeposit();
-
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-
-        if ($.minimumDeposit == newMinimumDeposit_) return false;
-
-        $.minimumDeposit = newMinimumDeposit_;
-
-        emit MinimumDepositUpdated(newMinimumDeposit_);
-
-        return true;
-    }
-
-    /// @dev Sets the withdraw lock period by fetching it from the parameter registry, returning whether it changed.
-    function _updateWithdrawLockPeriod() internal returns (bool changed_) {
-        uint32 newWithdrawLockPeriod_ = _toUint32(_getRegistryParameter(withdrawLockPeriodParameterKey()));
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-
-        changed_ = newWithdrawLockPeriod_ != $.withdrawLockPeriod;
-
-        emit WithdrawLockPeriodUpdated($.withdrawLockPeriod = newWithdrawLockPeriod_);
-    }
-
-    /// @dev Sets the pause status by fetching it from the parameter registry, returning whether it changed.
-    function _updatePauseStatus() internal returns (bool changed_) {
-        bool paused_ = _getRegistryParameter(pausedParameterKey()) != bytes32(0);
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-
-        changed_ = paused_ != $.paused;
-
-        emit PauseStatusUpdated($.paused = paused_);
-    }
-
     /* ============ Internal View/Pure Functions ============ */
-
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
 
     /**
      * @dev Returns the sum of all withdrawable balances (sum of all positive payer balances and pending withdrawals).
@@ -497,31 +484,10 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         return input_ == address(0);
     }
 
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
-        }
-    }
-
     function _toInt104(uint96 input_) internal pure returns (int104 output_) {
         // slither-disable-next-line assembly
         assembly {
             output_ := input_
-        }
-    }
-
-    function _toUint32(bytes32 value_) internal pure returns (uint32 output_) {
-        // slither-disable-next-line assembly
-        assembly {
-            output_ := value_
-        }
-    }
-
-    function _toUint96(bytes32 value_) internal pure returns (uint96 output_) {
-        // slither-disable-next-line assembly
-        assembly {
-            output_ := value_
         }
     }
 

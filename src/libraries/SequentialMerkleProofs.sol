@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { ISequentialMerkleProofsErrors } from "./interfaces/ISequentialMerkleProofsErrors.sol";
+
 /**
  * @title  Library for verifying sequential merkle proofs.
  * @notice A sequential merkle proof is a proof that leaves appear sequentially in a merkle tree.
@@ -8,7 +10,7 @@ pragma solidity 0.8.28;
 library SequentialMerkleProofs {
     /* ============ Constants ============ */
 
-    bytes32 internal constant EMPTY_TREE_ROOT = bytes32(0);
+    bytes32 internal constant EMPTY_TREE_ROOT = 0;
 
     /// @notice The leaf prefix used to hash to a leaf ("leaf|").
     bytes5 internal constant LEAF_PREFIX = 0x6c6561667c;
@@ -18,23 +20,6 @@ library SequentialMerkleProofs {
 
     /// @notice The root prefix used to hash to a root.
     bytes5 internal constant ROOT_PREFIX = 0x726f6f747c;
-
-    /* ============ Custom Errors ============ */
-
-    /// @notice Thrown when no leaves are provided.
-    error NoLeaves();
-
-    /// @notice Thrown when the input to _bitCount32 is greater than type(uint32).max.
-    error InvalidBitCount32Input();
-
-    /// @notice Thrown when the proof is invalid.
-    error InvalidProof();
-
-    /// @notice Thrown when no proof elements are provided.
-    error NoProofElements();
-
-    /// @notice Thrown when the leaf count is greater than type(uint32).max.
-    error InvalidLeafCount();
 
     /* ============ Main Functions ============ */
 
@@ -53,7 +38,9 @@ library SequentialMerkleProofs {
         bytes[] calldata leaves_,
         bytes32[] calldata proofElements_
     ) internal pure {
-        if (getRoot(startingIndex_, leaves_, proofElements_) != root_) revert InvalidProof();
+        if (getRoot(startingIndex_, leaves_, proofElements_) != root_) {
+            revert ISequentialMerkleProofsErrors.InvalidProof();
+        }
     }
 
     /**
@@ -79,9 +66,9 @@ library SequentialMerkleProofs {
      * @dev    Does not verify the proof. Only extracts the leaf count from the proof elements.
      */
     function getLeafCount(bytes32[] calldata proofElements_) internal pure returns (uint32 leafCount_) {
-        if (proofElements_.length == 0) revert NoProofElements();
+        if (proofElements_.length == 0) revert ISequentialMerkleProofsErrors.NoProofElements();
 
-        if (uint256(proofElements_[0]) > type(uint32).max) revert InvalidLeafCount();
+        if (uint256(proofElements_[0]) > type(uint32).max) revert ISequentialMerkleProofsErrors.InvalidLeafCount();
 
         return uint32(uint256(proofElements_[0]));
     }
@@ -97,7 +84,7 @@ library SequentialMerkleProofs {
      *         readability, given their patterns.
      */
     function _bitCount32(uint256 n_) internal pure returns (uint256 bitCount_) {
-        if (n_ > type(uint32).max) revert InvalidBitCount32Input();
+        if (n_ > type(uint32).max) revert ISequentialMerkleProofsErrors.InvalidBitCount32Input();
 
         unchecked {
             n_ -= (n_ >> 1) & 0x55555555;
@@ -152,12 +139,15 @@ library SequentialMerkleProofs {
         bytes32[] memory hashes_,
         bytes32[] calldata proofElements_
     ) internal pure returns (bytes32 root_) {
-        if (proofElements_.length == 0) revert NoProofElements();
+        if (proofElements_.length == 0) revert ISequentialMerkleProofsErrors.NoProofElements();
 
         if (startingIndex_ == 0 && hashes_.length == 0 && uint256(proofElements_[0]) == 0) return EMPTY_TREE_ROOT;
 
-        if (hashes_.length == 0) revert NoLeaves();
-        if (startingIndex_ + hashes_.length > uint256(proofElements_[0])) revert InvalidProof();
+        if (hashes_.length == 0) revert ISequentialMerkleProofsErrors.NoLeaves();
+
+        if (startingIndex_ + hashes_.length > uint256(proofElements_[0])) {
+            revert ISequentialMerkleProofsErrors.InvalidProof();
+        }
 
         uint256 count_ = hashes_.length;
         uint256[] memory treeIndices_ = new uint256[](count_);

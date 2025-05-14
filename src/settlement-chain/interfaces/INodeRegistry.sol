@@ -2,10 +2,11 @@
 pragma solidity 0.8.28;
 
 import { IERC721 } from "../../../lib/oz/contracts/token/ERC721/IERC721.sol";
-import { IERC721Metadata } from "../../../lib/oz/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
+import { IERC721Metadata } from "../../../lib/oz/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Node Registry.
@@ -14,7 +15,7 @@ import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
  *         In addition to the standard ERC721 functionality, the contract supports node-specific features, including
  *         node property updates.
  */
-interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable {
+interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**
@@ -122,12 +123,6 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /// @notice Thrown when trying to set max canonical nodes below current canonical count.
     error MaxCanonicalNodesBelowCurrentCount();
 
-    /// @notice Thrown when a node is already in the canonical network.
-    error NodeAlreadyInCanonicalNetwork();
-
-    /// @notice Thrown when a node is not in the canonical network.
-    error NodeNotInCanonicalNetwork();
-
     /// @notice Thrown when the maximum number of canonical nodes is reached.
     error MaxCanonicalNodesReached();
 
@@ -180,16 +175,10 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     function removeFromNetwork(uint32 nodeId_) external;
 
     /**
-     * @notice Sets the maximum number of canonical nodes.
-     * @param  newMaxCanonicalNodes_ The new maximum number of canonical nodes.
-     */
-    function setMaxCanonicalNodes(uint8 newMaxCanonicalNodes_) external;
-
-    /**
      * @notice Set the base URI for the node NFTs.
-     * @param  newBaseURI_ The new base URI. Has to end with a trailing slash.
+     * @param  baseURI_ The new base URI. Has to end with a trailing slash.
      */
-    function setBaseURI(string calldata newBaseURI_) external;
+    function setBaseURI(string calldata baseURI_) external;
 
     /* ============ Node Owner Functions ============ */
 
@@ -203,9 +192,15 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
     /* ============ Interactive Functions ============ */
 
     /**
-     * @notice Updates the admin by referring to the last admin parameter from the parameter registry.
+     * @notice Updates the admin by referring to the admin parameter from the parameter registry.
      */
     function updateAdmin() external;
+
+    /**
+     * @notice Updates the max canonical nodes by referring to the max canonical nodes parameter from the parameter
+     *         registry.
+     */
+    function updateMaxCanonicalNodes() external;
 
     /* ============ View/Pure Functions ============ */
 
@@ -218,6 +213,9 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable 
 
     /// @notice The parameter registry key used to fetch the admin.
     function adminParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the max canonical nodes.
+    function maxCanonicalNodesParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);

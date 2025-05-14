@@ -3,8 +3,9 @@ pragma solidity 0.8.28;
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
 import { IMigratable } from "./interfaces/IMigratable.sol";
-import { IParameterRegistryLike } from "./interfaces/External.sol";
 import { IPayloadBroadcaster } from "./interfaces/IPayloadBroadcaster.sol";
 
 import { Migratable } from "./Migratable.sol";
@@ -31,8 +32,8 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
      * @param  paused         The paused status.
      */
     struct PayloadBroadcasterStorage {
-        uint256 minPayloadSize;
-        uint256 maxPayloadSize;
+        uint32 minPayloadSize;
+        uint32 maxPayloadSize;
         uint64 sequenceId;
         bool paused;
     }
@@ -46,13 +47,6 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         assembly {
             $.slot := _PAYLOAD_BROADCASTER_STORAGE_LOCATION
         }
-    }
-
-    /* ============ Modifiers ============ */
-
-    modifier whenNotPaused() {
-        _revertIfPaused();
-        _;
     }
 
     /* ============ Constructor ============ */
@@ -71,34 +65,47 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ Initialization ============ */
 
     /// @inheritdoc IPayloadBroadcaster
-    function initialize() public virtual initializer {
-        // Since both the min and max start at 0, the max must be updated before the min, since the min can never be
-        // set to be greater than the max.
-        _updateMaxPayloadSize();
-        _updateMinPayloadSize();
-        _updatePauseStatus(); // The contract may start out paused, as needed.
-    }
+    function initialize() public virtual initializer {}
 
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMinPayloadSize() external {
-        if (!_updateMinPayloadSize()) revert NoChange();
+        uint32 minPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, minPayloadSizeParameterKey());
+
+        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
+
+        if (minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
+        if (minPayloadSize_ == $.minPayloadSize) revert NoChange();
+
+        emit MinPayloadSizeUpdated($.minPayloadSize = minPayloadSize_);
     }
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMaxPayloadSize() external {
-        if (!_updateMaxPayloadSize()) revert NoChange();
+        uint32 maxPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, maxPayloadSizeParameterKey());
+
+        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
+
+        if (maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
+        if (maxPayloadSize_ == $.maxPayloadSize) revert NoChange();
+
+        emit MaxPayloadSizeUpdated($.maxPayloadSize = maxPayloadSize_);
     }
 
     /// @inheritdoc IPayloadBroadcaster
     function updatePauseStatus() external {
-        if (!_updatePauseStatus()) revert NoChange();
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
     }
 
     /// @inheritdoc IMigratable
     function migrate() external {
-        _migrate(_toAddress(_getRegistryParameter(migratorParameterKey())));
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -116,12 +123,12 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     function pausedParameterKey() public pure virtual returns (bytes memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
-    function minPayloadSize() external view returns (uint256 size_) {
+    function minPayloadSize() external view returns (uint32 size_) {
         return _getPayloadBroadcasterStorage().minPayloadSize;
     }
 
     /// @inheritdoc IPayloadBroadcaster
-    function maxPayloadSize() external view returns (uint256 size_) {
+    function maxPayloadSize() external view returns (uint32 size_) {
         return _getPayloadBroadcasterStorage().maxPayloadSize;
     }
 
@@ -130,47 +137,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         return _getPayloadBroadcasterStorage().paused;
     }
 
-    /* ============ Internal Interactive Functions ============ */
-
-    /// @dev Sets the min payload size by fetching it from the parameter registry, returning whether i changed.
-    function _updateMinPayloadSize() internal returns (bool changed_) {
-        uint256 minPayloadSize_ = uint256(_getRegistryParameter(minPayloadSizeParameterKey()));
-        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
-
-        if (minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
-
-        changed_ = minPayloadSize_ != $.minPayloadSize;
-
-        emit MinPayloadSizeUpdated($.minPayloadSize = minPayloadSize_);
-    }
-
-    /// @dev Sets the max payload size by fetching it from the parameter registry, returning whether it changed.
-    function _updateMaxPayloadSize() internal returns (bool changed_) {
-        uint256 maxPayloadSize_ = uint256(_getRegistryParameter(maxPayloadSizeParameterKey()));
-        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
-
-        if (maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
-
-        changed_ = maxPayloadSize_ != $.maxPayloadSize;
-
-        emit MaxPayloadSizeUpdated($.maxPayloadSize = maxPayloadSize_);
-    }
-
-    /// @dev Sets the paused status by fetching it from the parameter registry, returning whether it changed.
-    function _updatePauseStatus() internal returns (bool changed_) {
-        bool paused_ = _getRegistryParameter(pausedParameterKey()) != bytes32(0);
-        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
-
-        changed_ = paused_ != $.paused;
-
-        emit PauseStatusUpdated($.paused = paused_);
-    }
-
     /* ============ Internal View/Pure Functions ============ */
-
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
-        return IParameterRegistryLike(parameterRegistry).get(key_);
-    }
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
@@ -185,13 +152,6 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
         if (payloadSize_ < $.minPayloadSize || payloadSize_ > $.maxPayloadSize) {
             revert InvalidPayloadSize(payloadSize_, $.minPayloadSize, $.maxPayloadSize);
-        }
-    }
-
-    function _toAddress(bytes32 value_) internal pure returns (address address_) {
-        // slither-disable-next-line assembly
-        assembly {
-            address_ := value_
         }
     }
 }

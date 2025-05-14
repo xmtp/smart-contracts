@@ -2,12 +2,13 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Rate Registry.
  * @notice This interface exposes functionality for updating the rates, tracking them historically.
  */
-interface IRateRegistry is IMigratable {
+interface IRateRegistry is IMigratable, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**
@@ -42,8 +43,14 @@ interface IRateRegistry is IMigratable {
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
+    /// @notice Thrown when the query count is zero.
+    error ZeroCount();
+
     /// @notice Thrown when the `fromIndex` is out of range.
     error FromIndexOutOfRange();
+
+    /// @notice Thrown when the end index (as computed from the `fromIndex` and `count`) is out of range.
+    error EndIndexOutOfRange();
 
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
@@ -64,17 +71,13 @@ interface IRateRegistry is IMigratable {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @notice The page size for the rates.
-    // slither-disable-next-line naming-convention
-    function PAGE_SIZE() external pure returns (uint256 pageSize_);
-
     /**
      * @notice Returns a slice of the Rates list for pagination.
      * @param  fromIndex_ Index from which to start (must be < allRates.length).
+     * @param  count_     The number of items to return.
      * @return rates_     The subset of Rates.
-     * @return hasMore_   True if there are more items beyond this slice.
      */
-    function getRates(uint256 fromIndex_) external view returns (Rates[] memory rates_, bool hasMore_);
+    function getRates(uint256 fromIndex_, uint256 count_) external view returns (Rates[] memory rates_);
 
     /// @notice The total number of Rates stored.
     function getRatesCount() external view returns (uint256 count_);
