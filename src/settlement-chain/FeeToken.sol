@@ -75,9 +75,6 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(underlying = underlying_)) revert ZeroUnderlying();
 
-        parameterRegistry = parameterRegistry_;
-        underlying = underlying_;
-
         _disableInitializers();
     }
 
