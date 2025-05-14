@@ -10,7 +10,7 @@ import { Proxy } from "../../src/any-chain/Proxy.sol";
 import { AppChainParameterRegistryHarness } from "../utils/Harnesses.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract AppChainParameterRegistryTests is Test, Utils {
+contract AppChainParameterRegistryTests is Test {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.appChainParameterRegistry.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.appChainParameterRegistry.migrator";
@@ -43,7 +43,7 @@ contract AppChainParameterRegistryTests is Test, Utils {
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
@@ -61,12 +61,5 @@ contract AppChainParameterRegistryTests is Test, Utils {
             ),
             bytes32(uint256(1))
         );
-    }
-
-    /* ============ helper functions ============ */
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

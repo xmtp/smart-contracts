@@ -53,7 +53,7 @@ library SequentialMerkleProofs {
         bytes[] calldata leaves_,
         bytes32[] calldata proofElements_
     ) internal pure {
-        require(getRoot(startingIndex_, leaves_, proofElements_) == root_, InvalidProof());
+        if (getRoot(startingIndex_, leaves_, proofElements_) != root_) revert InvalidProof();
     }
 
     /**
@@ -79,7 +79,7 @@ library SequentialMerkleProofs {
      * @dev    Does not verify the proof. Only extracts the leaf count from the proof elements.
      */
     function getLeafCount(bytes32[] calldata proofElements_) internal pure returns (uint32 leafCount_) {
-        require(proofElements_.length > 0, NoProofElements());
+        if (proofElements_.length == 0) revert NoProofElements();
 
         if (uint256(proofElements_[0]) > type(uint32).max) revert InvalidLeafCount();
 
@@ -97,7 +97,7 @@ library SequentialMerkleProofs {
      *         readability, given their patterns.
      */
     function _bitCount32(uint256 n_) internal pure returns (uint256 bitCount_) {
-        require(n_ <= type(uint32).max, InvalidBitCount32Input());
+        if (n_ > type(uint32).max) revert InvalidBitCount32Input();
 
         unchecked {
             n_ -= (n_ >> 1) & 0x55555555;
@@ -152,12 +152,12 @@ library SequentialMerkleProofs {
         bytes32[] memory hashes_,
         bytes32[] calldata proofElements_
     ) internal pure returns (bytes32 root_) {
-        require(proofElements_.length > 0, NoProofElements());
+        if (proofElements_.length == 0) revert NoProofElements();
 
         if (startingIndex_ == 0 && hashes_.length == 0 && uint256(proofElements_[0]) == 0) return EMPTY_TREE_ROOT;
 
-        require(hashes_.length > 0, NoLeaves());
-        require(startingIndex_ + hashes_.length <= uint256(proofElements_[0]), InvalidProof());
+        if (hashes_.length == 0) revert NoLeaves();
+        if (startingIndex_ + hashes_.length > uint256(proofElements_[0])) revert InvalidProof();
 
         uint256 count_ = hashes_.length;
         uint256[] memory treeIndices_ = new uint256[](count_);

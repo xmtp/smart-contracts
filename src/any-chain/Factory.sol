@@ -38,7 +38,7 @@ contract Factory is IFactory {
 
     /// @inheritdoc IFactory
     function deployImplementation(bytes calldata bytecode_) external returns (address implementation_) {
-        require(bytecode_.length > 0, EmptyBytecode());
+        if (bytecode_.length == 0) revert EmptyBytecode();
 
         bytes32 bytecodeHash_ = keccak256(bytecode_);
 
@@ -89,12 +89,12 @@ contract Factory is IFactory {
             deployed_ := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
         }
 
-        require(_isNotZero(deployed_), DeployFailed());
+        if (_isZero(deployed_)) revert DeployFailed();
     }
 
     /* ============ Internal View/Pure Functions ============ */
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 }

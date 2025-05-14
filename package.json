@@ -15,7 +15,7 @@
         "build": "forge build",
         "clean": "forge clean",
         "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 3000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
-        "gas-report": "forge test --gas-report --gas-limit 2000000000 > gasreport.ansi",
+        "gas-report": "forge test --fuzz-seed 10101 --gas-report --gas-limit 2000000000 > gasreport.ansi",
         "doc": "forge doc --serve --port 4000",
         "lint-staged": "lint-staged",
         "prettier": "prettier --write 'script/**/*.sol' 'src/**/*.sol' 'test/**/*.sol'",
@@ -26,14 +26,14 @@
         "test": "forge test"
     },
     "devDependencies": {
-        "@arbitrum/sdk": "^4.0.3",
+        "@arbitrum/sdk": "^4.0.4",
         "@ethersproject/bignumber": "^5.8.0",
-        "dotenv": "^16.4.7",
+        "dotenv": "^16.5.0",
         "ethers": "5.8.0",
-        "lint-staged": "^15.5.0",
+        "lint-staged": "^15.5.2",
         "prettier": "^3.5.3",
-        "prettier-plugin-solidity": "^1.4.2",
-        "solhint": "^5.0.5",
+        "prettier-plugin-solidity": "^1.4.3",
+        "solhint": "^5.1.0",
         "solhint-plugin-prettier": "^0.1.0"
     },
     "engines": {

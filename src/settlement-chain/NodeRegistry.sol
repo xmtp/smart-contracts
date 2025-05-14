@@ -80,7 +80,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         _disableInitializers();
     }
 
@@ -102,13 +102,13 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         bytes calldata signingPublicKey_,
         string calldata httpAddress_
     ) external onlyAdmin returns (uint32 nodeId_, address signer_) {
-        require(owner_ != address(0), InvalidOwner());
-        require(signingPublicKey_.length > 0, InvalidSigningPublicKey());
-        require(bytes(httpAddress_).length > 0, InvalidHttpAddress());
+        if (_isZero(owner_)) revert InvalidOwner();
+        if (signingPublicKey_.length == 0) revert InvalidSigningPublicKey();
+        if (bytes(httpAddress_).length == 0) revert InvalidHttpAddress();
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        require((uint256($.nodeCount) + 1) * NODE_INCREMENT <= type(uint32).max, MaxNodesReached());
+        if ((uint256($.nodeCount) + 1) * NODE_INCREMENT > type(uint32).max) revert MaxNodesReached();
 
         unchecked {
             nodeId_ = ++$.nodeCount * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
@@ -130,8 +130,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        require(!$.nodes[nodeId_].isCanonical, NodeAlreadyInCanonicalNetwork());
-        require(++$.canonicalNodesCount <= $.maxCanonicalNodes, MaxCanonicalNodesReached());
+        if ($.nodes[nodeId_].isCanonical) revert NodeAlreadyInCanonicalNetwork();
+        if (++$.canonicalNodesCount > $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
 
         $.nodes[nodeId_].isCanonical = true;
 
@@ -144,7 +144,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        require($.nodes[nodeId_].isCanonical, NodeNotInCanonicalNetwork());
+        if (!$.nodes[nodeId_].isCanonical) revert NodeNotInCanonicalNetwork();
 
         delete $.nodes[nodeId_].isCanonical;
         --$.canonicalNodesCount;
@@ -155,14 +155,14 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function setMaxCanonicalNodes(uint8 newMaxCanonicalNodes_) external onlyAdmin {
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
-        require(newMaxCanonicalNodes_ >= $.canonicalNodesCount, MaxCanonicalNodesBelowCurrentCount());
+        if (newMaxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
         emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = newMaxCanonicalNodes_);
     }
 
     /// @inheritdoc INodeRegistry
     function setBaseURI(string calldata newBaseURI_) external onlyAdmin {
-        require(bytes(newBaseURI_).length > 0, InvalidURI());
-        require(bytes(newBaseURI_)[bytes(newBaseURI_).length - 1] == _FORWARD_SLASH, InvalidURI());
+        if (bytes(newBaseURI_).length == 0) revert InvalidURI();
+        if (bytes(newBaseURI_)[bytes(newBaseURI_).length - 1] != _FORWARD_SLASH) revert InvalidURI();
         emit BaseURIUpdated(_getNodeRegistryStorage().baseURI = newBaseURI_);
     }
 
@@ -171,7 +171,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function setHttpAddress(uint32 nodeId_, string calldata httpAddress_) external {
         _revertIfNotNodeOwner(nodeId_);
-        require(bytes(httpAddress_).length > 0, InvalidHttpAddress());
+        if (bytes(httpAddress_).length == 0) revert InvalidHttpAddress();
         emit HttpAddressUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].httpAddress = httpAddress_);
     }
 
@@ -183,7 +183,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         address newAdmin_ = _toAddress(_getRegistryParameter(adminParameterKey()));
 
-        require(newAdmin_ != $.admin, NoChange());
+        if (newAdmin_ == $.admin) revert NoChange();
 
         emit AdminUpdated($.admin = newAdmin_);
     }
@@ -265,8 +265,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {
@@ -277,10 +277,10 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     }
 
     function _revertIfNotAdmin() internal view {
-        require(msg.sender == _getNodeRegistryStorage().admin, NotAdmin());
+        if (msg.sender != _getNodeRegistryStorage().admin) revert NotAdmin();
     }
 
     function _revertIfNotNodeOwner(uint32 nodeId_) internal view {
-        require(_requireOwned(nodeId_) == msg.sender, NotNodeOwner());
+        if (_requireOwned(nodeId_) != msg.sender) revert NotNodeOwner();
     }
 }

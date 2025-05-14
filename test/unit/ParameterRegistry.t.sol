@@ -15,7 +15,7 @@ import { ParameterRegistryHarness } from "../utils/Harnesses.sol";
 import { MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract ParameterRegistryTests is Test, Utils {
+contract ParameterRegistryTests is Test {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.parameterRegistry.isAdmin";
     bytes internal constant _MIGRATOR_KEY = "xmtp.parameterRegistry.migrator";
@@ -49,7 +49,7 @@ contract ParameterRegistryTests is Test, Utils {
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
@@ -177,7 +177,7 @@ contract ParameterRegistryTests is Test, Utils {
 
         _registry.migrate();
 
-        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), newImplementation_);
         assertEq(_registry.implementation(), newImplementation_);
 
         assertEq(
@@ -248,12 +248,5 @@ contract ParameterRegistryTests is Test, Utils {
 
         // NOTE: Encoding a string non-compactly is a different key.
         assertNotEq(_registry.get(abi.encode("this.is.a.parameter")), bytes32(uint256(1010101)));
-    }
-
-    /* ============ helper functions ============ */
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

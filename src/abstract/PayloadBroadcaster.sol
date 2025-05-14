@@ -64,7 +64,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
      * @dev    The parameter registry is immutable so that it is inlined in the contract code, and has minimal gas cost.
      */
     constructor(address parameterRegistry_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         _disableInitializers();
     }
 
@@ -83,17 +83,17 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMinPayloadSize() external {
-        require(_updateMinPayloadSize(), NoChange());
+        if (!_updateMinPayloadSize()) revert NoChange();
     }
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMaxPayloadSize() external {
-        require(_updateMaxPayloadSize(), NoChange());
+        if (!_updateMaxPayloadSize()) revert NoChange();
     }
 
     /// @inheritdoc IPayloadBroadcaster
     function updatePauseStatus() external {
-        require(_updatePauseStatus(), NoChange());
+        if (!_updatePauseStatus()) revert NoChange();
     }
 
     /// @inheritdoc IMigratable
@@ -137,7 +137,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint256 minPayloadSize_ = uint256(_getRegistryParameter(minPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        require(minPayloadSize_ <= $.maxPayloadSize, InvalidMinPayloadSize());
+        if (minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
 
         changed_ = minPayloadSize_ != $.minPayloadSize;
 
@@ -149,7 +149,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint256 maxPayloadSize_ = uint256(_getRegistryParameter(maxPayloadSizeParameterKey()));
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        require(maxPayloadSize_ >= $.minPayloadSize, InvalidMaxPayloadSize());
+        if (maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
 
         changed_ = maxPayloadSize_ != $.maxPayloadSize;
 
@@ -172,12 +172,12 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _revertIfPaused() internal view {
-        require(!_getPayloadBroadcasterStorage().paused, Paused());
+        if (_getPayloadBroadcasterStorage().paused) revert Paused();
     }
 
     function _revertIfInvalidPayloadSize(uint256 payloadSize_) internal view {

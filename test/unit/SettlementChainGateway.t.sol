@@ -26,7 +26,7 @@ import {
 
 import { Utils } from "../utils/Utils.sol";
 
-contract SettlementChainGatewayTests is Test, Utils {
+contract SettlementChainGatewayTests is Test {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainGateway.migrator";
 
@@ -79,7 +79,7 @@ contract SettlementChainGatewayTests is Test, Utils {
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_gateway)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_gateway)), _implementation);
         assertEq(_gateway.implementation(), _implementation);
         assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
@@ -149,7 +149,12 @@ contract SettlementChainGatewayTests is Test, Utils {
         );
 
         vm.expectCall(_appChainNativeToken, abi.encodeWithSelector(MockErc20.approve.selector, inbox_, 100));
-        _expectAndMockCall(inbox_, abi.encodeWithSelector(MockERC20Inbox.depositERC20.selector, 100), abi.encode(11));
+
+        Utils.expectAndMockCall(
+            inbox_,
+            abi.encodeWithSelector(MockERC20Inbox.depositERC20.selector, 100),
+            abi.encode(11)
+        );
 
         vm.expectEmit(address(_gateway));
         emit ISettlementChainGateway.SenderFundsDeposited(inbox_, 11, 100);
@@ -186,7 +191,7 @@ contract SettlementChainGatewayTests is Test, Utils {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        _expectAndMockCall(
+        Utils.expectAndMockCall(
             inboxes_[0],
             abi.encodeWithSelector(
                 MockERC20Inbox.sendContractTransaction.selector,
@@ -199,7 +204,7 @@ contract SettlementChainGatewayTests is Test, Utils {
             abi.encode(uint256(11))
         );
 
-        _expectAndMockCall(
+        Utils.expectAndMockCall(
             inboxes_[1],
             abi.encodeWithSelector(
                 MockERC20Inbox.sendContractTransaction.selector,
@@ -253,7 +258,7 @@ contract SettlementChainGatewayTests is Test, Utils {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        _expectAndMockCall(
+        Utils.expectAndMockCall(
             inboxes_[0],
             abi.encodeWithSelector(
                 MockERC20Inbox.createRetryableTicket.selector,
@@ -270,7 +275,7 @@ contract SettlementChainGatewayTests is Test, Utils {
             abi.encode(uint256(11))
         );
 
-        _expectAndMockCall(
+        Utils.expectAndMockCall(
             inboxes_[1],
             abi.encodeWithSelector(
                 MockERC20Inbox.createRetryableTicket.selector,
@@ -308,7 +313,11 @@ contract SettlementChainGatewayTests is Test, Utils {
     function test_migrate_migrationFailed() external {
         address migrator_ = address(new MockFailingMigrator());
 
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -322,7 +331,7 @@ contract SettlementChainGatewayTests is Test, Utils {
     }
 
     function test_migrate_emptyCode() external {
-        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(uint160(1))));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -340,8 +349,11 @@ contract SettlementChainGatewayTests is Test, Utils {
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        // TODO: `_expectAndMockParameterRegistryCall`.
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectEmit(address(_gateway));
         emit IMigratable.Migrated(migrator_);
@@ -351,7 +363,7 @@ contract SettlementChainGatewayTests is Test, Utils {
 
         _gateway.migrate();
 
-        assertEq(_getImplementationFromSlot(address(_gateway)), newImplementation_);
+        assertEq(Utils.getImplementationFromSlot(address(_gateway)), newImplementation_);
         assertEq(_gateway.parameterRegistry(), newParameterRegistry_);
         assertEq(_gateway.appChainGateway(), newAppChainGateway_);
         assertEq(_gateway.appChainNativeToken(), newAppChainNativeToken_);
@@ -361,33 +373,5 @@ contract SettlementChainGatewayTests is Test, Utils {
 
     function test_appChainAlias() external view {
         assertEq(_gateway.appChainAlias(), AddressAliasHelper.applyL1ToL2Alias(address(_gateway)));
-    }
-
-    /* ============ helper functions ============ */
-
-    function _expectAndMockCall(address callee_, bytes memory data_, bytes memory returnData_) internal {
-        vm.expectCall(callee_, data_);
-        vm.mockCall(callee_, data_, returnData_);
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
-        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(value_));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
-    }
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

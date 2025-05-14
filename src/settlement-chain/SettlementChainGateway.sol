@@ -64,9 +64,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      *         inlined in the contract code, and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address appChainGateway_, address appChainNativeToken_) {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(appChainGateway = appChainGateway_), ZeroAppChainGateway());
-        require(_isNotZero(appChainNativeToken = appChainNativeToken_), ZeroAppChainNativeToken());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(appChainGateway = appChainGateway_)) revert ZeroAppChainGateway();
+        if (_isZero(appChainNativeToken = appChainNativeToken_)) revert ZeroAppChainNativeToken();
 
         _disableInitializers();
     }
@@ -95,7 +95,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external {
-        require(inboxes_.length > 0, NoInboxes());
+        if (inboxes_.length == 0) revert NoInboxes();
 
         uint256 nonce_;
 
@@ -131,7 +131,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 maxSubmissionCost_,
         uint256 nativeTokensToSend_
     ) external {
-        require(inboxes_.length > 0, NoInboxes());
+        if (inboxes_.length == 0) revert NoInboxes();
 
         uint256 nonce_;
 
@@ -202,7 +202,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 nonce_,
         bytes[] calldata keys_
     ) internal view returns (bytes memory encoded_) {
-        require(keys_.length > 0, NoKeys());
+        if (keys_.length == 0) revert NoKeys();
 
         return
             abi.encodeCall(
@@ -211,8 +211,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             );
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {

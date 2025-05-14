@@ -18,7 +18,7 @@ contract Proxy is IProxy {
      * @param implementation_ The address of some implementation.
      */
     constructor(address implementation_) {
-        require(implementation_ != address(0), ZeroImplementation());
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         // slither-disable-next-line assembly
         assembly {

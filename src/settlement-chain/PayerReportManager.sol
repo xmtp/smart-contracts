@@ -71,9 +71,9 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
      *         contract code, and have minimal gas cost.
      */
     constructor(address parameterRegistry_, address nodeRegistry_, address payerRegistry_) ERC5267() {
-        require(_isNotZero(parameterRegistry = parameterRegistry_), ZeroParameterRegistry());
-        require(_isNotZero(nodeRegistry = nodeRegistry_), ZeroNodeRegistry());
-        require(_isNotZero(payerRegistry = payerRegistry_), ZeroPayerRegistry());
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+        if (_isZero(nodeRegistry = nodeRegistry_)) revert ZeroNodeRegistry();
+        if (_isZero(payerRegistry = payerRegistry_)) revert ZeroPayerRegistry();
 
         _disableInitializers();
     }
@@ -279,8 +279,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         return IParameterRegistryLike(parameterRegistry).get(key_);
     }
 
-    function _isNotZero(address input_) internal pure returns (bool isNotZero_) {
-        return input_ != address(0);
+    function _isZero(address input_) internal pure returns (bool isZero_) {
+        return input_ == address(0);
     }
 
     function _toAddress(bytes32 value_) internal pure returns (address address_) {

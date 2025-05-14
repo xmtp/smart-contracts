@@ -61,10 +61,8 @@ contract FactoryTests is Test {
     }
 
     function test_deployImplementation_deployFailed() external {
-        bytes memory initCode_ = hex"ff11ff";
-
         vm.expectRevert(IFactory.DeployFailed.selector);
-        _factory.deployImplementation(initCode_);
+        _factory.deployImplementation(hex"ff11ff");
     }
 
     function test_deployImplementation() external {

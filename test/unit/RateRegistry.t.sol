@@ -15,7 +15,7 @@ import { RateRegistryHarness } from "../utils/Harnesses.sol";
 import { MockParameterRegistry, MockMigrator, MockFailingMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
-contract RateRegistryTests is Test, Utils {
+contract RateRegistryTests is Test {
     bytes internal constant _MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
     bytes internal constant _STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
     bytes internal constant _CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
@@ -42,14 +42,13 @@ contract RateRegistryTests is Test, Utils {
 
     function test_constructor_zeroParameterRegistry() external {
         vm.expectRevert(IRateRegistry.ZeroParameterRegistry.selector);
-
         new RateRegistryHarness(address(0));
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_registry)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.PAGE_SIZE(), _PAGE_SIZE);
@@ -73,10 +72,15 @@ contract RateRegistryTests is Test, Utils {
     function test_updateRates_noChange() external {
         _registry.__pushRates(100, 200, 300, 100 * 60, 0);
 
-        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, 100);
-        _mockParameterRegistryCall(_STORAGE_FEE_KEY, 200);
-        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, 300);
-        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, 100 * 60);
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(100)));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(200)));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(300)));
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _TARGET_RATE_PER_MINUTE_KEY,
+            bytes32(uint256(100 * 60))
+        );
 
         vm.expectRevert(IRateRegistry.NoChange.selector);
 
@@ -90,19 +94,24 @@ contract RateRegistryTests is Test, Utils {
         uint64 congestionFee_ = 300;
         uint64 targetRatePerMinute_ = 100 * 60;
 
-        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, messageFee_);
-        _mockParameterRegistryCall(_STORAGE_FEE_KEY, storageFee_);
-        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, congestionFee_);
-        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
+
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _CONGESTION_FEE_KEY,
+            bytes32(uint256(congestionFee_))
+        );
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _TARGET_RATE_PER_MINUTE_KEY,
+            bytes32(uint256(targetRatePerMinute_))
+        );
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(
-            messageFee_,
-            storageFee_,
-            congestionFee_,
-            targetRatePerMinute_,
-            uint64(vm.getBlockTimestamp())
-        );
+        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();
@@ -129,19 +138,24 @@ contract RateRegistryTests is Test, Utils {
         uint64 congestionFee_ = 300;
         uint64 targetRatePerMinute_ = 100 * 60;
 
-        _mockParameterRegistryCall(_MESSAGE_FEE_KEY, messageFee_);
-        _mockParameterRegistryCall(_STORAGE_FEE_KEY, storageFee_);
-        _mockParameterRegistryCall(_CONGESTION_FEE_KEY, congestionFee_);
-        _mockParameterRegistryCall(_TARGET_RATE_PER_MINUTE_KEY, targetRatePerMinute_);
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
+
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _CONGESTION_FEE_KEY,
+            bytes32(uint256(congestionFee_))
+        );
+
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _TARGET_RATE_PER_MINUTE_KEY,
+            bytes32(uint256(targetRatePerMinute_))
+        );
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(
-            messageFee_,
-            storageFee_,
-            congestionFee_,
-            targetRatePerMinute_,
-            uint64(vm.getBlockTimestamp())
-        );
+        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();
@@ -229,7 +243,11 @@ contract RateRegistryTests is Test, Utils {
     function test_migrate_migrationFailed() external {
         address migrator_ = address(new MockFailingMigrator());
 
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -243,7 +261,11 @@ contract RateRegistryTests is Test, Utils {
     }
 
     function test_migrate_emptyCode() external {
-        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(address(1))))
+        );
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -256,8 +278,11 @@ contract RateRegistryTests is Test, Utils {
         address newImplementation_ = address(new RateRegistryHarness(_parameterRegistry));
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        // TODO: `_expectAndMockParameterRegistryCall`.
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectEmit(address(_registry));
         emit IMigratable.Migrated(migrator_);
@@ -267,7 +292,7 @@ contract RateRegistryTests is Test, Utils {
 
         _registry.migrate();
 
-        assertEq(_getImplementationFromSlot(address(_registry)), newImplementation_);
+        assertEq(Utils.getImplementationFromSlot(address(_registry)), newImplementation_);
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
 
         (IRateRegistry.Rates[] memory rates_, bool hasMore_) = _registry.getRates(0);
@@ -281,28 +306,5 @@ contract RateRegistryTests is Test, Utils {
         assertEq(rates_[0].startTime, 500);
 
         assertFalse(hasMore_);
-    }
-
-    /* ============ helper functions ============ */
-
-    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
-        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(value_));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
-    }
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
     }
 }

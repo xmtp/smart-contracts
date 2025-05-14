@@ -151,6 +151,7 @@ contract SequentialMerkleProofsTests is Test {
         proofElements_[0] = bytes32(uint256(1));
 
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+
         _sequentialMerkleProofs.verify(0, 0, new bytes[](0), proofElements_);
     }
 
@@ -162,6 +163,7 @@ contract SequentialMerkleProofsTests is Test {
         proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
 
         vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
+
         _sequentialMerkleProofs.verify(0, 0, leaves_, proofElements_);
     }
 
@@ -232,6 +234,7 @@ contract SequentialMerkleProofsTests is Test {
         proofElements_[0] = bytes32(uint256(1));
 
         vm.expectRevert(SequentialMerkleProofs.NoLeaves.selector);
+
         _sequentialMerkleProofs.getRoot(0, new bytes[](0), proofElements_);
     }
 
@@ -248,6 +251,7 @@ contract SequentialMerkleProofsTests is Test {
         proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
 
         vm.expectRevert(SequentialMerkleProofs.InvalidBitCount32Input.selector);
+
         _sequentialMerkleProofs.getRoot(0, leaves_, proofElements_);
     }
 
@@ -289,6 +293,7 @@ contract SequentialMerkleProofsTests is Test {
         proofElements_[0] = bytes32(uint256(type(uint32).max) + 1);
 
         vm.expectRevert(SequentialMerkleProofs.InvalidLeafCount.selector);
+
         _sequentialMerkleProofs.getLeafCount(proofElements_);
     }
 
@@ -570,6 +575,7 @@ contract SequentialMerkleProofsTests is Test {
         }
 
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         unchecked {
@@ -583,6 +589,7 @@ contract SequentialMerkleProofsTests is Test {
         }
 
         vm.expectRevert();
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         unchecked {
@@ -598,6 +605,7 @@ contract SequentialMerkleProofsTests is Test {
         }
 
         vm.expectRevert();
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         unchecked {
@@ -611,6 +619,7 @@ contract SequentialMerkleProofsTests is Test {
         sample_.leaves[0] = bytes(hex"0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
 
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         sample_.leaves[0] = originalLeaf_;
@@ -622,6 +631,7 @@ contract SequentialMerkleProofsTests is Test {
         }
 
         vm.expectRevert();
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         unchecked {
@@ -635,6 +645,7 @@ contract SequentialMerkleProofsTests is Test {
         }
 
         vm.expectRevert(SequentialMerkleProofs.InvalidProof.selector);
+
         _sequentialMerkleProofs.verify(sample_.root, sample_.startingIndex, sample_.leaves, sample_.proofElements);
 
         unchecked {

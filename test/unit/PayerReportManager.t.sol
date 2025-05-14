@@ -25,7 +25,7 @@ import {
 
 import { Utils } from "../utils/Utils.sol";
 
-contract PayerReportManagerTests is Test, Utils {
+contract PayerReportManagerTests is Test {
     bytes32 internal constant _EIP712_DOMAIN_HASH =
         keccak256(
             abi.encodePacked("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
@@ -70,26 +70,23 @@ contract PayerReportManagerTests is Test, Utils {
 
     function test_constructor_zeroParameterRegistry() external {
         vm.expectRevert(IPayerReportManager.ZeroParameterRegistry.selector);
-
         new PayerReportManagerHarness(address(0), address(0), address(0));
     }
 
     function test_constructor_zeroNodeRegistry() external {
         vm.expectRevert(IPayerReportManager.ZeroNodeRegistry.selector);
-
         new PayerReportManagerHarness(_parameterRegistry, address(0), address(0));
     }
 
     function test_constructor_zeroPayerRegistry() external {
         vm.expectRevert(IPayerReportManager.ZeroPayerRegistry.selector);
-
         new PayerReportManagerHarness(_parameterRegistry, _nodeRegistry, address(0));
     }
 
     /* ============ initial state ============ */
 
     function test_initialState() external view {
-        assertEq(_getImplementationFromSlot(address(_manager)), _implementation);
+        assertEq(Utils.getImplementationFromSlot(address(_manager)), _implementation);
         assertEq(_manager.implementation(), _implementation);
         assertEq(_manager.parameterRegistry(), _parameterRegistry);
         assertEq(_manager.nodeRegistry(), _nodeRegistry);
@@ -119,6 +116,7 @@ contract PayerReportManagerTests is Test, Utils {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.InvalidStartSequenceId.selector, 11, 10));
+
         _manager.submit({
             originatorNodeId_: 0,
             startSequenceId_: 11,
@@ -142,6 +140,7 @@ contract PayerReportManagerTests is Test, Utils {
         });
 
         vm.expectRevert(IPayerReportManager.InvalidSequenceIds.selector);
+
         _manager.submit({
             originatorNodeId_: 0,
             startSequenceId_: 10,
@@ -161,6 +160,7 @@ contract PayerReportManagerTests is Test, Utils {
         signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 0, signature: "" });
 
         vm.expectRevert(IPayerReportManager.UnorderedNodeIds.selector);
+
         _manager.submit({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -185,6 +185,7 @@ contract PayerReportManagerTests is Test, Utils {
         vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.InsufficientSignatures.selector, 1, 2));
+
         _manager.submit({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -231,15 +232,29 @@ contract PayerReportManagerTests is Test, Utils {
         validSigningNodeIds_[0] = 1;
         validSigningNodeIds_[1] = 2;
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3), abi.encode(false));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
+            abi.encode(false)
+        );
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         vm.expectEmit(address(_manager));
         emit IPayerReportManager.PayerReportSubmitted({
@@ -313,15 +328,29 @@ contract PayerReportManagerTests is Test, Utils {
         validSigningNodeIds_[0] = 1;
         validSigningNodeIds_[1] = 2;
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3), abi.encode(false));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
+            abi.encode(false)
+        );
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         vm.expectEmit(address(_manager));
         emit IPayerReportManager.PayerReportSubmitted({
@@ -435,7 +464,6 @@ contract PayerReportManagerTests is Test, Utils {
             nodeIds_: new uint32[](0)
         });
 
-        // TODO: `expectCallAndRevert`.
         vm.mockCallRevert(
             _payerRegistry,
             abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
@@ -471,7 +499,7 @@ contract PayerReportManagerTests is Test, Utils {
             nodeIds_: new uint32[](0)
         });
 
-        vm.mockCall(
+        Utils.expectAndMockCall(
             _payerRegistry,
             abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
             abi.encode(uint96(600))
@@ -511,7 +539,7 @@ contract PayerReportManagerTests is Test, Utils {
             nodeIds_: new uint32[](0)
         });
 
-        vm.mockCall(
+        Utils.expectAndMockCall(
             _payerRegistry,
             abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
             abi.encode(uint96(1_500))
@@ -553,7 +581,7 @@ contract PayerReportManagerTests is Test, Utils {
             nodeIds_: new uint32[](0)
         });
 
-        vm.mockCall(
+        Utils.expectAndMockCall(
             _payerRegistry,
             abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
             abi.encode(uint96(2_100))
@@ -579,7 +607,11 @@ contract PayerReportManagerTests is Test, Utils {
     function test_migrate_migrationFailed() external {
         address migrator_ = address(new MockFailingMigrator());
 
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -593,7 +625,7 @@ contract PayerReportManagerTests is Test, Utils {
     }
 
     function test_migrate_emptyCode() external {
-        _mockParameterRegistryCall(_MIGRATOR_KEY, address(1));
+        Utils.expectAndMockParameterRegistryCall(_parameterRegistry, _MIGRATOR_KEY, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
 
@@ -618,8 +650,11 @@ contract PayerReportManagerTests is Test, Utils {
 
         address migrator_ = address(new MockMigrator(newImplementation_));
 
-        // TODO: `_expectAndMockParameterRegistryCall`.
-        _mockParameterRegistryCall(_MIGRATOR_KEY, migrator_);
+        Utils.expectAndMockParameterRegistryCall(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
 
         vm.expectEmit(address(_manager));
         emit IMigratable.Migrated(migrator_);
@@ -629,7 +664,7 @@ contract PayerReportManagerTests is Test, Utils {
 
         _manager.migrate();
 
-        assertEq(_getImplementationFromSlot(address(_manager)), newImplementation_);
+        assertEq(Utils.getImplementationFromSlot(address(_manager)), newImplementation_);
         assertEq(_manager.parameterRegistry(), _parameterRegistry);
 
         IPayerReportManager.PayerReport[] memory payerReports_ = _manager.getPayerReports(1);
@@ -656,6 +691,7 @@ contract PayerReportManagerTests is Test, Utils {
         signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 0, signature: "" });
 
         vm.expectRevert(IPayerReportManager.UnorderedNodeIds.selector);
+
         _manager.__verifySignatures({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -668,6 +704,7 @@ contract PayerReportManagerTests is Test, Utils {
 
     function test_internal_verifySignatures_insufficientSignatures() external {
         vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.InsufficientSignatures.selector, 0, 1));
+
         _manager.__verifySignatures({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -703,15 +740,29 @@ contract PayerReportManagerTests is Test, Utils {
         expectedValidSigningNodeIds_[0] = 1;
         expectedValidSigningNodeIds_[1] = 2;
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3), abi.encode(false));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
+            abi.encode(false)
+        );
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         uint32[] memory validSigningNodeIds_ = _manager.__verifySignatures({
             originatorNodeId_: 0,
@@ -753,15 +804,29 @@ contract PayerReportManagerTests is Test, Utils {
         expectedValidSigningNodeIds_[0] = 1;
         expectedValidSigningNodeIds_[1] = 3;
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2), abi.encode(false));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 3), abi.encode(_signer3));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
+            abi.encode(false)
+        );
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 3), abi.encode(_signer3));
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         uint32[] memory validSigningNodeIds_ = _manager.__verifySignatures({
             originatorNodeId_: 0,
@@ -781,12 +846,22 @@ contract PayerReportManagerTests is Test, Utils {
     /* ============ _verifySignature ============ */
 
     function test_internal_verifySignature_notCanonicalNode() external {
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(false));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(false)
+        );
+
         assertFalse(_manager.__verifySignature(bytes32(0), 1, ""));
     }
 
     function test_internal_verifySignature_invalidSignature() external {
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
+
         assertFalse(_manager.__verifySignature(bytes32(0), 1, ""));
     }
 
@@ -800,7 +875,11 @@ contract PayerReportManagerTests is Test, Utils {
             privateKey_: _signer1Pk
         });
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
 
         assertFalse(_manager.__verifySignature(bytes32(0), 1, signature_));
     }
@@ -808,8 +887,13 @@ contract PayerReportManagerTests is Test, Utils {
     function test_internal_verifySignature() external {
         bytes memory signature_ = _getSignature(bytes32(0), _signer1Pk);
 
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
 
         assertTrue(_manager.__verifySignature(bytes32(0), 1, signature_));
     }
@@ -954,27 +1038,6 @@ contract PayerReportManagerTests is Test, Utils {
     }
 
     /* ============ helper functions ============ */
-
-    function _mockParameterRegistryCall(bytes memory key_, address value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(uint256(uint160(value_))));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bool value_) internal {
-        _mockParameterRegistryCall(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, uint256 value_) internal {
-        _mockParameterRegistryCall(key_, bytes32(value_));
-    }
-
-    function _mockParameterRegistryCall(bytes memory key_, bytes32 value_) internal {
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
-    }
-
-    function _getImplementationFromSlot(address proxy_) internal view returns (address implementation_) {
-        // Retrieve the implementation address directly from the proxy storage.
-        return address(uint160(uint256(vm.load(proxy_, EIP1967_IMPLEMENTATION_SLOT))));
-    }
 
     function _getPayerReportSignature(
         uint32 originatorNodeId_,
