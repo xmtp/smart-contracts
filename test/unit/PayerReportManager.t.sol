@@ -907,7 +907,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(4)),
                 nodeIds_: new uint32[](5)
             }),
-            0x65e9298004b22b280cef382f32439d34255f8eb6245503d0d402a6186ffe9fdc
+            0xbf09bdaeb24a76f0ab947a527805ba9f56f22462ac91d9db03ef4b230c3aca4d
         );
 
         assertEq(
@@ -918,7 +918,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(40)),
                 nodeIds_: new uint32[](50)
             }),
-            0xa768e78486ac9abadd510980ff8b1ba18e61d40358b934c09d10474ad5b65903
+            0x1b7e79d4dcb404edf32daa7431199f901b2403392e088812287e16e26b112b6c
         );
     }
 
@@ -1046,6 +1046,17 @@ contract PayerReportManagerTests is Test {
                     block.chainid,
                     address(_manager)
                 )
+            )
+        );
+    }
+
+    /* ============ PAYER_REPORT_TYPEHASH ============ */
+
+    function test_PAYER_REPORT_TYPEHASH() external view {
+        assertEq(
+            _manager.PAYER_REPORT_TYPEHASH(),
+            keccak256(
+                "PayerReport(uint32 originatorNodeId,uint32 startSequenceId,uint32 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)"
             )
         );
     }

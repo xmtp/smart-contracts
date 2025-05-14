@@ -139,3 +139,19 @@ interface IPayerReportManagerLike {
         uint256[] calldata payerReportIndices_
     ) external view returns (PayerReport[] memory payerReports_);
 }
+
+/**
+ * @title  Subset interface for a Permit ERC20 token.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface IPermitErc20Like {
+    function permit(
+        address owner_,
+        address spender_,
+        uint256 value_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external;
+}

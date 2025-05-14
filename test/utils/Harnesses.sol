@@ -19,6 +19,7 @@ import { SettlementChainGateway } from "../../src/settlement-chain/SettlementCha
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
 import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
 import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
+import { AppchainToken } from "../../src/settlement-chain/AppchainToken.sol";
 
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
@@ -493,5 +494,21 @@ contract DistributionManagerHarness is DistributionManager {
         _getDistributionManagerStorage().hasClaimed[uint32(nodeId_)][uint32(originatorNodeId_)][
             payerReportIndex_
         ] = hasClaimed_;
+    }
+}
+
+contract AppchainTokenHarness is AppchainToken {
+    constructor(address parameterRegistry_, address underlying_) AppchainToken(parameterRegistry_, underlying_) {}
+
+    function __mint(address recipient_, uint256 amount_) external {
+        _mint(recipient_, amount_);
+    }
+
+    function __setPlaceholder(uint256 placeholder_) external {
+        _getAppchainTokenStorage().__placeholder = placeholder_;
+    }
+
+    function __getPlaceholder() external view returns (uint256 placeholder_) {
+        return _getAppchainTokenStorage().__placeholder;
     }
 }

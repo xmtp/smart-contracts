@@ -158,6 +158,10 @@ interface IPayerReportManager is IMigratable, IERC5267 {
 
     /* ============ View/Pure Functions ============ */
 
+    /// @notice Returns the EIP712 typehash used in the encoding of a signed digest for a payer report.
+    // slither-disable-next-line naming-convention
+    function PAYER_REPORT_TYPEHASH() external pure returns (bytes32 payerReportTypehash_);
+
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
 

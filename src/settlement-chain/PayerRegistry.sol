@@ -11,7 +11,7 @@ import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: `deposit`, `requestWithdrawal`, `cancelWithdrawal`, and `finalizeWithdrawal` with permit.
+// TODO: `depositWithPermit`.
 
 /**
  * @title  Implementation of the Payer Registry.
