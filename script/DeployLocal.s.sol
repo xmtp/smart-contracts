@@ -1,6 +1,6 @@
 pragma solidity 0.8.28;
 
-import { Script } from "../lib/forge-std/src/Script.sol";
+import { Script, console } from "../lib/forge-std/src/Script.sol";
 
 /* ============ Source Interface Imports ============ */
 
@@ -57,6 +57,7 @@ contract DeployLocal is Script {
     bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
 
     bytes internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    bytes internal constant _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
 
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
@@ -71,6 +72,8 @@ contract DeployLocal is Script {
     uint256 internal constant _RATE_REGISTRY_STARTING_STORAGE_FEE = 200;
     uint256 internal constant _RATE_REGISTRY_STARTING_CONGESTION_FEE = 300;
     uint256 internal constant _RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE = 100 * 60;
+
+    uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
@@ -194,6 +197,17 @@ contract DeployLocal is Script {
         _setBroadcasterStartingParameters();
         _assertBroadcasterStartingParameters();
         _updateBroadcasterStartingParameters();
+
+        // Log Out Deployed Contracts
+        console.log("Factory deployed to:", address(_factory));
+        console.log("Parameter Registry deployed to:", address(_parameterRegistryProxy));
+        console.log("Payer Registry deployed to:", address(_payerRegistryProxy));
+        console.log("Rate Registry deployed to:", address(_rateRegistryProxy));
+        console.log("Node Registry deployed to:", address(_nodeRegistryProxy));
+        console.log("Payer Report Manager deployed to:", address(_payerReportManagerProxy));
+        console.log("Distribution Manager deployed to:", address(_distributionManagerProxy));
+        console.log("Group Message Broadcaster deployed to:", address(_groupMessageBroadcasterProxy));
+        console.log("Identity Update Broadcaster deployed to:", address(_identityUpdateBroadcasterProxy));
     }
 
     /* ============ Factory Helpers ============ */
@@ -598,17 +612,23 @@ contract DeployLocal is Script {
     }
 
     function _setNodeRegistryStartingParameters() internal {
-        bytes[] memory keys_ = new bytes[](1);
+        bytes[] memory keys_ = new bytes[](2);
         keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
+        keys_[1] = _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY;
 
-        bytes32[] memory values_ = new bytes32[](1);
+        bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(uint160(_admin)));
+        values_[1] = bytes32(uint256(_NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES));
 
         vm.startBroadcast(_privateKey);
         _parameterRegistryProxy.set(keys_, values_);
         vm.stopBroadcast();
 
         if (_parameterRegistryProxy.get(keys_[0]) != values_[0]) revert("Node registry admin not set correctly");
+
+        if (_parameterRegistryProxy.get(keys_[1]) != values_[1]) {
+            revert("Node registry max canonical nodes not set correctly");
+        }
     }
 
     function _updateNodeRegistryStartingParameters() internal {

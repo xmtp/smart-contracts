@@ -25,7 +25,7 @@
         "solhint-fix": "solhint --fix 'src/**/*.sol'",
         "test": "forge test",
         "anvil": "anvil --dump-state anvil-state.json",
-        "deploy-local": "forge script script/DeployLocal.s.sol:DeployLocal --rpc-url 127.0.0.1:8545 --broadcast -vvvv"
+        "deploy-local": "forge script script/DeployLocal.s.sol:DeployLocal --rpc-url anvil --broadcast"
     },
     "devDependencies": {
         "@arbitrum/sdk": "^4.0.4",

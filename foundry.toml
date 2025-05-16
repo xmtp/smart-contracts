@@ -26,3 +26,4 @@ runs = 10_000
 [rpc_endpoints]
 base_sepolia = "${BASE_TESTNET_RPC_URL}"
 xmtp_testnet = "${XMTP_TESTNET_RPC_URL}"
+anvil = "${ANVIL_RPC_URL}"
