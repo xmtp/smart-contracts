@@ -931,6 +931,29 @@ contract PayerReportManagerTests is Test {
         );
     }
 
+    function test_getPayerReportDigest_sample1() external view {
+        bytes32 payersMerkleRoot_ = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        uint32[] memory nodeIds_ = new uint32[](5);
+
+        nodeIds_[0] = 100;
+        nodeIds_[1] = 200;
+        nodeIds_[2] = 300;
+        nodeIds_[3] = 400;
+        nodeIds_[4] = 500;
+
+        assertEq(
+            _manager.getPayerReportDigest({
+                originatorNodeId_: 1,
+                startSequenceId_: 2,
+                endSequenceId_: 3,
+                payersMerkleRoot_: payersMerkleRoot_,
+                nodeIds_: nodeIds_
+            }),
+            0x1ec269bb27455a17e615c98f34f05a635943526e8fddff7b6a81a73bb1468b9c
+        );
+    }
+
     /* ============ getPayerReports ============ */
 
     function test_getPayerReports_arrayLengthMismatch() external {
