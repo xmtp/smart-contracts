@@ -1,104 +1,48 @@
 [
   {
-    "type": "function",
-    "name": "DEFAULT_ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "PAGE_SIZE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "RATES_MANAGER_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "UPGRADE_INTERFACE_VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "addRates",
+    "type": "constructor",
     "inputs": [
       {
-        "name": "messageFee",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "storageFee",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "congestionFee",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "targetRatePerMinute",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "startTime",
-        "type": "uint64",
-        "internalType": "uint64"
+        "name": "parameterRegistry_",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "congestionFeeParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "getRates",
     "inputs": [
       {
-        "name": "fromIndex",
+        "name": "fromIndex_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "count_",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
     "outputs": [
       {
-        "name": "rates",
+        "name": "rates_",
         "type": "tuple[]",
-        "internalType": "struct RateRegistry.Rates[]",
+        "internalType": "struct IRateRegistry.Rates[]",
         "components": [
           {
             "name": "messageFee",
@@ -126,11 +70,6 @@
             "internalType": "uint64"
           }
         ]
-      },
-      {
-        "name": "hasMore",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -141,7 +80,7 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "count",
+        "name": "count_",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -150,61 +89,13 @@
   },
   {
     "type": "function",
-    "name": "getRoleAdmin",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "name": "implementation",
+    "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "grantRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
+        "name": "implementation_",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "hasRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -212,128 +103,88 @@
   {
     "type": "function",
     "name": "initialize",
-    "inputs": [
-      {
-        "name": "admin",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "pause",
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
     "type": "function",
-    "name": "paused",
+    "name": "messageFeeParameterKey",
     "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "proxiableUUID",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "renounceRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "callerConfirmation",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "revokeRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "supportsInterface",
-    "inputs": [
-      {
-        "name": "interfaceId",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "unpause",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "upgradeToAndCall",
-    "inputs": [
-      {
-        "name": "newImplementation",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "data",
+        "name": "key_",
         "type": "bytes",
         "internalType": "bytes"
       }
     ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "migrate",
+    "inputs": [],
     "outputs": [],
-    "stateMutability": "payable"
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "migratorParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "parameterRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "storageFeeParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "targetRatePerMinuteParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "updateRates",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "event",
@@ -350,12 +201,12 @@
   },
   {
     "type": "event",
-    "name": "Paused",
+    "name": "Migrated",
     "inputs": [
       {
-        "name": "account",
+        "name": "migrator",
         "type": "address",
-        "indexed": false,
+        "indexed": true,
         "internalType": "address"
       }
     ],
@@ -363,7 +214,7 @@
   },
   {
     "type": "event",
-    "name": "RatesAdded",
+    "name": "RatesUpdated",
     "inputs": [
       {
         "name": "messageFee",
@@ -388,119 +239,6 @@
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
-      },
-      {
-        "name": "startTime",
-        "type": "uint64",
-        "indexed": false,
-        "internalType": "uint64"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleAdminChanged",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "previousAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "newAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleGranted",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleRevoked",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Unpaused",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "UpgradeAuthorized",
-    "inputs": [
-      {
-        "name": "upgrader",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "newImplementation",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -520,31 +258,10 @@
   },
   {
     "type": "error",
-    "name": "AccessControlBadConfirmation",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AccessControlUnauthorizedAccount",
+    "name": "EmptyCode",
     "inputs": [
       {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "neededRole",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "AddressEmptyCode",
-    "inputs": [
-      {
-        "name": "target",
+        "name": "migrator_",
         "type": "address",
         "internalType": "address"
       }
@@ -552,33 +269,7 @@
   },
   {
     "type": "error",
-    "name": "ERC1967InvalidImplementation",
-    "inputs": [
-      {
-        "name": "implementation",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC1967NonPayable",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EnforcedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ExpectedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "FailedCall",
+    "name": "EndIndexOutOfRange",
     "inputs": []
   },
   {
@@ -593,7 +284,23 @@
   },
   {
     "type": "error",
-    "name": "InvalidStartTime",
+    "name": "MigrationFailed",
+    "inputs": [
+      {
+        "name": "migrator_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "revertData_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NoChange",
     "inputs": []
   },
   {
@@ -603,28 +310,22 @@
   },
   {
     "type": "error",
-    "name": "UUPSUnauthorizedCallContext",
+    "name": "ParameterOutOfTypeBounds",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "UUPSUnsupportedProxiableUUID",
-    "inputs": [
-      {
-        "name": "slot",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ZeroAdminAddress",
+    "name": "ZeroCount",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "ZeroImplementationAddress",
+    "name": "ZeroMigrator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroParameterRegistry",
     "inputs": []
   }
 ]
