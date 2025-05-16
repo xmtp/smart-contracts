@@ -35,6 +35,12 @@ library Utils {
         address payerRegistryImplementation;
         bytes32 payerRegistryProxySalt;
         address payerRegistryProxy;
+        address distributionManagerImplementation;
+        bytes32 distributionManagerProxySalt;
+        address distributionManagerProxy;
+        address payerReportManagerImplementation;
+        bytes32 payerReportManagerProxySalt;
+        address payerReportManagerProxy;
     }
 
     error InvalidProxyAddress(string outputJson_);
@@ -60,6 +66,8 @@ library Utils {
     string internal constant NODE_REGISTRY_OUTPUT_JSON = "NodeRegistry";
     string internal constant RATE_REGISTRY_OUTPUT_JSON = "RateRegistry";
     string internal constant PAYER_REGISTRY_OUTPUT_JSON = "PayerRegistry";
+    string internal constant DISTRIBUTION_MANAGER_OUTPUT_JSON = "DistributionManager";
+    string internal constant PAYER_REPORT_MANAGER_OUTPUT_JSON = "PayerReportManager";
 
     function readInput(string memory inputFileName_) internal view returns (string memory input_) {
         string memory file_ = getInputPath(inputFileName_);
