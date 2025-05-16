@@ -66,6 +66,7 @@ contract DeploymentTests is Test {
     bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
 
     bytes internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    bytes internal constant _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
 
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
@@ -80,6 +81,8 @@ contract DeploymentTests is Test {
     uint256 internal constant _RATE_REGISTRY_STARTING_STORAGE_FEE = 200;
     uint256 internal constant _RATE_REGISTRY_STARTING_CONGESTION_FEE = 300;
     uint256 internal constant _RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE = 100 * 60;
+
+    uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
     bytes32 internal constant _GATEWAY_PROXY_SALT = bytes32(uint256(1));
@@ -587,16 +590,19 @@ contract DeploymentTests is Test {
     function _setNodeRegistryStartingParameters() internal {
         vm.selectFork(_baseForkId);
 
-        bytes[] memory keys_ = new bytes[](1);
+        bytes[] memory keys_ = new bytes[](2);
         keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
+        keys_[1] = _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY;
 
-        bytes32[] memory values_ = new bytes32[](1);
+        bytes32[] memory values_ = new bytes32[](2);
         values_[0] = bytes32(uint256(uint160(_admin)));
+        values_[1] = bytes32(uint256(_NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES));
 
         vm.prank(_admin);
         _settlementChainParameterRegistryProxy.set(keys_, values_);
 
         assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
     }
 
     function _updateNodeRegistryStartingParameters() internal {
