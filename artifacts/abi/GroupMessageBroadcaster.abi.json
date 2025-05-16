@@ -1,67 +1,26 @@
 [
   {
-    "type": "function",
-    "name": "ABSOLUTE_MAX_PAYLOAD_SIZE",
-    "inputs": [],
-    "outputs": [
+    "type": "constructor",
+    "inputs": [
       {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "parameterRegistry_",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "ABSOLUTE_MIN_PAYLOAD_SIZE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "DEFAULT_ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "UPGRADE_INTERFACE_VERSION",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
     "name": "addMessage",
     "inputs": [
       {
-        "name": "groupId",
+        "name": "groupId_",
         "type": "bytes32",
         "internalType": "bytes32"
       },
       {
-        "name": "message",
+        "name": "message_",
         "type": "bytes",
         "internalType": "bytes"
       }
@@ -71,61 +30,13 @@
   },
   {
     "type": "function",
-    "name": "getRoleAdmin",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "name": "implementation",
+    "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "grantRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
+        "name": "implementation_",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "hasRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -133,13 +44,7 @@
   {
     "type": "function",
     "name": "initialize",
-    "inputs": [
-      {
-        "name": "admin",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -149,12 +54,45 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "size",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "size_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxPayloadSizeParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "migrate",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "migratorParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -162,19 +100,38 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "size",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "size_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "pause",
+    "name": "minPayloadSizeParameterKey",
     "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "parameterRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -182,7 +139,7 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "",
+        "name": "paused_",
         "type": "bool",
         "internalType": "bool"
       }
@@ -191,122 +148,37 @@
   },
   {
     "type": "function",
-    "name": "proxiableUUID",
+    "name": "pausedParameterKey",
     "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "renounceRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "callerConfirmation",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "revokeRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMaxPayloadSize",
-    "inputs": [
-      {
-        "name": "maxPayloadSizeRequest",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMinPayloadSize",
-    "inputs": [
-      {
-        "name": "minPayloadSizeRequest",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "supportsInterface",
-    "inputs": [
-      {
-        "name": "interfaceId",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "unpause",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "upgradeToAndCall",
-    "inputs": [
-      {
-        "name": "newImplementation",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "data",
+        "name": "key_",
         "type": "bytes",
         "internalType": "bytes"
       }
     ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "updateMaxPayloadSize",
+    "inputs": [],
     "outputs": [],
-    "stateMutability": "payable"
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateMinPayloadSize",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updatePauseStatus",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "event",
@@ -326,15 +198,9 @@
     "name": "MaxPayloadSizeUpdated",
     "inputs": [
       {
-        "name": "oldSize",
+        "name": "size",
         "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newSize",
-        "type": "uint256",
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256"
       }
     ],
@@ -347,7 +213,7 @@
       {
         "name": "groupId",
         "type": "bytes32",
-        "indexed": false,
+        "indexed": true,
         "internalType": "bytes32"
       },
       {
@@ -359,8 +225,21 @@
       {
         "name": "sequenceId",
         "type": "uint64",
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Migrated",
+    "inputs": [
+      {
+        "name": "migrator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -370,15 +249,9 @@
     "name": "MinPayloadSizeUpdated",
     "inputs": [
       {
-        "name": "oldSize",
+        "name": "size",
         "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newSize",
-        "type": "uint256",
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256"
       }
     ],
@@ -386,120 +259,13 @@
   },
   {
     "type": "event",
-    "name": "Paused",
+    "name": "PauseStatusUpdated",
     "inputs": [
       {
-        "name": "account",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleAdminChanged",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
+        "name": "paused",
+        "type": "bool",
         "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "previousAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "newAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleGranted",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleRevoked",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Unpaused",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "UpgradeAuthorized",
-    "inputs": [
-      {
-        "name": "upgrader",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "newImplementation",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
+        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -519,66 +285,14 @@
   },
   {
     "type": "error",
-    "name": "AccessControlBadConfirmation",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AccessControlUnauthorizedAccount",
+    "name": "EmptyCode",
     "inputs": [
       {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "neededRole",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "AddressEmptyCode",
-    "inputs": [
-      {
-        "name": "target",
+        "name": "migrator_",
         "type": "address",
         "internalType": "address"
       }
     ]
-  },
-  {
-    "type": "error",
-    "name": "ERC1967InvalidImplementation",
-    "inputs": [
-      {
-        "name": "implementation",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ERC1967NonPayable",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EnforcedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ExpectedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "FailedCall",
-    "inputs": []
   },
   {
     "type": "error",
@@ -600,21 +314,42 @@
     "name": "InvalidPayloadSize",
     "inputs": [
       {
-        "name": "actualSize",
+        "name": "actualSize_",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "minSize",
+        "name": "minSize_",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "maxSize",
+        "name": "maxSize_",
         "type": "uint256",
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "MigrationFailed",
+    "inputs": [
+      {
+        "name": "migrator_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "revertData_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NoChange",
+    "inputs": []
   },
   {
     "type": "error",
@@ -623,28 +358,22 @@
   },
   {
     "type": "error",
-    "name": "UUPSUnauthorizedCallContext",
+    "name": "ParameterOutOfTypeBounds",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "UUPSUnsupportedProxiableUUID",
-    "inputs": [
-      {
-        "name": "slot",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "ZeroAdminAddress",
+    "name": "Paused",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "ZeroImplementationAddress",
+    "name": "ZeroMigrator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroParameterRegistry",
     "inputs": []
   }
 ]

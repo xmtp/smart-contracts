@@ -3,51 +3,12 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "initialAdmin",
+        "name": "parameterRegistry_",
         "type": "address",
         "internalType": "address"
       }
     ],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "DEFAULT_ADMIN_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_BPS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -64,54 +25,34 @@
   },
   {
     "type": "function",
-    "name": "NODE_MANAGER_ROLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "acceptDefaultAdminTransfer",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "addNode",
     "inputs": [
       {
-        "name": "to",
+        "name": "owner_",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "signingKeyPub",
+        "name": "signingPublicKey_",
         "type": "bytes",
         "internalType": "bytes"
       },
       {
-        "name": "httpAddress",
+        "name": "httpAddress_",
         "type": "string",
         "internalType": "string"
-      },
-      {
-        "name": "minMonthlyFeeMicroDollars",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "signer_",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "nonpayable"
@@ -121,13 +62,39 @@
     "name": "addToNetwork",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "admin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "admin_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "adminParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -168,72 +135,13 @@
   },
   {
     "type": "function",
-    "name": "beginDefaultAdminTransfer",
-    "inputs": [
-      {
-        "name": "newAdmin",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "cancelDefaultAdminTransfer",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "changeDefaultAdminDelay",
-    "inputs": [
-      {
-        "name": "newDelay",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "defaultAdmin",
+    "name": "canonicalNodesCount",
     "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "defaultAdminDelay",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "defaultAdminDelayIncreaseWait",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint48",
-        "internalType": "uint48"
+        "name": "canonicalNodesCount_",
+        "type": "uint8",
+        "internalType": "uint8"
       }
     ],
     "stateMutability": "view"
@@ -244,14 +152,14 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "allNodes",
+        "name": "allNodes_",
         "type": "tuple[]",
         "internalType": "struct INodeRegistry.NodeWithId[]",
         "components": [
           {
             "name": "nodeId",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint32",
+            "internalType": "uint32"
           },
           {
             "name": "node",
@@ -259,7 +167,17 @@
             "internalType": "struct INodeRegistry.Node",
             "components": [
               {
-                "name": "signingKeyPub",
+                "name": "signer",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "isCanonical",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "signingPublicKey",
                 "type": "bytes",
                 "internalType": "bytes"
               },
@@ -267,16 +185,6 @@
                 "name": "httpAddress",
                 "type": "string",
                 "internalType": "string"
-              },
-              {
-                "name": "inCanonicalNetwork",
-                "type": "bool",
-                "internalType": "bool"
-              },
-              {
-                "name": "minMonthlyFeeMicroDollars",
-                "type": "uint256",
-                "internalType": "uint256"
               }
             ]
           }
@@ -291,9 +199,9 @@
     "inputs": [],
     "outputs": [
       {
-        "name": "nodeCount",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeCount_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -322,14 +230,14 @@
     "name": "getIsCanonicalNode",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [
       {
-        "name": "isCanonicalNode",
+        "name": "isCanonicalNode_",
         "type": "bool",
         "internalType": "bool"
       }
@@ -341,19 +249,29 @@
     "name": "getNode",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [
       {
-        "name": "node",
+        "name": "node_",
         "type": "tuple",
         "internalType": "struct INodeRegistry.Node",
         "components": [
           {
-            "name": "signingKeyPub",
+            "name": "signer",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "isCanonical",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "signingPublicKey",
             "type": "bytes",
             "internalType": "bytes"
           },
@@ -361,16 +279,6 @@
             "name": "httpAddress",
             "type": "string",
             "internalType": "string"
-          },
-          {
-            "name": "inCanonicalNetwork",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "minMonthlyFeeMicroDollars",
-            "type": "uint256",
-            "internalType": "uint256"
           }
         ]
       }
@@ -379,64 +287,42 @@
   },
   {
     "type": "function",
-    "name": "getRoleAdmin",
+    "name": "getSigner",
     "inputs": [
       {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "signer_",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "grantRole",
-    "inputs": [
+    "name": "implementation",
+    "inputs": [],
+    "outputs": [
       {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
+        "name": "implementation_",
         "type": "address",
         "internalType": "address"
       }
     ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "hasRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -464,16 +350,49 @@
   },
   {
     "type": "function",
-    "name": "maxActiveNodes",
+    "name": "maxCanonicalNodes",
     "inputs": [],
     "outputs": [
       {
-        "name": "",
+        "name": "maxCanonicalNodes_",
         "type": "uint8",
         "internalType": "uint8"
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxCanonicalNodesParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "migrate",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "migratorParameterKey",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "key_",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -484,32 +403,6 @@
         "name": "",
         "type": "string",
         "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "nodeOperatorCommissionPercent",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "owner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -535,36 +428,13 @@
   },
   {
     "type": "function",
-    "name": "pendingDefaultAdmin",
+    "name": "parameterRegistry",
     "inputs": [],
     "outputs": [
       {
-        "name": "newAdmin",
+        "name": "",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "schedule",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "pendingDefaultAdminDelay",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "newDelay",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "schedule",
-        "type": "uint48",
-        "internalType": "uint48"
       }
     ],
     "stateMutability": "view"
@@ -574,54 +444,11 @@
     "name": "removeFromNetwork",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "renounceRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "revokeRole",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "rollbackDefaultAdminDelay",
-    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -699,7 +526,7 @@
     "name": "setBaseURI",
     "inputs": [
       {
-        "name": "newBaseURI",
+        "name": "baseURI_",
         "type": "string",
         "internalType": "string"
       }
@@ -712,58 +539,14 @@
     "name": "setHttpAddress",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "nodeId_",
+        "type": "uint32",
+        "internalType": "uint32"
       },
       {
-        "name": "httpAddress",
+        "name": "httpAddress_",
         "type": "string",
         "internalType": "string"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMaxActiveNodes",
-    "inputs": [
-      {
-        "name": "newMaxActiveNodes",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMinMonthlyFee",
-    "inputs": [
-      {
-        "name": "nodeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minMonthlyFeeMicroDollars",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setNodeOperatorCommissionPercent",
-    "inputs": [
-      {
-        "name": "newCommissionPercent",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -781,7 +564,7 @@
     ],
     "outputs": [
       {
-        "name": "supported",
+        "name": "",
         "type": "bool",
         "internalType": "bool"
       }
@@ -835,13 +618,40 @@
         "internalType": "address"
       },
       {
-        "name": "nodeId",
+        "name": "tokenId",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateAdmin",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateMaxCanonicalNodes",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "AdminUpdated",
+    "inputs": [
+      {
+        "name": "admin",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
@@ -898,60 +708,10 @@
     "name": "BaseURIUpdated",
     "inputs": [
       {
-        "name": "newBaseURI",
+        "name": "baseURI",
         "type": "string",
         "indexed": false,
         "internalType": "string"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DefaultAdminDelayChangeCanceled",
-    "inputs": [],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DefaultAdminDelayChangeScheduled",
-    "inputs": [
-      {
-        "name": "newDelay",
-        "type": "uint48",
-        "indexed": false,
-        "internalType": "uint48"
-      },
-      {
-        "name": "effectSchedule",
-        "type": "uint48",
-        "indexed": false,
-        "internalType": "uint48"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DefaultAdminTransferCanceled",
-    "inputs": [],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DefaultAdminTransferScheduled",
-    "inputs": [
-      {
-        "name": "newAdmin",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "acceptSchedule",
-        "type": "uint48",
-        "indexed": false,
-        "internalType": "uint48"
       }
     ],
     "anonymous": false
@@ -962,12 +722,12 @@
     "inputs": [
       {
         "name": "nodeId",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": true,
-        "internalType": "uint256"
+        "internalType": "uint32"
       },
       {
-        "name": "newHttpAddress",
+        "name": "httpAddress",
         "type": "string",
         "indexed": false,
         "internalType": "string"
@@ -977,10 +737,23 @@
   },
   {
     "type": "event",
-    "name": "MaxActiveNodesUpdated",
+    "name": "Initialized",
     "inputs": [
       {
-        "name": "newMaxActiveNodes",
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MaxCanonicalNodesUpdated",
+    "inputs": [
+      {
+        "name": "maxCanonicalNodes",
         "type": "uint8",
         "indexed": false,
         "internalType": "uint8"
@@ -990,19 +763,13 @@
   },
   {
     "type": "event",
-    "name": "MinMonthlyFeeUpdated",
+    "name": "Migrated",
     "inputs": [
       {
-        "name": "nodeId",
-        "type": "uint256",
+        "name": "migrator",
+        "type": "address",
         "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "minMonthlyFeeMicroDollars",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1013,9 +780,9 @@
     "inputs": [
       {
         "name": "nodeId",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": true,
-        "internalType": "uint256"
+        "internalType": "uint32"
       },
       {
         "name": "owner",
@@ -1024,7 +791,13 @@
         "internalType": "address"
       },
       {
-        "name": "signingKeyPub",
+        "name": "signer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "signingPublicKey",
         "type": "bytes",
         "indexed": false,
         "internalType": "bytes"
@@ -1034,12 +807,6 @@
         "type": "string",
         "indexed": false,
         "internalType": "string"
-      },
-      {
-        "name": "minMonthlyFeeMicroDollars",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1050,22 +817,9 @@
     "inputs": [
       {
         "name": "nodeId",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "NodeOperatorCommissionPercentUpdated",
-    "inputs": [
-      {
-        "name": "newCommissionPercent",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint32"
       }
     ],
     "anonymous": false
@@ -1076,84 +830,9 @@
     "inputs": [
       {
         "name": "nodeId",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleAdminChanged",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "previousAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "newAdminRole",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleGranted",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RoleRevoked",
-    "inputs": [
-      {
-        "name": "role",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "internalType": "uint32"
       }
     ],
     "anonymous": false
@@ -1184,52 +863,17 @@
     "anonymous": false
   },
   {
-    "type": "error",
-    "name": "AccessControlBadConfirmation",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AccessControlEnforcedDefaultAdminDelay",
+    "type": "event",
+    "name": "Upgraded",
     "inputs": [
       {
-        "name": "schedule",
-        "type": "uint48",
-        "internalType": "uint48"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "AccessControlEnforcedDefaultAdminRules",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AccessControlInvalidDefaultAdmin",
-    "inputs": [
-      {
-        "name": "defaultAdmin",
+        "name": "implementation",
         "type": "address",
+        "indexed": true,
         "internalType": "address"
       }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "AccessControlUnauthorizedAccount",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "neededRole",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ]
+    ],
+    "anonymous": false
   },
   {
     "type": "error",
@@ -1336,6 +980,17 @@
   },
   {
     "type": "error",
+    "name": "EmptyCode",
+    "inputs": [
+      {
+        "name": "migrator_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "FailedToAddNodeToCanonicalNetwork",
     "inputs": []
   },
@@ -1346,22 +1001,22 @@
   },
   {
     "type": "error",
-    "name": "InvalidAddress",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidCommissionPercent",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidHttpAddress",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InvalidSigningKey",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidSigningPublicKey",
     "inputs": []
   },
   {
@@ -1371,33 +1026,68 @@
   },
   {
     "type": "error",
-    "name": "MaxActiveNodesBelowCurrentCount",
+    "name": "MaxCanonicalNodesBelowCurrentCount",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MaxActiveNodesReached",
+    "name": "MaxCanonicalNodesReached",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "NodeDoesNotExist",
+    "name": "MaxNodesReached",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "SafeCastOverflowedUintDowncast",
+    "name": "MigrationFailed",
     "inputs": [
       {
-        "name": "bits",
-        "type": "uint8",
-        "internalType": "uint8"
+        "name": "migrator_",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        "name": "value",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "revertData_",
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "NoChange",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotAdmin",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotNodeOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ParameterOutOfTypeBounds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroMigrator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroParameterRegistry",
+    "inputs": []
   }
 ]
