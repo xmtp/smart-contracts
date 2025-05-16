@@ -27,5 +27,11 @@
     "rateRegistryProxy": "0x0000000000000000000000000000000000000000",
     "payerRegistryImplementation": "0x0000000000000000000000000000000000000000",
     "payerRegistryProxySalt": "PayerRegistry_0",
-    "payerRegistryProxy": "0x0000000000000000000000000000000000000000"
+    "payerRegistryProxy": "0x0000000000000000000000000000000000000000",
+    "payerReportManagerImplementation": "0x0000000000000000000000000000000000000000",
+    "payerReportManagerProxySalt": "PayerReportManager_0",
+    "payerReportManagerProxy": "0x0000000000000000000000000000000000000000",
+    "distributionManagerImplementation": "0x0000000000000000000000000000000000000000",
+    "distributionManagerProxySalt": "DistributionManager_0",
+    "distributionManagerProxy": "0x0000000000000000000000000000000000000000"
 }
