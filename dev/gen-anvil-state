@@ -12,8 +12,22 @@ kill_anvil() {
     fi
 }
 
+wait_for_valid_json() {
+  local file="$1"
+  local interval="${2:-1}"  # seconds between checks (default: 1)
+
+  echo "⏳ Waiting for valid JSON in: $file"
+
+  until [[ -f "$file" ]] && jq empty "$file" >/dev/null 2>&1; do
+    sleep "$interval"
+  done
+
+  echo "✅ File is now valid JSON: $file"
+}
+
 # Step 1: Kill any existing anvil process
 kill_anvil
+rm ./anvil-state.json || echo "no anvil state exists"
 
 # Step 2: Start anvil in the background
 echo "▶ Starting anvil..."
@@ -25,7 +39,7 @@ sleep 1
 echo "▶ Running deploy-local..."
 npm run deploy-local
 
-# Step 4: Wait a bit for anvil to write to disk
-sleep 1
-
 kill_anvil
+
+# Step 4: Wait a bit for anvil to write to disk
+wait_for_valid_json ./anvil-state.json
