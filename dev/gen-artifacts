@@ -13,297 +13,30 @@ repo_root=$(realpath "${script_dir}/../")
 cd "${repo_root}"
 
 export source_dir="src"
-export build_dir="build"
 export artifacts_dir="artifacts"
 export deployments_dir="deployments"
-export bytecode_dir="${artifacts_dir}/bytecode"
 export abi_dir="${artifacts_dir}/abi"
+export environments_dir="${artifacts_dir}/environments"
 export build_info_file="${artifacts_dir}/build-info.json"
 
-mkdir -p "${build_dir}" "${artifacts_dir}" "${bytecode_dir}" "${abi_dir}"
+mkdir -p "${artifacts_dir}" "${abi_dir}" "${environments_dir}"
 
 forge --version
 
 export forge_version=$(forge --version | grep "Version" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
-
-function get_chain_id() {
-    echo "⧖ Getting chain id from RPC ${1}"
-    hex_chain_id=$(curl -s --connect-timeout 5 --max-time 10 -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_chainId","id":1}' ${1} | jq -r '.result' || true)
-
-    if [[ -z "${hex_chain_id:-}" ]]; then
-        echo "ERROR: Failed to get chain id from RPC ${1}"
-        exit 1
-    fi
-
-    export chain_id=$((hex_chain_id))
-}
-
-function get_chain_name() {
-    case $chain_id in
-        31337)
-            echo "anvil_localnet"
-            ;;
-        241320161)
-            echo "xmtp_testnet"
-            ;;
-        84532)
-            echo "base_sepolia"
-            ;;
-        *)
-            echo "unknown"
-            ;;
-    esac
-}
-
-function deploy_create3_factory() {
-    get_chain_id "${APP_CHAIN_RPC_URL}"
-
-    echo "⧖ Deploying CREATE3Factory to chainId ${chain_id} using RPC ${APP_CHAIN_RPC_URL}"
-
-    forge script --quiet --rpc-url "${APP_CHAIN_RPC_URL}" --broadcast script/DeployCREATE3Factory.s.sol || BUILD_FAILED=true
-    if [[ -n "${BUILD_FAILED:-}" ]]; then
-        echo "Failed to deploy CREATE3Factory contract"
-        exit 1
-    fi
-
-    export VERIFIER="${APP_CHAIN_VERIFIER:-}"
-    export VERIFIER_URL="${APP_CHAIN_VERIFIER_URL:-}"
-
-    export XMTP_CREATE3_FACTORY_ADDRESS=$(jq -r ".addresses.implementation" "deployments/${ENVIRONMENT}/CREATE3Factory.json")
-
-    echo "⧖ Verifying CREATE3Factory at ${XMTP_CREATE3_FACTORY_ADDRESS}"
-    forge_verify_contract CREATE3Factory ${XMTP_CREATE3_FACTORY_ADDRESS} ${APP_CHAIN_RPC_URL}
-
-    sed -i "" "s/XMTP_CREATE3_FACTORY_ADDRESS=.*/XMTP_CREATE3_FACTORY_ADDRESS=${XMTP_CREATE3_FACTORY_ADDRESS}/g" ${environment_file}
-
-    echo -e "\033[32m✔\033[0m CREATE3Factory deployed at ${XMTP_CREATE3_FACTORY_ADDRESS}.\n"
-}
-
-function forge_deploy_script() {
-    source ${environment_file}
-
-    case $1 in
-        group_message_broadcaster)
-            get_chain_id "${APP_CHAIN_RPC_URL}"
-
-            echo "⧖ Deploying GroupMessageBroadcaster to chainId ${chain_id} using RPC ${APP_CHAIN_RPC_URL}"
-
-            forge script --quiet --rpc-url "${APP_CHAIN_RPC_URL}" --broadcast script/DeployGroupMessageBroadcaster.s.sol || BUILD_FAILED=true
-            if [[ -n "${BUILD_FAILED:-}" ]]; then
-                echo "Failed to deploy group message broadcaster contract"
-                exit 1
-            fi
-
-            export VERIFIER="${APP_CHAIN_VERIFIER:-}"
-            export VERIFIER_URL="${APP_CHAIN_VERIFIER_URL:-}"
-            export ADDRESS=$(jq -r ".addresses.implementation" "deployments/${ENVIRONMENT}/GroupMessageBroadcaster.json")
-
-            echo "⧖ Verifying GroupMessageBroadcaster at ${ADDRESS}"
-            forge_verify_contract GroupMessageBroadcaster ${ADDRESS} ${APP_CHAIN_RPC_URL}
-
-            echo -e "\033[32m✔\033[0m GroupMessageBroadcaster deployed.\n"
-            ;;
-
-        identity_update_broadcaster)
-            get_chain_id "${APP_CHAIN_RPC_URL}"
-
-            echo "⧖ Deploying IdentityUpdateBroadcaster to chainId ${chain_id} using RPC ${APP_CHAIN_RPC_URL}"
-
-            forge script --quiet --rpc-url "${APP_CHAIN_RPC_URL}" --broadcast script/DeployIdentityUpdateBroadcaster.s.sol || BUILD_FAILED=true
-            if [[ -n "${BUILD_FAILED:-}" ]]; then
-                echo "Failed to deploy identity update broadcaster contract"
-                exit 1
-            fi
-
-            export VERIFIER="${PARENT_CHAIN_VERIFIER:-}"
-            export VERIFIER_URL="${PARENT_CHAIN_VERIFIER_URL:-}"
-            export ADDRESS=$(jq -r ".addresses.implementation" "deployments/${ENVIRONMENT}/IdentityUpdateBroadcaster.json")
-
-            echo "⧖ Verifying IdentityUpdateBroadcaster at ${ADDRESS}"
-            forge_verify_contract IdentityUpdateBroadcaster ${ADDRESS} ${APP_CHAIN_RPC_URL}
-
-            echo -e "\033[32m✔\033[0m IdentityUpdateBroadcaster deployed.\n"
-            ;;
-
-        node_registry)
-            get_chain_id "${PARENT_CHAIN_RPC_URL}"
-
-            echo "⧖ Deploying NodeRegistry to chainId ${chain_id} using RPC ${PARENT_CHAIN_RPC_URL}"
-
-            forge script --quiet --rpc-url "${PARENT_CHAIN_RPC_URL}" --broadcast script/DeployNodeRegistry.s.sol || BUILD_FAILED=true
-            if [[ -n "${BUILD_FAILED:-}" ]]; then
-                echo "Failed to deploy NodeRegistry contract"
-                exit 1
-            fi
-
-            export VERIFIER="${PARENT_CHAIN_VERIFIER:-}"
-            export VERIFIER_URL="${PARENT_CHAIN_VERIFIER_URL:-}"
-            export ADDRESS=$(jq -r ".addresses.implementation" "deployments/${ENVIRONMENT}/NodeRegistry.json")
-
-            echo "⧖ Verifying NodeRegistry at ${ADDRESS}"
-            forge_verify_contract NodeRegistry ${ADDRESS} ${PARENT_CHAIN_RPC_URL}
-
-            echo -e "\033[32m✔\033[0m NodeRegistry deployed.\n"
-            ;;
-
-        rate_registry)
-            get_chain_id "${APP_CHAIN_RPC_URL}"
-
-            echo "⧖ Deploying RateRegistry to chainId ${chain_id} using RPC ${APP_CHAIN_RPC_URL}"
-
-            forge script --quiet --rpc-url "${APP_CHAIN_RPC_URL}" --broadcast script/DeployRateRegistry.s.sol || BUILD_FAILED=true
-            if [[ -n "${BUILD_FAILED:-}" ]]; then
-                echo "Failed to deploy rate registry contract"
-                exit 1
-            fi
-
-            export VERIFIER="${APP_CHAIN_VERIFIER:-}"
-            export VERIFIER_URL="${APP_CHAIN_VERIFIER_URL:-}"
-            export ADDRESS=$(jq -r ".addresses.implementation" "deployments/${ENVIRONMENT}/RateRegistry.json")
-
-            echo "⧖ Verifying RateRegistry at ${ADDRESS}"
-            forge_verify_contract RateRegistry ${ADDRESS} ${APP_CHAIN_RPC_URL}
-
-            echo -e "\033[32m✔\033[0m RateRegistry deployed.\n"
-            ;;
-
-        *)
-            echo "Invalid option. Use 'create3_factory', 'group_message_broadcaster', 'identity_update_broadcaster', 'node_registry', or 'rate_registry'."
-            exit 1
-            ;;
-    esac
-}
-
-function forge_verify_contract() {
-    chain_name=$(get_chain_name)
-    contract_name=$1
-    contract_address=$2
-    rpc_url=$3
-
-    if [[ "$chain_name" == "anvil_localnet" ]]; then
-        echo "Skipping verification on anvil_localnet"
-        return
-    fi
-
-    if [[ -z "$VERIFIER_URL" ]] || [[ -z "$VERIFIER" ]]; then
-        echo "Skipping verification for contract $contract_name because VERIFIER_URL or VERIFIER is not set"
-        return
-    fi
-
-    # Wait for the contract to be deployed. This might take a few seconds to be available.
-    # Waiting with `cast code` seems unreliable, sometimes it even fails when code is available.
-    sleep 30
-
-    echo "Running: forge verify-contract --rpc-url=${rpc_url} --verifier=${VERIFIER} --verifier-url=${VERIFIER_URL} --chain-id=${chain_id} --compiler-version ${COMPILER_VERSION} ${contract_address} ${contract_name}"
-
-    forge verify-contract \
-        --rpc-url=${rpc_url} \
-        --verifier=${VERIFIER} \
-        --verifier-url=${VERIFIER_URL} \
-        --chain-id=${chain_id} \
-        --compiler-version ${COMPILER_VERSION} \
-        $contract_address \
-        $contract_name
-}
-
-function forge_clean() {
-    echo -e "⧖ Cleaning old artifacts"
-
-    forge clean &> .forge_clean.tmp.log || BUILD_FAILED=true
-    if [[ -n "${BUILD_FAILED:-}" ]]; then
-        echo "ERROR: Failed to clean old artifacts"
-        cat .forge_clean.tmp.log
-        exit 1
-    fi
-    rm .forge_clean.tmp.log
-
-    echo -e "\033[32m✔\033[0m Old artifacts cleaned successfully\n"
-}
-
-function forge_install() {
-    echo -e "⧖ Installing dependencies"
-
-    forge install &> .forge_install.tmp.log || BUILD_FAILED=true
-    if [[ -n "${BUILD_FAILED:-}" ]]; then
-        echo "ERROR: Failed to install dependencies"
-        cat .forge_install.tmp.log
-        exit 1
-    fi
-    rm .forge_install.tmp.log
-
-    echo -e "\033[32m✔\033[0m Dependencies installed successfully\n"
-}
-
-function forge_build_contracts() {
-    echo -e "⧖ Building contracts"
-
-    forge build &> .forge_build.tmp.log || BUILD_FAILED=true
-    if [[ -n "${BUILD_FAILED:-}" ]]; then
-        echo "ERROR: Failed to build contracts"
-        cat .forge_build.tmp.log
-        exit 1
-    fi
-    rm .forge_build.tmp.log
-
-    echo -e "\033[32m✔\033[0m Contracts built successfully\n"
-}
-
-function forge_test_contracts() {
-    echo -e "⧖ Running contract tests"
-
-    forge test &> .forge_test.tmp.log || BUILD_FAILED=true
-    if [[ -n "${BUILD_FAILED:-}" ]]; then
-        echo "ERROR: Tests failed"
-        cat .forge_test.tmp.log
-        exit 1
-    fi
-    rm .forge_test.tmp.log
-
-    echo -e "\033[32m✔\033[0m Tests passed successfully\n"
-}
-
-function environment_info() {
-    echo "⧖ Dumping state info to ${environment_info_file}"
-
-    local create3_factory_address=$(jq -r ".addresses.implementation" "${environment_dir}/CREATE3Factory.json")
-    local rate_registry_address=$(jq -r ".addresses.proxy" "${environment_dir}/RateRegistry.json")
-    local message_group_broadcaster_address=$(jq -r ".addresses.proxy" "${environment_dir}/GroupMessageBroadcaster.json")
-    local identity_update_broadcaster_address=$(jq -r ".addresses.proxy" "${environment_dir}/IdentityUpdateBroadcaster.json")
-    local node_registry_address=$(jq -r ".addresses.implementation" "${environment_dir}/NodeRegistry.json")
-
-    jq -n \
-      --arg create3_factory "$create3_factory_address" \
-      --arg rate_registry "$rate_registry_address" \
-      --arg message_group_broadcaster "$message_group_broadcaster_address" \
-      --arg identity_update_broadcaster "$identity_update_broadcaster_address" \
-      --arg node_registry "$node_registry_address" \
-      '{
-        create3_factory_address: $create3_factory,
-        rate_registry_address: $rate_registry,
-        message_group_broadcaster_address: $message_group_broadcaster,
-        identity_update_broadcaster_address: $identity_update_broadcaster,
-        node_registry_address: $node_registry
-      }' > "${environment_info_file}"
-}
 
 function generate_artifacts() {
     local chain="$1"
     local filename="$2"
     local package="$(echo "${filename}" | tr '[:upper:]' '[:lower:]')"
     local source_artifact="${source_dir}/${chain}/${filename}.sol"
-    local bytecode_artifact="${bytecode_dir}/${filename}.bin.json"
     local abi_artifact="${abi_dir}/${filename}.abi.json"
 
-    rm -f "${bytecode_artifact}" "${abi_artifact}"
+    rm -f "${abi_artifact}"
 
-    # Generate ABI and bytecode
+    # Generate ABI
     if ! forge inspect "${source_artifact}:${filename}" abi --json > "${abi_artifact}"; then
         echo "ERROR: Failed to generate ABI for ${filename}" >&2
-        exit 1
-    fi
-
-    if ! forge inspect "${source_artifact}:${filename}" bytecode > "${bytecode_artifact}"; then
-        echo "ERROR: Failed to generate bytecode for ${filename}" >&2
         exit 1
     fi
 }
@@ -324,6 +57,14 @@ function build_info() {
       }' > "${build_info_file}"
 }
 
+function environments() {
+    ./dev/gen-anvil-state
+
+    cp "${repo_root}/environments/anvil.json" "${environments_dir}/anvil.json"
+
+    rm -rf "${repo_root}/anvil-state-load-data.json"
+}
+
 function main() {
     echo "Generating artifacts with forge version ${forge_version}"
 
@@ -340,12 +81,13 @@ function main() {
     done
 
     build_info
+    environments
 
     echo -e "\033[32m✔\033[0m Artifacts generated successfully!\n"
 }
 
-if [ "${forge_version}" != "1.0.0" ]; then
-    echo "ERROR: Forge version must be 1.0.0. Got '${forge_version}'" >&2
+if [ "${forge_version}" != "1.1.0" ]; then
+    echo "ERROR: Forge version must be 1.1.0. Got '${forge_version}'" >&2
     exit 1
 fi
 

@@ -8,12 +8,7 @@ gas_reports = ["*"]
 optimizer = true
 optimizer_runs = 999_999
 fs_permissions = [
-    { access = "read-write", path = "deployments/anvil_localnet"},
-    { access = "read-write", path = "deployments/xmtp_testnet"},
-    { access = "read-write", path = "deployments/xmtp_testnet-playground"},
-    { access = "read-write", path = "deployments/xmtp_testnet-staging"},
-    { access = "read-write", path = "deployments/base_sepolia"},
-    { access = "read-write", path = "deployments/unknown"},
+    { access = "read-write", path = "environments"},
     { access = "read", path = "config"}
 ]
 

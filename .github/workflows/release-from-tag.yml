@@ -6,8 +6,8 @@ on:
       - "v*"
 
 jobs:
-  image:
-    name: Build and publish Docker image
+  anvil-image:
+    name: Build and publish Anvil Docker image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,7 +48,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   artifacts:
-    name: Generate artifacts
+    name: Generate ABI and environment artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,9 +59,9 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.0.0
+          version: v1.2.0
 
-      - name: Generate artifacts
+      - name: Generate ABI and build info artifacts
         env:
           BUILD_TAG: ${{ github.ref_name }}
         run: dev/gen-artifacts

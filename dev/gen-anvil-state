@@ -3,29 +3,39 @@ set -euo pipefail
 
 # anvil first well-known private key
 export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export ANVIL_RPC_URL="127.0.0.1:8545"
 
-# Define a function to kill the anvil process
-kill_anvil() {
-    if pgrep -f anvil > /dev/null; then
-        echo "⧖ Killing existing anvil instance"
-        pkill -f anvil
-    fi
-}
+rm -f ./anvil-state-load-data.json || echo "no existing state to remove"
 
-# Step 1: Kill any existing anvil process
-kill_anvil
+mkdir -p environments
 
-# Step 2: Start anvil in the background
+rm -f ./environments/anvil.json || echo "no existing anvil environment to remove"
+
 echo "▶ Starting anvil..."
-npm run anvil &
+anvil &
 
-sleep 1
+ANVIL_PID=$!
+trap 'kill $ANVIL_PID 2>/dev/null || true; wait $ANVIL_PID 2>/dev/null || true' EXIT
 
-# Step 3: Run deploy-local
+# Wait for anvil to start
+sleep 2
+
 echo "▶ Running deploy-local..."
 npm run deploy-local
 
-# Step 4: Wait a bit for anvil to write to disk
-sleep 1
+sleep 2
 
-kill_anvil
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"anvil_dumpState","params":[],"id":1}' $ANVIL_RPC_URL | jq -r .result | jq -R '{
+    "jsonrpc": "2.0",
+    "method": "anvil_loadState",
+    "params": [.],
+    "id": 1
+}' > anvil-state-load-data.json
+
+sleep 2
+
+echo "▶ Waiting for anvil to flush state..."
+kill -SIGINT "$ANVIL_PID"  # sends Ctrl+C, triggers graceful shutdown
+wait "$ANVIL_PID"
+
+echo "🟢 Done generating anvil state."

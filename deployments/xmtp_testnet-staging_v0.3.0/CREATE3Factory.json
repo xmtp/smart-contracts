@@ -1,8 +1,0 @@
-{
-  "addresses": {
-    "deployer": "0xd27FDB90A393Ce0E390120aeB58b326AbA910BE0",
-    "implementation": "0xEC997ab30209D5044F2Bca00db4De5526B13177A"
-  },
-  "constructorArgs": "",
-  "deploymentBlock": 48595
-}
