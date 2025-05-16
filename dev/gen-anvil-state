@@ -8,7 +8,7 @@ export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5e
 kill_anvil() {
     if pgrep -f anvil > /dev/null; then
         echo "⧖ Killing existing anvil instance"
-        pkill -f anvil
+        pkill -f anvil || true
     fi
 }
 
@@ -26,7 +26,7 @@ wait_for_valid_json() {
 }
 
 # Step 1: Kill any existing anvil process
-#kill_anvil
+kill_anvil
 rm ./anvil-state.json || echo "no anvil state exists"
 
 # Step 2: Start anvil in the background
