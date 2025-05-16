@@ -8,6 +8,32 @@ on:
   workflow_dispatch:
 
 jobs:
+  artifacts:
+    name: Generate artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.0.0
+
+      - name: Generate artifacts
+        env:
+          BUILD_TAG: ${{ github.ref_name }}
+        run: dev/gen-artifacts
+
+      - name: Upload build artifacts
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-contract-artifacts
+          path: artifacts
+
   image:
     if: false # currently broken
     name: Build and publish Docker image

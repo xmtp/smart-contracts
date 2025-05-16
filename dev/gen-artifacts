@@ -22,7 +22,9 @@ export build_info_file="${artifacts_dir}/build-info.json"
 
 mkdir -p "${build_dir}" "${artifacts_dir}" "${bytecode_dir}" "${abi_dir}"
 
-export forge_version=$(forge --version | grep "Version" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+forge --version
+
+export forge_version=$(forge --version | grep "Version" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
 
 function get_chain_id() {
     echo "⧖ Getting chain id from RPC ${1}"
@@ -343,7 +345,7 @@ function main() {
 }
 
 if [ "${forge_version}" != "1.0.0" ]; then
-    echo "ERROR: Forge version must be 1.0.0" >&2
+    echo "ERROR: Forge version must be 1.0.0. Got '${forge_version}'" >&2
     exit 1
 fi
 

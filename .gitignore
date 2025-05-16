@@ -32,3 +32,5 @@ build/
 
 # local deployments
 deployments/anvil_localnet/
+
+artifacts/
