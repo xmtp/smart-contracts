@@ -8,7 +8,7 @@ export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5e
 kill_anvil() {
     if pgrep -f anvil > /dev/null; then
         echo "⧖ Killing existing anvil instance"
-        pkill -f anvil || true
+        kill -SIGINT $(pgrep -f anvil)
     fi
 }
 
