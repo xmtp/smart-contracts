@@ -115,8 +115,8 @@ interface IPayerRegistryLike {
  */
 interface IPayerReportManagerLike {
     struct PayerReport {
-        uint32 startSequenceId;
-        uint32 endSequenceId;
+        uint64 startSequenceId;
+        uint64 endSequenceId;
         uint96 feesSettled;
         uint32 offset;
         bool isSettled;

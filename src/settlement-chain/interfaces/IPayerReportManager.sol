@@ -24,8 +24,8 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  nodeIds          The active node IDs during the reporting period.
      */
     struct PayerReport {
-        uint32 startSequenceId;
-        uint32 endSequenceId;
+        uint64 startSequenceId;
+        uint64 endSequenceId;
         uint96 feesSettled;
         uint32 offset;
         bool isSettled;
@@ -58,8 +58,8 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     event PayerReportSubmitted(
         uint32 indexed originatorNodeId,
         uint256 indexed payerReportIndex,
-        uint32 startSequenceId,
-        uint32 indexed endSequenceId,
+        uint64 startSequenceId,
+        uint64 indexed endSequenceId,
         bytes32 payersMerkleRoot,
         uint32[] nodeIds,
         uint32[] signingNodeIds
@@ -93,7 +93,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     error ZeroPayerRegistry();
 
     /// @notice Thrown when the start sequence ID is not the last end sequence ID.
-    error InvalidStartSequenceId(uint32 startSequenceId, uint32 lastSequenceId);
+    error InvalidStartSequenceId(uint64 startSequenceId, uint64 lastSequenceId);
 
     /// @notice Thrown when the start and end sequence IDs are invalid.
     error InvalidSequenceIds();
@@ -137,8 +137,8 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      */
     function submit(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
@@ -210,8 +210,8 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      */
     function getPayerReportDigest(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) external view returns (bytes32 digest_);

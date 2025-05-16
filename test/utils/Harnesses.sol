@@ -420,8 +420,8 @@ contract PayerReportManagerHarness is PayerReportManager {
 
     function __pushPayerReport(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         uint96 feesSettled_,
         uint32 offset_,
         bool isSettled_,
@@ -443,8 +443,8 @@ contract PayerReportManagerHarness is PayerReportManager {
 
     function __verifySignatures(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
