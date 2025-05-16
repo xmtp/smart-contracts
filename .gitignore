@@ -34,5 +34,6 @@ build/
 deployments/anvil_localnet/
 
 artifacts/
+broadcast/
 
 anvil-state.json
