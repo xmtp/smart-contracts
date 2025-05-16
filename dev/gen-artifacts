@@ -343,7 +343,7 @@ function main() {
 }
 
 if [ "${forge_version}" != "1.0.0" ]; then
-    echo "ERROR: Forge version must be 1.0.0" >&2
+    echo "ERROR: Forge version must be 1.0.0. Got ${forge_version}" >&2
     exit 1
 fi
 
