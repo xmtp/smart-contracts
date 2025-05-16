@@ -916,7 +916,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(4)),
                 nodeIds_: new uint32[](5)
             }),
-            0x4cf04a8aee0f79c7a8ca56676533991601c857b8c4d5311d4d48d3626a481c21
+            0x7ee285f7b9ef917539bee4149484c08415ecdc7532763230f366ba4c5881f6cf
         );
 
         assertEq(
@@ -927,7 +927,30 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(40)),
                 nodeIds_: new uint32[](50)
             }),
-            0x03762966f4c0a81b51620453d64965d2d7a8bc612d228a7e4f5aed595b1af7ef
+            0xa83b4d83dbbcece40b01dd738ad4d8636714bf0ef6c047ec58b9192bdaf8e72d
+        );
+    }
+
+    function test_getPayerReportDigest_sample1() external view {
+        bytes32 payersMerkleRoot_ = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+
+        uint32[] memory nodeIds_ = new uint32[](5);
+
+        nodeIds_[0] = 100;
+        nodeIds_[1] = 200;
+        nodeIds_[2] = 300;
+        nodeIds_[3] = 400;
+        nodeIds_[4] = 500;
+
+        assertEq(
+            _manager.getPayerReportDigest({
+                originatorNodeId_: 1,
+                startSequenceId_: 2,
+                endSequenceId_: 3,
+                payersMerkleRoot_: payersMerkleRoot_,
+                nodeIds_: nodeIds_
+            }),
+            0x1ec269bb27455a17e615c98f34f05a635943526e8fddff7b6a81a73bb1468b9c
         );
     }
 
@@ -1065,7 +1088,7 @@ contract PayerReportManagerTests is Test {
         assertEq(
             _manager.PAYER_REPORT_TYPEHASH(),
             keccak256(
-                "PayerReport(uint32 originatorNodeId,uint32 startSequenceId,uint32 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)"
+                "PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)"
             )
         );
     }
@@ -1096,8 +1119,8 @@ contract PayerReportManagerTests is Test {
 
     function _getPayerReportSignature(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] memory nodeIds_,
         uint256 privateKey_

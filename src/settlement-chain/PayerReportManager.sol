@@ -26,8 +26,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /* ============ Constants/Immutables ============ */
 
     // solhint-disable-next-line max-line-length
-    /// @dev keccak256("PayerReport(uint32 originatorNodeId,uint32 startSequenceId,uint32 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
-    bytes32 public constant PAYER_REPORT_TYPEHASH = 0xfbb9f0351ed83428cdf60d26ec3b535e6e16daff660a48308d7e0c22c53fba78;
+    /// @dev keccak256("PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
+    bytes32 public constant PAYER_REPORT_TYPEHASH = 0x30503e47cf573d37e2be5212eb8a3f06caca0f3ab0d379e7d05758b47b23d658;
 
     /// @inheritdoc IPayerReportManager
     address public immutable parameterRegistry;
@@ -91,8 +91,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /// @inheritdoc IPayerReportManager
     function submit(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
@@ -103,7 +103,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         payerReportIndex_ = payerReports_.length;
 
-        uint32 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
+        uint64 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
 
         // Enforces that the start sequence ID is the last end sequence ID.
         if (startSequenceId_ != lastSequenceId_) {
@@ -214,8 +214,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /// @inheritdoc IPayerReportManager
     function getPayerReportDigest(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) external view returns (bytes32 digest_) {
@@ -269,9 +269,9 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
      * @return digest_           The EIP-712 digest.
      */
     function _getPayerReportDigest(
-        uint256 originatorNodeId_,
-        uint256 startSequenceId_,
-        uint256 endSequenceId_,
+        uint32 originatorNodeId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) internal view returns (bytes32 digest_) {
@@ -300,8 +300,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
      */
     function _verifySignatures(
         uint32 originatorNodeId_,
-        uint32 startSequenceId_,
-        uint32 endSequenceId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
