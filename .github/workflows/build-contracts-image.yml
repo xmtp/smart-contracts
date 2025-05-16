@@ -35,7 +35,6 @@ jobs:
           path: artifacts
 
   image:
-    if: false # currently broken
     name: Build and publish Docker image
     runs-on: ubuntu-latest
     permissions:

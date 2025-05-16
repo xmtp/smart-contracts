@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Define a function to kill the anvil process
+kill_anvil() {
+    if pgrep -f anvil > /dev/null; then
+        echo "⧖ Killing existing anvil instance"
+        pkill -f anvil
+        sleep 5
+    fi
+}
+
+# Step 1: Kill any existing anvil process
+kill_anvil
+
+# Step 2: Start anvil in the background
+echo "▶ Starting anvil..."
+npm run anvil &
+
+sleep 1
+
+# Step 3: Run deploy-local
+echo "▶ Running deploy-local..."
+npm run deploy-local
+
+# Step 4: Wait a bit for anvil to write to disk
+sleep 1
+
+kill_anvil
