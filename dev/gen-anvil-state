@@ -26,8 +26,8 @@ wait_for_valid_json() {
 }
 
 # Step 1: Kill any existing anvil process
-kill_anvil
-#rm ./anvil-state.json || echo "no anvil state exists"
+#kill_anvil
+rm ./anvil-state.json || echo "no anvil state exists"
 
 # Step 2: Start anvil in the background
 echo "▶ Starting anvil..."
