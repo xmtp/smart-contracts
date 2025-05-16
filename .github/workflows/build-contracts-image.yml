@@ -11,11 +11,6 @@ jobs:
   artifacts:
     name: Generate artifacts
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      DOCKER_METADATA_PR_HEAD_SHA: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,15 +27,38 @@ jobs:
           BUILD_TAG: ${{ github.ref_name }}
         run: dev/gen-artifacts
 
-      - name: Generate Anvil State
-        run: dev/gen-anvil-state
-
       - name: Upload build artifacts
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: smart-contract-artifacts
           path: artifacts
+
+  image:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOCKER_METADATA_PR_HEAD_SHA: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.0.0
+
+      - name: Generate state
+        env:
+          BUILD_TAG: ${{ github.ref_name }}
+        run: dev/gen-anvil-state
+
 
       - name: Log in to the container registry
         uses: docker/login-action@v3
