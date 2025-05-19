@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+script_dir=$(dirname "$(realpath "$0")")
+repo_root=$(realpath "${script_dir}/../")
+cd "${repo_root}"
+
+export ANVIL_RPC_URL=http://localhost:8545
+
 # anvil first well-known private key
 export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
@@ -17,8 +23,7 @@ kill_anvil
 
 # Step 2: Start anvil in the background
 echo "▶ Starting anvil..."
-npm run anvil &
-
+anvil --dump-state anvil-state.json &> /dev/null 2>&1 &
 sleep 1
 
 # Step 3: Run deploy-local
@@ -26,6 +31,6 @@ echo "▶ Running deploy-local..."
 npm run deploy-local
 
 # Step 4: Wait a bit for anvil to write to disk
-sleep 1
+sleep 5
 
 kill_anvil

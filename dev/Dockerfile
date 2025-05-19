@@ -18,6 +18,8 @@ RUN apt-get update && \
 
 USER foundry
 
+ENV ANVIL_RPC_URL=http://localhost:8545
+
 # Copy your project files into the image
 COPY . .
 
