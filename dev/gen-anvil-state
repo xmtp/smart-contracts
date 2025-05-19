@@ -4,14 +4,6 @@ set -euo pipefail
 # anvil first well-known private key
 export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-# Define a function to kill the anvil process
-kill_anvil() {
-    if pgrep -f anvil > /dev/null; then
-        echo "⧖ Killing existing anvil instance"
-        pkill -f anvil || true
-    fi
-}
-
 wait_for_valid_json() {
   local file="$1"
   local interval="${2:-1}"  # seconds between checks (default: 1)
@@ -25,21 +17,27 @@ wait_for_valid_json() {
   echo "✅ File is now valid JSON: $file"
 }
 
-# Step 1: Kill any existing anvil process
-kill_anvil
-rm ./anvil-state.json || echo "no anvil state exists"
+rm -f ./anvil-state.json || echo "no existing state to remove"
 
-# Step 2: Start anvil in the background
 echo "▶ Starting anvil..."
-npm run anvil &
+anvil --dump-state anvil-state.json &
 
-sleep 1
+ANVIL_PID=$!
+trap 'kill $ANVIL_PID 2>/dev/null || true; wait $ANVIL_PID 2>/dev/null || true' EXIT
 
-# Step 3: Run deploy-local
+# Wait for anvil to start
+sleep 2
+
 echo "▶ Running deploy-local..."
 npm run deploy-local
 
-kill_anvil
+sleep 10
 
-# Step 4: Wait a bit for anvil to write to disk
+echo "▶ Waiting for anvil to flush state..."
+kill -SIGINT "$ANVIL_PID"  # sends Ctrl+C, triggers graceful shutdown
+wait "$ANVIL_PID"
+
+# Wait for the state file to become valid JSON
 wait_for_valid_json ./anvil-state.json
+
+echo "🟢 Done generating anvil state."
