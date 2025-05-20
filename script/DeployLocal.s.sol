@@ -638,7 +638,8 @@ contract DeployLocal is Script {
         vm.stopBroadcast();
 
         if (_nodeRegistryProxy.admin() != _admin) revert("Node registry admin not updated correctly");
-        if (_nodeRegistryProxy.maxCanonicalNodes() != _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES) revert("Node registry max canonical not updated correctly");
+        if (_nodeRegistryProxy.maxCanonicalNodes() != _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES)
+            revert("Node registry max canonical not updated correctly");
     }
 
     /* ============ Payer Report Manager Helpers ============ */
