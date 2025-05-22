@@ -333,7 +333,7 @@ function main() {
         generate_artifacts "app-chain" "${contract}"
     done
 
-    contracts=("NodeRegistry" "RateRegistry" "PayerRegistry" "PayerReportManager")
+    contracts=("NodeRegistry" "RateRegistry" "PayerRegistry" "PayerReportManager" "SettlementChainParameterRegistry")
     for contract in "${contracts[@]}"; do
         echo "⧖ Generating artifacts for contract: ${contract}"
         generate_artifacts "settlement-chain" "${contract}"
