@@ -15,6 +15,9 @@ RUN apt-get update && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get install -y jq && \
+    apt-get install -y sed && \
+    apt-get install -y xxd && \
+    apt-get install -y gzip && \
     node -v && npm -v
 
 USER foundry
@@ -40,8 +43,11 @@ RUN apt-get update && \
 EXPOSE 8545
 
 COPY --from=builder /build/anvil-state-load-data.json ./anvil-state-load-data.json
-COPY --from=builder /build/dev/bootstrap-anvil ./bootstrap-anvil
+COPY --from=builder /build/dev/start-anvil-with-state ./start-anvil-with-state
+# COPY --from=builder /build/dev/start-anvil-and-load-state ./start-anvil-and-load-state
 
-RUN chmod +x ./bootstrap-anvil
+RUN chmod +x ./start-anvil-with-state
+# RUN chmod +x ./start-anvil-and-load-state
 
-ENTRYPOINT [ "./bootstrap-anvil" ]
+ENTRYPOINT ["./start-anvil-with-state"]
+CMD ["--load-state", "./anvil-state-load-data.json", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1"]

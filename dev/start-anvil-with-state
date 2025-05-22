@@ -1,20 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-export ANVIL_RPC_URL="127.0.0.1:8545"
-
-anvil --host 0.0.0.0 --mixed-mining --block-time 1 &
+anvil $@ &
 
 ANVIL_PID=$!
 
 trap "echo 'Caught SIGTERM, forwarding to $ANVIL_PID'; kill -TERM \"$ANVIL_PID\"" SIGTERM
 trap "echo 'Caught SIGINT, forwarding to $ANVIL_PID'; kill -INT \"$ANVIL_PID\"" SIGINT
-
-sleep 2
-
-curl -H "Content-Type: application/json" -X POST --data @anvil-state-load-data.json $ANVIL_RPC_URL
-
-sleep 2
 
 wait "$ANVIL_PID"
 

@@ -25,14 +25,11 @@ npm run deploy-local
 
 sleep 2
 
-curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"anvil_dumpState","params":[],"id":1}' $ANVIL_RPC_URL | jq -r .result | jq -R '{
-    "jsonrpc": "2.0",
-    "method": "anvil_loadState",
-    "params": [.],
-    "id": 1
-}' > anvil-state-load-data.json
-
-sleep 2
+curl -H "Content-Type: application/json" -s -X POST --data '{"jsonrpc":"2.0","method":"anvil_dumpState","params":[],"id":1}' $ANVIL_RPC_URL \
+    | jq -r '.result' \
+    | sed 's/^0x//' \
+    | xxd -r -p \
+    | gunzip -c > anvil-state-load-data.json
 
 echo "▶ Waiting for anvil to flush state..."
 kill -SIGINT "$ANVIL_PID"  # sends Ctrl+C, triggers graceful shutdown
