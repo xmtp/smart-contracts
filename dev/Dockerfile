@@ -22,7 +22,7 @@ RUN apt-get update && \
 
 USER foundry
 
-# Copy your project files into the image
+# Copy the project files into the image (ignoring those in .dockerignore)
 COPY . .
 
 RUN ./dev/gen-anvil-state
@@ -31,7 +31,7 @@ FROM ghcr.io/foundry-rs/foundry:v${FOUNDRY_VERSION}
 
 LABEL maintainer="eng@ephemerahq.com"
 LABEL source="https://github.com/xmtp/smart-contracts"
-LABEL description="XMTP Contracts Image"
+LABEL description="XMTP Anvil Image"
 
 WORKDIR /blockchain
 
@@ -43,11 +43,6 @@ RUN apt-get update && \
 EXPOSE 8545
 
 COPY --from=builder /build/anvil-state-load-data.json ./anvil-state-load-data.json
-COPY --from=builder /build/dev/start-anvil-with-state ./start-anvil-with-state
-# COPY --from=builder /build/dev/start-anvil-and-load-state ./start-anvil-and-load-state
 
-RUN chmod +x ./start-anvil-with-state
-# RUN chmod +x ./start-anvil-and-load-state
-
-ENTRYPOINT ["./start-anvil-with-state"]
+ENTRYPOINT ["anvil"]
 CMD ["--load-state", "./anvil-state-load-data.json", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1"]
