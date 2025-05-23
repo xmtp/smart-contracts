@@ -83,14 +83,14 @@ contract SettlementChainGatewayTests is Test {
         assertEq(_gateway.__getNonce(), 0);
     }
 
-    /* ============ depositSenderFunds ============ */
+    /* ============ deposit ============ */
 
-    function test_depositSenderFunds_unsupportedChainId() external {
+    function test_deposit_unsupportedChainId() external {
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
-    function test_depositSenderFunds_transferFailed_tokenReturnsFalse() external {
+    function test_deposit_transferFailed_tokenReturnsFalse() external {
         _gateway.__setInbox(1111, makeAddr("inbox"));
 
         vm.mockCall(
@@ -102,10 +102,10 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
-    function test_depositSenderFunds_transferFailed_tokenReverts() external {
+    function test_deposit_transferFailed_tokenReverts() external {
         _gateway.__setInbox(1111, makeAddr("inbox"));
 
         vm.mockCallRevert(
@@ -117,10 +117,10 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
-    function test_depositSenderFunds_approveFailed_tokenReturnsFalse() external {
+    function test_deposit_approveFailed_tokenReturnsFalse() external {
         address inbox_ = makeAddr("inbox");
 
         _gateway.__setInbox(1111, inbox_);
@@ -133,10 +133,10 @@ contract SettlementChainGatewayTests is Test {
 
         vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
 
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
-    function test_depositSenderFunds_approveFailed_tokenReverts() external {
+    function test_deposit_approveFailed_tokenReverts() external {
         address inbox_ = makeAddr("inbox");
 
         _gateway.__setInbox(1111, inbox_);
@@ -145,10 +145,10 @@ contract SettlementChainGatewayTests is Test {
 
         vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
 
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
-    function test_depositSenderFunds() external {
+    function test_deposit() external {
         address inbox_ = makeAddr("inbox");
 
         _gateway.__setInbox(1111, inbox_);
@@ -171,7 +171,7 @@ contract SettlementChainGatewayTests is Test {
         emit ISettlementChainGateway.SenderFundsDeposited(1111, inbox_, 11, 100);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(1111, 100);
+        _gateway.deposit(1111, 100);
     }
 
     /* ============ sendParameters ============ */
