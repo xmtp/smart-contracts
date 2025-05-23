@@ -7,6 +7,10 @@ import { Test, Vm, console } from "../../lib/forge-std/src/Test.sol";
 
 import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 
+/* ============ Source Library Imports ============ */
+
+import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
+
 /* ============ Source Interface Imports ============ */
 
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
@@ -56,6 +60,8 @@ contract DeployTests is Test {
     address internal constant _SETTLEMENT_CHAIN_BRIDGE = 0xC071180104924cC51922259a13B0d2DBF9646509;
     address internal constant _USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     address internal constant _APPCHAIN_RETRYABLE_TX_PRECOMPILE = 0x000000000000000000000000000000000000006E;
+
+    bytes internal constant _SETTLEMENT_CHAIN_GATEWAY_INBOX_KEY = "xmtp.settlementChainGateway.inbox";
 
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
@@ -118,6 +124,9 @@ contract DeployTests is Test {
     uint256 internal _settlementChainForkId;
     uint256 internal _appChainForkId;
 
+    uint256 internal _settlementChainId;
+    uint256 internal _appchainChainId;
+
     IFactory internal _settlementChainFactory;
     IFactory internal _appChainFactory;
 
@@ -149,8 +158,11 @@ contract DeployTests is Test {
 
         vm.recordLogs();
 
-        _settlementChainForkId = vm.createFork("base_sepolia");
-        _appChainForkId = vm.createFork("xmtp_sepolia");
+        _settlementChainForkId = vm.createSelectFork("base_sepolia");
+        _settlementChainId = block.chainid;
+
+        _appchainForkId = vm.createSelectFork("xmtp_testnet");
+        _appchainChainId = block.chainid;
 
         _giveUSDC(_alice, 10_000000); // 10 USDC
     }
@@ -311,6 +323,10 @@ contract DeployTests is Test {
 
         console.log("identityUpdateBroadcasterProxy: %s", address(_identityUpdateBroadcasterProxy));
 
+        // Set the inbox for the Gateway on the base (settlement) chain to communicate with the xmtp (appchain) chain.
+        _setInboxParameters();
+        _updateInboxParameters();
+
         // Set and update the parameters as needed for the Node Registry.
         _setNodeRegistryStartingParameters();
         _updateNodeRegistryStartingParameters();
@@ -326,7 +342,7 @@ contract DeployTests is Test {
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
         _setBroadcasterStartingParameters();
-        _bridgeBroadcasterStartingParameters();
+        _bridgeBroadcasterStartingParameters(_appchainChainId);
         _handleQueuedBridgeEvents();
         _assertBroadcasterStartingParameters();
         _updateBroadcasterStartingParameters();
@@ -497,6 +513,31 @@ contract DeployTests is Test {
         assertEq(gateway_.implementation(), implementation_);
     }
 
+    function _setInboxParameters() internal {
+        vm.selectFork(_settlementChainForkId);
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = ParameterKeys.combineKeyComponents(
+            _SETTLEMENT_CHAIN_GATEWAY_INBOX_KEY,
+            ParameterKeys.uint256ToKeyComponent(_appchainChainId)
+        );
+
+        bytes32[] memory values_ = new bytes32[](1);
+        values_[0] = bytes32(uint256(uint160(_SETTLEMENT_CHAIN_INBOX_TO_APPCHAIN)));
+
+        vm.prank(_admin);
+        _settlementChainParameterRegistryProxy.set(keys_, values_);
+
+        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
+    }
+
+    function _updateInboxParameters() internal {
+        vm.selectFork(_settlementChainForkId);
+
+        vm.prank(_admin);
+        _settlementChainGatewayProxy.updateInbox(_appchainChainId);
+    }
+
     /* ============ Group Message Broadcaster Helpers ============ */
 
     function _deployGroupMessageBroadcasterImplementation(
@@ -593,7 +634,7 @@ contract DeployTests is Test {
         assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
-    function _bridgeBroadcasterStartingParameters() internal {
+    function _bridgeBroadcasterStartingParameters(uint256 chainId_) internal {
         vm.selectFork(_settlementChainForkId);
 
         bytes[] memory keys_ = new bytes[](4);
@@ -606,6 +647,7 @@ contract DeployTests is Test {
 
         _sendParametersAsRetryableTickets(
             _alice,
+            chainId_,
             keys_,
             200_000,
             2_000_000_000, // 2 gwei
@@ -977,6 +1019,7 @@ contract DeployTests is Test {
 
     function _sendParametersAsRetryableTickets(
         address account_,
+        uint256 chainId_,
         bytes[] memory keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
@@ -985,12 +1028,12 @@ contract DeployTests is Test {
     ) internal {
         vm.selectFork(_settlementChainForkId);
 
-        address[] memory inboxes_ = new address[](1);
-        inboxes_[0] = _SETTLEMENT_CHAIN_INBOX_TO_APPCHAIN;
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = chainId_;
 
         vm.prank(account_);
         _settlementChainGatewayProxy.sendParametersAsRetryableTickets(
-            inboxes_,
+            chainIds_,
             keys_,
             gasLimit_,
             gasPrice_,
