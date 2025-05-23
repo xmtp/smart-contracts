@@ -40,6 +40,9 @@ interface IFactory {
 
     /* ============ Custom Errors ============ */
 
+    /// @notice Thrown when the implementation is the zero address.
+    error InvalidImplementation();
+
     /// @notice Thrown when the bytecode is empty (i.e. of the implementation to deploy).
     error EmptyBytecode();
 

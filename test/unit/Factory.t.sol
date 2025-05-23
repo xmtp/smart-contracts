@@ -84,6 +84,11 @@ contract FactoryTests is Test {
 
     /* ============ deployProxy ============ */
 
+    function test_deployProxy_invalidImplementation() external {
+        vm.expectRevert(IFactory.InvalidImplementation.selector);
+        _factory.deployProxy(address(0), 0, "");
+    }
+
     function test_deployProxy_deployFailed() external {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
 

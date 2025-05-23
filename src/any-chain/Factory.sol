@@ -53,6 +53,8 @@ contract Factory is IFactory {
         bytes32 salt_,
         bytes calldata initializeCallData_
     ) external returns (address proxy_) {
+        if (implementation_ == address(0)) revert InvalidImplementation();
+
         // Append the initializable implementation address as a constructor argument to the proxy deploy code, and use
         // the sender's address combined with their chosen salt as the final salt.
         proxy_ = _create2(
