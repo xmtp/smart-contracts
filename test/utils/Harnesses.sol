@@ -310,8 +310,16 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
         address appChainNativeToken_
     ) SettlementChainGateway(parameterRegistry_, appChainGateway_, appChainNativeToken_) {}
 
+    function __setInbox(uint256 chainId_, address inbox_) external {
+        _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_;
+    }
+
     function __setNonce(uint256 nonce_) external {
         _getSettlementChainGatewayStorage().nonce = nonce_;
+    }
+
+    function __getInbox(uint256 chainId_) external view returns (address inbox_) {
+        return _getSettlementChainGatewayStorage().inboxes[chainId_];
     }
 
     function __getNonce() external view returns (uint256 nonce_) {

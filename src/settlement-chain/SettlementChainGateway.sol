@@ -6,6 +6,7 @@ import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol"
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
+import { ParameterKeys } from "../libraries/ParameterKeys.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGatewayLike, IERC20InboxLike } from "./interfaces/External.sol";
@@ -13,8 +14,6 @@ import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
-
-// TODO: Consider reentrancy prevention.
 
 /**
  * @title  Implementation for a Settlement Chain Gateway.
@@ -42,6 +41,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      */
     struct SettlementChainGatewayStorage {
         uint256 nonce;
+        mapping(uint256 chainId => address inbox) inboxes;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.SettlementChainGateway")) - 1)) & ~bytes32(uint256(0xff))
@@ -83,23 +83,25 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    function depositSenderFunds(address inbox_, uint256 amount_) external {
+    function depositSenderFunds(uint256 chainId_, uint256 amount_) external {
+        address inbox_ = _getInbox(chainId_);
+
         _redirectFunds(inbox_, amount_);
 
         uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
 
         // slither-disable-next-line reentrancy-events
-        emit SenderFundsDeposited(inbox_, messageNumber_, amount_);
+        emit SenderFundsDeposited(chainId_, inbox_, messageNumber_, amount_);
     }
 
     /// @inheritdoc ISettlementChainGateway
     function sendParameters(
-        address[] calldata inboxes_,
+        uint256[] calldata chainIds_,
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external {
-        if (inboxes_.length == 0) revert NoInboxes();
+        if (chainIds_.length == 0) revert NoChainIds();
 
         uint256 nonce_;
 
@@ -109,31 +111,21 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
 
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            // slither-disable-next-line calls-loop
-            uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).sendContractTransaction({
-                gasLimit_: gasLimit_,
-                maxFeePerGas_: gasPrice_,
-                to_: appChainGateway,
-                value_: 0,
-                data_: data_
-            });
-
-            // slither-disable-next-line reentrancy-events
-            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keys_);
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            _sendParameters(chainIds_[index_], keys_, gasLimit_, gasPrice_, data_, nonce_);
         }
     }
 
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTickets(
-        address[] calldata inboxes_,
+        uint256[] calldata chainIds_,
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
         uint256 nativeTokensToSend_
     ) external {
-        if (inboxes_.length == 0) revert NoInboxes();
+        if (chainIds_.length == 0) revert NoChainIds();
 
         uint256 nonce_;
 
@@ -144,25 +136,30 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
         address appChainAlias_ = appChainAlias();
 
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
-            _redirectFunds(inboxes_[index_], nativeTokensToSend_);
-
-            // slither-disable-next-line calls-loop
-            uint256 messageNumber_ = IERC20InboxLike(inboxes_[index_]).createRetryableTicket({
-                to_: appChainGateway,
-                l2CallValue_: 0,
-                maxSubmissionCost_: maxSubmissionCost_,
-                excessFeeRefundAddress_: appChainAlias_,
-                callValueRefundAddress_: appChainAlias_,
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            _sendParametersAsRetryableTicket({
+                chainId_: chainIds_[index_],
+                keys_: keys_,
                 gasLimit_: gasLimit_,
-                maxFeePerGas_: gasPrice_,
-                tokenTotalFeeAmount_: nativeTokensToSend_,
-                data_: data_
+                gasPrice_: gasPrice_,
+                maxSubmissionCost_: maxSubmissionCost_,
+                nativeTokensToSend_: nativeTokensToSend_,
+                data_: data_,
+                nonce_: nonce_,
+                appChainAlias_: appChainAlias_
             });
-
-            // slither-disable-next-line reentrancy-events
-            emit ParametersSent(inboxes_[index_], messageNumber_, nonce_, keys_);
         }
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function updateInbox(uint256 chainId_) external {
+        address inbox_ = RegistryParameters.getAddressParameter(
+            parameterRegistry,
+            _getInboxKey(inboxParameterKey(), chainId_)
+        );
+
+        // NOTE: `address(0)` is valid, as it disables the inbox for a chain ID.
+        emit InboxUpdated(chainId_, _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_);
     }
 
     /// @inheritdoc IMigratable
@@ -178,8 +175,18 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /// @inheritdoc ISettlementChainGateway
+    function inboxParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.settlementChainGateway.inbox";
+    }
+
+    /// @inheritdoc ISettlementChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
         return "xmtp.settlementChainGateway.migrator";
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function getInbox(uint256 chainId_) external view returns (address inbox_) {
+        return _getInbox(chainId_);
     }
 
     /* ============ Internal Interactive Functions ============ */
@@ -188,6 +195,63 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     function _redirectFunds(address inbox_, uint256 amount_) internal {
         SafeTransferLib.safeTransferFrom(appChainNativeToken, msg.sender, address(this), amount_);
         SafeTransferLib.safeApprove(appChainNativeToken, inbox_, amount_);
+    }
+
+    /// @dev Sends parameters to the app chain via a contract transaction.
+    function _sendParameters(
+        uint256 chainId_,
+        bytes[] calldata keys_,
+        uint256 gasLimit_,
+        uint256 gasPrice_,
+        bytes memory data_,
+        uint256 nonce_
+    ) internal {
+        address inbox_ = _getInbox(chainId_);
+
+        // slither-disable-next-line calls-loop
+        uint256 messageNumber_ = IERC20InboxLike(inbox_).sendContractTransaction({
+            gasLimit_: gasLimit_,
+            maxFeePerGas_: gasPrice_,
+            to_: appChainGateway,
+            value_: 0,
+            data_: data_
+        });
+
+        // slither-disable-next-line reentrancy-events
+        emit ParametersSent(chainId_, inbox_, messageNumber_, nonce_, keys_);
+    }
+
+    /// @dev Sends parameters to the app chain via a retryable ticket.
+    function _sendParametersAsRetryableTicket(
+        uint256 chainId_,
+        bytes[] calldata keys_,
+        uint256 gasLimit_,
+        uint256 gasPrice_,
+        uint256 maxSubmissionCost_,
+        uint256 nativeTokensToSend_,
+        bytes memory data_,
+        uint256 nonce_,
+        address appChainAlias_
+    ) internal {
+        address inbox_ = _getInbox(chainId_);
+
+        _redirectFunds(inbox_, nativeTokensToSend_);
+
+        // slither-disable-next-line calls-loop
+        uint256 messageNumber_ = IERC20InboxLike(inbox_).createRetryableTicket({
+            to_: appChainGateway,
+            l2CallValue_: 0,
+            maxSubmissionCost_: maxSubmissionCost_,
+            excessFeeRefundAddress_: appChainAlias_,
+            callValueRefundAddress_: appChainAlias_,
+            gasLimit_: gasLimit_,
+            maxFeePerGas_: gasPrice_,
+            tokenTotalFeeAmount_: nativeTokensToSend_,
+            data_: data_
+        });
+
+        // slither-disable-next-line reentrancy-events
+        emit ParametersSent(chainId_, inbox_, messageNumber_, nonce_, keys_);
     }
 
     /* ============ Internal View/Pure Functions ============ */
@@ -207,6 +271,22 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 IAppChainGatewayLike.receiveParameters,
                 (nonce_, keys_, RegistryParameters.getRegistryParameters(parameterRegistry, keys_))
             );
+    }
+
+    /**
+     * @dev Returns the inbox-specific key used to query to parameter registry to determine the inbox for a chain ID.
+     *      The inbox-specific key is the concatenation of the inbox parameter key and the chain ID.
+     *      For example, if the inbox parameter key is "xmtp.settlementChainGateway.inbox", then the key for chain ID
+     *      1 is "xmtp.settlementChainGateway.inbox.1".
+     */
+    function _getInboxKey(bytes memory inboxParameterKey_, uint256 chainId_) internal pure returns (bytes memory key_) {
+        return ParameterKeys.combineKeyComponents(inboxParameterKey_, ParameterKeys.uint256ToKeyComponent(chainId_));
+    }
+
+    function _getInbox(uint256 chainId_) internal view returns (address inbox_) {
+        inbox_ = _getSettlementChainGatewayStorage().inboxes[chainId_];
+
+        if (_isZero(inbox_)) revert UnsupportedChainId(chainId_);
     }
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
