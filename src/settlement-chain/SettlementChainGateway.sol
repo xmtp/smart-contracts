@@ -83,7 +83,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    function depositSenderFunds(uint256 chainId_, uint256 amount_) external {
+    function deposit(uint256 chainId_, uint256 amount_) external {
         address inbox_ = _getInbox(chainId_);
 
         _redirectFunds(inbox_, amount_);
