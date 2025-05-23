@@ -89,11 +89,11 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /* ============ Interactive Functions ============ */
 
     /**
-     * @notice Deposits tokens as gas token to an app chain.
+     * @notice Deposits app chain native tokens as gas token to an app chain.`
      * @param  chainId_ The chain ID of the target app chain.
      * @param  amount_  The amount of tokens to deposit.
      */
-    function depositSenderFunds(uint256 chainId_, uint256 amount_) external;
+    function deposit(uint256 chainId_, uint256 amount_) external;
 
     /**
      * @notice Sends parameters to the app chain as a direct contract call.
