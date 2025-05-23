@@ -23,6 +23,7 @@ import { Utils } from "../utils/Utils.sol";
 
 contract SettlementChainGatewayTests is Test {
     bytes internal constant _DELIMITER = ".";
+    bytes internal constant _INBOX_KEY = "xmtp.settlementChainGateway.inbox";
     bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainGateway.migrator";
 
     SettlementChainGatewayHarness internal _gateway;
@@ -74,6 +75,7 @@ contract SettlementChainGatewayTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_gateway)), _implementation);
         assertEq(_gateway.implementation(), _implementation);
+        assertEq(keccak256(_gateway.inboxParameterKey()), keccak256(_INBOX_KEY));
         assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.appChainGateway(), _appChainGateway);
@@ -83,7 +85,14 @@ contract SettlementChainGatewayTests is Test {
 
     /* ============ depositSenderFunds ============ */
 
+    function test_depositSenderFunds_unsupportedChainId() external {
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+        _gateway.depositSenderFunds(1111, 100);
+    }
+
     function test_depositSenderFunds_transferFailed_tokenReturnsFalse() external {
+        _gateway.__setInbox(1111, makeAddr("inbox"));
+
         vm.mockCall(
             _appChainNativeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -93,10 +102,12 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(address(0), 100);
+        _gateway.depositSenderFunds(1111, 100);
     }
 
     function test_depositSenderFunds_transferFailed_tokenReverts() external {
+        _gateway.__setInbox(1111, makeAddr("inbox"));
+
         vm.mockCallRevert(
             _appChainNativeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -106,11 +117,13 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(address(0), 100);
+        _gateway.depositSenderFunds(1111, 100);
     }
 
     function test_depositSenderFunds_approveFailed_tokenReturnsFalse() external {
         address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
 
         vm.mockCall(
             _appChainNativeToken,
@@ -120,21 +133,25 @@ contract SettlementChainGatewayTests is Test {
 
         vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
 
-        _gateway.depositSenderFunds(inbox_, 100);
+        _gateway.depositSenderFunds(1111, 100);
     }
 
     function test_depositSenderFunds_approveFailed_tokenReverts() external {
         address inbox_ = makeAddr("inbox");
 
+        _gateway.__setInbox(1111, inbox_);
+
         vm.mockCallRevert(_appChainNativeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
 
         vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
 
-        _gateway.depositSenderFunds(inbox_, 100);
+        _gateway.depositSenderFunds(1111, 100);
     }
 
     function test_depositSenderFunds() external {
         address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
 
         Utils.expectAndMockCall(
             _appChainNativeToken,
@@ -151,28 +168,49 @@ contract SettlementChainGatewayTests is Test {
         Utils.expectAndMockCall(inbox_, abi.encodeWithSignature("depositERC20(uint256)", 100), abi.encode(11));
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.SenderFundsDeposited(inbox_, 11, 100);
+        emit ISettlementChainGateway.SenderFundsDeposited(1111, inbox_, 11, 100);
 
         vm.prank(_alice);
-        _gateway.depositSenderFunds(inbox_, 100);
+        _gateway.depositSenderFunds(1111, 100);
     }
 
     /* ============ sendParameters ============ */
 
-    function test_sendParameters_noInboxes() external {
-        vm.expectRevert(ISettlementChainGateway.NoInboxes.selector);
-        _gateway.sendParameters(new address[](0), new bytes[](0), 0, 0);
+    function test_sendParameters_noChainIds() external {
+        vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+        _gateway.sendParameters(new uint256[](0), new bytes[](0), 0, 0);
     }
 
     function test_sendParameters_noKeys() external {
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
-        _gateway.sendParameters(new address[](1), new bytes[](0), 0, 0);
+        _gateway.sendParameters(new uint256[](1), new bytes[](0), 0, 0);
+    }
+
+    function test_sendParameters_unsupportedChainId() external {
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = 1111;
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = "this.is.a.parameter";
+
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        _gateway.sendParameters(chainIds_, keys_, 0, 0);
     }
 
     function test_sendParameters() external {
+        uint256[] memory chainIds_ = new uint256[](2);
+        chainIds_[0] = 1111;
+        chainIds_[1] = 1112;
+
         address[] memory inboxes_ = new address[](2);
         inboxes_[0] = makeAddr("inbox0");
         inboxes_[1] = makeAddr("inbox1");
+
+        _gateway.__setInbox(chainIds_[0], inboxes_[0]);
+        _gateway.__setInbox(chainIds_[1], inboxes_[1]);
 
         bytes[] memory keys_ = new bytes[](2);
 
@@ -185,7 +223,7 @@ contract SettlementChainGatewayTests is Test {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
             Utils.expectAndMockCall(
                 inboxes_[index_],
                 abi.encodeWithSignature(
@@ -200,30 +238,57 @@ contract SettlementChainGatewayTests is Test {
             );
 
             vm.expectEmit(address(_gateway));
-            emit ISettlementChainGateway.ParametersSent(inboxes_[index_], 11 * (index_ + 1), 1, keys_);
+            emit ISettlementChainGateway.ParametersSent(
+                chainIds_[index_],
+                inboxes_[index_],
+                11 * (index_ + 1),
+                1,
+                keys_
+            );
         }
 
-        _gateway.sendParameters(inboxes_, keys_, 100_000, 1_000_000);
+        _gateway.sendParameters(chainIds_, keys_, 100_000, 1_000_000);
 
         assertEq(_gateway.__getNonce(), 1);
     }
 
     /* ============ sendParametersAsRetryableTickets ============ */
 
-    function test_sendParametersAsRetryableTickets_noInboxes() external {
-        vm.expectRevert(ISettlementChainGateway.NoInboxes.selector);
-        _gateway.sendParametersAsRetryableTickets(new address[](0), new bytes[](0), 0, 0, 0, 0);
+    function test_sendParametersAsRetryableTickets_noChainIds() external {
+        vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTickets_noKeys() external {
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
-        _gateway.sendParametersAsRetryableTickets(new address[](1), new bytes[](0), 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTickets_unsupportedChainId() external {
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = 1111;
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = "this.is.a.parameter";
+
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTickets() external {
+        uint256[] memory chainIds_ = new uint256[](2);
+        chainIds_[0] = 1111;
+        chainIds_[1] = 1112;
+
         address[] memory inboxes_ = new address[](2);
         inboxes_[0] = makeAddr("inbox0");
         inboxes_[1] = makeAddr("inbox1");
+
+        _gateway.__setInbox(chainIds_[0], inboxes_[0]);
+        _gateway.__setInbox(chainIds_[1], inboxes_[1]);
 
         bytes[] memory keys_ = new bytes[](2);
 
@@ -238,7 +303,7 @@ contract SettlementChainGatewayTests is Test {
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
-        for (uint256 index_; index_ < inboxes_.length; ++index_) {
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
             Utils.expectAndMockCall(
                 _appChainNativeToken,
                 abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
@@ -269,13 +334,51 @@ contract SettlementChainGatewayTests is Test {
             );
 
             vm.expectEmit(address(_gateway));
-            emit ISettlementChainGateway.ParametersSent(inboxes_[index_], 11 * (index_ + 1), 1, keys_);
+            emit ISettlementChainGateway.ParametersSent(
+                chainIds_[index_],
+                inboxes_[index_],
+                11 * (index_ + 1),
+                1,
+                keys_
+            );
         }
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(inboxes_, keys_, 100_000, 1_000_000, 2_000_000, 3_000_000);
+        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 100_000, 1_000_000, 2_000_000, 3_000_000);
 
         assertEq(_gateway.__getNonce(), 1);
+    }
+
+    /* ============ updateInbox ============ */
+
+    function test_updateInbox() external {
+        address inbox_ = makeAddr("inbox");
+
+        vm.mockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes)", abi.encodePacked(_INBOX_KEY, ".1111")),
+            abi.encode(bytes32(uint256(uint160(inbox_))))
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.InboxUpdated(1111, inbox_);
+
+        _gateway.updateInbox(1111);
+
+        assertEq(_gateway.__getInbox(1111), inbox_);
+
+        vm.mockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes)", abi.encodePacked(_INBOX_KEY, ".1111")),
+            abi.encode(0)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.InboxUpdated(1111, address(0));
+
+        _gateway.updateInbox(1111);
+
+        assertEq(_gateway.__getInbox(1111), address(0));
     }
 
     /* ============ migrate ============ */
@@ -353,6 +456,21 @@ contract SettlementChainGatewayTests is Test {
         assertEq(_gateway.parameterRegistry(), newParameterRegistry_);
         assertEq(_gateway.appChainGateway(), newAppChainGateway_);
         assertEq(_gateway.appChainNativeToken(), newAppChainNativeToken_);
+    }
+
+    /* ============ getInbox ============ */
+
+    function test_getInbox_unsupportedChainId() external {
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+        _gateway.getInbox(1111);
+    }
+
+    function test_getInbox() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        assertEq(_gateway.getInbox(1111), inbox_);
     }
 
     /* ============ appChainAlias ============ */
