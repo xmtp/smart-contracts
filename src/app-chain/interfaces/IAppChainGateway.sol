@@ -20,6 +20,14 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      */
     event ParametersReceived(uint256 indexed nonce, bytes[] keys);
 
+    /**
+     * @notice Emitted when funds are withdrawn from the app chain.
+     * @param  account   The address of the account that withdrew the funds.
+     * @param  recipient The address to which the funds will be delivered to on the settlement chain.
+     * @param  amount    The amount of funds withdrawn.
+     */
+    event Withdrawal(address indexed account, address indexed recipient, uint256 amount);
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is zero (i.e. address(0)).
@@ -31,12 +39,24 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the caller is not the settlement chain gateway (i.e. its L3 alias address).
     error NotSettlementChainGateway();
 
+    /// @notice Thrown when the recipient address is zero (i.e. address(0)).
+    error ZeroRecipient();
+
+    /// @notice Thrown when the withdrawal amount is zero.
+    error ZeroWithdrawalAmount();
+
     /* ============ Initialization ============ */
 
     /// @notice Initializes the parameter registry, as used by a proxy contract.
     function initialize() external;
 
     /* ============ Interactive Functions ============ */
+
+    /**
+     * @notice Withdraws funds from the app chain to the settlement chain.
+     * @param  recipient_ The address to which the funds will be delivered to on the settlement chain.
+     */
+    function withdraw(address recipient_) external payable;
 
     /**
      * @notice Receives parameters from the settlement chain.

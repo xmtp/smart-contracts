@@ -7,6 +7,7 @@ import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
+import { IArbSysLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -18,6 +19,9 @@ import { Migratable } from "../abstract/Migratable.sol";
  */
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
+
+    /// @dev The Arbitrum system precompile address.
+    address internal constant _ARB_SYS = 0x0000000000000000000000000000000000000064; // address(100)
 
     /// @inheritdoc IAppChainGateway
     address public immutable parameterRegistry;
@@ -85,6 +89,17 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     function initialize() external initializer {}
 
     /* ============ Interactive Functions ============ */
+
+    /// @inheritdoc IAppChainGateway
+    function withdraw(address recipient_) external payable {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+        if (msg.value == 0) revert ZeroWithdrawalAmount();
+
+        IArbSysLike(_ARB_SYS).withdrawEth{ value: msg.value }(recipient_);
+
+        // slither-disable-next-line reentrancy-events
+        emit Withdrawal(msg.sender, recipient_, msg.value);
+    }
 
     /// @inheritdoc IAppChainGateway
     function receiveParameters(

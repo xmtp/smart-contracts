@@ -19,12 +19,16 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract AppChainGatewayTests is Test {
+    address internal constant _ARB_SYS = 0x0000000000000000000000000000000000000064; // address(100)
+
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
 
     AppChainGatewayHarness internal _gateway;
 
     address internal _implementation;
+
+    address internal _alice = makeAddr("alice");
 
     address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
@@ -65,6 +69,47 @@ contract AppChainGatewayTests is Test {
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.settlementChainGateway(), _settlementChainGateway);
         assertEq(_gateway.settlementChainGatewayAlias(), _settlementChainGatewayAlias);
+    }
+
+    /* ============ withdraw ============ */
+
+    function test_withdraw_zeroRecipient() external {
+        vm.expectRevert(IAppChainGateway.ZeroRecipient.selector);
+        _gateway.withdraw{ value: 0 }(address(0));
+    }
+
+    function test_withdraw_zeroWithdrawalAmount() external {
+        vm.expectRevert(IAppChainGateway.ZeroWithdrawalAmount.selector);
+        _gateway.withdraw{ value: 0 }(address(1));
+    }
+
+    function test_withdraw_noArbSys() external {
+        vm.expectRevert();
+        _gateway.withdraw{ value: 1 }(address(1));
+    }
+
+    function test_withdraw_arbSysRevert() external {
+        vm.mockCallRevert(_ARB_SYS, abi.encodeWithSignature("withdrawEth(address)", address(1)), "");
+        vm.expectRevert();
+        _gateway.withdraw{ value: 1 }(address(1));
+    }
+
+    function test_withdraw_xxx() external {
+        vm.deal(_alice, 2);
+
+        Utils.expectAndMockCall(
+            _ARB_SYS,
+            abi.encodeWithSignature("withdrawEth(address)", address(1)),
+            abi.encode(true)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.Withdrawal(_alice, address(1), 1);
+
+        vm.prank(_alice);
+        _gateway.withdraw{ value: 1 }(address(1));
+
+        assertEq(_alice.balance, 1);
     }
 
     /* ============ receiveParameters ============ */
