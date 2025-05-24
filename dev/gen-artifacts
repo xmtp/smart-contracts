@@ -62,7 +62,7 @@ function environments() {
 
     cp "${repo_root}/environments/anvil.json" "${environments_dir}/anvil.json"
 
-    rm -rf "${repo_root}/anvil-state-load-data.json"
+    rm -rf "${repo_root}/anvil-state.json"
 }
 
 function main() {

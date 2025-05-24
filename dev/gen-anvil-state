@@ -5,7 +5,7 @@ set -euo pipefail
 export LOCAL_DEPLOY_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 export ANVIL_RPC_URL="127.0.0.1:8545"
 
-rm -f ./anvil-state-load-data.json || echo "no existing state to remove"
+rm -f ./anvil-state.json || echo "no existing state to remove"
 
 mkdir -p environments
 
@@ -29,7 +29,7 @@ curl -H "Content-Type: application/json" -s -X POST --data '{"jsonrpc":"2.0","me
     | jq -r '.result' \
     | sed 's/^0x//' \
     | xxd -r -p \
-    | gunzip -c > anvil-state-load-data.json
+    | gunzip -c > anvil-state.json
 
 echo "▶ Waiting for anvil to flush state..."
 kill -SIGINT "$ANVIL_PID"  # sends Ctrl+C, triggers graceful shutdown

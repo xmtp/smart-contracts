@@ -35,14 +35,9 @@ LABEL description="XMTP Anvil Image"
 
 WORKDIR /blockchain
 
-USER root
-
-RUN apt-get update && \
-    apt-get install -y curl
-
 EXPOSE 8545
 
-COPY --from=builder /build/anvil-state-load-data.json ./anvil-state-load-data.json
+COPY --from=builder /build/anvil-state.json ./anvil-state.json
 
 ENTRYPOINT ["anvil"]
-CMD ["--load-state", "./anvil-state-load-data.json", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1"]
+CMD ["--load-state", "./anvil-state.json", "--host", "0.0.0.0", "--mixed-mining", "--block-time", "1"]
