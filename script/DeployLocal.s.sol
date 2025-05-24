@@ -208,6 +208,24 @@ contract DeployLocal is Script {
         console.log("Distribution Manager deployed to:", address(_distributionManagerProxy));
         console.log("Group Message Broadcaster deployed to:", address(_groupMessageBroadcasterProxy));
         console.log("Identity Update Broadcaster deployed to:", address(_identityUpdateBroadcasterProxy));
+
+        // Write the environment data to a JSON file.
+        string memory json_;
+        json_ = vm.serializeUint("", "settlementChainId", block.chainid);
+        json_ = vm.serializeUint("", "appChainId", block.chainid);
+        json_ = vm.serializeUint("", "settlementChainDeploymentBlock", block.number);
+        json_ = vm.serializeUint("", "appChainDeploymentBlock", block.number);
+        json_ = vm.serializeAddress("", "settlementChainParameterRegistry", address(_parameterRegistryProxy));
+        json_ = vm.serializeAddress("", "payerRegistry", address(_payerRegistryProxy));
+        json_ = vm.serializeAddress("", "rateRegistry", address(_rateRegistryProxy));
+        json_ = vm.serializeAddress("", "nodeRegistry", address(_nodeRegistryProxy));
+        json_ = vm.serializeAddress("", "payerReportManager", address(_payerReportManagerProxy));
+        json_ = vm.serializeAddress("", "distributionManager", address(_distributionManagerProxy));
+        json_ = vm.serializeAddress("", "groupMessageBroadcaster", address(_groupMessageBroadcasterProxy));
+        json_ = vm.serializeAddress("", "identityUpdateBroadcaster", address(_identityUpdateBroadcasterProxy));
+
+        string memory filePath_ = "./environments/anvil.json";
+        vm.writeJson(json_, filePath_);
     }
 
     /* ============ Factory Helpers ============ */
@@ -638,8 +656,10 @@ contract DeployLocal is Script {
         vm.stopBroadcast();
 
         if (_nodeRegistryProxy.admin() != _admin) revert("Node registry admin not updated correctly");
-        if (_nodeRegistryProxy.maxCanonicalNodes() != _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES)
-            revert("Node registry max canonical not updated correctly");
+
+        if (_nodeRegistryProxy.maxCanonicalNodes() != _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES) {
+            revert("Node registry max canonical nodes not updated correctly");
+        }
     }
 
     /* ============ Payer Report Manager Helpers ============ */

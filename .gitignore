@@ -31,9 +31,7 @@ node_modules
 build/
 
 # local deployments
-deployments/anvil_localnet/
+environments/anvil.json
 
 artifacts/
 broadcast/
-
-anvil-state.json

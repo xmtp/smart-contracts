@@ -608,10 +608,13 @@ contract DeploymentTests is Test {
     function _updateNodeRegistryStartingParameters() internal {
         vm.selectFork(_baseForkId);
 
-        vm.prank(_alice);
+        vm.startPrank(_alice);
         _nodeRegistryProxy.updateAdmin();
+        _nodeRegistryProxy.updateMaxCanonicalNodes();
+        vm.stopPrank();
 
         assertEq(_nodeRegistryProxy.admin(), _admin);
+        assertEq(_nodeRegistryProxy.maxCanonicalNodes(), _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES);
     }
 
     /* ============ Payer Report Manager Helpers ============ */
