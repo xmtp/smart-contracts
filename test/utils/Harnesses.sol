@@ -208,6 +208,10 @@ contract PayerRegistryHarness is PayerRegistry {
 
     constructor(address registry_, address token_) PayerRegistry(registry_, token_) {}
 
+    function __finalizeWithdrawal() external {
+        _finalizeWithdrawal();
+    }
+
     function __setSettler(address settler_) external {
         _getPayerRegistryStorage().settler = settler_;
     }
@@ -259,6 +263,10 @@ contract PayerRegistryHarness is PayerRegistry {
     function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
         return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
     }
+
+    function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
+        return _underlyingFeeToken;
+    }
 }
 
 contract ParameterRegistryHarness is ParameterRegistry {
@@ -307,8 +315,8 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
     constructor(
         address parameterRegistry_,
         address appChainGateway_,
-        address appChainNativeToken_
-    ) SettlementChainGateway(parameterRegistry_, appChainGateway_, appChainNativeToken_) {}
+        address feeToken_
+    ) SettlementChainGateway(parameterRegistry_, appChainGateway_, feeToken_) {}
 
     function __setInbox(uint256 chainId_, address inbox_) external {
         _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_;
@@ -324,6 +332,10 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
 
     function __getNonce() external view returns (uint256 nonce_) {
         return _getSettlementChainGatewayStorage().nonce;
+    }
+
+    function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
+        return _underlyingFeeToken;
     }
 }
 
@@ -486,6 +498,10 @@ contract DistributionManagerHarness is DistributionManager {
         address payerRegistry_,
         address token_
     ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, payerRegistry_, token_) {}
+
+    function __prepareWithdrawal(uint256 nodeId_, address recipient_) external returns (uint256 withdrawn_) {
+        return _prepareWithdrawal(uint32(nodeId_), recipient_);
+    }
 
     function __setOwedFees(uint256 nodeId_, uint256 owedFees_) external {
         _getDistributionManagerStorage().owedFees[uint32(nodeId_)] = uint96(owedFees_);

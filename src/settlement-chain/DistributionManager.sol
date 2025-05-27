@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
-import { IERC20Like, INodeRegistryLike, IPayerRegistryLike, IPayerReportManagerLike } from "./interfaces/External.sol";
+import {
+    IERC20Like,
+    IFeeTokenLike,
+    INodeRegistryLike,
+    IPayerRegistryLike,
+    IPayerReportManagerLike
+} from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: Some function `whenNotPaused`.
 
 /**
  * @title  Implementation of the Distribution Manager.
@@ -33,7 +39,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     address public immutable payerRegistry;
 
     /// @inheritdoc IDistributionManager
-    address public immutable token;
+    address public immutable feeToken;
 
     /* ============ UUPS Storage ============ */
 
@@ -66,10 +72,10 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
      * @param  nodeRegistry_       The address of the node registry.
      * @param  payerReportManager_ The address of the payer report manager.
      * @param  payerRegistry_      The address of the payer registry.
-     * @param  token_              The address of the token.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token must not be the
-     *         zero address.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token are immutable so
+     * @param  feeToken_           The address of the fee token.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token must not be
+     *         the zero address.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token are immutable
      *         that they are inlined in the contract code, and have minimal gas cost.
      */
     constructor(
@@ -77,13 +83,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(nodeRegistry = nodeRegistry_)) revert ZeroNodeRegistry();
         if (_isZero(payerReportManager = payerReportManager_)) revert ZeroPayerReportManager();
         if (_isZero(payerRegistry = payerRegistry_)) revert ZeroPayerRegistry();
-        if (_isZero(token = token_)) revert ZeroToken();
+        if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
 
         _disableInitializers();
     }
@@ -149,41 +155,17 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
-    function withdraw(uint32 nodeId_, address destination_) external returns (uint96 withdrawn_) {
-        if (_isZero(destination_)) revert ZeroDestination();
+    function withdraw(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
+    }
 
-        _revertIfNotNodeOwner(nodeId_);
-
-        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
-
-        uint96 owedFees_ = $.owedFees[nodeId_];
-
-        if (owedFees_ == 0) revert NoFeesOwed();
-
-        uint96 availableBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
-
-        if (owedFees_ > availableBalance_) {
-            unchecked {
-                availableBalance_ += IPayerRegistryLike(payerRegistry).sendExcessToFeeDistributor();
-            }
-        }
-
-        // slither-disable-next-line incorrect-equality
-        if (availableBalance_ == 0) revert ZeroAvailableBalance();
-
-        // Only withdraw up to what is available.
-        withdrawn_ = availableBalance_ >= owedFees_ ? owedFees_ : availableBalance_;
-
-        unchecked {
-            // `withdrawn_` is less than or equal to `owedFees_`, and `totalOwedFees` is the sum of all `owedFees`.
-            $.owedFees[nodeId_] = owedFees_ - withdrawn_;
-            $.totalOwedFees -= withdrawn_;
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit Withdrawal(nodeId_, withdrawn_);
-
-        SafeTransferLib.safeTransfer(token, destination_, withdrawn_);
+    /// @inheritdoc IDistributionManager
+    function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
     }
 
     /// @inheritdoc IMigratable
@@ -215,6 +197,44 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint256 payerReportIndex_
     ) external view returns (bool hasClaimed_) {
         return _getDistributionManagerStorage().hasClaimed[nodeId_][originatorNodeId_][payerReportIndex_];
+    }
+
+    /* ============ Internal Interactive Functions ============ */
+
+    /// @dev Prepares a withdrawal of fee tokens, and returns the amount of fee tokens being withdrawn.
+    function _prepareWithdrawal(uint32 nodeId_, address recipient_) internal returns (uint96 withdrawn_) {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+
+        _revertIfNotNodeOwner(nodeId_);
+
+        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+
+        uint96 owedFees_ = $.owedFees[nodeId_];
+
+        if (owedFees_ == 0) revert NoFeesOwed();
+
+        uint96 availableBalance_ = uint96(IERC20Like(feeToken).balanceOf(address(this)));
+
+        if (owedFees_ > availableBalance_) {
+            unchecked {
+                availableBalance_ += IPayerRegistryLike(payerRegistry).sendExcessToFeeDistributor();
+            }
+        }
+
+        // slither-disable-next-line incorrect-equality
+        if (availableBalance_ == 0) revert ZeroAvailableBalance();
+
+        // Only withdraw up to what is available.
+        withdrawn_ = availableBalance_ >= owedFees_ ? owedFees_ : availableBalance_;
+
+        unchecked {
+            // `withdrawn_` is less than or equal to `owedFees_`, and `totalOwedFees` is the sum of all `owedFees`.
+            $.owedFees[nodeId_] = owedFees_ - withdrawn_;
+            $.totalOwedFees -= withdrawn_;
+        }
+
+        // slither-disable-next-line reentrancy-events
+        emit Withdrawal(nodeId_, withdrawn_);
     }
 
     /* ============ Internal View/Pure Functions ============ */
