@@ -7,9 +7,9 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
 /**
  * @title  Interface for the Payer Registry.
  * @notice This interfaces exposes functionality:
- *           - for payers to deposit, request withdrawals, and finalize withdrawals of an ERC20 token,
+ *           - for payers to deposit, request withdrawals, and finalize withdrawals of a fee token,
  *           - for some settler contract to settle usage fees for payers,
- *           - anyone to send excess tokens in the contract to the fee distributor.
+ *           - for anyone to send excess fee tokens in the contract to the fee distributor.
  */
 interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /* ============ Structs ============ */
@@ -64,16 +64,16 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     event WithdrawLockPeriodUpdated(uint32 withdrawLockPeriod);
 
     /**
-     * @notice Emitted when a deposit of tokens occurs for a payer.
+     * @notice Emitted when a deposit of fee tokens occurs for a payer.
      * @param  payer  The address of the payer.
-     * @param  amount The amount of tokens deposited.
+     * @param  amount The amount of fee tokens deposited.
      */
     event Deposit(address indexed payer, uint96 amount);
 
     /**
      * @notice Emitted when a withdrawal is requested by a payer.
      * @param  payer                 The address of the payer.
-     * @param  amount                The amount of tokens requested for withdrawal.
+     * @param  amount                The amount of fee tokens requested for withdrawal.
      * @param  withdrawableTimestamp The timestamp when the withdrawal can be finalized.
      */
     event WithdrawalRequested(address indexed payer, uint96 amount, uint32 withdrawableTimestamp);
@@ -93,13 +93,13 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when a payer's usage is settled.
      * @param  payer  The address of the payer.
-     * @param  amount The amount of tokens settled (the fee deducted from their balance).
+     * @param  amount The amount of fee tokens settled (the fee deducted from their balance).
      */
     event UsageSettled(address indexed payer, uint96 amount);
 
     /**
-     * @notice Emitted when excess tokens are transferred to the fee distributor.
-     * @param  amount The amount of excess tokens transferred.
+     * @notice Emitted when excess fee tokens are transferred to the fee distributor.
+     * @param  amount The amount of excess fee tokens transferred.
      */
     event ExcessTransferred(uint96 amount);
 
@@ -117,8 +117,8 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
-    /// @notice Thrown when the token address is being set to zero (i.e. address(0)).
-    error ZeroToken();
+    /// @notice Thrown when the fee token address is being set to zero (i.e. address(0)).
+    error ZeroFeeToken();
 
     /// @notice Thrown when the settler address is being set to zero (i.e. address(0)).
     error ZeroSettler();
@@ -130,12 +130,6 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     error ZeroMinimumDeposit();
 
     /**
-     * @notice Thrown when the `ERC20.transfer` call fails.
-     * @dev    This is an identical redefinition of `SafeTransferLib.TransferFailed`.
-     */
-    error TransferFailed();
-
-    /**
      * @notice Thrown when the `ERC20.transferFrom` call fails.
      * @dev    This is an identical redefinition of `SafeTransferLib.TransferFromFailed`.
      */
@@ -143,7 +137,7 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Thrown when the deposit amount is less than the minimum deposit.
-     * @param  amount         The amount of tokens being deposited.
+     * @param  amount         The amount of fee tokens being deposited.
      * @param  minimumDeposit The minimum deposit amount.
      */
     error InsufficientDeposit(uint96 amount, uint96 minimumDeposit);
@@ -176,7 +170,7 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the payer registry is paused.
     error Paused();
 
-    /// @notice Thrown when there is no excess tokens to transfer to the fee distributor.
+    /// @notice Thrown when there is no excess fee tokens to transfer to the fee distributor.
     error NoExcess();
 
     /* ============ Initialization ============ */
@@ -189,16 +183,16 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /* ============ Interactive Functions ============ */
 
     /**
-     * @notice Deposits `amount_` tokens into the registry for `payer_`.
+     * @notice Deposits `amount_` fee tokens into the registry for `payer_`.
      * @param  payer_  The address of the payer.
-     * @param  amount_ The amount of tokens to deposit.
+     * @param  amount_ The amount of fee tokens to deposit.
      */
     function deposit(address payer_, uint96 amount_) external;
 
     /**
-     * @notice Deposits `amount_` tokens into the registry for `payer_`, given caller's signed approval.
+     * @notice Deposits `amount_` fee tokens into the registry for `payer_`, given caller's signed approval.
      * @param  payer_    The address of the payer.
-     * @param  amount_   The amount of tokens to deposit.
+     * @param  amount_   The amount of fee tokens to deposit.
      * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
      * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -214,21 +208,55 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     ) external;
 
     /**
-     * @notice Requests a withdrawal of `amount_` tokens.
-     * @param  amount_ The amount of tokens to withdraw.
+     * @notice Deposits `amount_` fee tokens into the registry for `payer_`, wrapping them from underlying fee tokens.
+     * @param  payer_  The address of the payer.
+     * @param  amount_ The amount of underlying tokens to deposit.
+     */
+    function depositFromUnderlying(address payer_, uint96 amount_) external;
+
+    /**
+     * @notice Deposits `amount_` fee tokens into the registry for `payer_`, wrapping them from underlying fee tokens,
+     *         given caller's signed approval.
+     * @param  payer_    The address of the payer.
+     * @param  amount_   The amount of underlying tokens to deposit.
+     * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
+     * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     */
+    function depositFromUnderlyingWithPermit(
+        address payer_,
+        uint96 amount_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external;
+
+    /**
+     * @notice Requests a withdrawal of `amount_` fee tokens.
+     * @param  amount_ The amount of fee tokens to withdraw.
      * @dev    The caller must have enough balance to cover the withdrawal.
      */
     function requestWithdrawal(uint96 amount_) external;
 
-    /// @notice Cancels a pending withdrawal of tokens, returning the amount to the balance.
+    /// @notice Cancels a pending withdrawal of fee tokens, returning the amount to the balance.
     function cancelWithdrawal() external;
 
     /**
-     * @notice Finalizes a pending withdrawal of tokens, transferring the amount to the recipient.
-     * @param  recipient_ The address to receive the withdrawn tokens.
+     * @notice Finalizes a pending withdrawal of fee tokens, transferring the amount to the recipient.
+     * @param  recipient_ The address to receive the fee tokens.
      * @dev    The caller must not be currently in debt.
      */
     function finalizeWithdrawal(address recipient_) external;
+
+    /**
+     * @notice Finalizes a pending withdrawal of fee tokens, unwrapping the amount into underlying tokens to the
+     *         recipient.
+     * @param  recipient_ The address to receive the underlying tokens.
+     * @dev    The caller must not be currently in debt.
+     */
+    function finalizeWithdrawalIntoUnderlying(address recipient_) external;
 
     /**
      * @notice Settles the usage fees for a list of payers.
@@ -290,8 +318,8 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
 
-    /// @notice The address of the token contract used for deposits and withdrawals.
-    function token() external view returns (address token_);
+    /// @notice The address of the fee token contract used for deposits and withdrawals.
+    function feeToken() external view returns (address feeToken_);
 
     /// @notice The address of the settler that can call `settleUsage`.
     function settler() external view returns (address settler_);

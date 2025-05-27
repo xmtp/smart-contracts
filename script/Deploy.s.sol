@@ -7,6 +7,7 @@ import { AppChainGatewayDeployer } from "./deployers/AppChainGatewayDeployer.sol
 import { AppChainParameterRegistryDeployer } from "./deployers/AppChainParameterRegistryDeployer.sol";
 import { DistributionManagerDeployer } from "./deployers/DistributionManagerDeployer.sol";
 import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
+import { FeeTokenDeployer } from "./deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
 import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
@@ -22,6 +23,7 @@ import { IAppChainGateway } from "../src/app-chain/interfaces/IAppChainGateway.s
 import { IAppChainParameterRegistry } from "../src/app-chain/interfaces/IAppChainParameterRegistry.sol";
 import { IDistributionManager } from "../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
+import { IFeeToken } from "../src/settlement-chain/interfaces/IFeeToken.sol";
 import { IGroupMessageBroadcaster } from "../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { INodeRegistry } from "../src/settlement-chain/interfaces/INodeRegistry.sol";
@@ -37,13 +39,13 @@ import {
 import { Utils } from "./utils/Utils.sol";
 
 contract DeployScripts is Script {
-    error AppChainNativeTokenNotSet();
     error DeployerNotSet();
     error EnvironmentContainsAppChainData();
     error EnvironmentContainsSettlementChainData();
     error EnvironmentContainsUnexpectedDeployer();
     error EnvironmentNotSet();
     error FactoryNotSet();
+    error FeeTokenProxyNotSet();
     error GatewayProxyNotSet();
     error ImplementationNotSet();
     error NodeRegistryProxyNotSet();
@@ -53,6 +55,7 @@ contract DeployScripts is Script {
     error PrivateKeyNotSet();
     error ProxyNotSet();
     error ProxySaltNotSet();
+    error UnderlyingFeeTokenNotSet();
     error UnexpectedChainId();
     error UnexpectedDeployer();
     error UnexpectedFactory();
@@ -101,6 +104,8 @@ contract DeployScripts is Script {
         uint256 blockNumber_ = block.number;
 
         deployFactory();
+        deployFeeTokenImplementation();
+        deployFeeTokenProxy();
         deploySettlementChainParameterRegistryImplementation();
         deploySettlementChainParameterRegistryProxy();
         deploySettlementChainGatewayImplementation();
@@ -149,8 +154,12 @@ contract DeployScripts is Script {
             revert("Settlement chain factory does not exist");
         }
 
-        if (vm.parseJsonAddress(json_, ".appChainNativeToken").code.length == 0) {
-            revert("Appchain native token does not exist");
+        if (vm.parseJsonAddress(json_, ".underlyingFeeToken").code.length == 0) {
+            revert("Underlying fee token does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".feeToken").code.length == 0) {
+            revert("Fee token does not exist");
         }
 
         if (vm.parseJsonAddress(json_, ".settlementChainParameterRegistry").code.length == 0) {
@@ -231,6 +240,58 @@ contract DeployScripts is Script {
         vm.stopBroadcast();
     }
 
+    function deployFeeTokenImplementation() public returns (address implementation_) {
+        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+        if (_deploymentData.underlyingFeeToken == address(0)) revert UnderlyingFeeTokenNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (implementation_, ) = FeeTokenDeployer.deployImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy,
+            _deploymentData.underlyingFeeToken
+        );
+
+        vm.stopBroadcast();
+
+        console.log("FeeToken Implementation: %s", implementation_);
+
+        if (implementation_ != _deploymentData.feeTokenImplementation) revert UnexpectedImplementation();
+
+        if (IFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedImplementation();
+        }
+
+        if (IFeeToken(implementation_).underlying() != _deploymentData.underlyingFeeToken) {
+            revert UnexpectedImplementation();
+        }
+    }
+
+    function deployFeeTokenProxy() public returns (address proxy_) {
+        if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.feeTokenProxySalt == 0) revert ProxySaltNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (proxy_, , ) = FeeTokenDeployer.deployProxy(
+            _deploymentData.factory,
+            _deploymentData.feeTokenImplementation,
+            _deploymentData.feeTokenProxySalt
+        );
+
+        vm.stopBroadcast();
+
+        console.log("FeeToken Proxy: %s", proxy_);
+
+        if (proxy_ != _deploymentData.feeTokenProxy) revert UnexpectedProxy();
+
+        if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) revert UnexpectedProxy();
+    }
+
     function deploySettlementChainParameterRegistryImplementation() public returns (address implementation_) {
         if (_deploymentData.settlementChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
@@ -293,7 +354,7 @@ contract DeployScripts is Script {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
         if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
-        if (_deploymentData.appChainNativeToken == address(0)) revert AppChainNativeTokenNotSet();
+        if (_deploymentData.feeTokenProxy == address(0)) revert FeeTokenProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
@@ -301,7 +362,7 @@ contract DeployScripts is Script {
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.gatewayProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         vm.stopBroadcast();
@@ -318,7 +379,7 @@ contract DeployScripts is Script {
             revert UnexpectedImplementation();
         }
 
-        if (ISettlementChainGateway(implementation_).appChainNativeToken() != _deploymentData.appChainNativeToken) {
+        if (ISettlementChainGateway(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
             revert UnexpectedImplementation();
         }
     }
@@ -354,14 +415,14 @@ contract DeployScripts is Script {
         if (_deploymentData.payerRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
-        if (_deploymentData.appChainNativeToken == address(0)) revert AppChainNativeTokenNotSet();
+        if (_deploymentData.feeTokenProxy == address(0)) revert FeeTokenProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
         (implementation_, ) = PayerRegistryDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         vm.stopBroadcast();
@@ -374,7 +435,7 @@ contract DeployScripts is Script {
             revert UnexpectedImplementation();
         }
 
-        if (IPayerRegistry(implementation_).token() != _deploymentData.appChainNativeToken) {
+        if (IPayerRegistry(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
             revert UnexpectedImplementation();
         }
     }
@@ -578,7 +639,7 @@ contract DeployScripts is Script {
         if (_deploymentData.nodeRegistryProxy == address(0)) revert NodeRegistryProxyNotSet();
         if (_deploymentData.payerReportManagerProxy == address(0)) revert PayerReportManagerProxyNotSet();
         if (_deploymentData.payerRegistryProxy == address(0)) revert PayerRegistryProxyNotSet();
-        if (_deploymentData.appChainNativeToken == address(0)) revert AppChainNativeTokenNotSet();
+        if (_deploymentData.feeTokenProxy == address(0)) revert FeeTokenProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
@@ -588,7 +649,7 @@ contract DeployScripts is Script {
             _deploymentData.nodeRegistryProxy,
             _deploymentData.payerReportManagerProxy,
             _deploymentData.payerRegistryProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         vm.stopBroadcast();
@@ -613,7 +674,7 @@ contract DeployScripts is Script {
             revert UnexpectedImplementation();
         }
 
-        if (IDistributionManager(implementation_).token() != _deploymentData.appChainNativeToken) {
+        if (IDistributionManager(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
             revert UnexpectedImplementation();
         }
     }
@@ -919,7 +980,8 @@ contract DeployScripts is Script {
         vm.serializeAddress("root", "settlementChainFactory", _deploymentData.factory);
         vm.serializeAddress("root", "settlementChainParameterRegistry", _deploymentData.parameterRegistryProxy);
         vm.serializeAddress("root", "settlementChainGateway", _deploymentData.gatewayProxy);
-        vm.serializeAddress("root", "appChainNativeToken", _deploymentData.appChainNativeToken);
+        vm.serializeAddress("root", "feeToken", _deploymentData.feeTokenProxy);
+        vm.serializeAddress("root", "underlyingFeeToken", _deploymentData.underlyingFeeToken);
         vm.serializeAddress("root", "distributionManager", _deploymentData.distributionManagerProxy);
         vm.serializeAddress("root", "nodeRegistry", _deploymentData.nodeRegistryProxy);
         vm.serializeAddress("root", "payerRegistry", _deploymentData.payerRegistryProxy);
@@ -980,7 +1042,8 @@ contract DeployScripts is Script {
             vm.keyExists(json_, ".settlementChainFactory") ||
             vm.keyExists(json_, ".settlementChainParameterRegistry") ||
             vm.keyExists(json_, ".settlementChainGateway") ||
-            vm.keyExists(json_, ".appChainNativeToken") ||
+            vm.keyExists(json_, ".feeToken") ||
+            vm.keyExists(json_, ".underlyingFeeToken") ||
             vm.keyExists(json_, ".distributionManager") ||
             vm.keyExists(json_, ".nodeRegistry") ||
             vm.keyExists(json_, ".payerRegistry") ||
