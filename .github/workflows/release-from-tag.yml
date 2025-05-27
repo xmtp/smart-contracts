@@ -2,12 +2,15 @@ name: Release from tag
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  pull_request:
 
 jobs:
   anvil-image:
-    name: Build and publish Anvil Docker image
+    name: Build (and publish) Anvil Docker image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,8 +37,12 @@ jobs:
         with:
           images: ghcr.io/xmtp/contracts
           tags: |
+            type=schedule
+            type=ref,event=branch
             type=ref,event=tag
-            type=semver,pattern={{version}}
+            type=ref,event=pr
+            type=sha
+            type=semver,pattern={{version}},event=tag
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -66,7 +73,14 @@ jobs:
           BUILD_TAG: ${{ github.ref_name }}
         run: dev/gen-artifacts
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ github.run_id }}
+          path: ./artifacts
+
       - name: Create GitHub Release with artifacts
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: ./artifacts/**/*
