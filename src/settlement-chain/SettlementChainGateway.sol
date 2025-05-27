@@ -9,11 +9,14 @@ import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { ParameterKeys } from "../libraries/ParameterKeys.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
-import { IAppChainGatewayLike, IERC20InboxLike } from "./interfaces/External.sol";
+import { IAppChainGatewayLike, IERC20InboxLike, IERC20Like, IFeeTokenLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: `depositWithPermit`,  `depositUnderlyingWithPermit`, and `sendParametersAsRetryableTicketsWithPermit`.
+// TODO: Some function `whenNotPaused`.
 
 /**
  * @title  Implementation for a Settlement Chain Gateway.
@@ -30,7 +33,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     address public immutable appChainGateway;
 
     /// @inheritdoc ISettlementChainGateway
-    address public immutable appChainNativeToken;
+    address public immutable feeToken;
+
+    /// @dev The address of the token underlying the fee token.
+    address internal immutable _underlyingFeeToken;
 
     /* ============ UUPS Storage ============ */
 
@@ -59,18 +65,20 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /**
      * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
-     * @param  parameterRegistry_   The address of the parameter registry.
-     * @param  appChainGateway_     The address of the app chain gateway.
-     * @param  appChainNativeToken_ The address of the token on the settlement chain that is used as native gas token on
-     *                              the app chain.
-     * @dev    The parameter registry, app chain gateway, and app chain native token must not be the zero address.
-     * @dev    The parameter registry, app chain gateway, and app chain native token are immutable so that they are
+     * @param  parameterRegistry_ The address of the parameter registry.
+     * @param  appChainGateway_   The address of the app chain gateway.
+     * @param  feeToken_          The address of the fee token on the settlement chain, that is used to pay for gas on
+     *                            app chains.
+     * @dev    The parameter registry, app chain gateway, and fee token must not be the zero address.
+     * @dev    The parameter registry, app chain gateway, and fee token are immutable so that they are
      *         inlined in the contract code, and have minimal gas cost.
      */
-    constructor(address parameterRegistry_, address appChainGateway_, address appChainNativeToken_) {
+    constructor(address parameterRegistry_, address appChainGateway_, address feeToken_) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(appChainGateway = appChainGateway_)) revert ZeroAppChainGateway();
-        if (_isZero(appChainNativeToken = appChainNativeToken_)) revert ZeroAppChainNativeToken();
+        if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
+
+        _underlyingFeeToken = IFeeTokenLike(feeToken).underlying();
 
         _disableInitializers();
     }
@@ -84,14 +92,17 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function deposit(uint256 chainId_, uint256 amount_) external {
-        address inbox_ = _getInbox(chainId_);
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
+        _deposit(chainId_, amount_);
+    }
 
-        _redirectFunds(inbox_, amount_);
-
-        uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
-
-        // slither-disable-next-line reentrancy-events
-        emit SenderFundsDeposited(chainId_, inbox_, messageNumber_, amount_);
+    /// @inheritdoc ISettlementChainGateway
+    function depositFromUnderlying(uint256 chainId_, uint256 amount_) external {
+        SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
+        IFeeTokenLike(feeToken).deposit(amount_);
+        _deposit(chainId_, amount_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -123,7 +134,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
-        uint256 nativeTokensToSend_
+        uint256 feeTokensToSend_
     ) external {
         if (chainIds_.length == 0) revert NoChainIds();
 
@@ -136,6 +147,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes memory data_ = _getEncodedParameters(nonce_, keys_);
         address appChainAlias_ = appChainAlias();
 
+        // TODO: Save gas by pulling the fee tokens from the caller once, then only approving individual inboxes to
+        //       spend them within the loop.
         for (uint256 index_; index_ < chainIds_.length; ++index_) {
             _sendParametersAsRetryableTicket({
                 chainId_: chainIds_[index_],
@@ -143,7 +156,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 gasLimit_: gasLimit_,
                 gasPrice_: gasPrice_,
                 maxSubmissionCost_: maxSubmissionCost_,
-                nativeTokensToSend_: nativeTokensToSend_,
+                feeTokensToSend_: feeTokensToSend_,
                 data_: data_,
                 nonce_: nonce_,
                 appChainAlias_: appChainAlias_
@@ -165,6 +178,32 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc IMigratable
     function migrate() external {
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function withdraw(address recipient_) external returns (uint256 amount_) {
+        // NOTE: It is safe to just send/withdraw the the balance, as this contract should only hold fee tokens if it
+        //       was sent them right before this function is called.
+        amount_ = IERC20Like(feeToken).balanceOf(address(this));
+
+        emit Withdrawal(amount_, recipient_);
+
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, amount_);
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function withdrawIntoUnderlying(address recipient_) external returns (uint256 amount_) {
+        // NOTE: It is safe to just send/withdraw the the balance, as this contract should only hold fee tokens if it
+        //       was sent them right before this function is called.
+        amount_ = IERC20Like(feeToken).balanceOf(address(this));
+
+        emit Withdrawal(amount_, recipient_);
+
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, amount_);
     }
 
     /* ============ View/Pure Functions ============ */
@@ -191,10 +230,18 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /* ============ Internal Interactive Functions ============ */
 
-    /// @dev Pulls and amount of tokens from the caller, and approves some inbox to spend them.
-    function _redirectFunds(address inbox_, uint256 amount_) internal {
-        SafeTransferLib.safeTransferFrom(appChainNativeToken, msg.sender, address(this), amount_);
-        SafeTransferLib.safeApprove(appChainNativeToken, inbox_, amount_);
+    /// @dev Deposits fee tokens into an inbox, to be used as native gas token on the app chain.
+    function _deposit(uint256 chainId_, uint256 amount_) internal {
+        address inbox_ = _getInbox(chainId_);
+
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IERC20Like(feeToken).approve(inbox_, amount_);
+
+        uint256 messageNumber_ = IERC20InboxLike(inbox_).depositERC20(amount_);
+
+        // slither-disable-next-line reentrancy-events
+        emit Deposit(chainId_, inbox_, messageNumber_, amount_);
     }
 
     /// @dev Sends parameters to the app chain via a contract transaction.
@@ -228,16 +275,22 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
-        uint256 nativeTokensToSend_,
+        uint256 feeTokensToSend_,
         bytes memory data_,
         uint256 nonce_,
         address appChainAlias_
     ) internal {
         address inbox_ = _getInbox(chainId_);
 
-        _redirectFunds(inbox_, nativeTokensToSend_);
+        // slither-disable-start calls-loop
+        // Pull the fee token from the caller, then approve the inbox to spend them.
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transferFrom(msg.sender, address(this), feeTokensToSend_);
 
-        // slither-disable-next-line calls-loop
+        // slither-disable-next-line unused-return
+        IERC20Like(feeToken).approve(inbox_, feeTokensToSend_);
+
         uint256 messageNumber_ = IERC20InboxLike(inbox_).createRetryableTicket({
             to_: appChainGateway,
             l2CallValue_: 0,
@@ -246,9 +299,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             callValueRefundAddress_: appChainAlias_,
             gasLimit_: gasLimit_,
             maxFeePerGas_: gasPrice_,
-            tokenTotalFeeAmount_: nativeTokensToSend_,
+            tokenTotalFeeAmount_: feeTokensToSend_,
             data_: data_
         });
+        // slither-disable-end calls-loop
 
         // slither-disable-next-line reentrancy-events
         emit ParametersSent(chainId_, inbox_, messageNumber_, nonce_, keys_);

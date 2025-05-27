@@ -109,7 +109,7 @@ contract ParameterScripts is Script {
         updateRateRegistryStartingParameters();
     }
 
-    function bridgeBroadcasterPayloadSizeParameters() external {
+    function bridgeBroadcasterPayloadSizeParameters(uint256[] calldata chainIds_) external {
         if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -119,21 +119,18 @@ contract ParameterScripts is Script {
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
-        address[] memory inboxes_ = new address[](1);
-        inboxes_[0] = _deploymentData.settlementChainInboxToAppchain;
-
         vm.startBroadcast(_privateKey);
 
         // TODO: Either compute/estimate the values or use a more flexible approach via the config file.
 
-        if (IERC20Like(_deploymentData.appChainNativeToken).balanceOf(_admin) < 1_000000) {
+        if (IERC20Like(_deploymentData.feeTokenProxy).balanceOf(_admin) < 1_000000) {
             revert InsufficientBalance();
         }
 
-        IERC20Like(_deploymentData.appChainNativeToken).approve(_deploymentData.gatewayProxy, 1_000000); // 1 USDC
+        IERC20Like(_deploymentData.feeTokenProxy).approve(_deploymentData.gatewayProxy, 1_000000); // 1 USDC
 
         ISettlementChainGateway(_deploymentData.gatewayProxy).sendParametersAsRetryableTickets(
-            inboxes_,
+            chainIds_,
             keys_,
             400_000,
             2_000_000_000, // 2 gwei

@@ -8,6 +8,12 @@ pragma solidity 0.8.28;
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IERC20Like {
+    function approve(address spender_, uint256 amount_) external returns (bool success_);
+
+    function transfer(address recipient_, uint256 amount_) external returns (bool success_);
+
+    function transferFrom(address sender_, address recipient_, uint256 amount_) external returns (bool success_);
+
     function balanceOf(address account) external view returns (uint256 balance);
 }
 
@@ -145,4 +151,16 @@ interface IPermitErc20Like {
         bytes32 r_,
         bytes32 s_
     ) external;
+}
+
+/**
+ * @title  Subset interface for a FeeToken.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface IFeeTokenLike {
+    function deposit(uint256 amount_) external;
+
+    function withdrawTo(address recipient_, uint256 amount_) external returns (bool success_);
+
+    function underlying() external view returns (address underlying_);
 }

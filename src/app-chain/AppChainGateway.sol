@@ -7,10 +7,12 @@ import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
-import { IArbSysLike } from "./interfaces/External.sol";
+import { IArbSysLike, ISettlementChainGatewayLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: Some function `whenNotPaused`.
 
 /**
  * @title  Implementation for an App Chain Gateway.
@@ -92,13 +94,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IAppChainGateway
     function withdraw(address recipient_) external payable {
-        if (_isZero(recipient_)) revert ZeroRecipient();
-        if (msg.value == 0) revert ZeroWithdrawalAmount();
+        _withdraw(recipient_, ISettlementChainGatewayLike.withdraw.selector);
+    }
 
-        IArbSysLike(_ARB_SYS).withdrawEth{ value: msg.value }(recipient_);
-
-        // slither-disable-next-line reentrancy-events
-        emit Withdrawal(msg.sender, recipient_, msg.value);
+    /// @inheritdoc IAppChainGateway
+    function withdrawIntoUnderlying(address recipient_) external payable {
+        _withdraw(recipient_, ISettlementChainGatewayLike.withdrawIntoUnderlying.selector);
     }
 
     /// @inheritdoc IAppChainGateway
@@ -136,6 +137,21 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /// @inheritdoc IAppChainGateway
     function migratorParameterKey() public pure virtual returns (bytes memory key_) {
         return "xmtp.appChainGateway.migrator";
+    }
+
+    /* ============ Internal Interactive Functions ============ */
+
+    function _withdraw(address recipient_, bytes4 selector_) internal {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+        if (msg.value == 0) revert ZeroWithdrawalAmount();
+
+        uint256 messageId_ = IArbSysLike(_ARB_SYS).sendTxToL1{ value: msg.value }(
+            settlementChainGateway,
+            abi.encodeWithSelector(selector_, recipient_)
+        );
+
+        // slither-disable-next-line reentrancy-events
+        emit Withdrawal(msg.sender, messageId_, recipient_, msg.value);
     }
 
     /* ============ Internal View/Pure Functions ============ */

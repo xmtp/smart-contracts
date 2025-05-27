@@ -31,16 +31,16 @@ contract SettlementChainGatewayTests is Test {
     address internal _implementation;
 
     address internal _appChainGateway = makeAddr("appChainGateway");
-    address internal _appChainNativeToken = makeAddr("appChainNativeToken");
+    address internal _feeToken = makeAddr("feeToken");
     address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _underlyingFeeToken = makeAddr("underlyingFeeToken");
 
     address internal _alice = makeAddr("alice");
 
     function setUp() external {
-        _implementation = address(
-            new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, _appChainNativeToken)
-        );
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("underlying()"), abi.encode(_underlyingFeeToken));
 
+        _implementation = address(new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, _feeToken));
         _gateway = SettlementChainGatewayHarness(address(new Proxy(_implementation)));
 
         _gateway.initialize();
@@ -55,11 +55,11 @@ contract SettlementChainGatewayTests is Test {
 
     function test_constructor_zeroAppChainGateway() external {
         vm.expectRevert(ISettlementChainGateway.ZeroAppChainGateway.selector);
-        new SettlementChainGatewayHarness(_parameterRegistry, address(0), _appChainNativeToken);
+        new SettlementChainGatewayHarness(_parameterRegistry, address(0), _feeToken);
     }
 
-    function test_constructor_zeroAppChainNativeToken() external {
-        vm.expectRevert(ISettlementChainGateway.ZeroAppChainNativeToken.selector);
+    function test_constructor_zeroFeeToken() external {
+        vm.expectRevert(ISettlementChainGateway.ZeroFeeToken.selector);
         new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, address(0));
     }
 
@@ -79,71 +79,55 @@ contract SettlementChainGatewayTests is Test {
         assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.appChainGateway(), _appChainGateway);
-        assertEq(_gateway.appChainNativeToken(), _appChainNativeToken);
+        assertEq(_gateway.feeToken(), _feeToken);
         assertEq(_gateway.__getNonce(), 0);
+        assertEq(_gateway.__getUnderlyingFeeToken(), _underlyingFeeToken);
     }
 
     /* ============ deposit ============ */
 
-    function test_deposit_unsupportedChainId() external {
-        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
-        _gateway.deposit(1111, 100);
-    }
-
-    function test_deposit_transferFailed_tokenReturnsFalse() external {
-        _gateway.__setInbox(1111, makeAddr("inbox"));
-
-        vm.mockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
-            abi.encode(false)
-        );
-
-        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
-
-        vm.prank(_alice);
-        _gateway.deposit(1111, 100);
-    }
-
-    function test_deposit_transferFailed_tokenReverts() external {
+    function test_deposit_feeTokenTransferFailed_reverts() external {
         _gateway.__setInbox(1111, makeAddr("inbox"));
 
         vm.mockCallRevert(
-            _appChainNativeToken,
+            _feeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
             ""
         );
 
-        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+        vm.expectRevert();
 
         vm.prank(_alice);
         _gateway.deposit(1111, 100);
     }
 
-    function test_deposit_approveFailed_tokenReturnsFalse() external {
+    function test_deposit_unsupportedChainId() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.deposit(1111, 100);
+    }
+
+    function test_deposit_feeTokenApproveFailed_reverts() external {
         address inbox_ = makeAddr("inbox");
 
         _gateway.__setInbox(1111, inbox_);
 
         vm.mockCall(
-            _appChainNativeToken,
-            abi.encodeWithSignature("approve(address,uint256)", inbox_, 100),
-            abi.encode(false)
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
         );
 
-        vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
 
-        _gateway.deposit(1111, 100);
-    }
-
-    function test_deposit_approveFailed_tokenReverts() external {
-        address inbox_ = makeAddr("inbox");
-
-        _gateway.__setInbox(1111, inbox_);
-
-        vm.mockCallRevert(_appChainNativeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
-
-        vm.expectRevert(ISettlementChainGateway.ApproveFailed.selector);
+        vm.expectRevert();
 
         _gateway.deposit(1111, 100);
     }
@@ -154,13 +138,13 @@ contract SettlementChainGatewayTests is Test {
         _gateway.__setInbox(1111, inbox_);
 
         Utils.expectAndMockCall(
-            _appChainNativeToken,
+            _feeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
             abi.encode(true)
         );
 
         Utils.expectAndMockCall(
-            _appChainNativeToken,
+            _feeToken,
             abi.encodeWithSignature("approve(address,uint256)", inbox_, 100),
             abi.encode(true)
         );
@@ -168,10 +152,122 @@ contract SettlementChainGatewayTests is Test {
         Utils.expectAndMockCall(inbox_, abi.encodeWithSignature("depositERC20(uint256)", 100), abi.encode(11));
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.SenderFundsDeposited(1111, inbox_, 11, 100);
+        emit ISettlementChainGateway.Deposit(1111, inbox_, 11, 100);
 
         vm.prank(_alice);
         _gateway.deposit(1111, 100);
+    }
+
+    /* ============ depositFromUnderlying ============ */
+
+    function test_depositFromUnderlying_underlyingTokenTransferFailed_returnsFalse() external {
+        _gateway.__setInbox(1111, makeAddr("inbox"));
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying_underlyingTokenTransferFailed_reverts() external {
+        _gateway.__setInbox(1111, makeAddr("inbox"));
+
+        vm.mockCallRevert(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying_feeTokenDepositFailed_reverts() external {
+        _gateway.__setInbox(1111, makeAddr("inbox"));
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying_unsupportedChainId() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying_feeTokenApproveFailed_reverts() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
+
+        vm.expectRevert();
+
+        _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("approve(address,uint256)", inbox_, 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(inbox_, abi.encodeWithSignature("depositERC20(uint256)", 100), abi.encode(11));
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Deposit(1111, inbox_, 11, 100);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 100);
     }
 
     /* ============ sendParameters ============ */
@@ -305,13 +401,13 @@ contract SettlementChainGatewayTests is Test {
 
         for (uint256 index_; index_ < chainIds_.length; ++index_) {
             Utils.expectAndMockCall(
-                _appChainNativeToken,
+                _feeToken,
                 abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
                 abi.encode(true)
             );
 
             Utils.expectAndMockCall(
-                _appChainNativeToken,
+                _feeToken,
                 abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
                 abi.encode(true)
             );
@@ -381,6 +477,72 @@ contract SettlementChainGatewayTests is Test {
         assertEq(_gateway.__getInbox(1111), address(0));
     }
 
+    /* ============ withdraw ============ */
+
+    function test_withdraw_feeTokenTransferFailed_reverts() external {
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("transfer(address,uint256)", _alice, 100), "");
+
+        vm.expectRevert();
+
+        _gateway.withdraw(_alice);
+    }
+
+    function test_withdraw() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("balanceOf(address)", address(_gateway)),
+            abi.encode(100)
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 100),
+            abi.encode(true)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Withdrawal(100, _alice);
+
+        uint256 amount_ = _gateway.withdraw(_alice);
+
+        assertEq(amount_, 100);
+    }
+
+    /* ============ withdrawIntoUnderlying ============ */
+
+    function test_withdrawIntoUnderlying_feeTokenWithdrawToFailed_reverts() external {
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("withdrawTo(address,uint256)", _alice, 100), "");
+
+        vm.expectRevert();
+
+        _gateway.withdrawIntoUnderlying(_alice);
+    }
+
+    function test_withdrawIntoUnderlying() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("balanceOf(address)", address(_gateway)),
+            abi.encode(100)
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("withdrawTo(address,uint256)", _alice, 100),
+            abi.encode(true)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Withdrawal(100, _alice);
+
+        uint256 amount_ = _gateway.withdrawIntoUnderlying(_alice);
+
+        assertEq(amount_, 100);
+    }
+
     /* ============ migrate ============ */
 
     function test_migrate_parameterOutOfTypeBounds() external {
@@ -430,10 +592,12 @@ contract SettlementChainGatewayTests is Test {
     function test_migrate() external {
         address newParameterRegistry_ = makeAddr("newParameterRegistry");
         address newAppChainGateway_ = makeAddr("newAppChainGateway");
-        address newAppChainNativeToken_ = makeAddr("newAppChainNativeToken");
+        address newFeeToken_ = makeAddr("newFeeToken");
+
+        Utils.expectAndMockCall(newFeeToken_, abi.encodeWithSignature("underlying()"), abi.encode(_underlyingFeeToken));
 
         address newImplementation_ = address(
-            new SettlementChainGatewayHarness(newParameterRegistry_, newAppChainGateway_, newAppChainNativeToken_)
+            new SettlementChainGatewayHarness(newParameterRegistry_, newAppChainGateway_, newFeeToken_)
         );
 
         address migrator_ = address(new MockMigrator(newImplementation_));
@@ -455,7 +619,7 @@ contract SettlementChainGatewayTests is Test {
         assertEq(Utils.getImplementationFromSlot(address(_gateway)), newImplementation_);
         assertEq(_gateway.parameterRegistry(), newParameterRegistry_);
         assertEq(_gateway.appChainGateway(), newAppChainGateway_);
-        assertEq(_gateway.appChainNativeToken(), newAppChainNativeToken_);
+        assertEq(_gateway.feeToken(), newFeeToken_);
     }
 
     /* ============ getInbox ============ */

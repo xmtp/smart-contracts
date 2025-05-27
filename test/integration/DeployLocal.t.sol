@@ -7,13 +7,13 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
+import { IFeeToken } from "../../src/settlement-chain/interfaces/IFeeToken.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
-import { ISettlementChainGateway } from "../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 
 import {
     ISettlementChainParameterRegistry
@@ -23,13 +23,13 @@ import {
 
 import { DistributionManagerDeployer } from "../../script/deployers/DistributionManagerDeployer.sol";
 import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
+import { FeeTokenDeployer } from "../../script/deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
 import { NodeRegistryDeployer } from "../../script/deployers/NodeRegistryDeployer.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 import { PayerReportManagerDeployer } from "../../script/deployers/PayerReportManagerDeployer.sol";
 import { RateRegistryDeployer } from "../../script/deployers/RateRegistryDeployer.sol";
-import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
 
 import {
     SettlementChainParameterRegistryDeployer
@@ -39,7 +39,7 @@ import {
 
 import { IERC20Like } from "./Interfaces.sol";
 
-/* ============ Test Mock Imports ============ */
+/* ============ Mock Imports ============ */
 
 import { MockERC20 } from "../utils/Mocks.sol";
 
@@ -85,22 +85,22 @@ contract DeployLocalTests is Test {
 
     uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
-    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
-    bytes32 internal constant _GATEWAY_PROXY_SALT = "Gateway_0";
+    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
+    bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "FeeToken_0";
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
-    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
-    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
     bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
+    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
+    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
     bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "PayerReportManager_0";
-    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
+    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
 
     address internal _deployer;
 
     address internal _admin = makeAddr("admin");
     address internal _alice = makeAddr("alice");
 
-    MockERC20 internal _appChainNativeToken;
+    MockERC20 internal _underlyingFeeToken;
 
     IFactory internal _factory;
 
@@ -119,6 +119,8 @@ contract DeployLocalTests is Test {
 
     IDistributionManager internal _distributionManagerProxy;
 
+    IFeeToken internal _feeTokenProxy;
+
     function setUp() external {
         // Get the deployer address from the environment variable, which will produce addresses that can be expected in
         // a local deployment. If not set, make a deployer address.
@@ -129,8 +131,8 @@ contract DeployLocalTests is Test {
         // Deploy the Factory.
         _factory = _deployFactory();
 
-        // Deploy the Appchain Native Token (must be done after the factory to ensure factory address).
-        _appChainNativeToken = _deployAppchainNativeToken();
+        // Deploy the underlying fee token.
+        _underlyingFeeToken = _deployUnderlyingFeeToken();
 
         // Deploy the Parameter Registry.
         address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
@@ -141,10 +143,18 @@ contract DeployLocalTests is Test {
             _admin
         );
 
+        // Deploy the Fee Token.
+        address feeTokenImplementation_ = _deployFeeTokenImplementation(
+            address(_parameterRegistryProxy),
+            address(_underlyingFeeToken)
+        );
+
+        _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
+
         // Deploy the Payer Registry.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
             address(_parameterRegistryProxy),
-            address(_appChainNativeToken)
+            address(_feeTokenProxy)
         );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
@@ -174,7 +184,7 @@ contract DeployLocalTests is Test {
             address(_nodeRegistryProxy),
             address(_payerReportManagerProxy),
             address(_payerRegistryProxy),
-            address(_appChainNativeToken)
+            address(_feeTokenProxy)
         );
 
         _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
@@ -222,11 +232,11 @@ contract DeployLocalTests is Test {
         vm.stopPrank();
     }
 
-    /* ============ Appchain Native Token Helpers ============ */
+    /* ============ Underlying Fee Token Helpers ============ */
 
-    function _deployAppchainNativeToken() internal returns (MockERC20 token_) {
+    function _deployUnderlyingFeeToken() internal returns (MockERC20 token_) {
         vm.startPrank(_deployer);
-        token_ = new MockERC20("Appchain Native Token", "ANT");
+        token_ = new MockERC20("Underlying Fee Token", "UFT");
         vm.stopPrank();
     }
 
@@ -258,6 +268,30 @@ contract DeployLocalTests is Test {
 
         assertEq(registry_.implementation(), implementation_);
         assertTrue(registry_.isAdmin(admin_));
+    }
+
+    /* ============ Fee Token Helpers ============ */
+
+    function _deployFeeTokenImplementation(
+        address parameterRegistry_,
+        address underlying_
+    ) internal returns (address implementation_) {
+        vm.startPrank(_deployer);
+        (implementation_, ) = FeeTokenDeployer.deployImplementation(address(_factory), parameterRegistry_, underlying_);
+        vm.stopPrank();
+
+        assertEq(IFeeToken(implementation_).parameterRegistry(), parameterRegistry_);
+        assertEq(IFeeToken(implementation_).underlying(), underlying_);
+    }
+
+    function _deployFeeTokenProxy(address implementation_) internal returns (IFeeToken feeToken_) {
+        vm.startPrank(_deployer);
+        (address proxy_, , ) = FeeTokenDeployer.deployProxy(address(_factory), implementation_, _FEE_TOKEN_PROXY_SALT);
+        vm.stopPrank();
+
+        feeToken_ = IFeeToken(proxy_);
+
+        assertEq(feeToken_.implementation(), implementation_);
     }
 
     /* ============ Group Message Broadcaster Helpers ============ */
@@ -395,14 +429,18 @@ contract DeployLocalTests is Test {
 
     function _deployPayerRegistryImplementation(
         address parameterRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_) {
         vm.startPrank(_deployer);
-        (implementation_, ) = PayerRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_, token_);
+        (implementation_, ) = PayerRegistryDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_,
+            feeToken_
+        );
         vm.stopPrank();
 
         assertEq(IPayerRegistry(implementation_).parameterRegistry(), parameterRegistry_);
-        assertEq(IPayerRegistry(implementation_).token(), token_);
+        assertEq(IPayerRegistry(implementation_).feeToken(), feeToken_);
     }
 
     function _deployPayerRegistryProxy(address implementation_) internal returns (IPayerRegistry registry_) {
@@ -610,7 +648,7 @@ contract DeployLocalTests is Test {
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_) {
         vm.startPrank(_deployer);
         (implementation_, ) = DistributionManagerDeployer.deployImplementation(
@@ -619,7 +657,7 @@ contract DeployLocalTests is Test {
             nodeRegistry_,
             payerReportManager_,
             payerRegistry_,
-            token_
+            feeToken_
         );
         vm.stopPrank();
 
@@ -627,7 +665,7 @@ contract DeployLocalTests is Test {
         assertEq(IDistributionManager(implementation_).nodeRegistry(), nodeRegistry_);
         assertEq(IDistributionManager(implementation_).payerReportManager(), payerReportManager_);
         assertEq(IDistributionManager(implementation_).payerRegistry(), payerRegistry_);
-        assertEq(IDistributionManager(implementation_).token(), token_);
+        assertEq(IDistributionManager(implementation_).feeToken(), feeToken_);
     }
 
     function _deployDistributionManagerProxy(
@@ -648,8 +686,8 @@ contract DeployLocalTests is Test {
 
     /* ============ Token Helpers ============ */
 
-    function _giveAppchainNativeTokens(address recipient_, uint256 amount_) internal {
-        _appChainNativeToken.mint(recipient_, amount_);
+    function _giveUnderlying(address recipient_, uint256 amount_) internal {
+        _underlyingFeeToken.mint(recipient_, amount_);
     }
 
     function _approveTokens(address token_, address account_, address spender_, uint256 amount_) internal {

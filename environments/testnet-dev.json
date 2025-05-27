@@ -3,10 +3,10 @@
   "appChainFactory": "0xeC7a8cf14FA757BAeC8B948444f7E1931ebB0A03",
   "appChainGateway": "0x323454f0Ca2101C776CA822A913b9a1a897b6C44",
   "appChainId": 241320161,
-  "appChainNativeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "appChainParameterRegistry": "0xedDf03cfAB0756939BF62c129Ebd48ab9D142388",
   "deployer": "0xBC0d5ADdb45E3F5b37806cacf9112C16a54414a8",
   "distributionManager": "0xCAdaC2439CEb7125b11a482Ab3AEe7dEB78279DA",
+  "feeToken": "TODO",
   "groupMessageBroadcaster": "0x3e1093E91Cde49736841B2413ca1f1094e030F6F",
   "identityUpdateBroadcaster": "0x0A6A935837b4a2038d8fEce99cd5741545248F5A",
   "nodeRegistry": "0xD651849b326b01EBC67527C6570B20103DF7d4E0",
@@ -17,5 +17,6 @@
   "settlementChainFactory": "0xeC7a8cf14FA757BAeC8B948444f7E1931ebB0A03",
   "settlementChainGateway": "0x323454f0Ca2101C776CA822A913b9a1a897b6C44",
   "settlementChainId": 84532,
-  "settlementChainParameterRegistry": "0xedDf03cfAB0756939BF62c129Ebd48ab9D142388"
+  "settlementChainParameterRegistry": "0xedDf03cfAB0756939BF62c129Ebd48ab9D142388",
+  "underlyingFeeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 }

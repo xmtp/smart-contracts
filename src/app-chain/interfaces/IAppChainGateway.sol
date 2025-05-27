@@ -23,10 +23,11 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when funds are withdrawn from the app chain.
      * @param  account   The address of the account that withdrew the funds.
+     * @param  messageId The message ID of the withdrawal.
      * @param  recipient The address to which the funds will be delivered to on the settlement chain.
      * @param  amount    The amount of funds withdrawn.
      */
-    event Withdrawal(address indexed account, address indexed recipient, uint256 amount);
+    event Withdrawal(address indexed account, uint256 indexed messageId, address indexed recipient, uint256 amount);
 
     /* ============ Custom Errors ============ */
 
@@ -57,6 +58,12 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  recipient_ The address to which the funds will be delivered to on the settlement chain.
      */
     function withdraw(address recipient_) external payable;
+
+    /**
+     * @notice Withdraws funds from the app chain to the settlement chain, unwrapped as underlying token.
+     * @param  recipient_ The address to which the funds will be delivered to on the settlement chain.
+     */
+    function withdrawIntoUnderlying(address recipient_) external payable;
 
     /**
      * @notice Receives parameters from the settlement chain.

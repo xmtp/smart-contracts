@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
-import { IERC20Like, INodeRegistryLike, IPayerRegistryLike, IPayerReportManagerLike } from "./interfaces/External.sol";
+import {
+    IERC20Like,
+    IFeeTokenLike,
+    INodeRegistryLike,
+    IPayerRegistryLike,
+    IPayerReportManagerLike
+} from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
+
+// TODO: Some function `whenNotPaused`.
 
 /**
  * @title  Implementation of the Distribution Manager.
@@ -36,7 +42,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     address public immutable payerRegistry;
 
     /// @inheritdoc IDistributionManager
-    address public immutable token;
+    address public immutable feeToken;
 
     /* ============ UUPS Storage ============ */
 
@@ -45,7 +51,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
      * @notice The UUPS storage for the distribution manager.
      */
     struct DistributionManagerStorage {
-        address protocolFeesDestination;
+        address protocolFeesRecipient;
         uint96 owedProtocolFees;
         mapping(uint32 originatorNodeId => mapping(uint256 payerReportIndex => bool areClaimed)) areProtocolFeesClaimed;
         mapping(uint32 nodeId => uint96 owedFees) owedFees;
@@ -72,10 +78,10 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
      * @param  nodeRegistry_       The address of the node registry.
      * @param  payerReportManager_ The address of the payer report manager.
      * @param  payerRegistry_      The address of the payer registry.
-     * @param  token_              The address of the token.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token must not be the
-     *         zero address.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token are immutable so
+     * @param  feeToken_           The address of the fee token.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token must not be
+     *         the zero address.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token are immutable
      *         that they are inlined in the contract code, and have minimal gas cost.
      */
     constructor(
@@ -83,13 +89,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(nodeRegistry = nodeRegistry_)) revert ZeroNodeRegistry();
         if (_isZero(payerReportManager = payerReportManager_)) revert ZeroPayerReportManager();
         if (_isZero(payerRegistry = payerRegistry_)) revert ZeroPayerRegistry();
-        if (_isZero(token = token_)) revert ZeroToken();
+        if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
 
         _disableInitializers();
     }
@@ -203,49 +209,34 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IDistributionManager
     function withdrawProtocolFees() external returns (uint96 withdrawn_) {
-        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+        address recipient_ = _getDistributionManagerStorage().protocolFeesRecipient;
 
-        uint96 owedProtocolFees_ = $.owedProtocolFees;
-
-        withdrawn_ = _makeWithdrawableAmount(owedProtocolFees_);
-
-        unchecked {
-            // `withdrawn_` is less than or equal to `owedProtocolFees_`.
-            $.owedProtocolFees = owedProtocolFees_ - withdrawn_;
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit ProtocolFeesWithdrawal(withdrawn_);
-
-        address protocolFeesDestination_ = $.protocolFeesDestination;
-
-        if (_isZero(protocolFeesDestination_)) revert ZeroProtocolFeesDestination();
-
-        SafeTransferLib.safeTransfer(token, protocolFeesDestination_, withdrawn_);
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareProtocolFeesWithdrawal(recipient_));
     }
 
     /// @inheritdoc IDistributionManager
-    function withdraw(uint32 nodeId_, address destination_) external returns (uint96 withdrawn_) {
-        if (_isZero(destination_)) revert ZeroDestination();
+    function withdrawProtocolFeesIntoUnderlying() external returns (uint96 withdrawn_) {
+        address recipient_ = _getDistributionManagerStorage().protocolFeesRecipient;
 
-        _revertIfNotNodeOwner(nodeId_);
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, withdrawn_ = _prepareProtocolFeesWithdrawal(recipient_));
+    }
 
-        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+    /// @inheritdoc IDistributionManager
+    function withdraw(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
+    }
 
-        uint96 owedFees_ = $.owedFees[nodeId_];
-
-        withdrawn_ = _makeWithdrawableAmount(owedFees_);
-
-        unchecked {
-            // `withdrawn_` is less than or equal to `owedFees_`, and `totalOwedFees` is the sum of all `owedFees`.
-            $.owedFees[nodeId_] = owedFees_ - withdrawn_;
-            $.totalOwedFees -= withdrawn_;
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit Withdrawal(nodeId_, withdrawn_);
-
-        SafeTransferLib.safeTransfer(token, destination_, withdrawn_);
+    /// @inheritdoc IDistributionManager
+    function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
     }
 
     /// @inheritdoc IMigratable
@@ -254,17 +245,17 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
-    function updateProtocolFeesDestination() external {
-        address protocolFeesDestination_ = RegistryParameters.getAddressParameter(
+    function updateProtocolFeesRecipient() external {
+        address protocolFeesRecipient_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
-            protocolFeesDestinationParameterKey()
+            protocolFeesRecipientParameterKey()
         );
 
         DistributionManagerStorage storage $ = _getDistributionManagerStorage();
 
-        if ($.protocolFeesDestination == protocolFeesDestination_) revert NoChange();
+        if ($.protocolFeesRecipient == protocolFeesRecipient_) revert NoChange();
 
-        emit ProtocolFeesDestinationUpdated($.protocolFeesDestination = protocolFeesDestination_);
+        emit ProtocolFeesRecipientUpdated($.protocolFeesRecipient = protocolFeesRecipient_);
     }
 
     /* ============ View/Pure Functions ============ */
@@ -275,13 +266,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
-    function protocolFeesDestinationParameterKey() public pure returns (bytes memory key_) {
-        return "xmtp.distributionManager.protocolFeesDestination";
+    function protocolFeesRecipientParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.distributionManager.protocolFeesRecipient";
     }
 
     /// @inheritdoc IDistributionManager
-    function protocolFeesDestination() external view returns (address protocolFeesDestination_) {
-        return _getDistributionManagerStorage().protocolFeesDestination;
+    function protocolFeesRecipient() external view returns (address protocolFeesRecipient_) {
+        return _getDistributionManagerStorage().protocolFeesRecipient;
     }
 
     /// @inheritdoc IDistributionManager
@@ -327,7 +318,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     function _makeWithdrawableAmount(uint96 owed_) internal returns (uint96 withdrawable_) {
         if (owed_ == 0) revert NoFeesOwed();
 
-        uint96 available_ = uint96(IERC20Like(token).balanceOf(address(this)));
+        uint96 available_ = uint96(IERC20Like(feeToken).balanceOf(address(this)));
 
         if (owed_ > available_) {
             unchecked {
@@ -340,6 +331,47 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
         // Only up to what is available is withdrawable.
         return available_ >= owed_ ? owed_ : available_;
+    }
+
+    /// @dev Prepares a withdrawal of fee tokens, and returns the amount of fee tokens being withdrawn.
+    function _prepareWithdrawal(uint32 nodeId_, address recipient_) internal returns (uint96 withdrawn_) {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+
+        _revertIfNotNodeOwner(nodeId_);
+
+        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+
+        uint96 owedFees_ = $.owedFees[nodeId_];
+
+        withdrawn_ = _makeWithdrawableAmount(owedFees_);
+
+        unchecked {
+            // `withdrawn_` is less than or equal to `owedFees_`, and `totalOwedFees` is the sum of all `owedFees`.
+            $.owedFees[nodeId_] = owedFees_ - withdrawn_;
+            $.totalOwedFees -= withdrawn_;
+        }
+
+        // slither-disable-next-line reentrancy-events
+        emit Withdrawal(nodeId_, withdrawn_);
+    }
+
+    /// @dev Prepares a protocol fees withdrawal of fee tokens, and returns the amount of fee tokens being withdrawn.
+    function _prepareProtocolFeesWithdrawal(address recipient_) internal returns (uint96 withdrawn_) {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+
+        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+
+        uint96 owedProtocolFees_ = $.owedProtocolFees;
+
+        withdrawn_ = _makeWithdrawableAmount(owedProtocolFees_);
+
+        unchecked {
+            // `withdrawn_` is less than or equal to `owedProtocolFees_`.
+            $.owedProtocolFees = owedProtocolFees_ - withdrawn_;
+        }
+
+        // slither-disable-next-line reentrancy-events
+        emit ProtocolFeesWithdrawal(withdrawn_);
     }
 
     /* ============ Internal View/Pure Functions ============ */

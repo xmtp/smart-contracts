@@ -111,7 +111,7 @@ contract FeeTokenTests is Test {
         _token.deposit(0);
     }
 
-    function test_deposit_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_deposit_underlyingTokenTransferFromFailed_returnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -124,7 +124,7 @@ contract FeeTokenTests is Test {
         _token.deposit(100);
     }
 
-    function test_deposit_erc20TransferFromFailed_tokenReverts() external {
+    function test_deposit_underlyingTokenTransferFromFailed_reverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -160,7 +160,7 @@ contract FeeTokenTests is Test {
         _token.depositWithPermit(0, 0, 0, 0, 0);
     }
 
-    function test_depositWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_depositWithPermit_underlyingTokenTransferFromFailed_returnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -173,7 +173,7 @@ contract FeeTokenTests is Test {
         _token.depositWithPermit(100, 0, 0, 0, 0);
     }
 
-    function test_depositWithPermit_erc20TransferFromFailed_tokenReverts() external {
+    function test_depositWithPermit_underlyingTokenTransferFromFailed_reverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -228,7 +228,7 @@ contract FeeTokenTests is Test {
         _token.depositFor(address(0), 100);
     }
 
-    function test_depositFor_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_depositFor_underlyingTokenTransferFromFailed_returnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -241,7 +241,7 @@ contract FeeTokenTests is Test {
         _token.depositFor(_bob, 100);
     }
 
-    function test_depositFor_erc20TransferFromFailed_tokenReverts() external {
+    function test_depositFor_underlyingTokenTransferFromFailed_reverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -282,7 +282,7 @@ contract FeeTokenTests is Test {
         _token.depositForWithPermit(address(0), 100, 0, 0, 0, 0);
     }
 
-    function test_depositForWithPermit_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_depositForWithPermit_underlyingTokenTransferFromFailed_returnsFalse() external {
         vm.mockCall(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -295,7 +295,7 @@ contract FeeTokenTests is Test {
         _token.depositForWithPermit(_bob, 100, 0, 0, 0, 0);
     }
 
-    function test_depositForWithPermit_erc20TransferFromFailed_tokenReverts() external {
+    function test_depositForWithPermit_underlyingTokenTransferFromFailed_reverts() external {
         vm.mockCallRevert(
             _underlying,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_token), 100),
@@ -352,7 +352,7 @@ contract FeeTokenTests is Test {
         _token.withdraw(100);
     }
 
-    function test_withdraw_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_withdraw_underlyingTokenTransferFromFailed_returnsFalse() external {
         _token.__mint(_alice, 100);
 
         vm.mockCall(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _alice, 100), abi.encode(false));
@@ -363,7 +363,7 @@ contract FeeTokenTests is Test {
         _token.withdraw(100);
     }
 
-    function test_withdraw_erc20TransferFromFailed_tokenReverts() external {
+    function test_withdraw_underlyingTokenTransferFromFailed_reverts() external {
         _token.__mint(_alice, 100);
 
         vm.mockCallRevert(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _alice, 100), "");
@@ -411,7 +411,7 @@ contract FeeTokenTests is Test {
         _token.withdrawTo(_bob, 100);
     }
 
-    function test_withdrawTo_erc20TransferFromFailed_tokenReturnsFalse() external {
+    function test_withdrawTo_underlyingTokenTransferFromFailed_returnsFalse() external {
         _token.__mint(_alice, 100);
 
         vm.mockCall(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _bob, 100), abi.encode(false));
@@ -422,7 +422,7 @@ contract FeeTokenTests is Test {
         _token.withdrawTo(_bob, 100);
     }
 
-    function test_withdrawTo_erc20TransferFromFailed_tokenReverts() external {
+    function test_withdrawTo_underlyingTokenTransferFromFailed_reverts() external {
         _token.__mint(_alice, 100);
 
         vm.mockCallRevert(_underlying, abi.encodeWithSignature("transfer(address,uint256)", _bob, 100), "");
