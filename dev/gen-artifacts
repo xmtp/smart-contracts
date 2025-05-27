@@ -86,8 +86,8 @@ function main() {
     echo -e "\033[32m✔\033[0m Artifacts generated successfully!\n"
 }
 
-if [ "${forge_version}" != "1.1.0" ]; then
-    echo "ERROR: Forge version must be 1.1.0. Got '${forge_version}'" >&2
+if [ "${forge_version}" != "1.2.0" ]; then
+    echo "ERROR: Forge version must be 1.2.0. Got '${forge_version}'" >&2
     exit 1
 fi
 
