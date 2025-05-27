@@ -11,7 +11,7 @@ library DistributionManagerDeployer {
     error ZeroNodeRegistry();
     error ZeroPayerReportManager();
     error ZeroPayerRegistry();
-    error ZeroToken();
+    error ZeroFeeToken();
     error ZeroImplementation();
 
     function deployImplementation(
@@ -20,21 +20,21 @@ library DistributionManagerDeployer {
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
         require(factory_ != address(0), ZeroFactory());
         require(parameterRegistry_ != address(0), ZeroParameterRegistry());
         require(nodeRegistry_ != address(0), ZeroNodeRegistry());
         require(payerReportManager_ != address(0), ZeroPayerReportManager());
         require(payerRegistry_ != address(0), ZeroPayerRegistry());
-        require(token_ != address(0), ZeroToken());
+        require(feeToken_ != address(0), ZeroFeeToken());
 
         constructorArguments_ = abi.encode(
             parameterRegistry_,
             nodeRegistry_,
             payerReportManager_,
             payerRegistry_,
-            token_
+            feeToken_
         );
 
         bytes memory creationCode_ = abi.encodePacked(type(DistributionManager).creationCode, constructorArguments_);
@@ -61,14 +61,14 @@ library DistributionManagerDeployer {
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) internal view returns (address implementation_) {
         bytes memory constructorArguments_ = abi.encode(
             parameterRegistry_,
             nodeRegistry_,
             payerReportManager_,
             payerRegistry_,
-            token_
+            feeToken_
         );
         bytes memory creationCode_ = abi.encodePacked(type(DistributionManager).creationCode, constructorArguments_);
 

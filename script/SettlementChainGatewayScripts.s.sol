@@ -18,7 +18,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
     error FactoryNotSet();
     error ParameterRegistryProxyNotSet();
     error GatewayProxyNotSet();
-    error AppChainNativeTokenNotSet();
+    error FeeTokenProxyNotSet();
     error ProxySaltNotSet();
 
     function deployImplementation() public {
@@ -26,7 +26,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
         require(_deploymentData.gatewayProxy != address(0), GatewayProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -35,7 +35,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
                 _deploymentData.factory,
                 _deploymentData.parameterRegistryProxy,
                 _deploymentData.gatewayProxy,
-                _deploymentData.appChainNativeToken
+                _deploymentData.feeTokenProxy
             );
 
         require(implementation_ == _deploymentData.settlementChainGatewayImplementation, UnexpectedImplementation());
@@ -51,7 +51,7 @@ contract SettlementChainGatewayScripts is ScriptBase {
         );
 
         require(
-            ISettlementChainGateway(implementation_).appChainNativeToken() == _deploymentData.appChainNativeToken,
+            ISettlementChainGateway(implementation_).feeToken() == _deploymentData.feeTokenProxy,
             UnexpectedImplementation()
         );
 
@@ -104,13 +104,13 @@ contract SettlementChainGatewayScripts is ScriptBase {
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
         require(_deploymentData.gatewayProxy != address(0), GatewayProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         address implementation_ = SettlementChainGatewayDeployer.getImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.gatewayProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         console.log("Implementation: %s", implementation_);

@@ -20,7 +20,7 @@ contract DistributionManagerScripts is ScriptBase {
     error NodeRegistryProxyNotSet();
     error PayerReportManagerProxyNotSet();
     error PayerRegistryProxyNotSet();
-    error AppChainNativeTokenNotSet();
+    error FeeTokenProxyNotSet();
     error ProxySaltNotSet();
 
     function deployImplementation() public {
@@ -30,7 +30,7 @@ contract DistributionManagerScripts is ScriptBase {
         require(_deploymentData.nodeRegistryProxy != address(0), NodeRegistryProxyNotSet());
         require(_deploymentData.payerReportManagerProxy != address(0), PayerReportManagerProxyNotSet());
         require(_deploymentData.payerRegistryProxy != address(0), PayerRegistryProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
@@ -41,7 +41,7 @@ contract DistributionManagerScripts is ScriptBase {
                 _deploymentData.nodeRegistryProxy,
                 _deploymentData.payerReportManagerProxy,
                 _deploymentData.payerRegistryProxy,
-                _deploymentData.appChainNativeToken
+                _deploymentData.feeTokenProxy
             );
 
         require(implementation_ == _deploymentData.distributionManagerImplementation, UnexpectedImplementation());
@@ -67,7 +67,7 @@ contract DistributionManagerScripts is ScriptBase {
         );
 
         require(
-            IDistributionManager(implementation_).token() == _deploymentData.appChainNativeToken,
+            IDistributionManager(implementation_).feeToken() == _deploymentData.feeTokenProxy,
             UnexpectedImplementation()
         );
 
@@ -122,7 +122,7 @@ contract DistributionManagerScripts is ScriptBase {
         require(_deploymentData.nodeRegistryProxy != address(0), NodeRegistryProxyNotSet());
         require(_deploymentData.payerReportManagerProxy != address(0), PayerReportManagerProxyNotSet());
         require(_deploymentData.payerRegistryProxy != address(0), PayerRegistryProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         address implementation_ = DistributionManagerDeployer.getImplementation(
             _deploymentData.factory,
@@ -130,7 +130,7 @@ contract DistributionManagerScripts is ScriptBase {
             _deploymentData.nodeRegistryProxy,
             _deploymentData.payerReportManagerProxy,
             _deploymentData.payerRegistryProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         console.log("Implementation: %s", implementation_);

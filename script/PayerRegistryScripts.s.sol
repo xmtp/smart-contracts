@@ -17,21 +17,21 @@ contract PayerRegistryScripts is ScriptBase {
     error UnexpectedProxy();
     error FactoryNotSet();
     error ParameterRegistryProxyNotSet();
-    error AppChainNativeTokenNotSet();
+    error FeeTokenProxyNotSet();
     error ProxySaltNotSet();
 
     function deployImplementation() public {
         require(_deploymentData.payerRegistryImplementation != address(0), ImplementationNotSet());
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         vm.startBroadcast(_privateKey);
 
         (address implementation_, bytes memory constructorArguments_) = PayerRegistryDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         require(implementation_ == _deploymentData.payerRegistryImplementation, UnexpectedImplementation());
@@ -42,7 +42,7 @@ contract PayerRegistryScripts is ScriptBase {
         );
 
         require(
-            IPayerRegistry(implementation_).token() == _deploymentData.appChainNativeToken,
+            IPayerRegistry(implementation_).feeToken() == _deploymentData.feeTokenProxy,
             UnexpectedImplementation()
         );
 
@@ -94,12 +94,12 @@ contract PayerRegistryScripts is ScriptBase {
     function getImplementation() public view {
         require(_deploymentData.factory != address(0), FactoryNotSet());
         require(_deploymentData.parameterRegistryProxy != address(0), ParameterRegistryProxyNotSet());
-        require(_deploymentData.appChainNativeToken != address(0), AppChainNativeTokenNotSet());
+        require(_deploymentData.feeTokenProxy != address(0), FeeTokenProxyNotSet());
 
         address implementation_ = PayerRegistryDeployer.getImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
-            _deploymentData.appChainNativeToken
+            _deploymentData.feeTokenProxy
         );
 
         console.log("Implementation: %s", implementation_);

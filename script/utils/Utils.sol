@@ -7,7 +7,7 @@ import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 library Utils {
     struct DeploymentData {
         address deployer;
-        address appChainNativeToken;
+        address underlyingFeeToken;
         address factory;
         address settlementChainParameterRegistryImplementation;
         address appChainParameterRegistryImplementation;
@@ -41,6 +41,9 @@ library Utils {
         address payerReportManagerImplementation;
         bytes32 payerReportManagerProxySalt;
         address payerReportManagerProxy;
+        address feeTokenImplementation;
+        bytes32 feeTokenProxySalt;
+        address feeTokenProxy;
     }
 
     error InvalidProxyAddress(string outputJson_);
@@ -68,6 +71,7 @@ library Utils {
     string internal constant PAYER_REGISTRY_OUTPUT_JSON = "PayerRegistry";
     string internal constant DISTRIBUTION_MANAGER_OUTPUT_JSON = "DistributionManager";
     string internal constant PAYER_REPORT_MANAGER_OUTPUT_JSON = "PayerReportManager";
+    string internal constant FEE_TOKEN_OUTPUT_JSON = "FeeToken";
 
     function readInput(string memory inputFileName_) internal view returns (string memory input_) {
         string memory file_ = getInputPath(inputFileName_);

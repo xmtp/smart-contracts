@@ -7,6 +7,7 @@ import { Script, console } from "../lib/forge-std/src/Script.sol";
 import { IERC1967 } from "../src/abstract/interfaces/IERC1967.sol";
 import { IDistributionManager } from "../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
+import { IFeeToken } from "../src/settlement-chain/interfaces/IFeeToken.sol";
 import { IGroupMessageBroadcaster } from "../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { INodeRegistry } from "../src/settlement-chain/interfaces/INodeRegistry.sol";
@@ -22,6 +23,7 @@ import {
 
 import { DistributionManagerDeployer } from "./deployers/DistributionManagerDeployer.sol";
 import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
+import { FeeTokenDeployer } from "./deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
 import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
@@ -31,9 +33,11 @@ import { RateRegistryDeployer } from "./deployers/RateRegistryDeployer.sol";
 
 import { SettlementChainParameterRegistryDeployer } from "./deployers/SettlementChainParameterRegistryDeployer.sol";
 
-contract DeployLocal is Script {
-    address internal constant _APPCHAIN_NATIVE_TOKEN = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+/* ============ Mock Imports ============ */
 
+import { MockERC20 } from "../test/utils/Mocks.sol";
+
+contract DeployLocal is Script {
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
 
@@ -75,18 +79,21 @@ contract DeployLocal is Script {
 
     uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
-    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
-    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
-    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
-    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
-    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = bytes32(uint256(5));
-    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = bytes32(uint256(6));
-    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = bytes32(uint256(7));
-    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = bytes32(uint256(8));
+    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "distributionManager_0";
+    bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "feeToken_0";
+    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "groupMessageBroadcaster_0";
+    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "identityUpdateBroadcaster_0";
+    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "nodeRegistry_0";
+    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "parameterRegistry_0";
+    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "payerRegistry_0";
+    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "payerReportManager_0";
+    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "rateRegistry_0";
 
     uint256 internal _privateKey;
 
     address internal _admin;
+
+    address internal _underlyingFeeToken;
 
     IFactory internal _factory;
 
@@ -105,6 +112,8 @@ contract DeployLocal is Script {
 
     IDistributionManager internal _distributionManagerProxy;
 
+    IFeeToken internal _feeTokenProxy;
+
     function setUp() public virtual {
         _privateKey = uint256(vm.envBytes32("LOCAL_DEPLOY_PRIVATE_KEY"));
 
@@ -114,37 +123,48 @@ contract DeployLocal is Script {
     }
 
     function run() external {
-        // Deploy the Factory on the base (settlement) chain.
-        _factory = _deploySettlementChainFactory();
+        // Deploy the underlying fee token.
+        _underlyingFeeToken = address(new MockERC20("Underlying Fee Token", "UFT"));
 
-        // Deploy the Parameter Registry on the base (settlement) chain.
-        address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+        // Deploy the Factory.
+        _factory = _deployFactory();
 
-        // The admin of the Parameter Registry on the base (settlement) chain is the global admin.
+        // Deploy the Parameter Registry.
+        address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+
+        // The admin of the Parameter Registry is the global admin.
         _parameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(
-            settlementChainParameterRegistryImplementation_,
+            parameterRegistryImplementation_,
             _admin
         );
 
-        // Deploy the Payer Registry on the base (settlement) chain.
+        // Deploy the Fee Token.
+        address feeTokenImplementation_ = _deployFeeTokenImplementation(
+            address(_parameterRegistryProxy),
+            _underlyingFeeToken
+        );
+
+        _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
+
+        // Deploy the Payer Registry.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
             address(_parameterRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_feeTokenProxy)
         );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
 
-        // Deploy the Rate Registry on the base (settlement) chain.
+        // Deploy the Rate Registry.
         address rateRegistryImplementation_ = _deployRateRegistryImplementation(address(_parameterRegistryProxy));
 
         _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
 
-        // Deploy the Node Registry on the base (settlement) chain.
+        // Deploy the Node Registry.
         address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(address(_parameterRegistryProxy));
 
         _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
 
-        // Deploy the Payer Report Manager on the base (settlement) chain.
+        // Deploy the Payer Report Manager.
         address payerReportManagerImplementation_ = _deployPayerReportManagerImplementation(
             address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
@@ -153,25 +173,25 @@ contract DeployLocal is Script {
 
         _payerReportManagerProxy = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
 
-        // Deploy the Distribution Manager on the base (settlement) chain.
+        // Deploy the Distribution Manager.
         address distributionManagerImplementation_ = _deployDistributionManagerImplementation(
             address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
             address(_payerReportManagerProxy),
             address(_payerRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_feeTokenProxy)
         );
 
         _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
 
-        // Deploy the Group Message Broadcaster on the base (settlement) chain.
+        // Deploy the Group Message Broadcaster.
         address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
             address(_parameterRegistryProxy)
         );
 
         _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(groupMessageBroadcasterImplementation_);
 
-        // Deploy the Identity Update Broadcaster on the base (settlement) chain.
+        // Deploy the Identity Update Broadcaster.
         address identityUpdateBroadcasterImplementation_ = _deployIdentityUpdateBroadcasterImplementation(
             address(_parameterRegistryProxy)
         );
@@ -230,10 +250,6 @@ contract DeployLocal is Script {
 
     /* ============ Factory Helpers ============ */
 
-    function _deploySettlementChainFactory() internal returns (IFactory factory_) {
-        return _deployFactory();
-    }
-
     function _deployFactory() internal returns (IFactory factory_) {
         vm.startBroadcast(_privateKey);
         factory_ = IFactory(FactoryDeployer.deploy());
@@ -268,6 +284,27 @@ contract DeployLocal is Script {
 
         if (registry_.implementation() != implementation_) revert("Parameter registry implementation mismatch");
         if (!registry_.isAdmin(admin_)) revert("Admin not set correctly in parameter registry");
+    }
+
+    /* ============ Fee Token Helpers ============ */
+
+    function _deployFeeTokenImplementation(
+        address parameterRegistry_,
+        address underlying_
+    ) internal returns (address implementation_) {
+        vm.startBroadcast(_privateKey);
+        (implementation_, ) = FeeTokenDeployer.deployImplementation(address(_factory), parameterRegistry_, underlying_);
+        vm.stopBroadcast();
+    }
+
+    function _deployFeeTokenProxy(address implementation_) internal returns (IFeeToken feeToken_) {
+        vm.startBroadcast(_privateKey);
+        (address proxy_, , ) = FeeTokenDeployer.deployProxy(address(_factory), implementation_, _FEE_TOKEN_PROXY_SALT);
+        vm.stopBroadcast();
+
+        feeToken_ = IFeeToken(proxy_);
+
+        if (feeToken_.implementation() != implementation_) revert("Fee token implementation mismatch");
     }
 
     /* ============ Group Message Broadcaster Helpers ============ */
@@ -439,17 +476,21 @@ contract DeployLocal is Script {
 
     function _deployPayerRegistryImplementation(
         address parameterRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_) {
         vm.startBroadcast(_privateKey);
-        (implementation_, ) = PayerRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_, token_);
+        (implementation_, ) = PayerRegistryDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_,
+            feeToken_
+        );
         vm.stopBroadcast();
 
         if (IPayerRegistry(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Payer registry parameter registry mismatch");
         }
 
-        if (IPayerRegistry(implementation_).token() != token_) revert("Payer registry token mismatch");
+        if (IPayerRegistry(implementation_).feeToken() != feeToken_) revert("Payer registry fee token mismatch");
     }
 
     function _deployPayerRegistryProxy(address implementation_) internal returns (IPayerRegistry registry_) {
@@ -712,7 +753,7 @@ contract DeployLocal is Script {
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_) {
         vm.startBroadcast(_privateKey);
         (implementation_, ) = DistributionManagerDeployer.deployImplementation(
@@ -721,7 +762,7 @@ contract DeployLocal is Script {
             nodeRegistry_,
             payerReportManager_,
             payerRegistry_,
-            token_
+            feeToken_
         );
         vm.stopBroadcast();
 
@@ -741,7 +782,9 @@ contract DeployLocal is Script {
             revert("Distribution manager payer registry mismatch");
         }
 
-        if (IDistributionManager(implementation_).token() != token_) revert("Distribution manager token mismatch");
+        if (IDistributionManager(implementation_).feeToken() != feeToken_) {
+            revert("Distribution manager fee token mismatch");
+        }
     }
 
     function _deployDistributionManagerProxy(

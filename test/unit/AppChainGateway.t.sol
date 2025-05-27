@@ -89,25 +89,94 @@ contract AppChainGatewayTests is Test {
     }
 
     function test_withdraw_arbSysRevert() external {
-        vm.mockCallRevert(_ARB_SYS, abi.encodeWithSignature("withdrawEth(address)", address(1)), "");
+        vm.mockCallRevert(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdraw(address)", address(1))
+            ),
+            ""
+        );
+
         vm.expectRevert();
+
         _gateway.withdraw{ value: 1 }(address(1));
     }
 
-    function test_withdraw_xxx() external {
+    function test_withdraw() external {
         vm.deal(_alice, 2);
 
         Utils.expectAndMockCall(
             _ARB_SYS,
-            abi.encodeWithSignature("withdrawEth(address)", address(1)),
-            abi.encode(true)
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdraw(address)", address(1))
+            ),
+            abi.encode(11)
         );
 
         vm.expectEmit(address(_gateway));
-        emit IAppChainGateway.Withdrawal(_alice, address(1), 1);
+        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
 
         vm.prank(_alice);
         _gateway.withdraw{ value: 1 }(address(1));
+
+        assertEq(_alice.balance, 1);
+    }
+
+    /* ============ withdrawIntoUnderlying ============ */
+
+    function test_withdrawIntoUnderlying_zeroRecipient() external {
+        vm.expectRevert(IAppChainGateway.ZeroRecipient.selector);
+        _gateway.withdrawIntoUnderlying{ value: 0 }(address(0));
+    }
+
+    function test_withdrawIntoUnderlying_zeroWithdrawalAmount() external {
+        vm.expectRevert(IAppChainGateway.ZeroWithdrawalAmount.selector);
+        _gateway.withdrawIntoUnderlying{ value: 0 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying_noArbSys() external {
+        vm.expectRevert();
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying_arbSysRevert() external {
+        vm.mockCallRevert(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+            ),
+            ""
+        );
+
+        vm.expectRevert();
+
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying() external {
+        vm.deal(_alice, 2);
+
+        Utils.expectAndMockCall(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+            ),
+            abi.encode(11)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
+
+        vm.prank(_alice);
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
 
         assertEq(_alice.balance, 1);
     }

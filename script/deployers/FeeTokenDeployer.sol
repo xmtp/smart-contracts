@@ -3,28 +3,26 @@ pragma solidity 0.8.28;
 
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
 
-import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
+import { FeeToken } from "../../src/settlement-chain/FeeToken.sol";
 
-library SettlementChainGatewayDeployer {
+library FeeTokenDeployer {
     error ZeroFactory();
     error ZeroParameterRegistry();
-    error ZeroAppChainGateway();
-    error ZeroFeeToken();
+    error ZeroUnderlying();
     error ZeroImplementation();
+
     function deployImplementation(
         address factory_,
         address parameterRegistry_,
-        address appChainGateway_,
-        address feeToken_
+        address underlying_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
         require(factory_ != address(0), ZeroFactory());
         require(parameterRegistry_ != address(0), ZeroParameterRegistry());
-        require(appChainGateway_ != address(0), ZeroAppChainGateway());
-        require(feeToken_ != address(0), ZeroFeeToken());
+        require(underlying_ != address(0), ZeroUnderlying());
 
-        constructorArguments_ = abi.encode(parameterRegistry_, appChainGateway_, feeToken_);
+        constructorArguments_ = abi.encode(parameterRegistry_, underlying_);
 
-        bytes memory creationCode_ = abi.encodePacked(type(SettlementChainGateway).creationCode, constructorArguments_);
+        bytes memory creationCode_ = abi.encodePacked(type(FeeToken).creationCode, constructorArguments_);
 
         implementation_ = IFactory(factory_).deployImplementation(creationCode_);
     }
@@ -38,18 +36,17 @@ library SettlementChainGatewayDeployer {
         require(implementation_ != address(0), ZeroImplementation());
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
-        initializeCallData_ = abi.encodeWithSelector(SettlementChainGateway.initialize.selector);
+        initializeCallData_ = abi.encodeWithSelector(FeeToken.initialize.selector);
         proxy_ = IFactory(factory_).deployProxy(implementation_, salt_, initializeCallData_);
     }
 
     function getImplementation(
         address factory_,
         address parameterRegistry_,
-        address appChainGateway_,
-        address feeToken_
+        address underlying_
     ) internal view returns (address implementation_) {
-        bytes memory constructorArguments_ = abi.encode(parameterRegistry_, appChainGateway_, feeToken_);
-        bytes memory creationCode_ = abi.encodePacked(type(SettlementChainGateway).creationCode, constructorArguments_);
+        bytes memory constructorArguments_ = abi.encode(parameterRegistry_, underlying_);
+        bytes memory creationCode_ = abi.encodePacked(type(FeeToken).creationCode, constructorArguments_);
 
         return IFactory(factory_).computeImplementationAddress(creationCode_);
     }
