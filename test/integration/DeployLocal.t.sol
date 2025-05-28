@@ -5,7 +5,6 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 
 /* ============ Source Interface Imports ============ */
 
-import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
@@ -40,9 +39,11 @@ import {
 
 import { IERC20Like } from "./Interfaces.sol";
 
-contract DeploymentTests is Test {
-    address internal constant _APPCHAIN_NATIVE_TOKEN = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+/* ============ Test Mock Imports ============ */
 
+import { MockERC20 } from "../utils/Mocks.sol";
+
+contract DeployLocalTests is Test {
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
 
@@ -84,26 +85,26 @@ contract DeploymentTests is Test {
 
     uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
-    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
-    bytes32 internal constant _GATEWAY_PROXY_SALT = bytes32(uint256(1));
-    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
-    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
-    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
-    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = bytes32(uint256(5));
-    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = bytes32(uint256(6));
-    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = bytes32(uint256(7));
-    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = bytes32(uint256(8));
+    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
+    bytes32 internal constant _GATEWAY_PROXY_SALT = "Gateway_0";
+    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
+    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
+    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
+    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
+    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
+    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "PayerReportManager_0";
+    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
+
+    address internal _deployer;
 
     address internal _admin = makeAddr("admin");
     address internal _alice = makeAddr("alice");
 
-    uint256 internal _baseForkId;
+    MockERC20 internal _appChainNativeToken;
 
-    IFactory internal _settlementChainFactory;
+    IFactory internal _factory;
 
-    ISettlementChainParameterRegistry internal _settlementChainParameterRegistryProxy;
-
-    ISettlementChainGateway internal _settlementChainGatewayProxy;
+    ISettlementChainParameterRegistry internal _parameterRegistryProxy;
 
     IGroupMessageBroadcaster internal _groupMessageBroadcasterProxy;
     IIdentityUpdateBroadcaster internal _identityUpdateBroadcasterProxy;
@@ -119,74 +120,77 @@ contract DeploymentTests is Test {
     IDistributionManager internal _distributionManagerProxy;
 
     function setUp() external {
-        _baseForkId = vm.createFork("base_sepolia");
+        // Get the deployer address from the environment variable, which will produce addresses that can be expected in
+        // a local deployment. If not set, make a deployer address.
+        _deployer = vm.envAddress("LOCAL_DEPLOYER") == address(0)
+            ? makeAddr("deployer")
+            : vm.envAddress("LOCAL_DEPLOYER");
     }
 
-    function test_deployProtocol_oneChain() external {
-        // Deploy the Factory on the base (settlement) chain.
-        _settlementChainFactory = _deploySettlementChainFactory();
+    function test_deployLocalProtocol() external {
+        // Deploy the Factory.
+        _factory = _deployFactory();
 
-        // Deploy the Parameter Registry on the base (settlement) chain.
-        address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+        // Deploy the Appchain Native Token (must be done after the factory to ensure factory address).
+        _appChainNativeToken = _deployAppchainNativeToken();
 
-        // The admin of the Parameter Registry on the base (settlement) chain is the global admin.
-        _settlementChainParameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(
-            settlementChainParameterRegistryImplementation_,
+        // Deploy the Parameter Registry.
+        address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+
+        // The admin of the Parameter Registry is the global admin.
+        _parameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(
+            parameterRegistryImplementation_,
             _admin
         );
 
-        // Deploy the Payer Registry on the base (settlement) chain.
+        // Deploy the Payer Registry.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
-            address(_settlementChainParameterRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_parameterRegistryProxy),
+            address(_appChainNativeToken)
         );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
 
-        // Deploy the Rate Registry on the base (settlement) chain.
-        address rateRegistryImplementation_ = _deployRateRegistryImplementation(
-            address(_settlementChainParameterRegistryProxy)
-        );
+        // Deploy the Rate Registry.
+        address rateRegistryImplementation_ = _deployRateRegistryImplementation(address(_parameterRegistryProxy));
 
         _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
 
-        // Deploy the Node Registry on the base (settlement) chain.
-        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(
-            address(_settlementChainParameterRegistryProxy)
-        );
+        // Deploy the Node Registry.
+        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(address(_parameterRegistryProxy));
 
         _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
 
-        // Deploy the Payer Report Manager on the base (settlement) chain.
+        // Deploy the Payer Report Manager.
         address payerReportManagerImplementation_ = _deployPayerReportManagerImplementation(
-            address(_settlementChainParameterRegistryProxy),
+            address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
             address(_payerRegistryProxy)
         );
 
         _payerReportManagerProxy = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
 
-        // Deploy the Distribution Manager on the base (settlement) chain.
+        // Deploy the Distribution Manager.
         address distributionManagerImplementation_ = _deployDistributionManagerImplementation(
-            address(_settlementChainParameterRegistryProxy),
+            address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
             address(_payerReportManagerProxy),
             address(_payerRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_appChainNativeToken)
         );
 
         _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
 
-        // Deploy the Group Message Broadcaster on the base (settlement) chain.
+        // Deploy the Group Message Broadcaster.
         address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
-            address(_settlementChainParameterRegistryProxy)
+            address(_parameterRegistryProxy)
         );
 
         _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(groupMessageBroadcasterImplementation_);
 
-        // Deploy the Identity Update Broadcaster on the base (settlement) chain.
+        // Deploy the Identity Update Broadcaster.
         address identityUpdateBroadcasterImplementation_ = _deployIdentityUpdateBroadcasterImplementation(
-            address(_settlementChainParameterRegistryProxy)
+            address(_parameterRegistryProxy)
         );
 
         _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(
@@ -214,26 +218,25 @@ contract DeploymentTests is Test {
 
     /* ============ Factory Helpers ============ */
 
-    function _deploySettlementChainFactory() internal returns (IFactory factory_) {
-        vm.selectFork(_baseForkId);
-        return _deployFactory();
+    function _deployFactory() internal returns (IFactory factory_) {
+        vm.startPrank(_deployer);
+        factory_ = IFactory(FactoryDeployer.deploy());
+        vm.stopPrank();
     }
 
-    function _deployFactory() internal returns (IFactory factory_) {
-        vm.startPrank(_admin);
-        factory_ = IFactory(FactoryDeployer.deploy());
+    /* ============ Appchain Native Token Helpers ============ */
+
+    function _deployAppchainNativeToken() internal returns (MockERC20 token_) {
+        vm.startPrank(_deployer);
+        token_ = new MockERC20("Appchain Native Token", "ANT");
         vm.stopPrank();
     }
 
     /* ============ Parameter Registry Helpers ============ */
 
     function _deploySettlementChainParameterRegistryImplementation() internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
-        (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(
-            address(_settlementChainFactory)
-        );
+        vm.startPrank(_deployer);
+        (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(address(_factory));
         vm.stopPrank();
     }
 
@@ -241,14 +244,12 @@ contract DeploymentTests is Test {
         address implementation_,
         address admin_
     ) internal returns (ISettlementChainParameterRegistry registry_) {
-        vm.selectFork(_baseForkId);
-
         address[] memory admins_ = new address[](1);
         admins_[0] = admin_;
 
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _PARAMETER_REGISTRY_PROXY_SALT,
             admins_
@@ -266,11 +267,9 @@ contract DeploymentTests is Test {
     function _deployGroupMessageBroadcasterImplementation(
         address parameterRegistry_
     ) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (implementation_, ) = GroupMessageBroadcasterDeployer.deployImplementation(
-            address(_settlementChainFactory),
+            address(_factory),
             parameterRegistry_
         );
         vm.stopPrank();
@@ -281,11 +280,9 @@ contract DeploymentTests is Test {
     function _deployGroupMessageBroadcasterProxy(
         address implementation_
     ) internal returns (IGroupMessageBroadcaster broadcaster_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _GROUP_MESSAGE_BROADCASTER_PROXY_SALT
         );
@@ -301,11 +298,9 @@ contract DeploymentTests is Test {
     function _deployIdentityUpdateBroadcasterImplementation(
         address parameterRegistry_
     ) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (implementation_, ) = IdentityUpdateBroadcasterDeployer.deployImplementation(
-            address(_settlementChainFactory),
+            address(_factory),
             parameterRegistry_
         );
         vm.stopPrank();
@@ -316,11 +311,9 @@ contract DeploymentTests is Test {
     function _deployIdentityUpdateBroadcasterProxy(
         address implementation_
     ) internal returns (IIdentityUpdateBroadcaster broadcaster_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT
         );
@@ -334,8 +327,6 @@ contract DeploymentTests is Test {
     /* ============ Broadcaster Helpers ============ */
 
     function _setBroadcasterStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         bytes[] memory keys_ = new bytes[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
@@ -349,41 +340,37 @@ contract DeploymentTests is Test {
         values_[3] = bytes32(_IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE);
 
         vm.prank(_admin);
-        _settlementChainParameterRegistryProxy.set(keys_, values_);
+        _parameterRegistryProxy.set(keys_, values_);
 
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
+        assertEq(_parameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_parameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_parameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_parameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
-    function _assertBroadcasterStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
+    function _assertBroadcasterStartingParameters() internal view {
         assertEq(
-            uint256(_settlementChainParameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
+            uint256(_parameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
             _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE
         );
 
         assertEq(
-            uint256(_settlementChainParameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY)),
+            uint256(_parameterRegistryProxy.get(_GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY)),
             _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE
         );
 
         assertEq(
-            uint256(_settlementChainParameterRegistryProxy.get(_IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
+            uint256(_parameterRegistryProxy.get(_IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY)),
             _IDENTITY_UPDATE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE
         );
 
         assertEq(
-            uint256(_settlementChainParameterRegistryProxy.get(_IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY)),
+            uint256(_parameterRegistryProxy.get(_IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY)),
             _IDENTITY_UPDATE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE
         );
     }
 
     function _updateBroadcasterStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         vm.startPrank(_alice);
         _groupMessageBroadcasterProxy.updateMaxPayloadSize();
         _groupMessageBroadcasterProxy.updateMinPayloadSize();
@@ -412,14 +399,8 @@ contract DeploymentTests is Test {
         address parameterRegistry_,
         address token_
     ) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
-        (implementation_, ) = PayerRegistryDeployer.deployImplementation(
-            address(_settlementChainFactory),
-            parameterRegistry_,
-            token_
-        );
+        vm.startPrank(_deployer);
+        (implementation_, ) = PayerRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_, token_);
         vm.stopPrank();
 
         assertEq(IPayerRegistry(implementation_).parameterRegistry(), parameterRegistry_);
@@ -427,11 +408,9 @@ contract DeploymentTests is Test {
     }
 
     function _deployPayerRegistryProxy(address implementation_) internal returns (IPayerRegistry registry_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = PayerRegistryDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _PAYER_REGISTRY_PROXY_SALT
         );
@@ -443,8 +422,6 @@ contract DeploymentTests is Test {
     }
 
     function _setPayerRegistryStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         bytes[] memory keys_ = new bytes[](4);
         keys_[0] = _PAYER_REGISTRY_SETTLER_KEY;
         keys_[1] = _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY;
@@ -458,17 +435,15 @@ contract DeploymentTests is Test {
         values_[3] = bytes32(_PAYER_REGISTRY_STARTING_WITHDRAW_LOCK_PERIOD);
 
         vm.prank(_admin);
-        _settlementChainParameterRegistryProxy.set(keys_, values_);
+        _parameterRegistryProxy.set(keys_, values_);
 
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
+        assertEq(_parameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_parameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_parameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_parameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
     function _updatePayerRegistryStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         vm.startPrank(_alice);
         _payerRegistryProxy.updateSettler();
         _payerRegistryProxy.updateFeeDistributor();
@@ -485,24 +460,17 @@ contract DeploymentTests is Test {
     /* ============ Rate Registry Helpers ============ */
 
     function _deployRateRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
-        (implementation_, ) = RateRegistryDeployer.deployImplementation(
-            address(_settlementChainFactory),
-            parameterRegistry_
-        );
+        vm.startPrank(_deployer);
+        (implementation_, ) = RateRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_);
         vm.stopPrank();
 
         assertEq(IRateRegistry(implementation_).parameterRegistry(), parameterRegistry_);
     }
 
     function _deployRateRegistryProxy(address implementation_) internal returns (IRateRegistry registry_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = RateRegistryDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _RATE_REGISTRY_PROXY_SALT
         );
@@ -514,8 +482,6 @@ contract DeploymentTests is Test {
     }
 
     function _setRateRegistryStartingRates() internal {
-        vm.selectFork(_baseForkId);
-
         bytes[] memory keys_ = new bytes[](4);
         keys_[0] = _RATE_REGISTRY_MESSAGE_FEE_KEY;
         keys_[1] = _RATE_REGISTRY_STORAGE_FEE_KEY;
@@ -529,17 +495,15 @@ contract DeploymentTests is Test {
         values_[3] = bytes32(_RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE);
 
         vm.prank(_admin);
-        _settlementChainParameterRegistryProxy.set(keys_, values_);
+        _parameterRegistryProxy.set(keys_, values_);
 
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[2]), values_[2]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[3]), values_[3]);
+        assertEq(_parameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_parameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_parameterRegistryProxy.get(keys_[2]), values_[2]);
+        assertEq(_parameterRegistryProxy.get(keys_[3]), values_[3]);
     }
 
     function _updateRateRegistryRates() internal {
-        vm.selectFork(_baseForkId);
-
         vm.prank(_alice);
         _rateRegistryProxy.updateRates();
 
@@ -559,24 +523,17 @@ contract DeploymentTests is Test {
     /* ============ Node Registry Helpers ============ */
 
     function _deployNodeRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
-        (implementation_, ) = NodeRegistryDeployer.deployImplementation(
-            address(_settlementChainFactory),
-            parameterRegistry_
-        );
+        vm.startPrank(_deployer);
+        (implementation_, ) = NodeRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_);
         vm.stopPrank();
 
         assertEq(INodeRegistry(implementation_).parameterRegistry(), parameterRegistry_);
     }
 
     function _deployNodeRegistryProxy(address implementation_) internal returns (INodeRegistry registry_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = NodeRegistryDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _NODE_REGISTRY_PROXY_SALT
         );
@@ -588,8 +545,6 @@ contract DeploymentTests is Test {
     }
 
     function _setNodeRegistryStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         bytes[] memory keys_ = new bytes[](2);
         keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
         keys_[1] = _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY;
@@ -599,15 +554,13 @@ contract DeploymentTests is Test {
         values_[1] = bytes32(uint256(_NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES));
 
         vm.prank(_admin);
-        _settlementChainParameterRegistryProxy.set(keys_, values_);
+        _parameterRegistryProxy.set(keys_, values_);
 
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[0]), values_[0]);
-        assertEq(_settlementChainParameterRegistryProxy.get(keys_[1]), values_[1]);
+        assertEq(_parameterRegistryProxy.get(keys_[0]), values_[0]);
+        assertEq(_parameterRegistryProxy.get(keys_[1]), values_[1]);
     }
 
     function _updateNodeRegistryStartingParameters() internal {
-        vm.selectFork(_baseForkId);
-
         vm.startPrank(_alice);
         _nodeRegistryProxy.updateAdmin();
         _nodeRegistryProxy.updateMaxCanonicalNodes();
@@ -624,11 +577,9 @@ contract DeploymentTests is Test {
         address nodeRegistry_,
         address payerRegistry_
     ) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
-            address(_settlementChainFactory),
+            address(_factory),
             parameterRegistry_,
             nodeRegistry_,
             payerRegistry_
@@ -641,11 +592,9 @@ contract DeploymentTests is Test {
     }
 
     function _deployPayerReportManagerProxy(address implementation_) internal returns (IPayerReportManager registry_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = PayerReportManagerDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _PAYER_REPORT_MANAGER_PROXY_SALT
         );
@@ -665,11 +614,9 @@ contract DeploymentTests is Test {
         address payerRegistry_,
         address token_
     ) internal returns (address implementation_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (implementation_, ) = DistributionManagerDeployer.deployImplementation(
-            address(_settlementChainFactory),
+            address(_factory),
             parameterRegistry_,
             nodeRegistry_,
             payerReportManager_,
@@ -688,11 +635,9 @@ contract DeploymentTests is Test {
     function _deployDistributionManagerProxy(
         address implementation_
     ) internal returns (IDistributionManager registry_) {
-        vm.selectFork(_baseForkId);
-
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = DistributionManagerDeployer.deployProxy(
-            address(_settlementChainFactory),
+            address(_factory),
             implementation_,
             _DISTRIBUTION_MANAGER_PROXY_SALT
         );
@@ -705,14 +650,12 @@ contract DeploymentTests is Test {
 
     /* ============ Token Helpers ============ */
 
-    function _giveTokens(address recipient_, uint256 amount_) internal {
-        vm.selectFork(_baseForkId);
-        deal(_APPCHAIN_NATIVE_TOKEN, recipient_, amount_);
+    function _giveAppchainNativeTokens(address recipient_, uint256 amount_) internal {
+        _appChainNativeToken.mint(recipient_, amount_);
     }
 
-    function _approveTokens(address account_, address spender_, uint256 amount_) internal {
-        vm.selectFork(_baseForkId);
+    function _approveTokens(address token_, address account_, address spender_, uint256 amount_) internal {
         vm.prank(account_);
-        IERC20Like(_APPCHAIN_NATIVE_TOKEN).approve(spender_, amount_);
+        IERC20Like(token_).approve(spender_, amount_);
     }
 }

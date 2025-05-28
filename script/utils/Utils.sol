@@ -5,150 +5,223 @@ import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
 library Utils {
+    enum ParameterType {
+        Address,
+        Uint
+    }
+
     struct DeploymentData {
-        address deployer;
+        address appChainGatewayImplementation;
+        uint256 appChainId;
         address appChainNativeToken;
-        address factory;
-        address settlementChainParameterRegistryImplementation;
         address appChainParameterRegistryImplementation;
-        bytes32 parameterRegistryProxySalt;
+        address deployer;
+        address distributionManagerImplementation;
+        address distributionManagerProxy;
+        bytes32 distributionManagerProxySalt;
+        address factory;
+        address feeTokenImplementation;
+        address feeTokenProxy;
+        bytes32 feeTokenProxySalt;
+        address gatewayProxy;
+        bytes32 gatewayProxySalt;
+        address groupMessageBroadcasterImplementation;
+        address groupMessageBroadcasterProxy;
+        bytes32 groupMessageBroadcasterProxySalt;
+        address identityUpdateBroadcasterImplementation;
+        address identityUpdateBroadcasterProxy;
+        bytes32 identityUpdateBroadcasterProxySalt;
+        address nodeRegistryImplementation;
+        address nodeRegistryProxy;
+        bytes32 nodeRegistryProxySalt;
         address parameterRegistryProxy;
+        bytes32 parameterRegistryProxySalt;
+        address payerRegistryImplementation;
+        address payerRegistryProxy;
+        bytes32 payerRegistryProxySalt;
+        address payerReportManagerImplementation;
+        address payerReportManagerProxy;
+        bytes32 payerReportManagerProxySalt;
+        address rateRegistryImplementation;
+        address rateRegistryProxy;
+        bytes32 rateRegistryProxySalt;
+        address settlementChainGatewayImplementation;
+        uint256 settlementChainId;
+        address settlementChainInboxToAppchain;
         address settlementChainParameterRegistryAdmin1;
         address settlementChainParameterRegistryAdmin2;
         address settlementChainParameterRegistryAdmin3;
-        address settlementChainGatewayImplementation;
-        address appChainGatewayImplementation;
-        bytes32 gatewayProxySalt;
-        address gatewayProxy;
-        address groupMessageBroadcasterImplementation;
-        bytes32 groupMessageBroadcasterProxySalt;
-        address groupMessageBroadcasterProxy;
-        address identityUpdateBroadcasterImplementation;
-        bytes32 identityUpdateBroadcasterProxySalt;
-        address identityUpdateBroadcasterProxy;
-        address nodeRegistryImplementation;
-        bytes32 nodeRegistryProxySalt;
-        address nodeRegistryProxy;
-        address rateRegistryImplementation;
-        bytes32 rateRegistryProxySalt;
-        address rateRegistryProxy;
-        address payerRegistryImplementation;
-        bytes32 payerRegistryProxySalt;
-        address payerRegistryProxy;
-        address distributionManagerImplementation;
-        bytes32 distributionManagerProxySalt;
-        address distributionManagerProxy;
-        address payerReportManagerImplementation;
-        bytes32 payerReportManagerProxySalt;
-        address payerReportManagerProxy;
+        address settlementChainParameterRegistryImplementation;
     }
-
-    error InvalidProxyAddress(string outputJson_);
 
     VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
-
-    uint256 internal constant CHAIN_ID_ANVIL_LOCALNET = 31_337;
-    uint256 internal constant CHAIN_ID_XMTP_TESTNET = 241_320_161;
-    uint256 internal constant CHAIN_ID_BASE_SEPOLIA = 84_532;
-
-    string internal constant OUTPUT_ANVIL_LOCALNET = "anvil_localnet";
-    string internal constant OUTPUT_XMTP_TESTNET = "xmtp_testnet";
-    string internal constant OUTPUT_BASE_SEPOLIA = "base_sepolia";
-    string internal constant OUTPUT_UNKNOWN = "unknown";
-
-    string internal constant FACTORY_OUTPUT_JSON = "Factory";
-    string internal constant SETTLEMENT_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON = "SettlementChainParameterRegistry";
-    string internal constant APP_CHAIN_PARAMETER_REGISTRY_OUTPUT_JSON = "AppChainParameterRegistry";
-    string internal constant SETTLEMENT_CHAIN_GATEWAY_OUTPUT_JSON = "SettlementChainGateway";
-    string internal constant APP_CHAIN_GATEWAY_OUTPUT_JSON = "AppChainGateway";
-    string internal constant GROUP_MESSAGE_BROADCASTER_OUTPUT_JSON = "GroupMessageBroadcaster";
-    string internal constant IDENTITY_UPDATE_BROADCASTER_OUTPUT_JSON = "IdentityUpdateBroadcaster";
-    string internal constant NODE_REGISTRY_OUTPUT_JSON = "NodeRegistry";
-    string internal constant RATE_REGISTRY_OUTPUT_JSON = "RateRegistry";
-    string internal constant PAYER_REGISTRY_OUTPUT_JSON = "PayerRegistry";
-    string internal constant DISTRIBUTION_MANAGER_OUTPUT_JSON = "DistributionManager";
-    string internal constant PAYER_REPORT_MANAGER_OUTPUT_JSON = "PayerReportManager";
-
-    function readInput(string memory inputFileName_) internal view returns (string memory input_) {
-        string memory file_ = getInputPath(inputFileName_);
-        return VM.readFile(file_);
-    }
-
-    function getInputPath(string memory inputFileName_) internal view returns (string memory inputPath_) {
-        string memory inputDir_ = string.concat(VM.projectRoot(), "/deployments/");
-        string memory environmentDir_ = string.concat(resolveEnvironment(), "/");
-        string memory file_ = string.concat(inputFileName_, ".json");
-        return string.concat(inputDir_, environmentDir_, file_);
-    }
-
-    function readOutput(string memory outputFileName_) internal view returns (string memory output_) {
-        string memory file_ = getOutputPath(outputFileName_);
-        return VM.readFile(file_);
-    }
-
-    function writeOutput(string memory outputJson_, string memory outputFileName_) internal {
-        string memory outputFilePath_ = getOutputPath(outputFileName_);
-        VM.writeJson(outputJson_, outputFilePath_);
-    }
-
-    function getOutputPath(string memory outputFileName_) internal view returns (string memory outputFilePath_) {
-        string memory outputDir_ = string.concat(VM.projectRoot(), "/deployments/");
-        string memory environmentDir_ = string.concat(resolveEnvironment(), "/");
-        return string.concat(outputDir_, environmentDir_, outputFileName_, ".json");
-    }
-
-    function resolveEnvironment() internal view returns (string memory environment_) {
-        environment_ = VM.envString("ENVIRONMENT");
-
-        return (bytes(environment_).length == 0) ? OUTPUT_UNKNOWN : environment_;
-    }
-
-    function getProxy(string memory outputJson_) internal view returns (address proxy_) {
-        proxy_ = stdJson.readAddress(readOutput(outputJson_), ".addresses.proxy");
-        require(address(proxy_) != address(0), InvalidProxyAddress(outputJson_));
-    }
-
-    function serializeUpgradeData(address implementation_, string memory outputJson_) internal {
-        VM.writeJson(VM.toString(implementation_), getOutputPath(outputJson_), ".addresses.implementation");
-        VM.writeJson(VM.toString(block.number), getOutputPath(outputJson_), ".latestUpgradeBlock");
-    }
-
-    function buildFactoryJson(address deployer_, address implementation_) internal returns (string memory json_) {
-        json_ = VM.serializeUint("", "chainId", block.chainid);
-        json_ = VM.serializeAddress("", "deployer", deployer_);
-        json_ = VM.serializeAddress("", "implementation", implementation_);
-        json_ = VM.serializeUint("", "deploymentBlock", block.number);
-    }
-
-    function buildImplementationJson(
-        address factory_,
-        address implementation_,
-        bytes memory constructorArguments_
-    ) internal returns (string memory json_) {
-        json_ = VM.serializeUint("", "chainId", block.chainid);
-        json_ = VM.serializeAddress("", "factory", factory_);
-        json_ = VM.serializeAddress("", "implementation", implementation_);
-        json_ = VM.serializeBytes("", "constructorArguments", constructorArguments_);
-        json_ = VM.serializeUint("", "deploymentBlock", block.number);
-    }
-
-    function buildProxyJson(
-        address factory_,
-        address deployer_,
-        address proxy_,
-        bytes memory constructorArguments_
-    ) internal returns (string memory json_) {
-        json_ = VM.serializeUint("", "chainId", block.chainid);
-        json_ = VM.serializeAddress("", "factory", factory_);
-        json_ = VM.serializeAddress("", "deployer", deployer_);
-        json_ = VM.serializeAddress("", "proxy", proxy_);
-        json_ = VM.serializeBytes("", "constructorArguments", constructorArguments_);
-        json_ = VM.serializeUint("", "deploymentBlock", block.number);
-    }
 
     function parseDeploymentData(
         string memory filePath_
     ) internal view returns (DeploymentData memory deploymentData_) {
-        return abi.decode(VM.parseJson(VM.readFile(filePath_)), (DeploymentData));
+        string memory json_ = VM.readFile(filePath_);
+
+        deploymentData_.appChainGatewayImplementation = stdJson.readAddress(json_, ".appChainGatewayImplementation");
+        deploymentData_.appChainId = stdJson.readUint(json_, ".appChainId");
+        deploymentData_.appChainNativeToken = stdJson.readAddress(json_, ".appChainNativeToken");
+        deploymentData_.appChainParameterRegistryImplementation = stdJson.readAddress(
+            json_,
+            ".appChainParameterRegistryImplementation"
+        );
+        deploymentData_.deployer = stdJson.readAddress(json_, ".deployer");
+        deploymentData_.distributionManagerImplementation = stdJson.readAddress(
+            json_,
+            ".distributionManagerImplementation"
+        );
+        deploymentData_.distributionManagerProxy = stdJson.readAddress(json_, ".distributionManagerProxy");
+        deploymentData_.distributionManagerProxySalt = stringToBytes32(
+            stdJson.readString(json_, ".distributionManagerProxySalt")
+        );
+        deploymentData_.factory = stdJson.readAddress(json_, ".factory");
+        deploymentData_.feeTokenImplementation = stdJson.readAddress(json_, ".feeTokenImplementation");
+        deploymentData_.feeTokenProxy = stdJson.readAddress(json_, ".feeTokenProxy");
+        deploymentData_.feeTokenProxySalt = stringToBytes32(stdJson.readString(json_, ".feeTokenProxySalt"));
+        deploymentData_.gatewayProxy = stdJson.readAddress(json_, ".gatewayProxy");
+        deploymentData_.gatewayProxySalt = stringToBytes32(stdJson.readString(json_, ".gatewayProxySalt"));
+        deploymentData_.groupMessageBroadcasterImplementation = stdJson.readAddress(
+            json_,
+            ".groupMessageBroadcasterImplementation"
+        );
+        deploymentData_.groupMessageBroadcasterProxy = stdJson.readAddress(json_, ".groupMessageBroadcasterProxy");
+        deploymentData_.groupMessageBroadcasterProxySalt = stringToBytes32(
+            stdJson.readString(json_, ".groupMessageBroadcasterProxySalt")
+        );
+        deploymentData_.identityUpdateBroadcasterImplementation = stdJson.readAddress(
+            json_,
+            ".identityUpdateBroadcasterImplementation"
+        );
+        deploymentData_.identityUpdateBroadcasterProxy = stdJson.readAddress(json_, ".identityUpdateBroadcasterProxy");
+        deploymentData_.identityUpdateBroadcasterProxySalt = stringToBytes32(
+            stdJson.readString(json_, ".identityUpdateBroadcasterProxySalt")
+        );
+        deploymentData_.nodeRegistryImplementation = stdJson.readAddress(json_, ".nodeRegistryImplementation");
+        deploymentData_.nodeRegistryProxy = stdJson.readAddress(json_, ".nodeRegistryProxy");
+        deploymentData_.nodeRegistryProxySalt = stringToBytes32(stdJson.readString(json_, ".nodeRegistryProxySalt"));
+        deploymentData_.parameterRegistryProxy = stdJson.readAddress(json_, ".parameterRegistryProxy");
+        deploymentData_.parameterRegistryProxySalt = stringToBytes32(
+            stdJson.readString(json_, ".parameterRegistryProxySalt")
+        );
+        deploymentData_.payerRegistryImplementation = stdJson.readAddress(json_, ".payerRegistryImplementation");
+        deploymentData_.payerRegistryProxy = stdJson.readAddress(json_, ".payerRegistryProxy");
+        deploymentData_.payerRegistryProxySalt = stringToBytes32(stdJson.readString(json_, ".payerRegistryProxySalt"));
+        deploymentData_.payerReportManagerImplementation = stdJson.readAddress(
+            json_,
+            ".payerReportManagerImplementation"
+        );
+        deploymentData_.payerReportManagerProxy = stdJson.readAddress(json_, ".payerReportManagerProxy");
+        deploymentData_.payerReportManagerProxySalt = stringToBytes32(
+            stdJson.readString(json_, ".payerReportManagerProxySalt")
+        );
+        deploymentData_.rateRegistryImplementation = stdJson.readAddress(json_, ".rateRegistryImplementation");
+        deploymentData_.rateRegistryProxy = stdJson.readAddress(json_, ".rateRegistryProxy");
+        deploymentData_.rateRegistryProxySalt = stringToBytes32(stdJson.readString(json_, ".rateRegistryProxySalt"));
+        deploymentData_.settlementChainGatewayImplementation = stdJson.readAddress(
+            json_,
+            ".settlementChainGatewayImplementation"
+        );
+        deploymentData_.settlementChainId = stdJson.readUint(json_, ".settlementChainId");
+        deploymentData_.settlementChainInboxToAppchain = stdJson.readAddress(json_, ".settlementChainInboxToAppchain");
+        deploymentData_.settlementChainParameterRegistryAdmin1 = stdJson.readAddress(
+            json_,
+            ".settlementChainParameterRegistryAdmin1"
+        );
+        deploymentData_.settlementChainParameterRegistryAdmin2 = stdJson.readAddress(
+            json_,
+            ".settlementChainParameterRegistryAdmin2"
+        );
+        deploymentData_.settlementChainParameterRegistryAdmin3 = stdJson.readAddress(
+            json_,
+            ".settlementChainParameterRegistryAdmin3"
+        );
+        deploymentData_.settlementChainParameterRegistryImplementation = stdJson.readAddress(
+            json_,
+            ".settlementChainParameterRegistryImplementation"
+        );
+    }
+
+    function parseStartingParameters(
+        string memory filePath_
+    ) internal view returns (bytes[] memory keys_, bytes32[] memory values_) {
+        string memory json_ = VM.readFile(filePath_);
+
+        string[] memory startingKeys_ = new string[](14);
+        startingKeys_[0] = "xmtp.nodeRegistry.admin";
+        startingKeys_[1] = "xmtp.nodeRegistry.maxCanonicalNodes";
+        startingKeys_[2] = "xmtp.payerRegistry.settler";
+        startingKeys_[3] = "xmtp.payerRegistry.feeDistributor";
+        startingKeys_[4] = "xmtp.payerRegistry.minimumDeposit";
+        startingKeys_[5] = "xmtp.payerRegistry.withdrawLockPeriod";
+        startingKeys_[6] = "xmtp.rateRegistry.messageFee";
+        startingKeys_[7] = "xmtp.rateRegistry.storageFee";
+        startingKeys_[8] = "xmtp.rateRegistry.congestionFee";
+        startingKeys_[9] = "xmtp.rateRegistry.targetRatePerMinute";
+        startingKeys_[10] = "xmtp.groupMessageBroadcaster.minPayloadSize";
+        startingKeys_[11] = "xmtp.groupMessageBroadcaster.maxPayloadSize";
+        startingKeys_[12] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
+        startingKeys_[13] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+
+        ParameterType[] memory parameterTypes_ = new ParameterType[](14);
+        parameterTypes_[0] = ParameterType.Address;
+        parameterTypes_[1] = ParameterType.Uint;
+        parameterTypes_[2] = ParameterType.Address;
+        parameterTypes_[3] = ParameterType.Address;
+        parameterTypes_[4] = ParameterType.Uint;
+        parameterTypes_[5] = ParameterType.Uint;
+        parameterTypes_[6] = ParameterType.Uint;
+        parameterTypes_[7] = ParameterType.Uint;
+        parameterTypes_[8] = ParameterType.Uint;
+        parameterTypes_[9] = ParameterType.Uint;
+        parameterTypes_[10] = ParameterType.Uint;
+        parameterTypes_[11] = ParameterType.Uint;
+        parameterTypes_[12] = ParameterType.Uint;
+        parameterTypes_[13] = ParameterType.Uint;
+
+        uint256 count_ = 0;
+
+        for (uint256 index_; index_ < startingKeys_.length; ++index_) {
+            if (!stdJson.keyExists(json_, string.concat(".startingParameters.", startingKeys_[index_]))) continue;
+
+            ++count_;
+        }
+
+        keys_ = new bytes[](count_);
+        values_ = new bytes32[](count_);
+
+        for (uint256 index_; index_ < startingKeys_.length; ++index_) {
+            if (!stdJson.keyExists(json_, string.concat(".startingParameters.", startingKeys_[index_]))) continue;
+
+            keys_[index_] = bytes(startingKeys_[index_]);
+
+            values_[index_] = parameterTypes_[index_] == ParameterType.Address
+                ? parseAndEncodeAddressParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]))
+                : parseAndEncodeUintParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]));
+        }
+    }
+
+    function parseAndEncodeAddressParameter(
+        string memory json_,
+        string memory key_
+    ) internal pure returns (bytes32 value_) {
+        value_ = bytes32(uint256(uint160(stdJson.readAddress(json_, key_))));
+    }
+
+    function parseAndEncodeUintParameter(
+        string memory json_,
+        string memory key_
+    ) internal pure returns (bytes32 value_) {
+        value_ = bytes32(stdJson.readUint(json_, key_));
+    }
+
+    function stringToBytes32(string memory input_) internal pure returns (bytes32 output_) {
+        return bytes32(abi.encodePacked(input_));
+    }
+
+    function bytes32ToString(bytes32 input_) internal pure returns (string memory output_) {
+        return string(abi.encodePacked(input_));
     }
 }

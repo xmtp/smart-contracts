@@ -1,6 +1,6 @@
 {
     "name": "@xmtp/smart-contracts",
-    "version": "0.4.2",
+    "version": "0.4.0",
     "description": "XMTP Smart Contracts",
     "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
     "repository": {
@@ -25,7 +25,8 @@
         "solhint-fix": "solhint --fix 'src/**/*.sol'",
         "test": "forge test",
         "anvil": "anvil",
-        "deploy-local": "forge script script/DeployLocal.s.sol:DeployLocal --rpc-url anvil --broadcast"
+        "deploy-local": "forge script script/DeployLocal.s.sol:DeployLocalScript --rpc-url anvil --broadcast --sig 'deployLocal()'",
+        "verify-local-deployment": "forge script script/DeployLocal.s.sol:DeployLocalScript --rpc-url anvil --broadcast --sig 'verifyLocalDeployment()'"
     },
     "devDependencies": {
         "@arbitrum/sdk": "^4.0.4",
