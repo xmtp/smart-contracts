@@ -270,6 +270,12 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         return _getNodeRegistryStorage().baseURI;
     }
 
+    /**
+     * @notice Returns the signer address from a public key.
+     * @param  publicKey_ The public key.
+     * @return signer_    The signer address.
+     * @dev    Validates uncompressed public key format: 0x04 + 32 bytes X + 32 bytes Y = 65 bytes total
+     */
     function _getSignerFromPublicKey(bytes calldata publicKey_) internal pure returns (address signer_) {
         if (publicKey_.length != 65 || bytes1(publicKey_[:1]) != 0x04) revert InvalidSigningPublicKey();
 
