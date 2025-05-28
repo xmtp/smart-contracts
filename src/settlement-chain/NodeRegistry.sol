@@ -99,7 +99,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         string calldata httpAddress_
     ) external onlyAdmin returns (uint32 nodeId_, address signer_) {
         if (_isZero(owner_)) revert InvalidOwner();
-        if (signingPublicKey_.length == 0) revert InvalidSigningPublicKey();
         if (bytes(httpAddress_).length == 0) revert InvalidHttpAddress();
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
@@ -110,7 +109,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
             nodeId_ = ++$.nodeCount * NODE_INCREMENT; // The first node starts with `nodeId_ = NODE_INCREMENT`.
         }
 
-        signer_ = address(uint160(uint256(keccak256(signingPublicKey_))));
+        signer_ = _getSignerFromPublicKey(signingPublicKey_);
 
         // Nodes start off as non-canonical.
         $.nodes[nodeId_] = Node(signer_, false, signingPublicKey_, httpAddress_);
@@ -269,6 +268,18 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     function _baseURI() internal view override returns (string memory baseURI_) {
         return _getNodeRegistryStorage().baseURI;
+    }
+
+    /**
+     * @notice Returns the signer address from a public key.
+     * @param  publicKey_ The public key.
+     * @return signer_    The signer address.
+     * @dev    Validates uncompressed public key format: 0x04 + 32 bytes X + 32 bytes Y = 65 bytes total
+     */
+    function _getSignerFromPublicKey(bytes calldata publicKey_) internal pure returns (address signer_) {
+        if (publicKey_.length != 65 || bytes1(publicKey_[:1]) != 0x04) revert InvalidSigningPublicKey();
+
+        return address(uint160(uint256(keccak256(publicKey_[1:65]))));
     }
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
