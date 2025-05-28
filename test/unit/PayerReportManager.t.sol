@@ -35,21 +35,17 @@ contract PayerReportManagerTests is Test {
     address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _payerRegistry = makeAddr("payerRegistry");
 
-    address internal _signer1;
-    uint256 internal _signer1Pk;
-    address internal _signer2;
-    uint256 internal _signer2Pk;
-    address internal _signer3;
-    uint256 internal _signer3Pk;
-    address internal _signer4;
-    uint256 internal _signer4Pk;
+    address internal _signer1 = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address internal _signer2 = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address internal _signer3 = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+    address internal _signer4 = 0x90F79bf6EB2c4f870365E785982E1f101E93b906;
+
+    uint256 internal _signer1Pk = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
+    uint256 internal _signer2Pk = uint256(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d);
+    uint256 internal _signer3Pk = uint256(0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a);
+    uint256 internal _signer4Pk = uint256(0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6);
 
     function setUp() external {
-        (_signer1, _signer1Pk) = makeAddrAndKey("signer1");
-        (_signer2, _signer2Pk) = makeAddrAndKey("signer2");
-        (_signer3, _signer3Pk) = makeAddrAndKey("signer3");
-        (_signer4, _signer4Pk) = makeAddrAndKey("signer4");
-
         _implementation = address(new PayerReportManagerHarness(_parameterRegistry, _nodeRegistry, _payerRegistry));
         _manager = PayerReportManagerHarness(address(new Proxy(_implementation)));
 

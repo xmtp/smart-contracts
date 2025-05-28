@@ -34,8 +34,17 @@ contract NodeRegistryTests is Test {
     address internal _admin = makeAddr("admin");
     address internal _unauthorized = makeAddr("unauthorized");
 
-    address internal _alice = makeAddr("alice");
-    address internal _bob = makeAddr("bob");
+    address internal _alice = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address internal _bob = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+
+    uint256 internal _alicePrivateKey = uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80);
+    uint256 internal _bobPrivateKey = uint256(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d);
+
+    bytes internal _alicePublicKey =
+        hex"048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+
+    bytes internal _bobPublicKey =
+        hex"04ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0d67351e5f06073092499336ab0839ef8a521afd334e53807205fa2f08eec74f4";
 
     function setUp() external {
         _implementation = address(new NodeRegistryHarness(_parameterRegistry));
@@ -92,22 +101,13 @@ contract NodeRegistryTests is Test {
         _registry.addNode(address(0), hex"", "");
     }
 
-    function test_addNode_invalidSigningPublicKey() external {
-        _registry.__setAdmin(_admin);
-
-        vm.expectRevert(INodeRegistry.InvalidSigningPublicKey.selector);
-
-        vm.prank(_admin);
-        _registry.addNode(address(1), hex"", "");
-    }
-
     function test_addNode_invalidHttpAddress() external {
         _registry.__setAdmin(_admin);
 
         vm.expectRevert(INodeRegistry.InvalidHttpAddress.selector);
 
         vm.prank(_admin);
-        _registry.addNode(address(1), hex"1f", "");
+        _registry.addNode(address(1), hex"", "");
     }
 
     function test_addNode_maxNodesReached() external {
@@ -117,36 +117,65 @@ contract NodeRegistryTests is Test {
         vm.expectRevert(INodeRegistry.MaxNodesReached.selector);
 
         vm.prank(_admin);
-        _registry.addNode(address(1), hex"1f", "http://example.com");
+        _registry.addNode(address(1), hex"", "http://example.com");
+    }
+
+    function test_addNode_invalidSigningPublicKey() external {
+        _registry.__setAdmin(_admin);
+
+        bytes[] memory invalidPublicKeys_ = new bytes[](6);
+
+        // Empty.
+        invalidPublicKeys_[0] = hex"";
+
+        // Starts correctly, too short.
+        invalidPublicKeys_[1] = hex"04";
+
+        // Missing starting byte.
+        invalidPublicKeys_[
+            2
+        ] = hex"8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+
+        // Correct length, invalid starting byte.
+        invalidPublicKeys_[
+            3
+        ] = hex"058318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+
+        // Too short, correct starting byte.
+        invalidPublicKeys_[
+            4
+        ] = hex"048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2a";
+
+        // Too long, correct starting byte.
+        invalidPublicKeys_[
+            5
+        ] = hex"048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa505";
+
+        for (uint256 index_; index_ < invalidPublicKeys_.length; ++index_) {
+            vm.expectRevert(INodeRegistry.InvalidSigningPublicKey.selector);
+
+            vm.prank(_admin);
+            _registry.addNode(address(1), invalidPublicKeys_[index_], "http://example.com");
+        }
     }
 
     function test_addNode_first() external {
         _registry.__setAdmin(_admin);
 
         vm.expectEmit(address(_registry));
-        emit INodeRegistry.NodeAdded(
-            _NODE_INCREMENT,
-            address(1),
-            0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC,
-            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
-            "http://example.com"
-        );
+        emit INodeRegistry.NodeAdded(_NODE_INCREMENT, address(1), _alice, _alicePublicKey, "http://example.com");
 
         vm.prank(_admin);
-        (uint32 nodeId_, address signer_) = _registry.addNode(
-            address(1),
-            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
-            "http://example.com"
-        );
+        (uint32 nodeId_, address signer_) = _registry.addNode(address(1), _alicePublicKey, "http://example.com");
 
         assertEq(nodeId_, _NODE_INCREMENT);
-        assertEq(signer_, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
+        assertEq(signer_, _alice);
 
         assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(_registry.__getNode(nodeId_).signer, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
+        assertEq(_registry.__getNode(nodeId_).signer, _alice);
         assertEq(_registry.__getNode(nodeId_).isCanonical, false);
-        assertEq(_registry.__getNode(nodeId_).signingPublicKey, hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f");
+        assertEq(_registry.__getNode(nodeId_).signingPublicKey, _alicePublicKey);
         assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
 
         assertEq(_registry.__getNodeCount(), 1);
@@ -158,32 +187,50 @@ contract NodeRegistryTests is Test {
         _registry.__setNodeCount(11);
 
         vm.expectEmit(address(_registry));
-        emit INodeRegistry.NodeAdded(
-            _NODE_INCREMENT * 12,
-            address(1),
-            0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC,
-            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
-            "http://example.com"
-        );
+        emit INodeRegistry.NodeAdded(_NODE_INCREMENT * 12, address(1), _bob, _bobPublicKey, "http://example.com");
 
         vm.prank(_admin);
-        (uint32 nodeId_, address signer_) = _registry.addNode(
-            address(1),
-            hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f",
-            "http://example.com"
-        );
+        (uint32 nodeId_, address signer_) = _registry.addNode(address(1), _bobPublicKey, "http://example.com");
 
         assertEq(nodeId_, _NODE_INCREMENT * 12);
-        assertEq(signer_, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
+        assertEq(signer_, _bob);
 
         assertEq(_registry.__getOwner(nodeId_), address(1));
 
-        assertEq(_registry.__getNode(nodeId_).signer, 0xaae97Cb335d7F39A7D89717918Ad6F52f50739FC);
+        assertEq(_registry.__getNode(nodeId_).signer, _bob);
         assertEq(_registry.__getNode(nodeId_).isCanonical, false);
-        assertEq(_registry.__getNode(nodeId_).signingPublicKey, hex"1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f");
+        assertEq(_registry.__getNode(nodeId_).signingPublicKey, _bobPublicKey);
         assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
 
         assertEq(_registry.__getNodeCount(), 12);
+        assertEq(_registry.canonicalNodesCount(), 0);
+    }
+
+    function test_addNode_sample1() external {
+        bytes
+            memory publicKey_ = hex"04df49de6469b04e713787791a2718c4588bd2548253a632a2a84055136af9d6629e2ef630eae2536cd03ed18ad337a02f6bd86e4ab5a1a1b748e06c0b267de82a";
+
+        address expectedSigner_ = 0x9449B62ab3F941E260DD8E3eCb9CD706C0B4b0bE;
+
+        _registry.__setAdmin(_admin);
+
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeAdded(_NODE_INCREMENT, address(1), expectedSigner_, publicKey_, "http://example.com");
+
+        vm.prank(_admin);
+        (uint32 nodeId_, address signer_) = _registry.addNode(address(1), publicKey_, "http://example.com");
+
+        assertEq(nodeId_, _NODE_INCREMENT);
+        assertEq(signer_, expectedSigner_);
+
+        assertEq(_registry.__getOwner(nodeId_), address(1));
+
+        assertEq(_registry.__getNode(nodeId_).signer, expectedSigner_);
+        assertEq(_registry.__getNode(nodeId_).isCanonical, false);
+        assertEq(_registry.__getNode(nodeId_).signingPublicKey, publicKey_);
+        assertEq(_registry.__getNode(nodeId_).httpAddress, "http://example.com");
+
+        assertEq(_registry.__getNodeCount(), 1);
         assertEq(_registry.canonicalNodesCount(), 0);
     }
 
