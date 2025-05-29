@@ -90,7 +90,7 @@ jobs:
           body: |
             ## Docker Image
             ```
-            ghcr.io/xmtp/xmtpd-anvil:${{ github.ref_name }}
+            ghcr.io/xmtp/contracts:${{ github.ref_name }}
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
