@@ -149,7 +149,7 @@ contract ParameterScripts is Script {
 
     /* ============ Individual Functions ============ */
 
-    function updateNodeRegistryStartingParameters() external {
+    function updateNodeRegistryStartingParameters() public {
         if (_deploymentData.nodeRegistryProxy == address(0)) revert NodeRegistryProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -159,7 +159,7 @@ contract ParameterScripts is Script {
         vm.stopBroadcast();
     }
 
-    function updatePayerRegistryStartingParameters() external {
+    function updatePayerRegistryStartingParameters() public {
         if (_deploymentData.payerRegistryProxy == address(0)) revert PayerRegistryProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -171,7 +171,7 @@ contract ParameterScripts is Script {
         vm.stopBroadcast();
     }
 
-    function updateRateRegistryStartingParameters() external {
+    function updateRateRegistryStartingParameters() public {
         if (_deploymentData.rateRegistryProxy == address(0)) revert RateRegistryProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -180,7 +180,7 @@ contract ParameterScripts is Script {
         vm.stopBroadcast();
     }
 
-    function updateGroupMessageBroadcasterStartingParameters() external {
+    function updateGroupMessageBroadcasterStartingParameters() public {
         if (_deploymentData.groupMessageBroadcasterProxy == address(0)) revert GroupMessageBroadcasterProxyNotSet();
         if (block.chainid != _deploymentData.appChainId) revert UnexpectedChainId();
 
@@ -190,7 +190,7 @@ contract ParameterScripts is Script {
         vm.stopBroadcast();
     }
 
-    function updateIdentityUpdateBroadcasterStartingParameters() external {
+    function updateIdentityUpdateBroadcasterStartingParameters() public {
         if (_deploymentData.identityUpdateBroadcasterProxy == address(0)) revert IdentityUpdateBroadcasterProxyNotSet();
         if (block.chainid != _deploymentData.appChainId) revert UnexpectedChainId();
 
