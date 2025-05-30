@@ -37,6 +37,9 @@ import { Utils } from "./utils/Utils.sol";
 contract DeployScripts is Script {
     error AppChainNativeTokenNotSet();
     error DeployerNotSet();
+    error EnvironmentContainsAppChainData();
+    error EnvironmentContainsSettlementChainData();
+    error EnvironmentContainsUnexpectedDeployer();
     error EnvironmentNotSet();
     error FactoryNotSet();
     error GatewayProxyNotSet();
@@ -53,8 +56,6 @@ contract DeployScripts is Script {
     error UnexpectedFactory();
     error UnexpectedImplementation();
     error UnexpectedProxy();
-    error EnvironmentContainsSettlementData();
-    error EnvironmentContainsUnexpectedDeployer();
 
     Utils.DeploymentData internal _deploymentData;
 
@@ -140,7 +141,7 @@ contract DeployScripts is Script {
 
         // TODO: For some or all of these, check a getter to ensure the contracts are as expected.
 
-        if (vm.parseJsonUint(json_, ".settlementChainId") != block.chainid) revert("App chain ID mismatch");
+        if (vm.parseJsonUint(json_, ".settlementChainId") != block.chainid) revert("Settlement chain ID mismatch");
 
         if (vm.parseJsonAddress(json_, ".settlementChainFactory").code.length == 0) {
             revert("Settlement chain factory does not exist");
@@ -972,13 +973,14 @@ contract DeployScripts is Script {
             vm.keyExists(json_, ".settlementChainFactory") ||
             vm.keyExists(json_, ".settlementChainParameterRegistry") ||
             vm.keyExists(json_, ".settlementChainGateway") ||
+            vm.keyExists(json_, ".appChainNativeToken") ||
             vm.keyExists(json_, ".distributionManager") ||
             vm.keyExists(json_, ".nodeRegistry") ||
             vm.keyExists(json_, ".payerRegistry") ||
             vm.keyExists(json_, ".payerReportManager") ||
             vm.keyExists(json_, ".rateRegistry")
         ) {
-            revert EnvironmentContainsSettlementData();
+            revert EnvironmentContainsSettlementChainData();
         }
     }
 
@@ -992,7 +994,7 @@ contract DeployScripts is Script {
             vm.keyExists(json_, ".groupMessageBroadcaster") ||
             vm.keyExists(json_, ".identityUpdateBroadcaster")
         ) {
-            revert EnvironmentContainsSettlementData();
+            revert EnvironmentContainsAppChainData();
         }
     }
 }

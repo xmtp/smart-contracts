@@ -258,7 +258,7 @@ contract DeployLocalScript is Script {
 
         // TODO: For some or all of these, check a getter to ensure the contracts are as expected.
 
-        if (vm.parseJsonUint(json_, ".settlementChainId") != block.chainid) revert("App chain ID mismatch");
+        if (vm.parseJsonUint(json_, ".settlementChainId") != block.chainid) revert("Settlement chain ID mismatch");
         if (vm.parseJsonUint(json_, ".appChainId") != block.chainid) revert("App chain ID mismatch");
 
         if (vm.parseJsonAddress(json_, ".settlementChainFactory").code.length == 0) {

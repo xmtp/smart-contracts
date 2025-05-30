@@ -5,6 +5,8 @@ import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
 library Utils {
+    error InvalidInputLength();
+
     enum ParameterType {
         Address,
         Uint
@@ -192,14 +194,17 @@ library Utils {
         keys_ = new bytes[](count_);
         values_ = new bytes32[](count_);
 
+        uint256 outputIndex_ = 0;
         for (uint256 index_; index_ < startingKeys_.length; ++index_) {
             if (!stdJson.keyExists(json_, string.concat(".startingParameters.", startingKeys_[index_]))) continue;
 
-            keys_[index_] = bytes(startingKeys_[index_]);
+            keys_[outputIndex_] = bytes(startingKeys_[index_]);
 
-            values_[index_] = parameterTypes_[index_] == ParameterType.Address
+            values_[outputIndex_] = parameterTypes_[index_] == ParameterType.Address
                 ? parseAndEncodeAddressParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]))
                 : parseAndEncodeUintParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]));
+
+            ++outputIndex_;
         }
     }
 
@@ -218,6 +223,8 @@ library Utils {
     }
 
     function stringToBytes32(string memory input_) internal pure returns (bytes32 output_) {
+        if (bytes(input_).length > 32) revert InvalidInputLength();
+
         return bytes32(abi.encodePacked(input_));
     }
 

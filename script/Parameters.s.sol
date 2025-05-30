@@ -124,6 +124,8 @@ contract ParameterScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
+        // TODO: Either compute/estimate the values or use a more flexible approach via the config file.
+
         if (IERC20Like(_deploymentData.appChainNativeToken).balanceOf(_admin) < 1_000000) {
             revert InsufficientBalance();
         }
