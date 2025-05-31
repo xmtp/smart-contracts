@@ -1,30 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+/**
+ * @title  Library for converting settlement layer addresses to roll-up layer alias addresses, and vice versa.
+ * @notice Optimism and Arbitrum use a similar mechanism to convert addresses between the settlement and roll-up layers.
+ */
 library AddressAliasHelper {
-    uint160 internal constant _OFFSET = uint160(0x1111000000000000000000000000000000001111);
+    uint160 internal constant OFFSET = uint160(0x1111000000000000000000000000000000001111);
 
     /**
-     * @notice Convert an L1 address into its L2 alias, which will be the msg.sender on the L2.
-     * @param  account_ The address on L1 that will trigger a tx to L2.
-     * @return alias_   The address on L2 that will be the msg.sender.
-     * @dev    This applies for L2->L3 as well.
+     * @notice Convert a settlement layer address to roll-up layer alias address.
+     * @param  account_ The address on the settlement layer that will trigger a tx to the roll-up layer.
+     * @return alias_   The address on the roll-up layer that will be the msg.sender.
      */
-    function applyL1ToL2Alias(address account_) internal pure returns (address alias_) {
+    function toAlias(address account_) internal pure returns (address alias_) {
         unchecked {
-            return address(uint160(account_) + _OFFSET);
+            return address(uint160(account_) + OFFSET);
         }
     }
 
     /**
-     * @notice Convert an L2 alias address into its L1 address, which will be the address that triggered the tx to L2.
-     * @param  alias_   The address on L2 that will be the msg.sender.
-     * @return account_ The address on L1 that triggered the tx to L2.
-     * @dev    This applies for L2->L3 as well.
+     * @notice Convert a roll-up layer alias address to settlement layer address.
+     * @param  alias_   The address on the roll-up layer that will be the msg.sender.
+     * @return account_ The address on the settlement layer that triggered the tx to the roll-up layer.
      */
-    function undoL1ToL2Alias(address alias_) internal pure returns (address account_) {
+    function fromAlias(address alias_) internal pure returns (address account_) {
         unchecked {
-            return address(uint160(alias_) - _OFFSET);
+            return address(uint160(alias_) - OFFSET);
         }
     }
 }

@@ -174,7 +174,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function appChainAlias() public view returns (address alias_) {
-        return AddressAliasHelper.applyL1ToL2Alias(address(this));
+        return AddressAliasHelper.toAlias(address(this));
     }
 
     /// @inheritdoc ISettlementChainGateway

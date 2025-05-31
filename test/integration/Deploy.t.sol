@@ -455,7 +455,7 @@ contract DeployTests is Test {
 
         assertEq(
             IAppChainGateway(implementation_).settlementChainGatewayAlias(),
-            AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_)
+            AddressAliasHelper.toAlias(settlementChainGateway_)
         );
     }
 

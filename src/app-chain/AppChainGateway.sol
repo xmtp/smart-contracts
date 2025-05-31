@@ -74,7 +74,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
         // Despite the `L1ToL2Alias` naming, this function is also used to get the L3 alias address of an L2 account.
         // Save gas at runtime by inlining the alias address as an immutable.
-        settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_);
+        settlementChainGatewayAlias = AddressAliasHelper.toAlias(settlementChainGateway_);
 
         _disableInitializers();
     }
