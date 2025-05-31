@@ -140,7 +140,7 @@ contract DeployTests is Test {
     function setUp() external {
         // Get the deployer address from the environment variable, which will produce addresses that can be expected in
         // a deployment. If not set, make a deployer address.
-        _deployer = vm.envAddress("DEPLOYER") == address(0) ? makeAddr("deployer") : vm.envAddress("DEPLOYER");
+        _deployer = vm.envOr("DEPLOYER", makeAddr("deployer"));
 
         vm.recordLogs();
 

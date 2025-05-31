@@ -122,9 +122,7 @@ contract DeployLocalTests is Test {
     function setUp() external {
         // Get the deployer address from the environment variable, which will produce addresses that can be expected in
         // a local deployment. If not set, make a deployer address.
-        _deployer = vm.envAddress("LOCAL_DEPLOYER") == address(0)
-            ? makeAddr("deployer")
-            : vm.envAddress("LOCAL_DEPLOYER");
+        _deployer = vm.envOr("LOCAL_DEPLOYER", makeAddr("deployer"));
     }
 
     function test_deployLocalProtocol() external {
