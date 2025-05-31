@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 
 import { IAppChainGatewayLike } from "../../src/settlement-chain/interfaces/External.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
@@ -234,7 +234,7 @@ contract SettlementChainGatewayTests is Test {
         values_[0] = bytes32(uint256(10101));
         values_[1] = bytes32(uint256(23232));
 
-        address appChainAlias_ = AddressAliasHelper.applyL1ToL2Alias(address(_gateway));
+        address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
 
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
 
@@ -358,6 +358,6 @@ contract SettlementChainGatewayTests is Test {
     /* ============ appChainAlias ============ */
 
     function test_appChainAlias() external view {
-        assertEq(_gateway.appChainAlias(), AddressAliasHelper.applyL1ToL2Alias(address(_gateway)));
+        assertEq(_gateway.appChainAlias(), AddressAliasHelper.toAlias(address(_gateway)));
     }
 }

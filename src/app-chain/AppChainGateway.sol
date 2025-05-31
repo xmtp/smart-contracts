@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
@@ -75,7 +74,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
         // Despite the `L1ToL2Alias` naming, this function is also used to get the L3 alias address of an L2 account.
         // Save gas at runtime by inlining the alias address as an immutable.
-        settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(settlementChainGateway_);
+        settlementChainGatewayAlias = AddressAliasHelper.toAlias(settlementChainGateway_);
 
         _disableInitializers();
     }

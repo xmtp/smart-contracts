@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 
 import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
@@ -28,7 +28,7 @@ contract AppChainGatewayTests is Test {
 
     address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
-    address internal _settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(_settlementChainGateway);
+    address internal _settlementChainGatewayAlias = AddressAliasHelper.toAlias(_settlementChainGateway);
 
     function setUp() external {
         _implementation = address(new AppChainGatewayHarness(_parameterRegistry, _settlementChainGateway));
