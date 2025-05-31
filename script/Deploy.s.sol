@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import { Script, console } from "../lib/forge-std/src/Script.sol";
-import { AddressAliasHelper } from "../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
 
 import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
 import { PayerRegistryDeployer } from "./deployers/PayerRegistryDeployer.sol";
@@ -16,6 +15,8 @@ import { AppChainParameterRegistryDeployer } from "./deployers/AppChainParameter
 import { AppChainGatewayDeployer } from "./deployers/AppChainGatewayDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
+
+import { AddressAliasHelper } from "../src/libraries/AddressAliasHelper.sol";
 
 import { IPayerRegistry } from "../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
