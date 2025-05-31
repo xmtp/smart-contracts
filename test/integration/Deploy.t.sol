@@ -2,7 +2,10 @@
 pragma solidity 0.8.28;
 
 import { Test, Vm, console } from "../../lib/forge-std/src/Test.sol";
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
+
+/* ============ Source Library Imports ============ */
+
+import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 
 /* ============ Source Interface Imports ============ */
 

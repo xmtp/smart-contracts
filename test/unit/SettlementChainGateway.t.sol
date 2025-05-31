@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 
 import { IAppChainGatewayLike } from "../../src/settlement-chain/interfaces/External.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
