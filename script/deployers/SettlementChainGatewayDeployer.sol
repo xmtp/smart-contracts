@@ -17,10 +17,10 @@ library SettlementChainGatewayDeployer {
         address appChainGateway_,
         address appChainNativeToken_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
-        require(appChainGateway_ != address(0), ZeroAppChainGateway());
-        require(appChainNativeToken_ != address(0), ZeroAppChainNativeToken());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (parameterRegistry_ == address(0)) revert ZeroParameterRegistry();
+        if (appChainGateway_ == address(0)) revert ZeroAppChainGateway();
+        if (appChainNativeToken_ == address(0)) revert ZeroAppChainNativeToken();
 
         constructorArguments_ = abi.encode(parameterRegistry_, appChainGateway_, appChainNativeToken_);
 
@@ -34,8 +34,8 @@ library SettlementChainGatewayDeployer {
         address implementation_,
         bytes32 salt_
     ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(implementation_ != address(0), ZeroImplementation());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeWithSelector(SettlementChainGateway.initialize.selector);

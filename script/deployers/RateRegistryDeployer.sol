@@ -14,8 +14,8 @@ library RateRegistryDeployer {
         address factory_,
         address parameterRegistry_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (parameterRegistry_ == address(0)) revert ZeroParameterRegistry();
 
         constructorArguments_ = abi.encode(parameterRegistry_);
 
@@ -29,8 +29,8 @@ library RateRegistryDeployer {
         address implementation_,
         bytes32 salt_
     ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(implementation_ != address(0), ZeroImplementation());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeWithSelector(RateRegistry.initialize.selector);

@@ -22,12 +22,12 @@ library DistributionManagerDeployer {
         address payerRegistry_,
         address token_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(parameterRegistry_ != address(0), ZeroParameterRegistry());
-        require(nodeRegistry_ != address(0), ZeroNodeRegistry());
-        require(payerReportManager_ != address(0), ZeroPayerReportManager());
-        require(payerRegistry_ != address(0), ZeroPayerRegistry());
-        require(token_ != address(0), ZeroToken());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (parameterRegistry_ == address(0)) revert ZeroParameterRegistry();
+        if (nodeRegistry_ == address(0)) revert ZeroNodeRegistry();
+        if (payerReportManager_ == address(0)) revert ZeroPayerReportManager();
+        if (payerRegistry_ == address(0)) revert ZeroPayerRegistry();
+        if (token_ == address(0)) revert ZeroToken();
 
         constructorArguments_ = abi.encode(
             parameterRegistry_,
@@ -47,8 +47,8 @@ library DistributionManagerDeployer {
         address implementation_,
         bytes32 salt_
     ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(implementation_ != address(0), ZeroImplementation());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeWithSelector(DistributionManager.initialize.selector);
@@ -70,6 +70,7 @@ library DistributionManagerDeployer {
             payerRegistry_,
             token_
         );
+
         bytes memory creationCode_ = abi.encodePacked(type(DistributionManager).creationCode, constructorArguments_);
 
         return IFactory(factory_).computeImplementationAddress(creationCode_);

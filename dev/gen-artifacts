@@ -26,17 +26,16 @@ forge --version
 export forge_version=$(forge --version | grep "Version" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
 
 function generate_artifacts() {
-    local chain="$1"
-    local filename="$2"
-    local package="$(echo "${filename}" | tr '[:upper:]' '[:lower:]')"
-    local source_artifact="${source_dir}/${chain}/${filename}.sol"
-    local abi_artifact="${abi_dir}/${filename}.abi.json"
+    local contract_path="$1"
+    local contract="$2"
+    local package="$(echo "${contract}" | tr '[:upper:]' '[:lower:]')"
+    local abi_artifact="${abi_dir}/${contract}.abi.json"
 
     rm -f "${abi_artifact}"
 
     # Generate ABI
-    if ! forge inspect "${source_artifact}:${filename}" abi --json > "${abi_artifact}"; then
-        echo "ERROR: Failed to generate ABI for ${filename}" >&2
+    if ! forge inspect "${contract_path}:${contract}" abi --json > "${abi_artifact}"; then
+        echo "ERROR: Failed to generate ABI for ${contract}" >&2
         exit 1
     fi
 }
@@ -68,16 +67,22 @@ function environments() {
 function main() {
     echo "Generating artifacts with forge version ${forge_version}"
 
-    contracts=("GroupMessageBroadcaster" "IdentityUpdateBroadcaster")
+    contracts=("Factory" "AppChainGateway" "AppChainParameterRegistry" "GroupMessageBroadcaster" "IdentityUpdateBroadcaster")
     for contract in "${contracts[@]}"; do
-        echo "⧖ Generating artifacts for contract: ${contract}"
-        generate_artifacts "app-chain" "${contract}"
+        echo "⧖ Generating artifacts for app chain contract: ${contract}"
+        generate_artifacts "src/app-chain/${contract}.sol" "${contract}"
     done
 
-    contracts=("NodeRegistry" "RateRegistry" "PayerRegistry" "PayerReportManager" "SettlementChainParameterRegistry")
+    contracts=("Factory" "SettlementChainGateway" "SettlementChainParameterRegistry" "DistributionManager" "FeeToken" "NodeRegistry" "PayerRegistry" "PayerReportManager" "RateRegistry")
     for contract in "${contracts[@]}"; do
-        echo "⧖ Generating artifacts for contract: ${contract}"
-        generate_artifacts "settlement-chain" "${contract}"
+        echo "⧖ Generating artifacts for settlement chain contract: ${contract}"
+        generate_artifacts "src/settlement-chain/${contract}.sol" "${contract}"
+    done
+
+    contracts=("MockERC20")
+    for contract in "${contracts[@]}"; do
+        echo "⧖ Generating artifacts for mock contract: ${contract}"
+        generate_artifacts "test/utils/Mocks.sol" "${contract}"
     done
 
     build_info
@@ -85,10 +90,5 @@ function main() {
 
     echo -e "\033[32m✔\033[0m Artifacts generated successfully!\n"
 }
-
-if [ "${forge_version}" != "1.2.0" ]; then
-    echo "ERROR: Forge version must be 1.2.0. Got '${forge_version}'" >&2
-    exit 1
-fi
 
 main "$@"
