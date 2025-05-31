@@ -28,7 +28,7 @@ contract AppChainGatewayTests is Test {
 
     address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
-    address internal _settlementChainGatewayAlias = AddressAliasHelper.applyL1ToL2Alias(_settlementChainGateway);
+    address internal _settlementChainGatewayAlias = AddressAliasHelper.toAlias(_settlementChainGateway);
 
     function setUp() external {
         _implementation = address(new AppChainGatewayHarness(_parameterRegistry, _settlementChainGateway));

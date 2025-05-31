@@ -729,7 +729,7 @@ contract DeployScripts is Script {
 
         if (
             IAppChainGateway(implementation_).settlementChainGatewayAlias() !=
-            AddressAliasHelper.applyL1ToL2Alias(_deploymentData.gatewayProxy)
+            AddressAliasHelper.toAlias(_deploymentData.gatewayProxy)
         ) {
             revert UnexpectedImplementation();
         }
