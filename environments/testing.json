@@ -1,0 +1,14 @@
+{
+  "appChainNativeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "deployer": "0xBC0d5ADdb45E3F5b37806cacf9112C16a54414a8",
+  "distributionManager": "0xCAdaC2439CEb7125b11a482Ab3AEe7dEB78279DA",
+  "nodeRegistry": "0xD651849b326b01EBC67527C6570B20103DF7d4E0",
+  "payerRegistry": "0x3Ce54917177666d1a331fbb3F208a3B91218EC00",
+  "payerReportManager": "0x6a31917FD897497A5CE3487f4aeF98EB0B00E0FA",
+  "rateRegistry": "0xdF3F8523FCdd590ec81d84b2eE0980E461D6d0f4",
+  "settlementChainDeploymentBlock": 26552435,
+  "settlementChainFactory": "0xeC7a8cf14FA757BAeC8B948444f7E1931ebB0A03",
+  "settlementChainGateway": "0x323454f0Ca2101C776CA822A913b9a1a897b6C44",
+  "settlementChainId": 84532,
+  "settlementChainParameterRegistry": "0xedDf03cfAB0756939BF62c129Ebd48ab9D142388"
+}
