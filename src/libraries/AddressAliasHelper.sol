@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 /**
  * @title  Library for converting settlement layer addresses to roll-up layer alias addresses, and vice versa.
- * @notice Optimism and Arbitrum use a similar mechanism to convert addresses between the settlement and roll-up layers.
+ * @notice Roll-up layer address aliasing as per EIP-6735 (see https://eips.ethereum.org/EIPS/eip-6735).
  */
 library AddressAliasHelper {
     uint160 internal constant OFFSET = uint160(0x1111000000000000000000000000000000001111);
