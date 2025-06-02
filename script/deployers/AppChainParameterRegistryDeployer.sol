@@ -13,7 +13,7 @@ library AppChainParameterRegistryDeployer {
     function deployImplementation(
         address factory_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
-        require(factory_ != address(0), ZeroFactory());
+        if (factory_ == address(0)) revert ZeroFactory();
 
         constructorArguments_ = "";
 
@@ -31,8 +31,8 @@ library AppChainParameterRegistryDeployer {
         bytes32 salt_,
         address[] memory admins_
     ) internal returns (address proxy_, bytes memory constructorArguments_, bytes memory initializeCallData_) {
-        require(factory_ != address(0), ZeroFactory());
-        require(implementation_ != address(0), ZeroImplementation());
+        if (factory_ == address(0)) revert ZeroFactory();
+        if (implementation_ == address(0)) revert ZeroImplementation();
 
         constructorArguments_ = abi.encode(IFactory(factory_).initializableImplementation());
         initializeCallData_ = abi.encodeCall(IParameterRegistry.initialize, (admins_));

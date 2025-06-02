@@ -31,8 +31,12 @@ import { RateRegistryDeployer } from "./deployers/RateRegistryDeployer.sol";
 
 import { SettlementChainParameterRegistryDeployer } from "./deployers/SettlementChainParameterRegistryDeployer.sol";
 
-contract DeployLocal is Script {
-    address internal constant _APPCHAIN_NATIVE_TOKEN = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+/* ============ Mock Imports ============ */
+
+import { MockERC20 } from "../test/utils/Mocks.sol";
+
+contract DeployLocalScript is Script {
+    string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
 
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
@@ -75,18 +79,20 @@ contract DeployLocal is Script {
 
     uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
-    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = bytes32(uint256(0));
-    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = bytes32(uint256(2));
-    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = bytes32(uint256(3));
-    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = bytes32(uint256(4));
-    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = bytes32(uint256(5));
-    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = bytes32(uint256(6));
-    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = bytes32(uint256(7));
-    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = bytes32(uint256(8));
+    bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
+    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
+    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
+    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
+    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
+    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
+    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "PayerReportManager_0";
+    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
 
     uint256 internal _privateKey;
 
-    address internal _admin;
+    address internal _deployer;
+
+    MockERC20 internal _appChainNativeToken;
 
     IFactory internal _factory;
 
@@ -105,46 +111,53 @@ contract DeployLocal is Script {
 
     IDistributionManager internal _distributionManagerProxy;
 
+    /* ============ Main Entrypoints ============ */
+
     function setUp() public virtual {
-        _privateKey = uint256(vm.envBytes32("LOCAL_DEPLOY_PRIVATE_KEY"));
+        _privateKey = uint256(vm.envBytes32("LOCAL_DEPLOYER_PRIVATE_KEY"));
 
         if (_privateKey == 0) revert("Private key not set");
 
-        _admin = vm.addr(_privateKey);
+        _deployer = vm.addr(_privateKey);
     }
 
-    function run() external {
-        // Deploy the Factory on the base (settlement) chain.
-        _factory = _deploySettlementChainFactory();
+    function deployLocal() external {
+        uint256 blockNumber_ = block.number;
 
-        // Deploy the Parameter Registry on the base (settlement) chain.
+        // Deploy the Factory.
+        _factory = _deployFactory();
+
+        // Deploy the Appchain Native Token (must be done after the factory to ensure factory address).
+        _appChainNativeToken = _deployAppchainNativeToken();
+
+        // Deploy the Parameter Registry.
         address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
 
-        // The admin of the Parameter Registry on the base (settlement) chain is the global admin.
+        // The admin of the Parameter Registry is the global admin.
         _parameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(
             settlementChainParameterRegistryImplementation_,
-            _admin
+            _deployer
         );
 
-        // Deploy the Payer Registry on the base (settlement) chain.
+        // Deploy the Payer Registry.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
             address(_parameterRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_appChainNativeToken)
         );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
 
-        // Deploy the Rate Registry on the base (settlement) chain.
+        // Deploy the Rate Registry.
         address rateRegistryImplementation_ = _deployRateRegistryImplementation(address(_parameterRegistryProxy));
 
         _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
 
-        // Deploy the Node Registry on the base (settlement) chain.
+        // Deploy the Node Registry.
         address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(address(_parameterRegistryProxy));
 
         _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
 
-        // Deploy the Payer Report Manager on the base (settlement) chain.
+        // Deploy the Payer Report Manager.
         address payerReportManagerImplementation_ = _deployPayerReportManagerImplementation(
             address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
@@ -153,25 +166,25 @@ contract DeployLocal is Script {
 
         _payerReportManagerProxy = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
 
-        // Deploy the Distribution Manager on the base (settlement) chain.
+        // Deploy the Distribution Manager.
         address distributionManagerImplementation_ = _deployDistributionManagerImplementation(
             address(_parameterRegistryProxy),
             address(_nodeRegistryProxy),
             address(_payerReportManagerProxy),
             address(_payerRegistryProxy),
-            _APPCHAIN_NATIVE_TOKEN
+            address(_appChainNativeToken)
         );
 
         _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
 
-        // Deploy the Group Message Broadcaster on the base (settlement) chain.
+        // Deploy the Group Message Broadcaster.
         address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
             address(_parameterRegistryProxy)
         );
 
         _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(groupMessageBroadcasterImplementation_);
 
-        // Deploy the Identity Update Broadcaster on the base (settlement) chain.
+        // Deploy the Identity Update Broadcaster.
         address identityUpdateBroadcasterImplementation_ = _deployIdentityUpdateBroadcasterImplementation(
             address(_parameterRegistryProxy)
         );
@@ -209,34 +222,107 @@ contract DeployLocal is Script {
         console.log("Group Message Broadcaster deployed to:", address(_groupMessageBroadcasterProxy));
         console.log("Identity Update Broadcaster deployed to:", address(_identityUpdateBroadcasterProxy));
 
-        // Write the environment data to a JSON file.
-        string memory json_;
-        json_ = vm.serializeUint("", "settlementChainId", block.chainid);
-        json_ = vm.serializeUint("", "appChainId", block.chainid);
-        json_ = vm.serializeUint("", "settlementChainDeploymentBlock", block.number);
-        json_ = vm.serializeUint("", "appChainDeploymentBlock", block.number);
-        json_ = vm.serializeAddress("", "settlementChainParameterRegistry", address(_parameterRegistryProxy));
-        json_ = vm.serializeAddress("", "payerRegistry", address(_payerRegistryProxy));
-        json_ = vm.serializeAddress("", "rateRegistry", address(_rateRegistryProxy));
-        json_ = vm.serializeAddress("", "nodeRegistry", address(_nodeRegistryProxy));
-        json_ = vm.serializeAddress("", "payerReportManager", address(_payerReportManagerProxy));
-        json_ = vm.serializeAddress("", "distributionManager", address(_distributionManagerProxy));
-        json_ = vm.serializeAddress("", "groupMessageBroadcaster", address(_groupMessageBroadcasterProxy));
-        json_ = vm.serializeAddress("", "identityUpdateBroadcaster", address(_identityUpdateBroadcasterProxy));
+        vm.createDir("environments", true);
 
-        string memory filePath_ = "./environments/anvil.json";
-        vm.writeJson(json_, filePath_);
+        // Write the environment data to a JSON file.
+        vm.serializeAddress("root", "deployer", _deployer);
+        vm.serializeUint("root", "settlementChainId", block.chainid);
+        vm.serializeUint("root", "appChainId", block.chainid);
+        vm.serializeUint("root", "settlementChainDeploymentBlock", blockNumber_);
+        vm.serializeUint("root", "appChainDeploymentBlock", blockNumber_);
+        vm.serializeAddress("root", "settlementChainFactory", address(_factory));
+        vm.serializeAddress("root", "appChainFactory", address(_factory));
+        vm.serializeAddress("root", "appChainNativeToken", address(_appChainNativeToken));
+        vm.serializeAddress("root", "settlementChainParameterRegistry", address(_parameterRegistryProxy));
+        vm.serializeAddress("root", "appChainParameterRegistry", address(_parameterRegistryProxy));
+        vm.serializeAddress("root", "settlementChainGateway", address(0));
+        vm.serializeAddress("root", "appChainGateway", address(0));
+        vm.serializeAddress("root", "payerRegistry", address(_payerRegistryProxy));
+        vm.serializeAddress("root", "rateRegistry", address(_rateRegistryProxy));
+        vm.serializeAddress("root", "nodeRegistry", address(_nodeRegistryProxy));
+        vm.serializeAddress("root", "payerReportManager", address(_payerReportManagerProxy));
+        vm.serializeAddress("root", "distributionManager", address(_distributionManagerProxy));
+        vm.serializeAddress("root", "groupMessageBroadcaster", address(_groupMessageBroadcasterProxy));
+
+        string memory json_ = vm.serializeAddress(
+            "root",
+            "identityUpdateBroadcaster",
+            address(_identityUpdateBroadcasterProxy)
+        );
+
+        vm.writeJson(json_, DEPLOYMENT_FILE_PATH);
+    }
+
+    function verifyLocalDeployment() external {
+        string memory json_ = vm.readFile(DEPLOYMENT_FILE_PATH);
+
+        // TODO: For some or all of these, check a getter to ensure the contracts are as expected.
+
+        if (vm.parseJsonUint(json_, ".settlementChainId") != block.chainid) revert("Settlement chain ID mismatch");
+        if (vm.parseJsonUint(json_, ".appChainId") != block.chainid) revert("App chain ID mismatch");
+
+        if (vm.parseJsonAddress(json_, ".settlementChainFactory").code.length == 0) {
+            revert("Settlement chain factory does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".appChainFactory").code.length == 0) {
+            revert("App chain factory does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".appChainNativeToken").code.length == 0) {
+            revert("Appchain native token does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".settlementChainParameterRegistry").code.length == 0) {
+            revert("Settlement chain parameter registry does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".appChainParameterRegistry").code.length == 0) {
+            revert("App chain parameter registry does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".payerRegistry").code.length == 0) {
+            revert("Payer registry does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".rateRegistry").code.length == 0) {
+            revert("Rate registry does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".nodeRegistry").code.length == 0) {
+            revert("Node registry does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".payerReportManager").code.length == 0) {
+            revert("Payer report manager does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".distributionManager").code.length == 0) {
+            revert("Distribution manager does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".groupMessageBroadcaster").code.length == 0) {
+            revert("Group message broadcaster does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".identityUpdateBroadcaster").code.length == 0) {
+            revert("Identity update broadcaster does not exist");
+        }
     }
 
     /* ============ Factory Helpers ============ */
 
-    function _deploySettlementChainFactory() internal returns (IFactory factory_) {
-        return _deployFactory();
-    }
-
     function _deployFactory() internal returns (IFactory factory_) {
         vm.startBroadcast(_privateKey);
         factory_ = IFactory(FactoryDeployer.deploy());
+        vm.stopBroadcast();
+    }
+
+    /* ============ Appchain Native Token Helpers ============ */
+
+    function _deployAppchainNativeToken() internal returns (MockERC20 token_) {
+        vm.startBroadcast(_privateKey);
+        token_ = new MockERC20("Appchain Native Token", "ANT");
         vm.stopBroadcast();
     }
 
@@ -635,7 +721,7 @@ contract DeployLocal is Script {
         keys_[1] = _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY;
 
         bytes32[] memory values_ = new bytes32[](2);
-        values_[0] = bytes32(uint256(uint160(_admin)));
+        values_[0] = bytes32(uint256(uint160(_deployer)));
         values_[1] = bytes32(uint256(_NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES));
 
         vm.startBroadcast(_privateKey);
@@ -655,7 +741,7 @@ contract DeployLocal is Script {
         _nodeRegistryProxy.updateMaxCanonicalNodes();
         vm.stopBroadcast();
 
-        if (_nodeRegistryProxy.admin() != _admin) revert("Node registry admin not updated correctly");
+        if (_nodeRegistryProxy.admin() != _deployer) revert("Node registry admin not updated correctly");
 
         if (_nodeRegistryProxy.maxCanonicalNodes() != _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES) {
             revert("Node registry max canonical nodes not updated correctly");
