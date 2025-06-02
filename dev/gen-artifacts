@@ -59,7 +59,7 @@ function build_info() {
 function environments() {
     ./dev/gen-anvil-state
 
-    cp "${repo_root}/environments/anvil.json" "${environments_dir}/anvil.json"
+    cp -r "${repo_root}/environments" "${environments_dir}"
 
     rm -rf "${repo_root}/anvil-state.json"
 }
