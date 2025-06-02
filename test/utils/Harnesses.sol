@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
 
+import { AddressAliasHelper } from "../../src/libraries/AddressAliasHelper.sol";
 import { ParameterKeys } from "../../src/libraries/ParameterKeys.sol";
 import { RegistryParameters } from "../../src/libraries/RegistryParameters.sol";
 import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProofs.sol";
@@ -562,5 +563,15 @@ contract RegistryParametersHarness {
 
     function getAddressFromRawParameter(bytes32 parameter_) external pure returns (address value_) {
         return RegistryParameters.getAddressFromRawParameter(parameter_);
+    }
+}
+
+contract AddressAliasHelperHarness {
+    function toAlias(address account_) external pure returns (address alias_) {
+        return AddressAliasHelper.toAlias(account_);
+    }
+
+    function fromAlias(address alias_) external pure returns (address account_) {
+        return AddressAliasHelper.fromAlias(alias_);
     }
 }

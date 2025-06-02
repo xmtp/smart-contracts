@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { AddressAliasHelper } from "../../lib/arbitrum-bridging/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
 import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
 
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
+import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGatewayLike, IERC20InboxLike } from "./interfaces/External.sol";
@@ -174,7 +174,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function appChainAlias() public view returns (address alias_) {
-        return AddressAliasHelper.applyL1ToL2Alias(address(this));
+        return AddressAliasHelper.toAlias(address(this));
     }
 
     /// @inheritdoc ISettlementChainGateway
