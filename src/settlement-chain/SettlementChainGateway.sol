@@ -16,7 +16,6 @@ import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.so
 import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: `depositWithPermit`,  `depositUnderlyingWithPermit`, and `sendParametersAsRetryableTicketsWithPermit`.
-// TODO: Some function `whenNotPaused`.
 
 /**
  * @title  Implementation for a Settlement Chain Gateway.
@@ -46,6 +45,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      * @param  nonce The nonce of the parameter transmission (to prevent out-of-sequence resets).
      */
     struct SettlementChainGatewayStorage {
+        bool paused;
         uint256 nonce;
         mapping(uint256 chainId => address inbox) inboxes;
     }
@@ -59,6 +59,13 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         assembly {
             $.slot := _SETTLEMENT_CHAIN_GATEWAY_STORAGE_LOCATION
         }
+    }
+
+    /* ============ Modifiers ============ */
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
+        _;
     }
 
     /* ============ Constructor ============ */
@@ -91,7 +98,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc ISettlementChainGateway
-    function deposit(uint256 chainId_, uint256 amount_) external {
+    function deposit(uint256 chainId_, uint256 amount_) external whenNotPaused {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
@@ -99,7 +106,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /// @inheritdoc ISettlementChainGateway
-    function depositFromUnderlying(uint256 chainId_, uint256 amount_) external {
+    function depositFromUnderlying(uint256 chainId_, uint256 amount_) external whenNotPaused {
         SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
         IFeeTokenLike(feeToken).deposit(amount_);
         _deposit(chainId_, amount_);
@@ -111,7 +118,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
-    ) external {
+    ) external whenNotPaused {
         if (chainIds_.length == 0) revert NoChainIds();
 
         uint256 nonce_;
@@ -135,7 +142,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasPrice_,
         uint256 maxSubmissionCost_,
         uint256 feeTokensToSend_
-    ) external {
+    ) external whenNotPaused {
         if (chainIds_.length == 0) revert NoChainIds();
 
         uint256 nonce_;
@@ -173,6 +180,16 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
         // NOTE: `address(0)` is valid, as it disables the inbox for a chain ID.
         emit InboxUpdated(chainId_, _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_);
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function updatePauseStatus() external {
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        SettlementChainGatewayStorage storage $ = _getSettlementChainGatewayStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
     }
 
     /// @inheritdoc IMigratable
@@ -219,8 +236,18 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /// @inheritdoc ISettlementChainGateway
-    function migratorParameterKey() public pure virtual returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (bytes memory key_) {
         return "xmtp.settlementChainGateway.migrator";
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.settlementChainGateway.paused";
+    }
+
+    /// @inheritdoc ISettlementChainGateway
+    function paused() external view returns (bool paused_) {
+        return _getSettlementChainGatewayStorage().paused;
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -345,5 +372,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getSettlementChainGatewayStorage().paused) revert Paused();
     }
 }

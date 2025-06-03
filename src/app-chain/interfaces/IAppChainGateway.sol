@@ -21,6 +21,12 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     event ParametersReceived(uint256 indexed nonce, bytes[] keys);
 
     /**
+     * @notice Emitted when the pause status is set.
+     * @param  paused The new pause status.
+     */
+    event PauseStatusUpdated(bool indexed paused);
+
+    /**
      * @notice Emitted when funds are withdrawn from the app chain.
      * @param  account   The address of the account that withdrew the funds.
      * @param  messageId The message ID of the withdrawal.
@@ -45,6 +51,12 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice Thrown when the withdrawal amount is zero.
     error ZeroWithdrawalAmount();
+
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
+
+    /// @notice Thrown when the app chain gateway is paused.
+    error Paused();
 
     /* ============ Initialization ============ */
 
@@ -74,6 +86,12 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
 
+    /**
+     * @notice Updates the pause status.
+     * @dev    Ensures the new pause status is not equal to the old pause status.
+     */
+    function updatePauseStatus() external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice The address of the parameter registry.
@@ -90,4 +108,10 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the paused status.
+    function pausedParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
 }

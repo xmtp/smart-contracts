@@ -17,8 +17,6 @@ import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: Some function `whenNotPaused`.
-
 /**
  * @title  Implementation of the Distribution Manager.
  * @notice This contract handles functionality for distributing fees.
@@ -51,6 +49,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         mapping(uint32 nodeId => mapping(uint32 originatorNodeId => mapping(uint256 payerReportIndex => bool hasClaimed))) hasClaimed;
         mapping(uint32 nodeId => uint96 owedFees) owedFees;
         uint96 totalOwedFees;
+        bool paused;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.DistributionManager")) - 1)) & ~bytes32(uint256(0xff))
@@ -62,6 +61,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         assembly {
             $.slot := _DISTRIBUTION_MANAGER_STORAGE_LOCATION
         }
+    }
+
+    /* ============ Modifiers ============ */
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
+        _;
     }
 
     /* ============ Constructor ============ */
@@ -106,7 +112,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint32 nodeId_,
         uint32[] calldata originatorNodeIds_,
         uint256[] calldata payerReportIndices_
-    ) external returns (uint96 claimed_) {
+    ) external whenNotPaused returns (uint96 claimed_) {
         _revertIfNotNodeOwner(nodeId_);
 
         if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
@@ -155,17 +161,30 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
-    function withdraw(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+    function withdraw(uint32 nodeId_, address recipient_) external whenNotPaused returns (uint96 withdrawn_) {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
     }
 
     /// @inheritdoc IDistributionManager
-    function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+    function withdrawIntoUnderlying(
+        uint32 nodeId_,
+        address recipient_
+    ) external whenNotPaused returns (uint96 withdrawn_) {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unused-return
         IFeeTokenLike(feeToken).withdrawTo(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
+    }
+
+    /// @inheritdoc IDistributionManager
+    function updatePauseStatus() external {
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
     }
 
     /// @inheritdoc IMigratable
@@ -181,8 +200,18 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.distributionManager.paused";
+    }
+
+    /// @inheritdoc IDistributionManager
     function totalOwedFees() external view returns (uint96 totalOwedFees_) {
         return _getDistributionManagerStorage().totalOwedFees;
+    }
+
+    /// @inheritdoc IDistributionManager
+    function paused() external view returns (bool paused_) {
+        return _getDistributionManagerStorage().paused;
     }
 
     /// @inheritdoc IDistributionManager
@@ -254,5 +283,9 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     function _revertIfNotNodeOwner(uint32 nodeId_) internal view {
         if (INodeRegistryLike(nodeRegistry).ownerOf(nodeId_) != msg.sender) revert NotNodeOwner();
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getDistributionManagerStorage().paused) revert Paused();
     }
 }
