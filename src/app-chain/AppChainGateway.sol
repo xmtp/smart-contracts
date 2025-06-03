@@ -12,8 +12,6 @@ import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
-// TODO: Some function `whenNotPaused`.
-
 /**
  * @title  Implementation for an App Chain Gateway.
  * @notice The AppChainGateway exposes the ability to receive parameters from the settlement chain gateway, and set
@@ -42,6 +40,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
      * @param  keyNonces A mapping of keys and their corresponding nonces, to track order of parameter receipts.
      */
     struct AppChainGatewayStorage {
+        bool paused;
         mapping(bytes key => uint256 nonce) keyNonces;
     }
 
@@ -61,6 +60,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /// @notice Modifier to ensure the caller is the settlement chain gateway (i.e. its L3 alias address).
     modifier onlySettlementChainGateway() {
         _revertIfNotSettlementChainGateway();
+        _;
+    }
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
         _;
     }
 
@@ -93,12 +97,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IAppChainGateway
-    function withdraw(address recipient_) external payable {
+    function withdraw(address recipient_) external payable whenNotPaused {
         _withdraw(recipient_, ISettlementChainGatewayLike.withdraw.selector);
     }
 
     /// @inheritdoc IAppChainGateway
-    function withdrawIntoUnderlying(address recipient_) external payable {
+    function withdrawIntoUnderlying(address recipient_) external payable whenNotPaused {
         _withdraw(recipient_, ISettlementChainGatewayLike.withdrawIntoUnderlying.selector);
     }
 
@@ -127,6 +131,16 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         }
     }
 
+    /// @inheritdoc IAppChainGateway
+    function updatePauseStatus() external {
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
+    }
+
     /// @inheritdoc IMigratable
     function migrate() external {
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
@@ -135,8 +149,18 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IAppChainGateway
-    function migratorParameterKey() public pure virtual returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (bytes memory key_) {
         return "xmtp.appChainGateway.migrator";
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.appChainGateway.paused";
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function paused() external view returns (bool paused_) {
+        return _getAppChainGatewayStorage().paused;
     }
 
     /* ============ Internal Interactive Functions ============ */
@@ -162,5 +186,9 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     function _revertIfNotSettlementChainGateway() internal view {
         if (msg.sender != settlementChainGatewayAlias) revert NotSettlementChainGateway();
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getAppChainGatewayStorage().paused) revert Paused();
     }
 }

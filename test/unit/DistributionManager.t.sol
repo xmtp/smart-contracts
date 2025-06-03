@@ -21,6 +21,7 @@ import { Utils } from "../utils/Utils.sol";
 
 contract DistributionManagerTests is Test {
     bytes internal constant _MIGRATOR_KEY = "xmtp.distributionManager.migrator";
+    bytes internal constant _PAUSED_KEY = "xmtp.distributionManager.paused";
     bytes internal constant _PROTOCOL_FEES_RECIPIENT_KEY = "xmtp.distributionManager.protocolFeesRecipient";
 
     DistributionManagerHarness internal _manager;
@@ -96,7 +97,9 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.payerReportManager(), _payerReportManager);
         assertEq(_manager.feeToken(), _feeToken);
         assertEq(_manager.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_manager.pausedParameterKey(), _PAUSED_KEY);
         assertEq(_manager.protocolFeesRecipientParameterKey(), _PROTOCOL_FEES_RECIPIENT_KEY);
+        assertFalse(_manager.paused());
     }
 
     /* ============ initializer ============ */
@@ -107,6 +110,13 @@ contract DistributionManagerTests is Test {
     }
 
     /* ============ claimProtocolFees ============ */
+
+    function test_claimProtocolFees_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.claimProtocolFees(new uint32[](0), new uint256[](0));
+    }
 
     function test_claimProtocolFees_arrayLengthMismatch() external {
         vm.expectRevert(IDistributionManager.ArrayLengthMismatch.selector);
@@ -257,6 +267,13 @@ contract DistributionManagerTests is Test {
     }
 
     /* ============ claim ============ */
+
+    function test_claim_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.claim(0, new uint32[](0), new uint256[](0));
+    }
 
     function test_claim_notNodeOwner() external {
         vm.mockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
@@ -552,6 +569,13 @@ contract DistributionManagerTests is Test {
 
     /* ============ withdrawProtocolFees ============ */
 
+    function test_withdrawProtocolFees_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.withdrawProtocolFees();
+    }
+
     function test_withdrawProtocolFees_partial_noPayerRegistryExcess() external {
         _manager.__setProtocolFeesRecipient(address(1));
         _manager.__setOwedProtocolFees(10);
@@ -715,6 +739,13 @@ contract DistributionManagerTests is Test {
     }
 
     /* ============ withdrawProtocolFeesIntoUnderlying ============ */
+
+    function test_withdrawProtocolFeesIntoUnderlying_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.withdrawProtocolFeesIntoUnderlying();
+    }
 
     function test_withdrawProtocolFeesIntoUnderlying_partial_noPayerRegistryExcess() external {
         _manager.__setProtocolFeesRecipient(address(1));
@@ -953,6 +984,13 @@ contract DistributionManagerTests is Test {
 
     /* ============ withdraw ============ */
 
+    function test_withdraw_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.withdraw(0, address(0));
+    }
+
     function test_withdraw_partial_noPayerRegistryExcess() external {
         _manager.__setOwedFees(1, 10);
         _manager.__setTotalOwedFees(20);
@@ -1138,6 +1176,13 @@ contract DistributionManagerTests is Test {
 
     /* ============ withdrawIntoUnderlying ============ */
 
+    function test_withdrawIntoUnderlying_paused() external {
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.withdrawIntoUnderlying(0, address(0));
+    }
+
     function test_withdrawIntoUnderlying_partial_noPayerRegistryExcess() external {
         _manager.__setOwedFees(1, 10);
         _manager.__setTotalOwedFees(20);
@@ -1319,6 +1364,52 @@ contract DistributionManagerTests is Test {
         assertEq(withdrawn_, expectedWithdrawal_);
         assertEq(_manager.getOwedFees(1), owedFees_ - expectedWithdrawal_);
         assertEq(_manager.totalOwedFees(), totalOwedFees_ - expectedWithdrawal_);
+    }
+
+    /* ============ updatePauseStatus ============ */
+
+    function test_updatePauseStatus_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(2)));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _manager.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus_noChange() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        vm.expectRevert(IDistributionManager.NoChange.selector);
+
+        _manager.updatePauseStatus();
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _manager.__setPauseStatus(true);
+
+        vm.expectRevert(IDistributionManager.NoChange.selector);
+
+        _manager.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus() external {
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.PauseStatusUpdated(true);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _manager.updatePauseStatus();
+
+        assertTrue(_manager.paused());
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.PauseStatusUpdated(false);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        _manager.updatePauseStatus();
+
+        assertFalse(_manager.paused());
     }
 
     /* ============ updateProtocolFeesRecipient ============ */

@@ -25,6 +25,7 @@ contract SettlementChainGatewayTests is Test {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _INBOX_KEY = "xmtp.settlementChainGateway.inbox";
     bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainGateway.migrator";
+    bytes internal constant _PAUSED_KEY = "xmtp.settlementChainGateway.paused";
 
     SettlementChainGatewayHarness internal _gateway;
 
@@ -75,16 +76,25 @@ contract SettlementChainGatewayTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_gateway)), _implementation);
         assertEq(_gateway.implementation(), _implementation);
-        assertEq(keccak256(_gateway.inboxParameterKey()), keccak256(_INBOX_KEY));
-        assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_gateway.inboxParameterKey(), _INBOX_KEY);
+        assertEq(_gateway.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_gateway.pausedParameterKey(), _PAUSED_KEY);
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.appChainGateway(), _appChainGateway);
         assertEq(_gateway.feeToken(), _feeToken);
+        assertFalse(_gateway.paused());
         assertEq(_gateway.__getNonce(), 0);
         assertEq(_gateway.__getUnderlyingFeeToken(), _underlyingFeeToken);
     }
 
     /* ============ deposit ============ */
+
+    function test_deposit_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.deposit(0, 0);
+    }
 
     function test_deposit_feeTokenTransferFailed_reverts() external {
         _gateway.__setInbox(1111, makeAddr("inbox"));
@@ -159,6 +169,13 @@ contract SettlementChainGatewayTests is Test {
     }
 
     /* ============ depositFromUnderlying ============ */
+
+    function test_depositFromUnderlying_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.depositFromUnderlying(0, 0);
+    }
 
     function test_depositFromUnderlying_underlyingTokenTransferFailed_returnsFalse() external {
         _gateway.__setInbox(1111, makeAddr("inbox"));
@@ -272,6 +289,13 @@ contract SettlementChainGatewayTests is Test {
 
     /* ============ sendParameters ============ */
 
+    function test_sendParameters_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.sendParameters(new uint256[](0), new bytes[](0), 0, 0);
+    }
+
     function test_sendParameters_noChainIds() external {
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
         _gateway.sendParameters(new uint256[](0), new bytes[](0), 0, 0);
@@ -349,6 +373,13 @@ contract SettlementChainGatewayTests is Test {
     }
 
     /* ============ sendParametersAsRetryableTickets ============ */
+
+    function test_sendParametersAsRetryableTickets_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+    }
 
     function test_sendParametersAsRetryableTickets_noChainIds() external {
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
@@ -541,6 +572,52 @@ contract SettlementChainGatewayTests is Test {
         uint256 amount_ = _gateway.withdrawIntoUnderlying(_alice);
 
         assertEq(amount_, 100);
+    }
+
+    /* ============ updatePauseStatus ============ */
+
+    function test_updatePauseStatus_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(2)));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _gateway.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus_noChange() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        vm.expectRevert(ISettlementChainGateway.NoChange.selector);
+
+        _gateway.updatePauseStatus();
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.NoChange.selector);
+
+        _gateway.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus() external {
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.PauseStatusUpdated(true);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _gateway.updatePauseStatus();
+
+        assertTrue(_gateway.paused());
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.PauseStatusUpdated(false);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        _gateway.updatePauseStatus();
+
+        assertFalse(_gateway.paused());
     }
 
     /* ============ migrate ============ */

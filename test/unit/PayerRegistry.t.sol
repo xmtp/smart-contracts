@@ -67,12 +67,12 @@ contract PayerRegistryTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
-        assertEq(keccak256(_registry.minimumDepositParameterKey()), keccak256(_MINIMUM_DEPOSIT_KEY));
-        assertEq(keccak256(_registry.withdrawLockPeriodParameterKey()), keccak256(_WITHDRAW_LOCK_PERIOD_KEY));
-        assertEq(keccak256(_registry.settlerParameterKey()), keccak256(_SETTLER_KEY));
-        assertEq(keccak256(_registry.feeDistributorParameterKey()), keccak256(_FEE_DISTRIBUTOR_KEY));
-        assertEq(keccak256(_registry.pausedParameterKey()), keccak256(_PAUSED_KEY));
-        assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_registry.minimumDepositParameterKey(), _MINIMUM_DEPOSIT_KEY);
+        assertEq(_registry.withdrawLockPeriodParameterKey(), _WITHDRAW_LOCK_PERIOD_KEY);
+        assertEq(_registry.settlerParameterKey(), _SETTLER_KEY);
+        assertEq(_registry.feeDistributorParameterKey(), _FEE_DISTRIBUTOR_KEY);
+        assertEq(_registry.pausedParameterKey(), _PAUSED_KEY);
+        assertEq(_registry.migratorParameterKey(), _MIGRATOR_KEY);
         assertFalse(_registry.paused());
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.feeToken(), _feeToken);
