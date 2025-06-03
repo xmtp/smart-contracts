@@ -33,6 +33,10 @@ contract ParameterScripts is Script {
     error UnexpectedAdmin();
     error UnexpectedChainId();
 
+    uint256 internal constant _TX_STIPEND = 21_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
+    uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000; // 2 gwei per gas.
+
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
 
@@ -119,23 +123,22 @@ contract ParameterScripts is Script {
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * keys_.length);
+        uint256 cost_ = (_APP_CHAIN_GAS_PRICE * gasLimit_) / 1e18;
+
+        if (IERC20Like(_deploymentData.feeTokenProxy).balanceOf(_admin) < cost_) revert InsufficientBalance();
+
         vm.startBroadcast(_privateKey);
 
-        // TODO: Either compute/estimate the values or use a more flexible approach via the config file.
-
-        if (IERC20Like(_deploymentData.feeTokenProxy).balanceOf(_admin) < 1_000000) {
-            revert InsufficientBalance();
-        }
-
-        IERC20Like(_deploymentData.feeTokenProxy).approve(_deploymentData.gatewayProxy, 1_000000); // 1 USDC
+        IERC20Like(_deploymentData.feeTokenProxy).approve(_deploymentData.gatewayProxy, cost_);
 
         ISettlementChainGateway(_deploymentData.gatewayProxy).sendParametersAsRetryableTickets(
             chainIds_,
             keys_,
-            400_000,
-            2_000_000_000, // 2 gwei
-            1_000000, // 1 USDC
-            1_000000 // 1 USDC
+            gasLimit_,
+            _APP_CHAIN_GAS_PRICE,
+            cost_,
+            cost_
         );
 
         vm.stopBroadcast();
