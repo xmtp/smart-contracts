@@ -47,6 +47,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     event Withdrawal(uint32 indexed nodeId, uint96 amount);
 
     /**
+     * @notice Emitted when the pause status is set.
+     * @param  paused The new pause status.
+     */
+    event PauseStatusUpdated(bool indexed paused);
+
+    /**
      * @notice Emitted when the protocol fees recipient is updated.
      * @param  protocolFeesRecipient The new protocol fees recipient.
      */
@@ -92,6 +98,9 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
 
     /// @notice Thrown when the contract's available balance is zero.
     error ZeroAvailableBalance();
+
+    /// @notice Thrown when the contract is paused.
+    error Paused();
 
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
@@ -159,6 +168,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_);
 
     /**
+     * @notice Updates the pause status.
+     * @dev    Ensures the new pause status is not equal to the old pause status.
+     */
+    function updatePauseStatus() external;
+
+    /**
      * @notice Updates the protocol fees recipient.
      */
     function updateProtocolFeesRecipient() external;
@@ -167,6 +182,9 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the paused status.
+    function pausedParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The parameter registry key used to fetch the protocol fees recipient.
     function protocolFeesRecipientParameterKey() external pure returns (bytes memory key_);
@@ -194,6 +212,9 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
 
     /// @notice The total amount of fees owed.
     function totalOwedFees() external view returns (uint96 totalOwedFees_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
 
     /**
      * @notice Returns the amount of claimed fees owed to a node.

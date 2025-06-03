@@ -51,6 +51,12 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     event Withdrawal(uint256 amount, address indexed recipient);
 
+    /**
+     * @notice Emitted when the pause status is set.
+     * @param  paused The new pause status.
+     */
+    event PauseStatusUpdated(bool indexed paused);
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is zero (i.e. address(0)).
@@ -76,6 +82,12 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice Thrown when the chain ID is not supported.
     error UnsupportedChainId(uint256 chainId);
+
+    /// @notice Thrown when the contract is paused.
+    error Paused();
+
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
 
     /* ============ Initialization ============ */
 
@@ -157,6 +169,12 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function withdrawIntoUnderlying(address recipient_) external returns (uint256 amount_);
 
+    /**
+     * @notice Updates the pause status.
+     * @dev    Ensures the new pause status is not equal to the old pause status.
+     */
+    function updatePauseStatus() external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the inbox.
@@ -164,6 +182,9 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the paused status.
+    function pausedParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
@@ -176,6 +197,9 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice The address of the fee token on the settlement chain, that is used to pay for gas on app chains.
     function feeToken() external view returns (address feeToken_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
 
     /// @notice The inbox address for a chain ID.
     function getInbox(uint256 chainId_) external view returns (address inbox_);
