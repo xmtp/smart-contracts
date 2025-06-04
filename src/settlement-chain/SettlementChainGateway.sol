@@ -438,6 +438,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address inbox_ = _getInbox(chainId_);
 
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-start calls-loop
         // slither-disable-next-line unused-return
         IERC20Like(feeToken).approve(inbox_, feeTokensToSend_);
 
@@ -465,8 +466,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      */
     function _usePermit(address token_, uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) internal {
         // Ignore return value, as the permit may have already been used, and the allowance already approved.
-        // slither-disable-start unchecked-lowlevel
-        // slither-disable-start low-level-calls
+        // slither-disable-next-line unchecked-lowlevel
         address(token_).call(
             abi.encodeWithSelector(
                 IPermitErc20Like.permit.selector,
@@ -479,8 +479,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 s_
             )
         );
-        // slither-disable-end unchecked-lowlevel
-        // slither-disable-end low-level-calls
     }
 
     /* ============ Internal View/Pure Functions ============ */
