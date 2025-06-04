@@ -124,7 +124,9 @@ contract ParameterScripts is Script {
         keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
         uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * keys_.length);
-        uint256 cost_ = (_APP_CHAIN_GAS_PRICE * gasLimit_) / 1e18;
+
+        // Convert from 18 decimals (app chain gas token) to 6 decimals (fee token).
+        uint256 cost_ = ((_APP_CHAIN_GAS_PRICE * gasLimit_) * 1e6) / 1e18;
 
         if (IERC20Like(_deploymentData.feeTokenProxy).balanceOf(_admin) < cost_) revert InsufficientBalance();
 

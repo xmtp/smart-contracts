@@ -194,7 +194,7 @@ contract DeployTests is Test {
 
         console.log("settlementChainParameterRegistryProxy: %s", address(_settlementChainParameterRegistryProxy));
 
-        // Deploy the Fee Token on the base (settlement) chain.
+        // Deploy the Fee Token on the settlement chain.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_settlementChainParameterRegistryProxy),
             _USDC
@@ -339,7 +339,7 @@ contract DeployTests is Test {
 
         console.log("identityUpdateBroadcasterProxy: %s", address(_identityUpdateBroadcasterProxy));
 
-        // Set the inbox for the Gateway on the base (settlement) chain to communicate with the app chain.
+        // Set and update the inbox parameters for the settlement chain gateway to communicate with the app chain.
         _setInboxParameters();
         _updateInboxParameters();
 
@@ -355,7 +355,9 @@ contract DeployTests is Test {
         _setRateRegistryStartingRates();
         _updateRateRegistryRates();
 
-        return; // TODO: Remove this once the new inbox is deployed on base.
+        // NOTE: Bridging tests are temporarily disabled until the new inbox is deployed on the settlement chain (base)
+
+        return;
 
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
