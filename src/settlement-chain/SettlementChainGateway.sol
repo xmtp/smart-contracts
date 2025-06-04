@@ -165,18 +165,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_
     ) external whenNotPaused returns (uint256 totalSent_) {
-        return
-            _sendParametersAsRetryableTicketsFromFeeToken(
-                chainIds_,
-                keys_,
-                gasLimit_,
-                gasPrice_,
-                maxSubmissionCost_,
-                amountToSend_
-            );
+        return _sendParametersAsRetryableTicketsFromFeeToken(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -185,7 +176,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -194,15 +184,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     ) external whenNotPaused returns (uint256 totalSent_) {
         _usePermit(feeToken, amountToSend_ * chainIds_.length, deadline_, v_, r_, s_);
 
-        return
-            _sendParametersAsRetryableTicketsFromFeeToken(
-                chainIds_,
-                keys_,
-                gasLimit_,
-                gasPrice_,
-                maxSubmissionCost_,
-                amountToSend_
-            );
+        return _sendParametersAsRetryableTicketsFromFeeToken(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -211,18 +193,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_
     ) external whenNotPaused returns (uint256 totalSent_) {
-        return
-            _sendParametersAsRetryableTicketsFromUnderlying(
-                chainIds_,
-                keys_,
-                gasLimit_,
-                gasPrice_,
-                maxSubmissionCost_,
-                amountToSend_
-            );
+        return _sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -231,7 +204,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -240,15 +212,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     ) external whenNotPaused returns (uint256 totalSent_) {
         _usePermit(_underlyingFeeToken, amountToSend_ * chainIds_.length, deadline_, v_, r_, s_);
 
-        return
-            _sendParametersAsRetryableTicketsFromUnderlying(
-                chainIds_,
-                keys_,
-                gasLimit_,
-                gasPrice_,
-                maxSubmissionCost_,
-                amountToSend_
-            );
+        return _sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -404,7 +368,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
         // Pull the fee tokens from the caller.
@@ -412,7 +375,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), totalSent_ = amountToSend_ * chainIds_.length);
 
-        _sendParametersAsRetryableTickets(chainIds_, keys_, gasLimit_, gasPrice_, maxSubmissionCost_, amountToSend_);
+        _sendParametersAsRetryableTickets(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @dev Sends parameters to the app chains via a retryable tickets, pulling underlying fee tokens from the caller.
@@ -421,12 +384,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
         _pullAndConvertUnderlying(totalSent_ = amountToSend_ * chainIds_.length);
 
-        _sendParametersAsRetryableTickets(chainIds_, keys_, gasLimit_, gasPrice_, maxSubmissionCost_, amountToSend_);
+        _sendParametersAsRetryableTickets(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     /// @dev Sends parameters to the app chains via a retryable tickets.
@@ -435,7 +397,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 amountToSend_
     ) internal {
         if (chainIds_.length == 0) revert NoChainIds();
@@ -455,7 +416,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 keys_: keys_,
                 gasLimit_: gasLimit_,
                 gasPrice_: gasPrice_,
-                maxSubmissionCost_: maxSubmissionCost_,
                 feeTokensToSend_: amountToSend_,
                 data_: data_,
                 nonce_: nonce_,
@@ -470,7 +430,6 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
         uint256 feeTokensToSend_,
         bytes memory data_,
         uint256 nonce_,
@@ -485,7 +444,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 messageNumber_ = IERC20InboxLike(inbox_).createRetryableTicket({
             to_: appChainGateway,
             l2CallValue_: 0,
-            maxSubmissionCost_: maxSubmissionCost_,
+            maxSubmissionCost_: 0,
             excessFeeRefundAddress_: appChainAlias_,
             callValueRefundAddress_: appChainAlias_,
             gasLimit_: gasLimit_,

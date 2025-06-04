@@ -137,7 +137,6 @@ contract ParameterScripts is Script {
             keys_,
             gasLimit_,
             _APP_CHAIN_GAS_PRICE,
-            cost_,
             cost_
         );
 
