@@ -63,6 +63,10 @@ contract DeployTests is Test {
     address internal constant _USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
     address internal constant _APPCHAIN_RETRYABLE_TX_PRECOMPILE = 0x000000000000000000000000000000000000006E;
 
+    uint256 internal constant _TX_STIPEND = 21_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
+    uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000; // 2 gwei per gas.
+
     bytes internal constant _SETTLEMENT_CHAIN_GATEWAY_INBOX_KEY = "xmtp.settlementChainGateway.inbox";
 
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
@@ -690,8 +694,11 @@ contract DeployTests is Test {
     }
 
     function _bridgeBroadcasterStartingParameters(uint256 chainId_) internal {
-        _giveUSDC(_alice, 10_000000); // 10 USDC
-        _mintFeeTokens(_alice, 1_000000); // Convert 1 USDC to 1 FeeToken
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 4);
+        uint256 cost_ = (_APP_CHAIN_GAS_PRICE * gasLimit_) / 1e18;
+
+        _giveUSDC(_alice, cost_);
+        _mintFeeTokens(_alice, cost_);
 
         vm.selectFork(_settlementChainForkId);
 
@@ -701,17 +708,9 @@ contract DeployTests is Test {
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
-        _approveTokens(_USDC, _alice, address(_settlementChainGatewayProxy), 1_000000);
+        _approveTokens(address(_feeTokenProxy), _alice, address(_settlementChainGatewayProxy), cost_);
 
-        _sendParametersAsRetryableTickets(
-            _alice,
-            chainId_,
-            keys_,
-            200_000,
-            2_000_000_000, // 2 gwei
-            1_000000, // 1 USDC
-            1_000000 // 1 USDC
-        );
+        _sendParametersAsRetryableTickets(_alice, chainId_, keys_, gasLimit_, _APP_CHAIN_GAS_PRICE, cost_);
     }
 
     function _assertBroadcasterStartingParameters() internal {
@@ -1090,10 +1089,9 @@ contract DeployTests is Test {
         bytes[] memory keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
-        uint256 maxSubmissionCost_,
-        uint256 nativeTokensToSend_
+        uint256 amountToSend_
     ) internal {
-        _approveTokens(address(_feeTokenProxy), account_, address(_settlementChainGatewayProxy), nativeTokensToSend_);
+        _approveTokens(address(_feeTokenProxy), account_, address(_settlementChainGatewayProxy), amountToSend_);
 
         vm.selectFork(_settlementChainForkId);
 
@@ -1106,8 +1104,7 @@ contract DeployTests is Test {
             keys_,
             gasLimit_,
             gasPrice_,
-            maxSubmissionCost_,
-            nativeTokensToSend_
+            amountToSend_
         );
     }
 
