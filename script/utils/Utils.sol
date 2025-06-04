@@ -143,6 +143,7 @@ library Utils {
             json_,
             ".settlementChainParameterRegistryImplementation"
         );
+        deploymentData_.underlyingFeeToken = stdJson.readAddress(json_, ".underlyingFeeToken");
     }
 
     function parseStartingParameters(

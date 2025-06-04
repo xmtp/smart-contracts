@@ -142,12 +142,6 @@ contract DeployLocalScripts is Script {
             _deployer
         );
 
-        // Deploy the Payer Registry.
-        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
-            address(_parameterRegistryProxy),
-            address(_feeTokenProxy)
-        );
-
         // Deploy the Fee Token.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_parameterRegistryProxy),
@@ -155,6 +149,12 @@ contract DeployLocalScripts is Script {
         );
 
         _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
+
+        // Deploy the Payer Registry.
+        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
+            address(_parameterRegistryProxy),
+            address(_feeTokenProxy)
+        );
 
         _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
 
