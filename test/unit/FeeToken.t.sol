@@ -187,7 +187,7 @@ contract FeeTokenTests is Test {
     }
 
     function test_depositWithPermit() external {
-        vm.expectCall(
+        Utils.expectAndMockCall(
             _underlying,
             abi.encodeWithSignature(
                 "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
@@ -198,7 +198,8 @@ contract FeeTokenTests is Test {
                 0,
                 0,
                 0
-            )
+            ),
+            ""
         );
 
         Utils.expectAndMockCall(
@@ -309,7 +310,7 @@ contract FeeTokenTests is Test {
     }
 
     function test_depositForWithPermit() external {
-        vm.expectCall(
+        Utils.expectAndMockCall(
             _underlying,
             abi.encodeWithSignature(
                 "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
@@ -320,7 +321,8 @@ contract FeeTokenTests is Test {
                 0,
                 0,
                 0
-            )
+            ),
+            ""
         );
 
         Utils.expectAndMockCall(

@@ -441,19 +441,19 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /**
      * @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
-    function _depositFromUnderlying(address payer_, uint96 amount_) internal {
-        SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
-        IFeeTokenLike(feeToken).deposit(amount_);
+    function _depositFeeToken(address payer_, uint96 amount_) internal {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
         _deposit(payer_, amount_);
     }
 
     /**
      * @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
-    function _depositFeeToken(address payer_, uint96 amount_) internal {
-        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
-        // slither-disable-next-line unchecked-transfer
-        IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
+    function _depositFromUnderlying(address payer_, uint96 amount_) internal {
+        SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
+        IFeeTokenLike(feeToken).deposit(amount_);
         _deposit(payer_, amount_);
     }
 
@@ -505,7 +505,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @dev Silently ignore a failing permit, as it may indicate that the permit was already used and/or the allowance
      *      has already been approved.
      */
-    function _usePermit(address token_, uint96 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) internal {
+    function _usePermit(address token_, uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) internal {
         // Ignore return value, as the permit may have already been used, and the allowance already approved.
         // slither-disable-start unchecked-lowlevel
         // slither-disable-start low-level-calls

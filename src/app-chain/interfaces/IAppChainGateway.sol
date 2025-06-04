@@ -72,7 +72,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     function withdraw(address recipient_) external payable;
 
     /**
-     * @notice Withdraws funds from the app chain to the settlement chain, unwrapped as underlying token.
+     * @notice Withdraws funds from the app chain to the settlement chain, unwrapped as underlying fee token.
      * @param  recipient_ The address to which the funds will be delivered to on the settlement chain.
      */
     function withdrawIntoUnderlying(address recipient_) external payable;

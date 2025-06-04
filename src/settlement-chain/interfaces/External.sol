@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-// TODO: `calculateRetryableSubmissionFee` might actually be part of the counterpart inbox. Investigate.
-
 /**
  * @title  Subset interface for ERC20 tokens.
  * @notice This is the minimal interface needed by contracts within this subdirectory.
@@ -40,7 +38,8 @@ interface IERC20InboxLike {
      *         child chain's native 18 decimals.
      * @param  to_                     Destination L2 contract address.
      * @param  l2CallValue_            Call value for retryable L2 message.
-     * @param  maxSubmissionCost_      Max gas deducted from user's L2 balance to cover base submission fee.
+     * @param  maxSubmissionCost_      Max gas deducted from user's L2 balance to cover base submission fee (denominated
+     *                                 in app chain's gas token's 18 decimals).
      * @param  excessFeeRefundAddress_ The address which receives the difference between execution fee paid and the
      *                                 actual execution cost. In case this address is a contract, funds will be received
      *                                 in its alias on L2.
@@ -52,9 +51,11 @@ interface IERC20InboxLike {
      * @param  maxFeePerGas_           Price bid for L2 execution. Should not be set to 1 (magic value used to trigger
      *                                 the RetryableData error).
      * @param  tokenTotalFeeAmount_    The amount of fees to be deposited in native token to cover for retryable ticket
-     *                                 cost.
+     *                                 cost (denominated in native token's decimals).
      * @param  data_                   ABI encoded data of L2 message.
      * @return messageNumber_          The message number of the retryable transaction.
+     * @dev    `tokenTotalFeeAmount_` (converted to 18 decimals on the L2) must be greater than or equal to the sum of
+     *         `gasLimit_` multiplied by `gasPrice_` and `maxSubmissionCost_`.
      */
     function createRetryableTicket(
         address to_,
@@ -70,12 +71,6 @@ interface IERC20InboxLike {
 
     /// @notice Deposits an ERC20 token into the L2 inbox, to be sent to the L3 where it is the gas token of that chain.
     function depositERC20(uint256 amount_) external returns (uint256 messageNumber_);
-
-    /// @notice Calculates the submission fee for a retryable ticket.
-    function calculateRetryableSubmissionFee(
-        uint256 dataLength_,
-        uint256 baseFee_
-    ) external view returns (uint256 submissionFee_);
 }
 
 /**
