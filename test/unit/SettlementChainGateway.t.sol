@@ -714,7 +714,7 @@ contract SettlementChainGatewayTests is Test {
         _gateway.__setPauseStatus(true);
 
         vm.expectRevert(ISettlementChainGateway.Paused.selector);
-        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTickets_feeTokenTransferFailed_reverts() external {
@@ -727,7 +727,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert();
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTickets_noChainIds() external {
@@ -740,7 +740,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTickets_noKeys() external {
@@ -753,7 +753,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTickets_unsupportedChainId() external {
@@ -774,7 +774,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTickets() external {
@@ -825,7 +825,7 @@ contract SettlementChainGatewayTests is Test {
                     "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
                     _appChainGateway,
                     0,
-                    2_000_000,
+                    0,
                     appChainAlias_,
                     appChainAlias_,
                     100_000,
@@ -847,14 +847,7 @@ contract SettlementChainGatewayTests is Test {
         }
 
         vm.prank(_alice);
-        uint256 totalSent_ = _gateway.sendParametersAsRetryableTickets(
-            chainIds_,
-            keys_,
-            100_000,
-            1_000_000,
-            2_000_000,
-            3_000_000
-        );
+        uint256 totalSent_ = _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 100_000, 1_000_000, 3_000_000);
 
         assertEq(totalSent_, 2 * 3_000_000);
 
@@ -867,7 +860,7 @@ contract SettlementChainGatewayTests is Test {
         _gateway.__setPauseStatus(true);
 
         vm.expectRevert(ISettlementChainGateway.Paused.selector);
-        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsWithPermit_feeTokenTransferFailed_reverts() external {
@@ -895,7 +888,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert();
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 0, 100, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 100, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsWithPermit_noChainIds() external {
@@ -923,7 +916,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsWithPermit_noKeys() external {
@@ -951,7 +944,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 0, 100, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 100, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsWithPermit_unsupportedChainId() external {
@@ -987,7 +980,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsWithPermit(chainIds_, keys_, 0, 0, 0, 100, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(chainIds_, keys_, 0, 0, 100, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsWithPermit() external {
@@ -1053,7 +1046,7 @@ contract SettlementChainGatewayTests is Test {
                     "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
                     _appChainGateway,
                     0,
-                    2_000_000,
+                    0,
                     appChainAlias_,
                     appChainAlias_,
                     100_000,
@@ -1080,7 +1073,6 @@ contract SettlementChainGatewayTests is Test {
             keys_,
             100_000,
             1_000_000,
-            2_000_000,
             3_000_000,
             0,
             0,
@@ -1099,7 +1091,7 @@ contract SettlementChainGatewayTests is Test {
         _gateway.__setPauseStatus(true);
 
         vm.expectRevert(ISettlementChainGateway.Paused.selector);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying_underlyingTokenTransferFailed_returnsFalse() external {
@@ -1112,7 +1104,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 100);
 
         assertEq(_gateway.__getNonce(), 0);
     }
@@ -1127,7 +1119,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying_feeTokenDepositFailed_reverts() external {
@@ -1142,7 +1134,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert();
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying_noChainIds() external {
@@ -1157,7 +1149,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying_noKeys() external {
@@ -1172,7 +1164,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying_unsupportedChainId() external {
@@ -1195,7 +1187,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, 0, 0, 0, 100);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlying() external {
@@ -1248,7 +1240,7 @@ contract SettlementChainGatewayTests is Test {
                     "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
                     _appChainGateway,
                     0,
-                    2_000_000,
+                    0,
                     appChainAlias_,
                     appChainAlias_,
                     100_000,
@@ -1275,7 +1267,6 @@ contract SettlementChainGatewayTests is Test {
             keys_,
             100_000,
             1_000_000,
-            2_000_000,
             3_000_000
         );
 
@@ -1293,7 +1284,6 @@ contract SettlementChainGatewayTests is Test {
         _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
             new uint256[](0),
             new bytes[](0),
-            0,
             0,
             0,
             0,
@@ -1334,7 +1324,6 @@ contract SettlementChainGatewayTests is Test {
         _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
             new uint256[](1),
             new bytes[](0),
-            0,
             0,
             0,
             100,
@@ -1379,7 +1368,6 @@ contract SettlementChainGatewayTests is Test {
             new bytes[](0),
             0,
             0,
-            0,
             100,
             0,
             0,
@@ -1418,7 +1406,6 @@ contract SettlementChainGatewayTests is Test {
         _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
             new uint256[](1),
             new bytes[](0),
-            0,
             0,
             0,
             100,
@@ -1465,7 +1452,6 @@ contract SettlementChainGatewayTests is Test {
             0,
             0,
             0,
-            0,
             0
         );
     }
@@ -1500,7 +1486,6 @@ contract SettlementChainGatewayTests is Test {
         _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
             new uint256[](1),
             new bytes[](0),
-            0,
             0,
             0,
             100,
@@ -1546,7 +1531,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(chainIds_, keys_, 0, 0, 0, 100, 0, 0, 0, 0);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(chainIds_, keys_, 0, 0, 100, 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit() external {
@@ -1614,7 +1599,7 @@ contract SettlementChainGatewayTests is Test {
                     "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
                     _appChainGateway,
                     0,
-                    2_000_000,
+                    0,
                     appChainAlias_,
                     appChainAlias_,
                     100_000,
@@ -1641,7 +1626,6 @@ contract SettlementChainGatewayTests is Test {
             keys_,
             100_000,
             1_000_000,
-            2_000_000,
             3_000_000,
             0,
             0,
