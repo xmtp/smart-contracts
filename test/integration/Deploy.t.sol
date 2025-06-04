@@ -179,7 +179,7 @@ contract DeployTests is Test {
         _settlementChainFactory = _deploySettlementChainFactory();
 
         console.log("settlementChainFactory: %s", address(_settlementChainFactory));
-        console.log("settlement chain Initializable: %s", _settlementChainFactory.initializableImplementation());
+        console.log("settlementChainInitializable: %s", _settlementChainFactory.initializableImplementation());
 
         // Deploy the Parameter Registry on the settlement chain.
         address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
@@ -197,7 +197,7 @@ contract DeployTests is Test {
 
         console.log("settlementChainParameterRegistryProxy: %s", address(_settlementChainParameterRegistryProxy));
 
-        // Deploy the Fee Token on the base (settlement) chain.
+        // Deploy the Fee Token on the settlement chain.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_settlementChainParameterRegistryProxy),
             _USDC
@@ -343,7 +343,7 @@ contract DeployTests is Test {
 
         console.log("identityUpdateBroadcasterProxy: %s", address(_identityUpdateBroadcasterProxy));
 
-        // Set the inbox for the Gateway on the base (settlement) chain to communicate with the app chain.
+        // Set and update the inbox parameters for the settlement chain gateway to communicate with the app chain.
         _setInboxParameters();
         _updateInboxParameters();
 
@@ -359,7 +359,9 @@ contract DeployTests is Test {
         _setRateRegistryStartingRates();
         _updateRateRegistryRates();
 
-        return; // TODO: Remove this once the new inbox is deployed on base.
+        // NOTE: Bridging tests are temporarily disabled until the new inbox is deployed on the settlement chain (base)
+
+        return;
 
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
@@ -464,7 +466,7 @@ contract DeployTests is Test {
     ) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (implementation_, ) = FeeTokenDeployer.deployImplementation(
             address(_settlementChainFactory),
             parameterRegistry_,
@@ -479,7 +481,7 @@ contract DeployTests is Test {
     function _deployFeeTokenProxy(address implementation_) internal returns (IFeeToken feeToken_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_admin);
+        vm.startPrank(_deployer);
         (address proxy_, , ) = FeeTokenDeployer.deployProxy(
             address(_settlementChainFactory),
             implementation_,
