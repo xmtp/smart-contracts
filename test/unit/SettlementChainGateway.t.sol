@@ -21,6 +21,8 @@ import { MockMigrator } from "../utils/Mocks.sol";
 
 import { Utils } from "../utils/Utils.sol";
 
+// TODO: Perhaps remove duplicated test code with internal calls tests.
+
 contract SettlementChainGatewayTests is Test {
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _INBOX_KEY = "xmtp.settlementChainGateway.inbox";
@@ -97,8 +99,6 @@ contract SettlementChainGatewayTests is Test {
     }
 
     function test_deposit_feeTokenTransferFailed_reverts() external {
-        _gateway.__setInbox(1111, makeAddr("inbox"));
-
         vm.mockCallRevert(
             _feeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -168,6 +168,145 @@ contract SettlementChainGatewayTests is Test {
         _gateway.deposit(1111, 100);
     }
 
+    /* ============ depositWithPermit ============ */
+
+    function test_depositWithPermit_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.depositWithPermit(0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_feeTokenTransferFailed_reverts() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_unsupportedChainId() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_feeTokenApproveFailed_reverts() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
+
+        vm.expectRevert();
+
+        _gateway.depositWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("approve(address,uint256)", inbox_, 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(inbox_, abi.encodeWithSignature("depositERC20(uint256)", 100), abi.encode(11));
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Deposit(1111, inbox_, 11, 100);
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
     /* ============ depositFromUnderlying ============ */
 
     function test_depositFromUnderlying_paused() external {
@@ -178,8 +317,6 @@ contract SettlementChainGatewayTests is Test {
     }
 
     function test_depositFromUnderlying_underlyingTokenTransferFailed_returnsFalse() external {
-        _gateway.__setInbox(1111, makeAddr("inbox"));
-
         vm.mockCall(
             _underlyingFeeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -193,8 +330,6 @@ contract SettlementChainGatewayTests is Test {
     }
 
     function test_depositFromUnderlying_underlyingTokenTransferFailed_reverts() external {
-        _gateway.__setInbox(1111, makeAddr("inbox"));
-
         vm.mockCallRevert(
             _underlyingFeeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -208,8 +343,6 @@ contract SettlementChainGatewayTests is Test {
     }
 
     function test_depositFromUnderlying_feeTokenDepositFailed_reverts() external {
-        _gateway.__setInbox(1111, makeAddr("inbox"));
-
         vm.mockCall(
             _underlyingFeeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
@@ -285,6 +418,209 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    /* ============ depositFromUnderlyingWithPermit ============ */
+
+    function test_depositFromUnderlyingWithPermit_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.depositFromUnderlyingWithPermit(0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_underlyingTokenTransferFailed_returnsFalse() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_underlyingTokenTransferFailed_reverts() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCallRevert(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_feeTokenDepositFailed_reverts() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_unsupportedChainId() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_feeTokenApproveFailed_reverts() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("approve(address,uint256)", inbox_, 100), "");
+
+        vm.expectRevert();
+
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("approve(address,uint256)", inbox_, 100),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(inbox_, abi.encodeWithSignature("depositERC20(uint256)", 100), abi.encode(11));
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Deposit(1111, inbox_, 11, 100);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
     }
 
     /* ============ sendParameters ============ */
@@ -381,14 +717,43 @@ contract SettlementChainGatewayTests is Test {
         _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
     }
 
+    function test_sendParametersAsRetryableTickets_feeTokenTransferFailed_reverts() external {
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+    }
+
     function test_sendParametersAsRetryableTickets_noChainIds() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
         vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+
+        vm.prank(_alice);
         _gateway.sendParametersAsRetryableTickets(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
     }
 
     function test_sendParametersAsRetryableTickets_noKeys() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
         vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
-        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 0);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTickets(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTickets_unsupportedChainId() external {
@@ -398,11 +763,18 @@ contract SettlementChainGatewayTests is Test {
         bytes[] memory keys_ = new bytes[](1);
         keys_[0] = "this.is.a.parameter";
 
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
         vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
 
         vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
 
-        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 0, 0, 0, 0);
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 0, 0, 0, 100);
     }
 
     function test_sendParametersAsRetryableTickets() external {
@@ -428,15 +800,19 @@ contract SettlementChainGatewayTests is Test {
 
         address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
 
-        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(values_));
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 2 * 3_000_000),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes[])", keys_),
+            abi.encode(values_)
+        );
 
         for (uint256 index_; index_ < chainIds_.length; ++index_) {
-            Utils.expectAndMockCall(
-                _feeToken,
-                abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 3_000_000),
-                abi.encode(true)
-            );
-
             Utils.expectAndMockCall(
                 _feeToken,
                 abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
@@ -471,7 +847,809 @@ contract SettlementChainGatewayTests is Test {
         }
 
         vm.prank(_alice);
-        _gateway.sendParametersAsRetryableTickets(chainIds_, keys_, 100_000, 1_000_000, 2_000_000, 3_000_000);
+        uint256 totalSent_ = _gateway.sendParametersAsRetryableTickets(
+            chainIds_,
+            keys_,
+            100_000,
+            1_000_000,
+            2_000_000,
+            3_000_000
+        );
+
+        assertEq(totalSent_, 2 * 3_000_000);
+
+        assertEq(_gateway.__getNonce(), 1);
+    }
+
+    /* ============ sendParametersAsRetryableTicketsWithPermit ============ */
+
+    function test_sendParametersAsRetryableTicketsWithPermit_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsWithPermit_feeTokenTransferFailed_reverts() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 0, 100, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsWithPermit_noChainIds() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](0), new bytes[](0), 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsWithPermit_noKeys() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(new uint256[](1), new bytes[](0), 0, 0, 0, 100, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsWithPermit_unsupportedChainId() external {
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = 1111;
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = "this.is.a.parameter";
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsWithPermit(chainIds_, keys_, 0, 0, 0, 100, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsWithPermit() external {
+        uint256[] memory chainIds_ = new uint256[](2);
+        chainIds_[0] = 1111;
+        chainIds_[1] = 1112;
+
+        address[] memory inboxes_ = new address[](2);
+        inboxes_[0] = makeAddr("inbox0");
+        inboxes_[1] = makeAddr("inbox1");
+
+        _gateway.__setInbox(chainIds_[0], inboxes_[0]);
+        _gateway.__setInbox(chainIds_[1], inboxes_[1]);
+
+        bytes[] memory keys_ = new bytes[](2);
+
+        keys_[0] = "this.is.a.parameter";
+        keys_[1] = "this.is.another.parameter";
+
+        bytes32[] memory values_ = new bytes32[](2);
+        values_[0] = bytes32(uint256(10101));
+        values_[1] = bytes32(uint256(23232));
+
+        address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                2 * 3_000_000,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 2 * 3_000_000),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes[])", keys_),
+            abi.encode(values_)
+        );
+
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            Utils.expectAndMockCall(
+                _feeToken,
+                abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
+                abi.encode(true)
+            );
+
+            Utils.expectAndMockCall(
+                inboxes_[index_],
+                abi.encodeWithSignature(
+                    "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
+                    _appChainGateway,
+                    0,
+                    2_000_000,
+                    appChainAlias_,
+                    appChainAlias_,
+                    100_000,
+                    1_000_000,
+                    3_000_000,
+                    abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
+                ),
+                abi.encode(uint256(11 * (index_ + 1)))
+            );
+
+            vm.expectEmit(address(_gateway));
+            emit ISettlementChainGateway.ParametersSent(
+                chainIds_[index_],
+                inboxes_[index_],
+                11 * (index_ + 1),
+                1,
+                keys_
+            );
+        }
+
+        vm.prank(_alice);
+        uint256 totalSent_ = _gateway.sendParametersAsRetryableTicketsWithPermit(
+            chainIds_,
+            keys_,
+            100_000,
+            1_000_000,
+            2_000_000,
+            3_000_000,
+            0,
+            0,
+            0,
+            0
+        );
+
+        assertEq(totalSent_, 2 * 3_000_000);
+
+        assertEq(_gateway.__getNonce(), 1);
+    }
+
+    /* ============ sendParametersAsRetryableTicketsFromUnderlying ============ */
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_underlyingTokenTransferFailed_returnsFalse() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+
+        assertEq(_gateway.__getNonce(), 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_underlyingTokenTransferFailed_reverts() external {
+        vm.mockCallRevert(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_feeTokenDepositFailed_reverts() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_noChainIds() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](0), new bytes[](0), 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_noKeys() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(new uint256[](1), new bytes[](0), 0, 0, 0, 100);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying_unsupportedChainId() external {
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = 1111;
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = "this.is.a.parameter";
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, 0, 0, 0, 100);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlying() external {
+        uint256[] memory chainIds_ = new uint256[](2);
+        chainIds_[0] = 1111;
+        chainIds_[1] = 1112;
+
+        address[] memory inboxes_ = new address[](2);
+        inboxes_[0] = makeAddr("inbox0");
+        inboxes_[1] = makeAddr("inbox1");
+
+        _gateway.__setInbox(chainIds_[0], inboxes_[0]);
+        _gateway.__setInbox(chainIds_[1], inboxes_[1]);
+
+        bytes[] memory keys_ = new bytes[](2);
+
+        keys_[0] = "this.is.a.parameter";
+        keys_[1] = "this.is.another.parameter";
+
+        bytes32[] memory values_ = new bytes32[](2);
+        values_[0] = bytes32(uint256(10101));
+        values_[1] = bytes32(uint256(23232));
+
+        address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 2 * 3_000_000),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 2 * 3_000_000), "");
+
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes[])", keys_),
+            abi.encode(values_)
+        );
+
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            Utils.expectAndMockCall(
+                _feeToken,
+                abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
+                abi.encode(true)
+            );
+
+            Utils.expectAndMockCall(
+                inboxes_[index_],
+                abi.encodeWithSignature(
+                    "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
+                    _appChainGateway,
+                    0,
+                    2_000_000,
+                    appChainAlias_,
+                    appChainAlias_,
+                    100_000,
+                    1_000_000,
+                    3_000_000,
+                    abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
+                ),
+                abi.encode(uint256(11 * (index_ + 1)))
+            );
+
+            vm.expectEmit(address(_gateway));
+            emit ISettlementChainGateway.ParametersSent(
+                chainIds_[index_],
+                inboxes_[index_],
+                11 * (index_ + 1),
+                1,
+                keys_
+            );
+        }
+
+        vm.prank(_alice);
+        uint256 totalSent_ = _gateway.sendParametersAsRetryableTicketsFromUnderlying(
+            chainIds_,
+            keys_,
+            100_000,
+            1_000_000,
+            2_000_000,
+            3_000_000
+        );
+
+        assertEq(totalSent_, 2 * 3_000_000);
+
+        assertEq(_gateway.__getNonce(), 1);
+    }
+
+    /* ============ sendParametersAsRetryableTicketsFromUnderlyingWithPermit ============ */
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(ISettlementChainGateway.Paused.selector);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](0),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_underlyingTokenTransferFailed_returnsFalse()
+        external
+    {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](1),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            100,
+            0,
+            0,
+            0,
+            0
+        );
+
+        assertEq(_gateway.__getNonce(), 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_underlyingTokenTransferFailed_reverts()
+        external
+    {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCallRevert(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            ""
+        );
+
+        vm.expectRevert(ISettlementChainGateway.TransferFromFailed.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](1),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            100,
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_feeTokenDepositFailed_reverts() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCallRevert(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert();
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](1),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            100,
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_noChainIds() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(ISettlementChainGateway.NoChainIds.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](0),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_noKeys() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.expectRevert(ISettlementChainGateway.NoKeys.selector);
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            new uint256[](1),
+            new bytes[](0),
+            0,
+            0,
+            0,
+            100,
+            0,
+            0,
+            0,
+            0
+        );
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit_unsupportedChainId() external {
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = 1111;
+
+        bytes[] memory keys_ = new bytes[](1);
+        keys_[0] = "this.is.a.parameter";
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes[])", keys_), abi.encode(new bytes32[](1)));
+
+        vm.expectRevert(abi.encodeWithSelector(ISettlementChainGateway.UnsupportedChainId.selector, 1111));
+
+        vm.prank(_alice);
+        _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(chainIds_, keys_, 0, 0, 0, 100, 0, 0, 0, 0);
+    }
+
+    function test_sendParametersAsRetryableTicketsFromUnderlyingWithPermit() external {
+        uint256[] memory chainIds_ = new uint256[](2);
+        chainIds_[0] = 1111;
+        chainIds_[1] = 1112;
+
+        address[] memory inboxes_ = new address[](2);
+        inboxes_[0] = makeAddr("inbox0");
+        inboxes_[1] = makeAddr("inbox1");
+
+        _gateway.__setInbox(chainIds_[0], inboxes_[0]);
+        _gateway.__setInbox(chainIds_[1], inboxes_[1]);
+
+        bytes[] memory keys_ = new bytes[](2);
+
+        keys_[0] = "this.is.a.parameter";
+        keys_[1] = "this.is.another.parameter";
+
+        bytes32[] memory values_ = new bytes32[](2);
+        values_[0] = bytes32(uint256(10101));
+        values_[1] = bytes32(uint256(23232));
+
+        address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                2 * 3_000_000,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 2 * 3_000_000),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 2 * 3_000_000), "");
+
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes[])", keys_),
+            abi.encode(values_)
+        );
+
+        for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            Utils.expectAndMockCall(
+                _feeToken,
+                abi.encodeWithSignature("approve(address,uint256)", inboxes_[index_], 3_000_000),
+                abi.encode(true)
+            );
+
+            Utils.expectAndMockCall(
+                inboxes_[index_],
+                abi.encodeWithSignature(
+                    "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
+                    _appChainGateway,
+                    0,
+                    2_000_000,
+                    appChainAlias_,
+                    appChainAlias_,
+                    100_000,
+                    1_000_000,
+                    3_000_000,
+                    abi.encodeCall(IAppChainGatewayLike.receiveParameters, (1, keys_, values_))
+                ),
+                abi.encode(uint256(11 * (index_ + 1)))
+            );
+
+            vm.expectEmit(address(_gateway));
+            emit ISettlementChainGateway.ParametersSent(
+                chainIds_[index_],
+                inboxes_[index_],
+                11 * (index_ + 1),
+                1,
+                keys_
+            );
+        }
+
+        vm.prank(_alice);
+        uint256 totalSent_ = _gateway.sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
+            chainIds_,
+            keys_,
+            100_000,
+            1_000_000,
+            2_000_000,
+            3_000_000,
+            0,
+            0,
+            0,
+            0
+        );
+
+        assertEq(totalSent_, 2 * 3_000_000);
 
         assertEq(_gateway.__getNonce(), 1);
     }

@@ -210,7 +210,7 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Deposits `amount_` fee tokens into the registry for `payer_`, wrapping them from underlying fee tokens.
      * @param  payer_  The address of the payer.
-     * @param  amount_ The amount of underlying tokens to deposit.
+     * @param  amount_ The amount of underlying fee tokens to deposit.
      */
     function depositFromUnderlying(address payer_, uint96 amount_) external;
 
@@ -218,7 +218,7 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      * @notice Deposits `amount_` fee tokens into the registry for `payer_`, wrapping them from underlying fee tokens,
      *         given caller's signed approval.
      * @param  payer_    The address of the payer.
-     * @param  amount_   The amount of underlying tokens to deposit.
+     * @param  amount_   The amount of underlying fee tokens to deposit.
      * @param  deadline_ The deadline of the permit (must be the current or future timestamp).
      * @param  v_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_        An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -251,9 +251,9 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     function finalizeWithdrawal(address recipient_) external;
 
     /**
-     * @notice Finalizes a pending withdrawal of fee tokens, unwrapping the amount into underlying tokens to the
+     * @notice Finalizes a pending withdrawal of fee tokens, unwrapping the amount into underlying fee tokens to the
      *         recipient.
-     * @param  recipient_ The address to receive the underlying tokens.
+     * @param  recipient_ The address to receive the underlying fee tokens.
      * @dev    The caller must not be currently in debt.
      */
     function finalizeWithdrawalIntoUnderlying(address recipient_) external;
