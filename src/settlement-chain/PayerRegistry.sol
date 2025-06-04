@@ -507,8 +507,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      */
     function _usePermit(address token_, uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) internal {
         // Ignore return value, as the permit may have already been used, and the allowance already approved.
-        // slither-disable-start unchecked-lowlevel
-        // slither-disable-start low-level-calls
+        // slither-disable-next-line unchecked-lowlevel
         address(token_).call(
             abi.encodeWithSelector(
                 IPermitErc20Like.permit.selector,
@@ -521,8 +520,6 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
                 s_
             )
         );
-        // slither-disable-end unchecked-lowlevel
-        // slither-disable-end low-level-calls
     }
 
     /* ============ Internal View/Pure Functions ============ */
