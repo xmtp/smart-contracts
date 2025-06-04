@@ -160,9 +160,9 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     function withdraw(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_);
 
     /**
-     * @notice Withdraws fees for a node, unwrapped as underlying token.
+     * @notice Withdraws fees for a node, unwrapped as underlying fee token.
      * @param  nodeId_    The ID of the node.
-     * @param  recipient_ The address to withdraw the underlying tokens to.
+     * @param  recipient_ The address to withdraw the underlying fee tokens to.
      * @return withdrawn_ The amount of fee tokens withdrawn.
      */
     function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_);
