@@ -182,7 +182,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically
         // decoded as the required structs by the payer registry's `settleUsage` function.
-        // slither-disable-next-line low-level-calls
         (bool success_, bytes memory returnData_) = payerRegistry.call(
             abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, payerFees_)
         );

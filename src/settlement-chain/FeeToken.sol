@@ -197,8 +197,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
         bytes32 s_
     ) internal {
         // Ignore return value, as the permit may have already been used, and the allowance already approved.
-        // slither-disable-start unchecked-lowlevel
-        // slither-disable-start low-level-calls
+        // slither-disable-next-line unchecked-lowlevel
         address(underlying).call(
             abi.encodeWithSelector(
                 IPermitErc20Like.permit.selector,
@@ -211,8 +210,6 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
                 s_
             )
         );
-        // slither-disable-end unchecked-lowlevel
-        // slither-disable-end low-level-calls
 
         _deposit(recipient_, amount_);
     }
