@@ -161,7 +161,16 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     function setHttpAddress(uint32 nodeId_, string calldata httpAddress_) external {
         _revertIfNotNodeOwner(nodeId_);
         if (bytes(httpAddress_).length == 0) revert InvalidHttpAddress();
-        emit HttpAddressUpdated(nodeId_, _getNodeRegistryStorage().nodes[nodeId_].httpAddress = httpAddress_);
+
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        string storage currentAddress = $.nodes[nodeId_].httpAddress;
+        if (keccak256(bytes(currentAddress)) == keccak256(bytes(httpAddress_))) {
+            revert NoChange();
+        }
+
+        $.nodes[nodeId_].httpAddress = httpAddress_;
+        emit HttpAddressUpdated(nodeId_, httpAddress_);
     }
 
     /* ============ Interactive Functions ============ */
