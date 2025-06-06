@@ -382,6 +382,17 @@ contract NodeRegistryTests is Test {
         _registry.setHttpAddress(1, "");
     }
 
+    function test_setHttpAddress_noChange() external {
+        string memory httpAddress_ = "http://example.com";
+
+        _addNode(1, _alice, address(0), false, "", httpAddress_);
+
+        vm.expectRevert(INodeRegistry.NoChange.selector);
+
+        vm.prank(_alice);
+        _registry.setHttpAddress(1, httpAddress_);
+    }
+
     function test_setHttpAddress() external {
         _addNode(1, _alice, address(0), false, "", "");
 
@@ -393,17 +404,6 @@ contract NodeRegistryTests is Test {
         _registry.setHttpAddress(1, "http://example.com");
 
         assertEq(_registry.__getNode(1).httpAddress, "http://example.com");
-    }
-
-    function test_setHttpAddress_noChange() external {
-        string memory httpAddress = "http://example.com";
-
-        _addNode(1, _alice, address(0), false, "", httpAddress);
-
-        vm.expectRevert(INodeRegistry.NoChange.selector);
-
-        vm.prank(_alice);
-        _registry.setHttpAddress(1, httpAddress);
     }
 
     /* ============ setBaseURI ============ */
