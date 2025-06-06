@@ -54,10 +54,10 @@ contract PayloadBroadcasterTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_broadcaster)), _implementation);
         assertEq(_broadcaster.implementation(), _implementation);
-        assertEq(keccak256(_broadcaster.minPayloadSizeParameterKey()), keccak256(_MIN_PAYLOAD_SIZE_KEY));
-        assertEq(keccak256(_broadcaster.maxPayloadSizeParameterKey()), keccak256(_MAX_PAYLOAD_SIZE_KEY));
-        assertEq(keccak256(_broadcaster.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
-        assertEq(keccak256(_broadcaster.pausedParameterKey()), keccak256(_PAUSED_KEY));
+        assertEq(_broadcaster.minPayloadSizeParameterKey(), _MIN_PAYLOAD_SIZE_KEY);
+        assertEq(_broadcaster.maxPayloadSizeParameterKey(), _MAX_PAYLOAD_SIZE_KEY);
+        assertEq(_broadcaster.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_broadcaster.pausedParameterKey(), _PAUSED_KEY);
         assertFalse(_broadcaster.paused());
         assertEq(_broadcaster.parameterRegistry(), _parameterRegistry);
         assertEq(_broadcaster.minPayloadSize(), 0);

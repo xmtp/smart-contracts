@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
-
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
-import { IERC20Like, INodeRegistryLike, IPayerRegistryLike, IPayerReportManagerLike } from "./interfaces/External.sol";
+import {
+    IERC20Like,
+    IFeeTokenLike,
+    INodeRegistryLike,
+    IPayerRegistryLike,
+    IPayerReportManagerLike
+} from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -33,7 +37,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     address public immutable payerRegistry;
 
     /// @inheritdoc IDistributionManager
-    address public immutable token;
+    address public immutable feeToken;
 
     /* ============ UUPS Storage ============ */
 
@@ -45,6 +49,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         mapping(uint32 nodeId => mapping(uint32 originatorNodeId => mapping(uint256 payerReportIndex => bool hasClaimed))) hasClaimed;
         mapping(uint32 nodeId => uint96 owedFees) owedFees;
         uint96 totalOwedFees;
+        bool paused;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.DistributionManager")) - 1)) & ~bytes32(uint256(0xff))
@@ -58,6 +63,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         }
     }
 
+    /* ============ Modifiers ============ */
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
+        _;
+    }
+
     /* ============ Constructor ============ */
 
     /**
@@ -66,10 +78,10 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
      * @param  nodeRegistry_       The address of the node registry.
      * @param  payerReportManager_ The address of the payer report manager.
      * @param  payerRegistry_      The address of the payer registry.
-     * @param  token_              The address of the token.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token must not be the
-     *         zero address.
-     * @dev    The parameter registry, node registry, payer report manager, payer registry, and token are immutable so
+     * @param  feeToken_           The address of the fee token.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token must not be
+     *         the zero address.
+     * @dev    The parameter registry, node registry, payer report manager, payer registry, and fee token are immutable
      *         that they are inlined in the contract code, and have minimal gas cost.
      */
     constructor(
@@ -77,13 +89,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         address nodeRegistry_,
         address payerReportManager_,
         address payerRegistry_,
-        address token_
+        address feeToken_
     ) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
         if (_isZero(nodeRegistry = nodeRegistry_)) revert ZeroNodeRegistry();
         if (_isZero(payerReportManager = payerReportManager_)) revert ZeroPayerReportManager();
         if (_isZero(payerRegistry = payerRegistry_)) revert ZeroPayerRegistry();
-        if (_isZero(token = token_)) revert ZeroToken();
+        if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
 
         _disableInitializers();
     }
@@ -100,7 +112,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint32 nodeId_,
         uint32[] calldata originatorNodeIds_,
         uint256[] calldata payerReportIndices_
-    ) external returns (uint96 claimed_) {
+    ) external whenNotPaused returns (uint96 claimed_) {
         _revertIfNotNodeOwner(nodeId_);
 
         if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
@@ -149,8 +161,78 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     }
 
     /// @inheritdoc IDistributionManager
-    function withdraw(uint32 nodeId_, address destination_) external returns (uint96 withdrawn_) {
-        if (_isZero(destination_)) revert ZeroDestination();
+    function withdraw(uint32 nodeId_, address recipient_) external whenNotPaused returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
+    }
+
+    /// @inheritdoc IDistributionManager
+    function withdrawIntoUnderlying(
+        uint32 nodeId_,
+        address recipient_
+    ) external whenNotPaused returns (uint96 withdrawn_) {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, withdrawn_ = _prepareWithdrawal(nodeId_, recipient_));
+    }
+
+    /// @inheritdoc IDistributionManager
+    function updatePauseStatus() external {
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        DistributionManagerStorage storage $ = _getDistributionManagerStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
+    }
+
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
+    }
+
+    /* ============ View/Pure Functions ============ */
+
+    /// @inheritdoc IDistributionManager
+    function migratorParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.distributionManager.migrator";
+    }
+
+    /// @inheritdoc IDistributionManager
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.distributionManager.paused";
+    }
+
+    /// @inheritdoc IDistributionManager
+    function totalOwedFees() external view returns (uint96 totalOwedFees_) {
+        return _getDistributionManagerStorage().totalOwedFees;
+    }
+
+    /// @inheritdoc IDistributionManager
+    function paused() external view returns (bool paused_) {
+        return _getDistributionManagerStorage().paused;
+    }
+
+    /// @inheritdoc IDistributionManager
+    function getOwedFees(uint32 nodeId_) external view returns (uint96 owedFees_) {
+        return _getDistributionManagerStorage().owedFees[nodeId_];
+    }
+
+    /// @inheritdoc IDistributionManager
+    function getHasClaimed(
+        uint32 nodeId_,
+        uint32 originatorNodeId_,
+        uint256 payerReportIndex_
+    ) external view returns (bool hasClaimed_) {
+        return _getDistributionManagerStorage().hasClaimed[nodeId_][originatorNodeId_][payerReportIndex_];
+    }
+
+    /* ============ Internal Interactive Functions ============ */
+
+    /// @dev Prepares a withdrawal of fee tokens, and returns the amount of fee tokens being withdrawn.
+    function _prepareWithdrawal(uint32 nodeId_, address recipient_) internal returns (uint96 withdrawn_) {
+        if (_isZero(recipient_)) revert ZeroRecipient();
 
         _revertIfNotNodeOwner(nodeId_);
 
@@ -160,7 +242,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
         if (owedFees_ == 0) revert NoFeesOwed();
 
-        uint96 availableBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
+        uint96 availableBalance_ = uint96(IERC20Like(feeToken).balanceOf(address(this)));
 
         if (owedFees_ > availableBalance_) {
             unchecked {
@@ -182,39 +264,6 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
         // slither-disable-next-line reentrancy-events
         emit Withdrawal(nodeId_, withdrawn_);
-
-        SafeTransferLib.safeTransfer(token, destination_, withdrawn_);
-    }
-
-    /// @inheritdoc IMigratable
-    function migrate() external {
-        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
-    }
-
-    /* ============ View/Pure Functions ============ */
-
-    /// @inheritdoc IDistributionManager
-    function migratorParameterKey() public pure returns (bytes memory key_) {
-        return "xmtp.distributionManager.migrator";
-    }
-
-    /// @inheritdoc IDistributionManager
-    function totalOwedFees() external view returns (uint96 totalOwedFees_) {
-        return _getDistributionManagerStorage().totalOwedFees;
-    }
-
-    /// @inheritdoc IDistributionManager
-    function getOwedFees(uint32 nodeId_) external view returns (uint96 owedFees_) {
-        return _getDistributionManagerStorage().owedFees[nodeId_];
-    }
-
-    /// @inheritdoc IDistributionManager
-    function getHasClaimed(
-        uint32 nodeId_,
-        uint32 originatorNodeId_,
-        uint256 payerReportIndex_
-    ) external view returns (bool hasClaimed_) {
-        return _getDistributionManagerStorage().hasClaimed[nodeId_][originatorNodeId_][payerReportIndex_];
     }
 
     /* ============ Internal View/Pure Functions ============ */
@@ -234,5 +283,9 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     function _revertIfNotNodeOwner(uint32 nodeId_) internal view {
         if (INodeRegistryLike(nodeRegistry).ownerOf(nodeId_) != msg.sender) revert NotNodeOwner();
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getDistributionManagerStorage().paused) revert Paused();
     }
 }

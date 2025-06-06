@@ -65,9 +65,9 @@ contract NodeRegistryTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
-        assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_KEY));
-        assertEq(keccak256(_registry.maxCanonicalNodesParameterKey()), keccak256(_MAX_CANONICAL_NODES_KEY));
-        assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_registry.adminParameterKey(), _ADMIN_KEY);
+        assertEq(_registry.maxCanonicalNodesParameterKey(), _MAX_CANONICAL_NODES_KEY);
+        assertEq(_registry.migratorParameterKey(), _MIGRATOR_KEY);
         assertEq(_registry.name(), "XMTP Nodes");
         assertEq(_registry.symbol(), "nXMTP");
         assertEq(_registry.parameterRegistry(), _parameterRegistry);

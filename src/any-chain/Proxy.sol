@@ -27,7 +27,7 @@ contract Proxy is IProxy {
     }
 
     // slither-disable-next-line locked-ether
-    fallback() external payable virtual {
+    fallback() external payable {
         // slither-disable-next-line assembly
         assembly {
             let implementation_ := sload(_IMPLEMENTATION_SLOT)

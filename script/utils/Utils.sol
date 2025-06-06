@@ -15,7 +15,6 @@ library Utils {
     struct DeploymentData {
         address appChainGatewayImplementation;
         uint256 appChainId;
-        address appChainNativeToken;
         address appChainParameterRegistryImplementation;
         address deployer;
         address distributionManagerImplementation;
@@ -49,11 +48,11 @@ library Utils {
         bytes32 rateRegistryProxySalt;
         address settlementChainGatewayImplementation;
         uint256 settlementChainId;
-        address settlementChainInboxToAppchain;
         address settlementChainParameterRegistryAdmin1;
         address settlementChainParameterRegistryAdmin2;
         address settlementChainParameterRegistryAdmin3;
         address settlementChainParameterRegistryImplementation;
+        address underlyingFeeToken;
     }
 
     VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -65,7 +64,6 @@ library Utils {
 
         deploymentData_.appChainGatewayImplementation = stdJson.readAddress(json_, ".appChainGatewayImplementation");
         deploymentData_.appChainId = stdJson.readUint(json_, ".appChainId");
-        deploymentData_.appChainNativeToken = stdJson.readAddress(json_, ".appChainNativeToken");
         deploymentData_.appChainParameterRegistryImplementation = stdJson.readAddress(
             json_,
             ".appChainParameterRegistryImplementation"
@@ -127,7 +125,6 @@ library Utils {
             ".settlementChainGatewayImplementation"
         );
         deploymentData_.settlementChainId = stdJson.readUint(json_, ".settlementChainId");
-        deploymentData_.settlementChainInboxToAppchain = stdJson.readAddress(json_, ".settlementChainInboxToAppchain");
         deploymentData_.settlementChainParameterRegistryAdmin1 = stdJson.readAddress(
             json_,
             ".settlementChainParameterRegistryAdmin1"
@@ -151,7 +148,7 @@ library Utils {
     ) internal view returns (bytes[] memory keys_, bytes32[] memory values_) {
         string memory json_ = VM.readFile(filePath_);
 
-        string[] memory startingKeys_ = new string[](14);
+        string[] memory startingKeys_ = new string[](15);
         startingKeys_[0] = "xmtp.nodeRegistry.admin";
         startingKeys_[1] = "xmtp.nodeRegistry.maxCanonicalNodes";
         startingKeys_[2] = "xmtp.payerRegistry.settler";
@@ -167,7 +164,12 @@ library Utils {
         startingKeys_[12] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
         startingKeys_[13] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
-        ParameterType[] memory parameterTypes_ = new ParameterType[](14);
+        startingKeys_[14] = string.concat(
+            "xmtp.settlementChainGateway.inbox.",
+            VM.parseJsonKeys(json_, "xmtp.settlementChainGateway.inbox")[0]
+        );
+
+        ParameterType[] memory parameterTypes_ = new ParameterType[](15);
         parameterTypes_[0] = ParameterType.Address;
         parameterTypes_[1] = ParameterType.Uint;
         parameterTypes_[2] = ParameterType.Address;
@@ -182,6 +184,7 @@ library Utils {
         parameterTypes_[11] = ParameterType.Uint;
         parameterTypes_[12] = ParameterType.Uint;
         parameterTypes_[13] = ParameterType.Uint;
+        parameterTypes_[14] = ParameterType.Address;
 
         uint256 count_ = 0;
 

@@ -32,6 +32,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
      */
     event Withdrawal(uint32 indexed nodeId, uint96 amount);
 
+    /**
+     * @notice Emitted when the pause status is set.
+     * @param  paused The new pause status.
+     */
+    event PauseStatusUpdated(bool indexed paused);
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
@@ -46,8 +52,8 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the payer registry address is being set to zero (i.e. address(0)).
     error ZeroPayerRegistry();
 
-    /// @notice Thrown when the token address is being set to zero (i.e. address(0)).
-    error ZeroToken();
+    /// @notice Thrown when the fee token address is being set to zero (i.e. address(0)).
+    error ZeroFeeToken();
 
     /// @notice Thrown when the caller is not the owner of the specified node.
     error NotNodeOwner();
@@ -64,8 +70,8 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the node ID is not in a payer report.
     error NotInPayerReport(uint32 originatorNodeId, uint256 payerReportIndex);
 
-    /// @notice Thrown when the destination address is zero (i.e. address(0)).
-    error ZeroDestination();
+    /// @notice Thrown when the recipient address is zero (i.e. address(0)).
+    error ZeroRecipient();
 
     /// @notice Thrown when the node has no fees owed.
     error NoFeesOwed();
@@ -73,11 +79,11 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the contract's available balance is zero.
     error ZeroAvailableBalance();
 
-    /**
-     * @notice Thrown when the `ERC20.transfer` call fails.
-     * @dev    This is an identical redefinition of `SafeTransferLib.TransferFailed`.
-     */
-    error TransferFailed();
+    /// @notice Thrown when the contract is paused.
+    error Paused();
+
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
 
     /* ============ Initialization ============ */
 
@@ -104,16 +110,33 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Withdraws fees for a node.
-     * @param  nodeId_      The ID of the node.
-     * @param  destination_ The address to withdraw the fees to.
-     * @return withdrawn_   The amount of fees withdrawn.
+     * @param  nodeId_    The ID of the node.
+     * @param  recipient_ The address to withdraw the fee tokens to.
+     * @return withdrawn_ The amount of fee tokens withdrawn.
      */
-    function withdraw(uint32 nodeId_, address destination_) external returns (uint96 withdrawn_);
+    function withdraw(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_);
+
+    /**
+     * @notice Withdraws fees for a node, unwrapped as underlying fee token.
+     * @param  nodeId_    The ID of the node.
+     * @param  recipient_ The address to withdraw the underlying fee tokens to.
+     * @return withdrawn_ The amount of fee tokens withdrawn.
+     */
+    function withdrawIntoUnderlying(uint32 nodeId_, address recipient_) external returns (uint96 withdrawn_);
+
+    /**
+     * @notice Updates the pause status.
+     * @dev    Ensures the new pause status is not equal to the old pause status.
+     */
+    function updatePauseStatus() external;
 
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the paused status.
+    function pausedParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
@@ -127,11 +150,14 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice The address of the payer registry.
     function payerRegistry() external view returns (address payerRegistry_);
 
-    /// @notice The address of the token.
-    function token() external view returns (address token_);
+    /// @notice The address of the fee token.
+    function feeToken() external view returns (address feeToken_);
 
     /// @notice The total amount of fees owed.
     function totalOwedFees() external view returns (uint96 totalOwedFees_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
 
     /**
      * @notice Returns the amount of claimed fees owed to a node.
