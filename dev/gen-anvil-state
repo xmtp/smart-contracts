@@ -5,13 +5,13 @@ set -euo pipefail
 export LOCAL_DEPLOYER_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 export ANVIL_RPC_URL="127.0.0.1:8545"
 
-rm -f ./anvil-state.json || echo "no existing state to remove"
+rm -f ./anvil-state.json || echo "No existing state to remove."
 
 mkdir -p environments
 
-rm -f ./environments/anvil.json || echo "no existing anvil environment to remove"
+rm -f ./environments/anvil.json || echo "No existing anvil environment to remove."
 
-echo "▶ Starting anvil..."
+echo "⧖ Starting anvil."
 anvil &
 
 ANVIL_PID=$!
@@ -20,8 +20,8 @@ trap 'kill $ANVIL_PID 2>/dev/null || true; wait $ANVIL_PID 2>/dev/null || true' 
 # Wait for anvil to start
 sleep 2
 
-echo "▶ Running deploy-local..."
-npm run deploy-local
+echo "⧖ Running deploy-local"
+./dev/deploy-local
 
 sleep 2
 
@@ -31,8 +31,8 @@ curl -H "Content-Type: application/json" -s -X POST --data '{"jsonrpc":"2.0","me
     | xxd -r -p \
     | gunzip -c > anvil-state.json
 
-echo "▶ Waiting for anvil to flush state..."
+echo "⧖ Waiting for anvil to flush state."
 kill -SIGINT "$ANVIL_PID"  # sends Ctrl+C, triggers graceful shutdown
 wait "$ANVIL_PID"
 
-echo "🟢 Done generating anvil state."
+echo "✔ Done generating anvil state."

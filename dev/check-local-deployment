@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "⧖ Checking local deployment."
+
+forge script script/DeployLocal.s.sol:DeployLocalScripts --rpc-url anvil --broadcast --slow --sig 'checkLocalDeployment()'
+
+echo "✔ Done checking local deployment."

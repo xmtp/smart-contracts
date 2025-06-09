@@ -135,7 +135,7 @@ contract ParameterScripts is Script {
         ISettlementChainGateway(_deploymentData.gatewayProxy).sendParametersAsRetryableTickets(
             inboxes_,
             keys_,
-            200_000,
+            400_000,
             2_000_000_000, // 2 gwei
             1_000000, // 1 USDC
             1_000000 // 1 USDC

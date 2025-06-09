@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+# Check if both arguments are provided
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <environment> <chain-type>"
+    echo "environment: The environment to deploy to (e.g. testnode, testnet-dev, testnet-staging, testnet, mainnet)"
+    echo "chain-type: Either 'settlement-chain' or 'app-chain'"
+    exit 1
+fi
+
+ENVIRONMENT=$1
+CHAIN_TYPE=$2
+
+# Validate chain type
+if [ "$CHAIN_TYPE" != "settlement-chain" ] && [ "$CHAIN_TYPE" != "app-chain" ]; then
+    echo "Error: chain-type must be either 'settlement-chain' or 'app-chain'"
+    exit 1
+fi
+
+# Determine CHAIN_NAME based on ENVIRONMENT and CHAIN_TYPE
+if [ "$ENVIRONMENT" = "testnode" ]; then
+    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+        CHAIN_NAME="l2_testnode"
+    else
+        CHAIN_NAME="l3_testnode"
+    fi
+elif [ "$ENVIRONMENT" = "mainnet" ]; then
+    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+        CHAIN_NAME="base"
+    else
+        CHAIN_NAME="xmtp"
+    fi
+else
+    # For testnet-dev, testnet-staging, and testnet
+    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+        CHAIN_NAME="base_sepolia"
+    else
+        CHAIN_NAME="xmtp_sepolia"
+    fi
+fi
+
+# Determine the deployment function based on chain type
+if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+    DEPLOY_FUNC="deploySettlementChainComponents()"
+else
+    DEPLOY_FUNC="deployAppChainComponents()"
+fi
+
+echo "⧖ Deploying $CHAIN_TYPE contracts on $ENVIRONMENT."
+
+ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
+
+echo "✔ Done deploying $CHAIN_TYPE contracts on $ENVIRONMENT."
+
+./dev/check-deployment $ENVIRONMENT $CHAIN_TYPE

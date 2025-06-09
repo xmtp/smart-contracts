@@ -1,0 +1,324 @@
+#!/bin/bash
+set -euo pipefail
+
+# TODO: use internal variables for less duplication of comparisons.
+
+# Check if both arguments are provided
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <environment> <chain-type> <explorer> <api-key>"
+    echo "environment: The environment to deploy to (e.g. testnet-dev, testnet-staging, testnet, mainnet)"
+    echo "chain-type: Either 'settlement-chain' or 'app-chain'"
+    echo "explorer: The explorer to use (e.g. etherscan, blockscout, alchemy)"
+    echo "api-key: The API key for the verifier"
+    exit 1
+fi
+
+ENVIRONMENT=$1
+CHAIN_TYPE=$2
+EXPLORER=$3
+API_KEY=$4
+
+# Validate chain type
+if [ "$CHAIN_TYPE" != "settlement-chain" ] && [ "$CHAIN_TYPE" != "app-chain" ]; then
+    echo "Error: chain-type must be either 'settlement-chain' or 'app-chain'"
+    exit 1
+fi
+
+# Read chain ID from environment JSON file
+CONFIG_FILE="./config/${ENVIRONMENT}.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Environment file $CONFIG_FILE does not exist"
+    exit 1
+fi
+
+if [ "$CHAIN_TYPE" = "app-chain" ]; then
+    CHAIN_ID=$(jq -r '.appChainId' "$CONFIG_FILE")
+else
+    CHAIN_ID=$(jq -r '.settlementChainId' "$CONFIG_FILE")
+fi
+
+# Validate for app-chain/alchemy
+if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \
+      ("$CHAIN_TYPE" != "app-chain" && "$EXPLORER" == "alchemy") ]]; then
+    echo "Error: alchemy is the only supported explorer for app-chain verification"
+    exit 1
+fi
+
+# Determine EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
+if [ "$EXPLORER" = "etherscan" ]; then
+    VERIFIER="etherscan"
+elif [ "$EXPLORER" = "blockscout" ]; then
+    VERIFIER="blockscout"
+elif [ "$EXPLORER" = "alchemy" ]; then
+    VERIFIER="blockscout"
+else
+    echo "Error: explorer must be etherscan, blockscout, or alchemy"
+    exit 1
+fi
+
+# Determine EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
+if [ "$EXPLORER" = "etherscan" ]; then
+    EXPLORER_URL="https://api.etherscan.io/v2/api"
+elif [ "$EXPLORER" = "blockscout" ]; then
+    if [ "$ENVIRONMENT" = "mainnet" ]; then
+        EXPLORER_URL="https://base.blockscout.com/api?"
+    else
+        EXPLORER_URL="https://base-sepolia.blockscout.com/api?"
+    fi
+elif [ "$EXPLORER" = "alchemy" ]; then
+    if [ "$ENVIRONMENT" = "mainnet" ]; then
+        EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
+    else
+        EXPLORER_URL="https://xmtp-testnet.explorer.alchemy.com/api\?"
+    fi
+else
+    echo "Error: explorer must be etherscan, blockscout, or alchemy"
+    exit 1
+fi
+
+echo "⧖ Verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
+
+if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+    APP_CHAIN_NATIVE_TOKEN=$(jq -r '.appChainNativeToken' "$CONFIG_FILE")
+    DISTRIBUTION_MANAGER_IMPLEMENTATION=$(jq -r '.distributionManagerImplementation' "$CONFIG_FILE")
+    DISTRIBUTION_MANAGER_PROXY=$(jq -r '.distributionManagerProxy' "$CONFIG_FILE")
+    FACTORY=$(jq -r '.factory' "$CONFIG_FILE")
+    GATEWAY_PROXY=$(jq -r '.gatewayProxy' "$CONFIG_FILE")
+    INITIALIZABLE_IMPLEMENTATION=$(jq -r '.initializableImplementation' "$CONFIG_FILE")
+    NODE_REGISTRY_IMPLEMENTATION=$(jq -r '.nodeRegistryImplementation' "$CONFIG_FILE")
+    NODE_REGISTRY_PROXY=$(jq -r '.nodeRegistryProxy' "$CONFIG_FILE")
+    PARAMETER_REGISTRY_PROXY=$(jq -r '.parameterRegistryProxy' "$CONFIG_FILE")
+    PAYER_REGISTRY_IMPLEMENTATION=$(jq -r '.payerRegistryImplementation' "$CONFIG_FILE")
+    PAYER_REGISTRY_PROXY=$(jq -r '.payerRegistryProxy' "$CONFIG_FILE")
+    PAYER_REPORT_MANAGER_IMPLEMENTATION=$(jq -r '.payerReportManagerImplementation' "$CONFIG_FILE")
+    PAYER_REPORT_MANAGER_PROXY=$(jq -r '.payerReportManagerProxy' "$CONFIG_FILE")
+    RATE_REGISTRY_IMPLEMENTATION=$(jq -r '.rateRegistryImplementation' "$CONFIG_FILE")
+    RATE_REGISTRY_PROXY=$(jq -r '.rateRegistryProxy' "$CONFIG_FILE")
+    SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION=$(jq -r '.settlementChainGatewayImplementation' "$CONFIG_FILE")
+    SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION=$(jq -r '.settlementChainParameterRegistryImplementation' "$CONFIG_FILE")
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        "$INITIALIZABLE_IMPLEMENTATION" \
+        src/any-chain/Initializable.sol:Initializable
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        "$FACTORY" \
+        src/any-chain/Factory.sol:Factory
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        "$SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
+        src/settlement-chain/SettlementChainParameterRegistry.sol:SettlementChainParameterRegistry
+
+    sleep 2
+
+    echo ""
+
+    # Verifying the proxy for the parameter registry should suffice for the explorer to pick up the other proxies.
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
+        "$PARAMETER_REGISTRY_PROXY" \
+        src/any-chain/Proxy.sol:Proxy
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$GATEWAY_PROXY" \
+            "$APP_CHAIN_NATIVE_TOKEN") \
+        "$SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION" \
+        src/settlement-chain/SettlementChainGateway.sol:SettlementChainGateway
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$APP_CHAIN_NATIVE_TOKEN") \
+        "$PAYER_REGISTRY_IMPLEMENTATION" \
+        src/settlement-chain/PayerRegistry.sol:PayerRegistry
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$RATE_REGISTRY_IMPLEMENTATION" \
+        src/settlement-chain/RateRegistry.sol:RateRegistry
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$NODE_REGISTRY_IMPLEMENTATION" \
+        src/settlement-chain/NodeRegistry.sol:NodeRegistry
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$NODE_REGISTRY_PROXY" \
+            "$PAYER_REGISTRY_PROXY") \
+        "$PAYER_REPORT_MANAGER_IMPLEMENTATION" \
+        src/settlement-chain/PayerReportManager.sol:PayerReportManager
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address,address,address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$NODE_REGISTRY_PROXY" \
+            "$PAYER_REPORT_MANAGER_PROXY" \
+            "$PAYER_REGISTRY_PROXY" \
+            "$APP_CHAIN_NATIVE_TOKEN") \
+        "$DISTRIBUTION_MANAGER_IMPLEMENTATION" \
+        src/settlement-chain/DistributionManager.sol:DistributionManager
+
+    sleep 2
+
+    if [ "$EXPLORER" = "etherscan" ]; then
+        echo ""
+        echo "Verifying Proxy For SettlementChainParameterRegistry"
+
+        curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For SettlementChainGateway"
+
+        curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For PayerRegistry"
+
+        curl -d "address=${PAYER_REGISTRY_PROXY}&expectedimplementation=${PAYER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For RateRegistry"
+
+        curl -d "address=${RATE_REGISTRY_PROXY}&expectedimplementation=${RATE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For NodeRegistry"
+
+        curl -d "address=${NODE_REGISTRY_PROXY}&expectedimplementation=${NODE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For PayerReportManager"
+
+        curl -d "address=${PAYER_REPORT_MANAGER_PROXY}&expectedimplementation=${PAYER_REPORT_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For DistributionManager"
+
+        curl -d "address=${DISTRIBUTION_MANAGER_PROXY}&expectedimplementation=${DISTRIBUTION_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+    fi
+else
+    APP_CHAIN_GATEWAY_IMPLEMENTATION=$(jq -r '.appChainGatewayImplementation' "$CONFIG_FILE")
+    APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION=$(jq -r '.appChainParameterRegistryImplementation' "$CONFIG_FILE")
+    GATEWAY_PROXY=$(jq -r '.gatewayProxy' "$CONFIG_FILE")
+    GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION=$(jq -r '.groupMessageBroadcasterImplementation' "$CONFIG_FILE")
+    GROUP_MESSAGE_BROADCASTER_PROXY=$(jq -r '.groupMessageBroadcasterProxy' "$CONFIG_FILE")
+    IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION=$(jq -r '.identityUpdateBroadcasterImplementation' "$CONFIG_FILE")
+    IDENTITY_UPDATE_BROADCASTER_PROXY=$(jq -r '.identityUpdateBroadcasterProxy' "$CONFIG_FILE")
+    PARAMETER_REGISTRY_PROXY=$(jq -r '.parameterRegistryProxy' "$CONFIG_FILE")
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        "$APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
+        src/app-chain/AppChainParameterRegistry.sol:AppChainParameterRegistry
+
+    sleep 2
+
+    echo ""
+
+    # Verifying the proxy for the parameter registry should suffice for the explorer to pick up the other proxies.
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$GATEWAY_PROXY") \
+        "$APP_CHAIN_GATEWAY_IMPLEMENTATION" \
+        src/app-chain/AppChainGateway.sol:AppChainGateway
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION" \
+        src/app-chain/GroupMessageBroadcaster.sol:GroupMessageBroadcaster
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION" \
+        src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
+
+    sleep 2
+
+    if [ "$EXPLORER" = "etherscan" ]; then
+        echo ""
+        echo "Verifying Proxy For AppChainParameterRegistry"
+
+        curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For AppChainGateway"
+
+        curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${APP_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For GroupMessageBroadcaster"
+
+        curl -d "address=${GROUP_MESSAGE_BROADCASTER_PROXY}&expectedimplementation=${GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+
+        sleep 2
+
+        echo ""
+        echo "Verifying Proxy For IdentityUpdateBroadcaster"
+
+        curl -d "address=${IDENTITY_UPDATE_BROADCASTER_PROXY}&expectedimplementation=${IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"
+    fi
+fi
+
+echo "✔ Done verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
