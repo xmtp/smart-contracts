@@ -10,6 +10,12 @@ get_chain_name() {
         exit 1
     fi
 
+    # Validate environment parameter
+    if [[ ! "$environment" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+        echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+        exit 1
+    fi
+
     if [ "$chain_type" != "settlement-chain" ] && [ "$chain_type" != "app-chain" ]; then
         echo "Error: chain_type must be either 'settlement-chain' or 'app-chain'" >&2
         exit 1
