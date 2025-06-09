@@ -1,0 +1,69 @@
+#!/bin/bash
+
+get_chain_name() {
+    local environment=$1
+    local chain_type=$2
+
+    # Validate inputs
+    if [ -z "$environment" ] || [ -z "$chain_type" ]; then
+        echo "Error: Both environment and chain_type parameters are required" >&2
+        exit 1
+    fi
+
+    # Validate environment parameter
+    if [[ ! "$environment" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+        echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+        exit 1
+    fi
+
+    if [ "$chain_type" != "settlement-chain" ] && [ "$chain_type" != "app-chain" ]; then
+        echo "Error: chain_type must be either 'settlement-chain' or 'app-chain'" >&2
+        exit 1
+    fi
+
+    if [ "$environment" = "testnode" ]; then
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "l2_testnode"
+        else
+            echo "l3_testnode"
+        fi
+    elif [ "$environment" = "mainnet" ]; then
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "base"
+        else
+            echo "xmtp"
+        fi
+    else
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "base_sepolia"
+        else
+            echo "xmtp_sepolia"
+        fi
+    fi
+}
+
+get_environment_value() {
+    local environment=$1
+    local key=$2
+
+    # Validate inputs
+    if [ -z "$environment" ] || [ -z "$key" ]; then
+        echo "Error: Both environment and key parameters are required" >&2
+        exit 1
+    fi
+
+    config_file="./config/${environment}.json"
+    if [ ! -f "$config_file" ]; then
+        echo "Error: Environment file $config_file does not exist"
+        exit 1
+    fi
+
+    local value=$(jq -r ".${key}" "$config_file")
+
+    if [ "$value" = "null" ] || [ -z "$value" ]; then
+        echo "Error: ${key} not found in ${config_file}"
+        exit 1
+    fi
+
+    echo "$value"
+}

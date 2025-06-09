@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+
+source "$(dirname "$0")/utils"
+
+# Check if both arguments are provided
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <environment>"
+    echo "environment: The environment to deploy to (e.g. testnode, testnet-dev, testnet-staging, testnet, mainnet)"
+    exit 1
+fi
+
+ENVIRONMENT=$1
+
+# Validate environment parameter
+if [[ ! "$ENVIRONMENT" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+    echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
+fi
+
+CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
+
+echo "⧖ Setting starting parameters on $ENVIRONMENT."
+
+ENVIRONMENT=$ENVIRONMENT forge script script/Parameters.s.sol:ParameterScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "setStartingParameters()"
+
+echo "✔ Done setting starting parameters on $ENVIRONMENT."

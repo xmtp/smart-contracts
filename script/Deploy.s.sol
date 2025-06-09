@@ -3,31 +3,32 @@ pragma solidity 0.8.28;
 
 import { Script, console } from "../lib/forge-std/src/Script.sol";
 
-import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
-import { PayerRegistryDeployer } from "./deployers/PayerRegistryDeployer.sol";
-import { SettlementChainGatewayDeployer } from "./deployers/SettlementChainGatewayDeployer.sol";
-import { SettlementChainParameterRegistryDeployer } from "./deployers/SettlementChainParameterRegistryDeployer.sol";
-import { RateRegistryDeployer } from "./deployers/RateRegistryDeployer.sol";
-import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
-import { PayerReportManagerDeployer } from "./deployers/PayerReportManagerDeployer.sol";
-import { DistributionManagerDeployer } from "./deployers/DistributionManagerDeployer.sol";
-import { AppChainParameterRegistryDeployer } from "./deployers/AppChainParameterRegistryDeployer.sol";
 import { AppChainGatewayDeployer } from "./deployers/AppChainGatewayDeployer.sol";
+import { AppChainParameterRegistryDeployer } from "./deployers/AppChainParameterRegistryDeployer.sol";
+import { DistributionManagerDeployer } from "./deployers/DistributionManagerDeployer.sol";
+import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
+import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
+import { PayerRegistryDeployer } from "./deployers/PayerRegistryDeployer.sol";
+import { PayerReportManagerDeployer } from "./deployers/PayerReportManagerDeployer.sol";
+import { RateRegistryDeployer } from "./deployers/RateRegistryDeployer.sol";
+import { SettlementChainGatewayDeployer } from "./deployers/SettlementChainGatewayDeployer.sol";
+import { SettlementChainParameterRegistryDeployer } from "./deployers/SettlementChainParameterRegistryDeployer.sol";
 
 import { AddressAliasHelper } from "../src/libraries/AddressAliasHelper.sol";
 
-import { IPayerRegistry } from "../src/settlement-chain/interfaces/IPayerRegistry.sol";
-import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
-import { IRateRegistry } from "../src/settlement-chain/interfaces/IRateRegistry.sol";
-import { INodeRegistry } from "../src/settlement-chain/interfaces/INodeRegistry.sol";
-import { IPayerReportManager } from "../src/settlement-chain/interfaces/IPayerReportManager.sol";
-import { IDistributionManager } from "../src/settlement-chain/interfaces/IDistributionManager.sol";
-import { IAppChainParameterRegistry } from "../src/app-chain/interfaces/IAppChainParameterRegistry.sol";
 import { IAppChainGateway } from "../src/app-chain/interfaces/IAppChainGateway.sol";
+import { IAppChainParameterRegistry } from "../src/app-chain/interfaces/IAppChainParameterRegistry.sol";
+import { IDistributionManager } from "../src/settlement-chain/interfaces/IDistributionManager.sol";
+import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
 import { IGroupMessageBroadcaster } from "../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
+import { INodeRegistry } from "../src/settlement-chain/interfaces/INodeRegistry.sol";
+import { IPayerRegistry } from "../src/settlement-chain/interfaces/IPayerRegistry.sol";
+import { IPayerReportManager } from "../src/settlement-chain/interfaces/IPayerReportManager.sol";
+import { IRateRegistry } from "../src/settlement-chain/interfaces/IRateRegistry.sol";
+import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 
 import {
     ISettlementChainParameterRegistry
@@ -136,7 +137,7 @@ contract DeployScripts is Script {
         _writeAppChainData(blockNumber_);
     }
 
-    function verifySettlementChainComponents() external {
+    function checkSettlementChainComponents() external {
         string memory filePath_ = string.concat("environments/", _environment, ".json");
         string memory json_ = vm.readFile(filePath_);
 
@@ -181,7 +182,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function verifyAppChainComponents() external {
+    function checkAppChainComponents() external {
         string memory filePath_ = string.concat("environments/", _environment, ".json");
         string memory json_ = vm.readFile(filePath_);
 
@@ -223,6 +224,10 @@ contract DeployScripts is Script {
 
         if (factory_ != _deploymentData.factory) revert UnexpectedFactory();
 
+        if (IFactory(factory_).initializableImplementation() != _deploymentData.initializableImplementation) {
+            revert UnexpectedFactory();
+        }
+
         vm.stopBroadcast();
     }
 
@@ -238,8 +243,9 @@ contract DeployScripts is Script {
 
         console.log("SettlementChainParameterRegistry Implementation: %s", implementation_);
 
-        if (implementation_ != _deploymentData.settlementChainParameterRegistryImplementation)
+        if (implementation_ != _deploymentData.settlementChainParameterRegistryImplementation) {
             revert UnexpectedImplementation();
+        }
     }
 
     function deploySettlementChainParameterRegistryProxy() public returns (address proxy_) {

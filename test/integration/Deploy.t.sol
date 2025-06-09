@@ -145,6 +145,8 @@ contract DeployTests is Test {
         // a deployment. If not set, make a deployer address.
         _deployer = vm.envOr("DEPLOYER", makeAddr("deployer"));
 
+        console.log("deployer: %s", _deployer);
+
         vm.recordLogs();
 
         _settlementChainForkId = vm.createFork("base_sepolia");
@@ -158,11 +160,13 @@ contract DeployTests is Test {
         _appChainFactory = _deployAppChainFactory();
 
         console.log("appChainFactory: %s", address(_appChainFactory));
+        console.log("app chain Initializable: %s", _appChainFactory.initializableImplementation());
 
         // Deploy the Factory on the settlement chain.
         _settlementChainFactory = _deploySettlementChainFactory();
 
         console.log("settlementChainFactory: %s", address(_settlementChainFactory));
+        console.log("settlement chain Initializable: %s", _settlementChainFactory.initializableImplementation());
 
         // Deploy the Parameter Registry on the settlement chain.
         address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();

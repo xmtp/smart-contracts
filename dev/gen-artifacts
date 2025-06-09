@@ -41,7 +41,7 @@ function generate_artifacts() {
 }
 
 function build_info() {
-    echo "⧖ Dumping build info to ${build_info_file}"
+    echo "⧖ Dumping build info to ${build_info_file}."
     local build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     local build_tag=$(git describe HEAD --tags --long)
 
@@ -65,30 +65,30 @@ function environments() {
 }
 
 function main() {
-    echo "Generating artifacts with forge version ${forge_version}"
+    echo "Generating artifacts with forge version ${forge_version}."
 
     contracts=("Factory" "AppChainGateway" "AppChainParameterRegistry" "GroupMessageBroadcaster" "IdentityUpdateBroadcaster")
     for contract in "${contracts[@]}"; do
-        echo "⧖ Generating artifacts for app chain contract: ${contract}"
+        echo "⧖ Generating artifacts for app chain contract: ${contract}."
         generate_artifacts "src/app-chain/${contract}.sol" "${contract}"
     done
 
     contracts=("Factory" "SettlementChainGateway" "SettlementChainParameterRegistry" "DistributionManager" "FeeToken" "NodeRegistry" "PayerRegistry" "PayerReportManager" "RateRegistry")
     for contract in "${contracts[@]}"; do
-        echo "⧖ Generating artifacts for settlement chain contract: ${contract}"
+        echo "⧖ Generating artifacts for settlement chain contract: ${contract}."
         generate_artifacts "src/settlement-chain/${contract}.sol" "${contract}"
     done
 
     contracts=("MockERC20")
     for contract in "${contracts[@]}"; do
-        echo "⧖ Generating artifacts for mock contract: ${contract}"
+        echo "⧖ Generating artifacts for mock contract: ${contract}."
         generate_artifacts "test/utils/Mocks.sol" "${contract}"
     done
 
     build_info
     environments
 
-    echo -e "\033[32m✔\033[0m Artifacts generated successfully!\n"
+    echo -e "✔ Artifacts generated successfully."
 }
 
 main "$@"

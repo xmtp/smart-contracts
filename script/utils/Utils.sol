@@ -33,6 +33,7 @@ library Utils {
         address identityUpdateBroadcasterImplementation;
         address identityUpdateBroadcasterProxy;
         bytes32 identityUpdateBroadcasterProxySalt;
+        address initializableImplementation;
         address nodeRegistryImplementation;
         address nodeRegistryProxy;
         bytes32 nodeRegistryProxySalt;
@@ -101,6 +102,7 @@ library Utils {
         deploymentData_.identityUpdateBroadcasterProxySalt = stringToBytes32(
             stdJson.readString(json_, ".identityUpdateBroadcasterProxySalt")
         );
+        deploymentData_.initializableImplementation = stdJson.readAddress(json_, ".initializableImplementation");
         deploymentData_.nodeRegistryImplementation = stdJson.readAddress(json_, ".nodeRegistryImplementation");
         deploymentData_.nodeRegistryProxy = stdJson.readAddress(json_, ".nodeRegistryProxy");
         deploymentData_.nodeRegistryProxySalt = stringToBytes32(stdJson.readString(json_, ".nodeRegistryProxySalt"));

@@ -35,7 +35,7 @@ import { SettlementChainParameterRegistryDeployer } from "./deployers/Settlement
 
 import { MockERC20 } from "../test/utils/Mocks.sol";
 
-contract DeployLocalScript is Script {
+contract DeployLocalScripts is Script {
     string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
 
     bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
@@ -253,7 +253,7 @@ contract DeployLocalScript is Script {
         vm.writeJson(json_, DEPLOYMENT_FILE_PATH);
     }
 
-    function verifyLocalDeployment() external {
+    function checkLocalDeployment() external {
         string memory json_ = vm.readFile(DEPLOYMENT_FILE_PATH);
 
         // TODO: For some or all of these, check a getter to ensure the contracts are as expected.
