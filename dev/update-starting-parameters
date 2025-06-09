@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+source "$(dirname "$0")/utils"
+
 # Check if both arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <environment> <chain-type>"
@@ -12,33 +14,19 @@ fi
 ENVIRONMENT=$1
 CHAIN_TYPE=$2
 
+# Validate environment parameter
+if [[ ! "$ENVIRONMENT" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+    echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
+fi
+
 # Validate chain type
 if [ "$CHAIN_TYPE" != "settlement-chain" ] && [ "$CHAIN_TYPE" != "app-chain" ]; then
     echo "Error: chain-type must be either 'settlement-chain' or 'app-chain'"
     exit 1
 fi
 
-# Determine CHAIN_NAME based on ENVIRONMENT and CHAIN_TYPE
-if [ "$ENVIRONMENT" = "testnode" ]; then
-    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-        CHAIN_NAME="l2_testnode"
-    else
-        CHAIN_NAME="l3_testnode"
-    fi
-elif [ "$ENVIRONMENT" = "mainnet" ]; then
-    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-        CHAIN_NAME="base"
-    else
-        CHAIN_NAME="xmtp"
-    fi
-else
-    # For testnet-dev, testnet-staging, and testnet
-    if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-        CHAIN_NAME="base_sepolia"
-    else
-        CHAIN_NAME="xmtp_sepolia"
-    fi
-fi
+CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "$CHAIN_TYPE")
 
 # Determine the deployment function based on chain type
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then

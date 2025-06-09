@@ -18,6 +18,12 @@ CHAIN_TYPE=$2
 EXPLORER=$3
 API_KEY=$4
 
+# Validate environment parameter
+if [[ ! "$ENVIRONMENT" =~ ^(testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+    echo "Error: Invalid environment. Must be one of: testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
+fi
+
 # Validate chain type
 if [ "$CHAIN_TYPE" != "settlement-chain" ] && [ "$CHAIN_TYPE" != "app-chain" ]; then
     echo "Error: chain-type must be either 'settlement-chain' or 'app-chain'"
@@ -44,28 +50,21 @@ if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \
     exit 1
 fi
 
-# Determine EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
+# Determine VERIFIER and EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
 if [ "$EXPLORER" = "etherscan" ]; then
     VERIFIER="etherscan"
-elif [ "$EXPLORER" = "blockscout" ]; then
-    VERIFIER="blockscout"
-elif [ "$EXPLORER" = "alchemy" ]; then
-    VERIFIER="blockscout"
-else
-    echo "Error: explorer must be etherscan, blockscout, or alchemy"
-    exit 1
-fi
-
-# Determine EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
-if [ "$EXPLORER" = "etherscan" ]; then
     EXPLORER_URL="https://api.etherscan.io/v2/api"
 elif [ "$EXPLORER" = "blockscout" ]; then
+    VERIFIER="blockscout"
+
     if [ "$ENVIRONMENT" = "mainnet" ]; then
         EXPLORER_URL="https://base.blockscout.com/api?"
     else
         EXPLORER_URL="https://base-sepolia.blockscout.com/api?"
     fi
 elif [ "$EXPLORER" = "alchemy" ]; then
+    VERIFIER="blockscout"
+
     if [ "$ENVIRONMENT" = "mainnet" ]; then
         EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
     else

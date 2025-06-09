@@ -1,0 +1,26 @@
+#!/bin/bash
+
+get_chain_name() {
+    local environment=$1
+    local chain_type=$2
+
+    if [ "$environment" = "testnode" ]; then
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "l2_testnode"
+        else
+            echo "l3_testnode"
+        fi
+    elif [ "$environment" = "mainnet" ]; then
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "base"
+        else
+            echo "xmtp"
+        fi
+    else
+        if [ "$chain_type" = "settlement-chain" ]; then
+            echo "base_sepolia"
+        else
+            echo "xmtp_sepolia"
+        fi
+    fi
+}

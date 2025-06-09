@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+source "$(dirname "$0")/utils"
+
 # Check if both arguments are provided
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <environment>"
@@ -10,15 +12,13 @@ fi
 
 ENVIRONMENT=$1
 
-# Determine CHAIN_NAME based on ENVIRONMENT
-if [ "$ENVIRONMENT" = "testnode" ]; then
-    CHAIN_NAME="l2_testnode"
-elif [ "$ENVIRONMENT" = "mainnet" ]; then
-    CHAIN_NAME="base"
-else
-    # For testnet-dev, testnet-staging, and testnet
-    CHAIN_NAME="base_sepolia"
+# Validate environment parameter
+if [[ ! "$ENVIRONMENT" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
+    echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
 fi
+
+CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
 
 echo "⧖ Setting starting parameters on $ENVIRONMENT."
 
