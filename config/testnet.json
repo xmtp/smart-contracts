@@ -1,0 +1,72 @@
+{
+    "appChainGatewayImplementation": "0xa7119e0a1DDf210D9DAF06a368Bb712278a13351",
+    "appChainId": "241320161",
+    "appChainNativeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "appChainParameterRegistryImplementation": "0x33d8613Cd4c82263f369014a590aC7F2f69291B0",
+    "deployer": "0xBC0d5ADdb45E3F5b37806cacf9112C16a54414a8",
+    "distributionManagerImplementation": "0x2DcEfd5712f64e0727C7b6E54E5A18532A24A573",
+    "distributionManagerProxy": "0xCf51C25aBe847B97eD4F5e62419AC2aACE92345B",
+    "distributionManagerProxySalt": "DistributionManager_0",
+    "factory": "0x95D0A57041259b959DfC53530F902d0c2B8DDF5E",
+    "feeTokenImplementation": "0x0000000000000000000000000000000000000000",
+    "feeTokenProxy": "0x0000000000000000000000000000000000000000",
+    "feeTokenProxySalt": "FeeToken_0",
+    "gatewayProxy": "0xE3A28819f015F739Bd8367A81f0f6ebC9D6553b4",
+    "gatewayProxySalt": "Gateway_0",
+    "groupMessageBroadcasterImplementation": "0xCA9f24CBE9aaE73c1e645f85859F5a3b6fF517A4",
+    "groupMessageBroadcasterProxy": "0xBE03f49ea7010f2c90D57aa7656E30E81a79D3B6",
+    "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0",
+    "identityUpdateBroadcasterImplementation": "0x121e732844681894c704B5e6F115Baa23127d93e",
+    "identityUpdateBroadcasterProxy": "0x46bce0d43aC4433e7FC0F5f37d694a41e75A5c46",
+    "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
+    "initializableImplementation": "0x43f1F22767218Ff5c3425cC127038BC4369Bd6D2",
+    "nodeRegistryImplementation": "0x7F7b105C0ec2D241913f44577536af7740139a58",
+    "nodeRegistryProxy": "0x5275FfA7D1f5aBd4159Ae38925fD9F4D5686725E",
+    "nodeRegistryProxySalt": "NodeRegistry_0",
+    "parameterRegistryProxy": "0xDe2bF8Bbdb50aB5D1645C89145b08Ef787E4D81a",
+    "parameterRegistryProxySalt": "ParameterRegistry_0",
+    "payerRegistryImplementation": "0xa78aE9A42e0D25897979FA033041376F270ED577",
+    "payerRegistryProxy": "0x2B019EAfE0910a16394D78f3E930bB4c946B5E9e",
+    "payerRegistryProxySalt": "PayerRegistry_0",
+    "payerReportManagerImplementation": "0x6B0843CeCDD71256D0416cfd01414E98Ce00D7AF",
+    "payerReportManagerProxy": "0x4f2aD70408A47ab2641d798da4F672D25eB30c4F",
+    "payerReportManagerProxySalt": "PayerReportManager_0",
+    "rateRegistryImplementation": "0x4Cdcf1093b7a70450bb94328be5FaC869C3188e1",
+    "rateRegistryProxy": "0x070eFE6e07b2cb17c6c7a3AB276ce79745e4A65A",
+    "rateRegistryProxySalt": "RateRegistry_0",
+    "settlementChainGatewayImplementation": "0xaA408a7b63228Ec582d5a1D89d0dDE8E3d3525eD",
+    "settlementChainId": "84532",
+    "settlementChainInboxToAppchain": "0xd06d8E471F0EeB1bb516303EdE399d004Acb1615",
+    "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
+    "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
+    "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
+    "settlementChainParameterRegistryImplementation": "0x3a9FF642FD7E34F7151eFca061d378B141A60998",
+    "startingParameters": {
+        "xmtp": {
+            "nodeRegistry": {
+                "admin": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
+                "maxCanonicalNodes": "100"
+            },
+            "payerRegistry": {
+                "settler": "0x4f2aD70408A47ab2641d798da4F672D25eB30c4F",
+                "feeDistributor": "0xCf51C25aBe847B97eD4F5e62419AC2aACE92345B",
+                "minimumDeposit": "10000000",
+                "withdrawLockPeriod": "172800"
+            },
+            "rateRegistry": {
+                "messageFee": "100",
+                "storageFee": "200",
+                "congestionFee": "300",
+                "targetRatePerMinute": "6000"
+            },
+            "groupMessageBroadcaster": {
+                "minPayloadSize": "78",
+                "maxPayloadSize": "4194304"
+            },
+            "identityUpdateBroadcaster": {
+                "minPayloadSize": "78",
+                "maxPayloadSize": "4194304"
+            }
+        }
+    }
+}
