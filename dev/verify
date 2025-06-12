@@ -321,36 +321,6 @@ else
         --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
         "$IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION" \
         src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
-
-    sleep 2
-
-    if [ "$EXPLORER" = "basescan" ]; then
-        echo ""
-        echo "Verifying Proxy For AppChainParameterRegistry"
-
-        curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"
-
-        sleep 2
-
-        echo ""
-        echo "Verifying Proxy For AppChainGateway"
-
-        curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${APP_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"
-
-        sleep 2
-
-        echo ""
-        echo "Verifying Proxy For GroupMessageBroadcaster"
-
-        curl -d "address=${GROUP_MESSAGE_BROADCASTER_PROXY}&expectedimplementation=${GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"
-
-        sleep 2
-
-        echo ""
-        echo "Verifying Proxy For IdentityUpdateBroadcaster"
-
-        curl -d "address=${IDENTITY_UPDATE_BROADCASTER_PROXY}&expectedimplementation=${IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"
-    fi
 fi
 
 echo "✔ Done verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
