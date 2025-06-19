@@ -120,6 +120,7 @@ interface IPayerReportManagerLike {
         uint96 feesSettled;
         uint32 offset;
         bool isSettled;
+        uint16 protocolFeeRate;
         bytes32 payersMerkleRoot;
         uint32[] nodeIds;
     }

@@ -169,7 +169,7 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.verify(0, 0, leaves_, proofElements_);
     }
 
-    function test_verify_noLeafs() external {
+    function test_verify_noLeafs() external view {
         _sequentialMerkleProofs.verify(0, 0, new bytes[](0), new bytes32[](1));
     }
 
@@ -257,7 +257,7 @@ contract SequentialMerkleProofsTests is Test {
         _sequentialMerkleProofs.getRoot(0, leaves_, proofElements_);
     }
 
-    function test_getRoot_noLeaves() external {
+    function test_getRoot_noLeaves() external view {
         assertEq(_sequentialMerkleProofs.getRoot(0, new bytes[](0), new bytes32[](1)), 0);
     }
 

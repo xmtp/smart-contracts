@@ -54,6 +54,14 @@ library RegistryParameters {
         return uint8(parameter_);
     }
 
+    function getUint16Parameter(address parameterRegistry_, bytes memory key_) internal view returns (uint16 output_) {
+        uint256 parameter_ = uint256(getRegistryParameter(parameterRegistry_, key_));
+
+        if (parameter_ > type(uint16).max) revert IRegistryParametersErrors.ParameterOutOfTypeBounds();
+
+        return uint16(parameter_);
+    }
+
     function getUint32Parameter(address parameterRegistry_, bytes memory key_) internal view returns (uint32 output_) {
         uint256 parameter_ = uint256(getRegistryParameter(parameterRegistry_, key_));
 

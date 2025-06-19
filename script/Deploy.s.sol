@@ -137,7 +137,7 @@ contract DeployScripts is Script {
         _writeAppChainData(blockNumber_);
     }
 
-    function checkSettlementChainComponents() external {
+    function checkSettlementChainComponents() external view {
         string memory filePath_ = string.concat("environments/", _environment, ".json");
         string memory json_ = vm.readFile(filePath_);
 
@@ -182,7 +182,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function checkAppChainComponents() external {
+    function checkAppChainComponents() external view {
         string memory filePath_ = string.concat("environments/", _environment, ".json");
         string memory json_ = vm.readFile(filePath_);
 
@@ -973,7 +973,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function _ensureNoSettlementChainData(string memory json_) internal {
+    function _ensureNoSettlementChainData(string memory json_) internal view {
         if (
             vm.keyExists(json_, ".settlementChainId") ||
             vm.keyExists(json_, ".settlementChainDeploymentBlock") ||
@@ -991,7 +991,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function _ensureNoAppChainData(string memory json_) internal {
+    function _ensureNoAppChainData(string memory json_) internal view {
         if (
             vm.keyExists(json_, ".appChainId") ||
             vm.keyExists(json_, ".appChainDeploymentBlock") ||

@@ -131,6 +131,30 @@ contract RegistryParametersTests is Test {
         assertEq(_registryParameters.getUint8Parameter(_parameterRegistry, "key"), type(uint8).max);
     }
 
+    /* ============ getUint16Parameter ============ */
+
+    function test_getUint16Parameter_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encode(uint256(type(uint16).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registryParameters.getUint16Parameter(_parameterRegistry, "key");
+    }
+
+    function test_getUint16Parameter() external {
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encode(type(uint16).max)
+        );
+
+        assertEq(_registryParameters.getUint16Parameter(_parameterRegistry, "key"), type(uint16).max);
+    }
+
     /* ============ getUint32Parameter ============ */
 
     function test_getUint32Parameter_parameterOutOfTypeBounds() external {

@@ -253,7 +253,7 @@ contract DeployLocalScripts is Script {
         vm.writeJson(json_, DEPLOYMENT_FILE_PATH);
     }
 
-    function checkLocalDeployment() external {
+    function checkLocalDeployment() external view {
         string memory json_ = vm.readFile(DEPLOYMENT_FILE_PATH);
 
         // TODO: For some or all of these, check a getter to ensure the contracts are as expected.
