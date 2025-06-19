@@ -26,6 +26,7 @@ contract PayerReportManagerTests is Test {
         );
 
     bytes internal constant _MIGRATOR_KEY = "xmtp.payerReportManager.migrator";
+    bytes internal constant _PROTOCOL_FEE_RATE_KEY = "xmtp.payerReportManager.protocolFeeRate";
 
     PayerReportManagerHarness internal _manager;
 
@@ -78,6 +79,8 @@ contract PayerReportManagerTests is Test {
         assertEq(_manager.nodeRegistry(), _nodeRegistry);
         assertEq(_manager.payerRegistry(), _payerRegistry);
         assertEq(_manager.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_manager.protocolFeeRateParameterKey(), _PROTOCOL_FEE_RATE_KEY);
+        assertEq(_manager.ONE_HUNDRED_PERCENT(), 10_000);
     }
 
     /* ============ initializer ============ */
@@ -97,6 +100,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
@@ -121,6 +125,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
@@ -192,9 +197,12 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
+
+        _manager.__setProtocolFeeRate(100);
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             3
@@ -276,6 +284,7 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReport_.feesSettled, 0);
         assertEq(payerReport_.offset, 0);
         assertTrue(payerReport_.isSettled);
+        assertEq(payerReport_.protocolFeeRate, 100);
         assertEq(payerReport_.payersMerkleRoot, 0);
         assertEq(payerReport_.nodeIds.length, 0);
     }
@@ -288,9 +297,12 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
+
+        _manager.__setProtocolFeeRate(100);
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             3
@@ -369,6 +381,7 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReport_.feesSettled, 0);
         assertEq(payerReport_.offset, 0);
         assertFalse(payerReport_.isSettled);
+        assertEq(payerReport_.protocolFeeRate, 100);
         assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(1)));
         assertEq(payerReport_.nodeIds.length, 0);
     }
@@ -388,6 +401,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: true,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0)
         });
@@ -419,6 +433,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: new uint32[](0)
         });
@@ -448,6 +463,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: new uint32[](0)
         });
@@ -483,6 +499,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: new uint32[](0)
         });
@@ -523,6 +540,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 600,
             offset_: 3,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: new uint32[](0)
         });
@@ -565,6 +583,7 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 0,
             offset_: 0,
             isSettled_: false,
+            protocolFeeRate_: 0,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: new uint32[](0)
         });
@@ -583,6 +602,51 @@ contract PayerReportManagerTests is Test {
         assertEq(_manager.getPayerReport(0, 0).feesSettled, 2_100);
         assertEq(_manager.getPayerReport(0, 0).offset, 6);
         assertTrue(_manager.getPayerReport(0, 0).isSettled);
+    }
+
+    /* ============ updateProtocolFeeRate ============ */
+
+    function test_updateProtocolFeeRate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PROTOCOL_FEE_RATE_KEY,
+            bytes32(uint256(type(uint16).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _manager.updateProtocolFeeRate();
+    }
+
+    function test_updateProtocolFeeRate_invalidProtocolFeeRate() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PROTOCOL_FEE_RATE_KEY, bytes32(uint256(10_001)));
+
+        vm.expectRevert(IPayerReportManager.InvalidProtocolFeeRate.selector);
+
+        _manager.updateProtocolFeeRate();
+    }
+
+    function test_updateProtocolFeeRate_noChange() external {
+        _manager.__setProtocolFeeRate(100);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PROTOCOL_FEE_RATE_KEY, bytes32(uint256(100)));
+
+        vm.expectRevert(IPayerReportManager.NoChange.selector);
+
+        _manager.updateProtocolFeeRate();
+    }
+
+    function test_updateProtocolFeeRate() external {
+        _manager.__setProtocolFeeRate(100);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PROTOCOL_FEE_RATE_KEY, bytes32(uint256(200)));
+
+        vm.expectEmit(address(_manager));
+        emit IPayerReportManager.ProtocolFeeRateUpdated(200);
+
+        _manager.updateProtocolFeeRate();
+
+        assertEq(_manager.protocolFeeRate(), 200);
     }
 
     /* ============ migrate ============ */
@@ -639,8 +703,9 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 4,
             offset_: 5,
             isSettled_: true,
-            payersMerkleRoot_: bytes32(uint256(6)),
-            nodeIds_: new uint32[](7)
+            protocolFeeRate_: 6,
+            payersMerkleRoot_: bytes32(uint256(7)),
+            nodeIds_: new uint32[](8)
         });
 
         address newImplementation_ = address(
@@ -673,8 +738,9 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReport_.feesSettled, 4);
         assertEq(payerReport_.offset, 5);
         assertTrue(payerReport_.isSettled);
-        assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(6)));
-        assertEq(payerReport_.nodeIds.length, 7);
+        assertEq(payerReport_.protocolFeeRate, 6);
+        assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(7)));
+        assertEq(payerReport_.nodeIds.length, 8);
     }
 
     /* ============ _verifySignatures ============ */
@@ -958,7 +1024,7 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_getPayerReports() external {
-        uint32[] memory nodeIds_ = new uint32[](7);
+        uint32[] memory nodeIds_ = new uint32[](8);
 
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             nodeIds_[index_] = 10 + index_;
@@ -971,7 +1037,8 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 4,
             offset_: 5,
             isSettled_: true,
-            payersMerkleRoot_: bytes32(uint256(6)),
+            protocolFeeRate_: 6,
+            payersMerkleRoot_: bytes32(uint256(7)),
             nodeIds_: nodeIds_
         });
 
@@ -982,7 +1049,8 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 40,
             offset_: 50,
             isSettled_: true,
-            payersMerkleRoot_: bytes32(uint256(60)),
+            protocolFeeRate_: 60,
+            payersMerkleRoot_: bytes32(uint256(70)),
             nodeIds_: nodeIds_
         });
 
@@ -1006,16 +1074,18 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReports_[0].feesSettled, 4);
         assertEq(payerReports_[0].offset, 5);
         assertTrue(payerReports_[0].isSettled);
-        assertEq(payerReports_[0].payersMerkleRoot, bytes32(uint256(6)));
-        assertEq(payerReports_[0].nodeIds.length, 7);
+        assertEq(payerReports_[0].protocolFeeRate, 6);
+        assertEq(payerReports_[0].payersMerkleRoot, bytes32(uint256(7)));
+        assertEq(payerReports_[0].nodeIds.length, 8);
 
         assertEq(payerReports_[1].startSequenceId, 20);
         assertEq(payerReports_[1].endSequenceId, 30);
         assertEq(payerReports_[1].feesSettled, 40);
         assertEq(payerReports_[1].offset, 50);
         assertTrue(payerReports_[1].isSettled);
-        assertEq(payerReports_[1].payersMerkleRoot, bytes32(uint256(60)));
-        assertEq(payerReports_[1].nodeIds.length, 7);
+        assertEq(payerReports_[1].protocolFeeRate, 60);
+        assertEq(payerReports_[1].payersMerkleRoot, bytes32(uint256(70)));
+        assertEq(payerReports_[1].nodeIds.length, 8);
 
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             assertEq(payerReports_[0].nodeIds[index_], 10 + index_);
@@ -1029,7 +1099,7 @@ contract PayerReportManagerTests is Test {
     /* ============ getPayerReport ============ */
 
     function test_getPayerReport() external {
-        uint32[] memory nodeIds_ = new uint32[](7);
+        uint32[] memory nodeIds_ = new uint32[](8);
 
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             nodeIds_[index_] = 10 + index_;
@@ -1042,7 +1112,8 @@ contract PayerReportManagerTests is Test {
             feesSettled_: 4,
             offset_: 5,
             isSettled_: true,
-            payersMerkleRoot_: bytes32(uint256(6)),
+            protocolFeeRate_: 6,
+            payersMerkleRoot_: bytes32(uint256(7)),
             nodeIds_: nodeIds_
         });
 
@@ -1053,8 +1124,9 @@ contract PayerReportManagerTests is Test {
         assertEq(payerReport_.feesSettled, 4);
         assertEq(payerReport_.offset, 5);
         assertTrue(payerReport_.isSettled);
-        assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(6)));
-        assertEq(payerReport_.nodeIds.length, 7);
+        assertEq(payerReport_.protocolFeeRate, 6);
+        assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(7)));
+        assertEq(payerReport_.nodeIds.length, 8);
 
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             assertEq(payerReport_.nodeIds[index_], 10 + index_);

@@ -30,6 +30,9 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     bytes32 public constant PAYER_REPORT_TYPEHASH = 0x30503e47cf573d37e2be5212eb8a3f06caca0f3ab0d379e7d05758b47b23d658;
 
     /// @inheritdoc IPayerReportManager
+    uint16 public constant ONE_HUNDRED_PERCENT = 10_000;
+
+    /// @inheritdoc IPayerReportManager
     address public immutable parameterRegistry;
 
     /// @inheritdoc IPayerReportManager
@@ -47,6 +50,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
      */
     struct PayerReportManagerStorage {
         mapping(uint32 originatorId => PayerReport[] payerReports) payerReportsByOriginator;
+        uint16 protocolFeeRate;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayerReportManager")) - 1)) & ~bytes32(uint256(0xff))
@@ -97,9 +101,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
     ) external returns (uint256 payerReportIndex_) {
-        PayerReport[] storage payerReports_ = _getPayerReportManagerStorage().payerReportsByOriginator[
-            originatorNodeId_
-        ];
+        PayerReportManagerStorage storage $ = _getPayerReportManagerStorage();
+        PayerReport[] storage payerReports_ = $.payerReportsByOriginator[originatorNodeId_];
 
         payerReportIndex_ = payerReports_.length;
 
@@ -130,6 +133,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                 feesSettled: 0,
                 offset: 0,
                 isSettled: payersMerkleRoot_ == SequentialMerkleProofs.EMPTY_TREE_ROOT,
+                protocolFeeRate: $.protocolFeeRate,
                 payersMerkleRoot: payersMerkleRoot_,
                 nodeIds: nodeIds_
             })
@@ -204,11 +208,37 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
+    /// @inheritdoc IPayerReportManager
+    function updateProtocolFeeRate() external {
+        uint16 protocolFeeRate_ = RegistryParameters.getUint16Parameter(
+            parameterRegistry,
+            protocolFeeRateParameterKey()
+        );
+
+        if (protocolFeeRate_ > ONE_HUNDRED_PERCENT) revert InvalidProtocolFeeRate();
+
+        PayerReportManagerStorage storage $ = _getPayerReportManagerStorage();
+
+        if ($.protocolFeeRate == protocolFeeRate_) revert NoChange();
+
+        emit ProtocolFeeRateUpdated($.protocolFeeRate = protocolFeeRate_);
+    }
+
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayerReportManager
     function migratorParameterKey() public pure returns (bytes memory key_) {
         return "xmtp.payerReportManager.migrator";
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function protocolFeeRateParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.payerReportManager.protocolFeeRate";
+    }
+
+    /// @inheritdoc IPayerReportManager
+    function protocolFeeRate() external view returns (uint16 protocolFeeRate_) {
+        return _getPayerReportManagerStorage().protocolFeeRate;
     }
 
     /// @inheritdoc IPayerReportManager
