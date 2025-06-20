@@ -111,16 +111,16 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayloadBroadcaster
-    function minPayloadSizeParameterKey() public pure virtual returns (bytes memory key_);
+    function minPayloadSizeParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
-    function maxPayloadSizeParameterKey() public pure virtual returns (bytes memory key_);
+    function maxPayloadSizeParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
-    function migratorParameterKey() public pure virtual returns (bytes memory key_);
+    function migratorParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
-    function pausedParameterKey() public pure virtual returns (bytes memory key_);
+    function pausedParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
     function minPayloadSize() external view returns (uint32 size_) {

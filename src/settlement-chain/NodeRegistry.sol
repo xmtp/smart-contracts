@@ -213,18 +213,18 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     }
 
     /// @inheritdoc INodeRegistry
-    function adminParameterKey() public pure returns (bytes memory key_) {
-        return bytes("xmtp.nodeRegistry.admin");
+    function adminParameterKey() public pure returns (string memory key_) {
+        return "xmtp.nodeRegistry.admin";
     }
 
     /// @inheritdoc INodeRegistry
-    function maxCanonicalNodesParameterKey() public pure returns (bytes memory key_) {
-        return bytes("xmtp.nodeRegistry.maxCanonicalNodes");
+    function maxCanonicalNodesParameterKey() public pure returns (string memory key_) {
+        return "xmtp.nodeRegistry.maxCanonicalNodes";
     }
 
     /// @inheritdoc INodeRegistry
-    function migratorParameterKey() public pure returns (bytes memory key_) {
-        return bytes("xmtp.nodeRegistry.migrator");
+    function migratorParameterKey() public pure returns (string memory key_) {
+        return "xmtp.nodeRegistry.migrator";
     }
 
     /// @inheritdoc INodeRegistry

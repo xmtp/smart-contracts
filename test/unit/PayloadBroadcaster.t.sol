@@ -17,10 +17,10 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract PayloadBroadcasterTests is Test {
-    bytes internal constant _PAUSED_KEY = "xmtp.payloadBroadcaster.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.payloadBroadcaster.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.maxPayloadSize";
+    string internal constant _PAUSED_KEY = "xmtp.payloadBroadcaster.paused";
+    string internal constant _MIGRATOR_KEY = "xmtp.payloadBroadcaster.migrator";
+    string internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
+    string internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.maxPayloadSize";
 
     PayloadBroadcasterHarness internal _broadcaster;
 

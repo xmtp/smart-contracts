@@ -212,13 +212,13 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
     function admin() external view returns (address admin_);
 
     /// @notice The parameter registry key used to fetch the admin.
-    function adminParameterKey() external pure returns (bytes memory key_);
+    function adminParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the max canonical nodes.
-    function maxCanonicalNodesParameterKey() external pure returns (bytes memory key_);
+    function maxCanonicalNodesParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

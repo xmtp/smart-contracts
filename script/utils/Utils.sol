@@ -150,7 +150,7 @@ library Utils {
 
     function parseStartingParameters(
         string memory filePath_
-    ) internal view returns (bytes[] memory keys_, bytes32[] memory values_) {
+    ) internal view returns (string[] memory keys_, bytes32[] memory values_) {
         string memory json_ = VM.readFile(filePath_);
 
         string[] memory startingKeys_ = new string[](15);
@@ -199,14 +199,14 @@ library Utils {
             ++count_;
         }
 
-        keys_ = new bytes[](count_);
+        keys_ = new string[](count_);
         values_ = new bytes32[](count_);
 
         uint256 outputIndex_ = 0;
         for (uint256 index_; index_ < startingKeys_.length; ++index_) {
             if (!stdJson.keyExists(json_, string.concat(".startingParameters.", startingKeys_[index_]))) continue;
 
-            keys_[outputIndex_] = bytes(startingKeys_[index_]);
+            keys_[outputIndex_] = startingKeys_[index_];
 
             values_[outputIndex_] = parameterTypes_[index_] == ParameterType.Address
                 ? parseAndEncodeAddressParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]))

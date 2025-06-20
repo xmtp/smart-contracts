@@ -94,27 +94,27 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IRateRegistry
-    function messageFeeParameterKey() public pure returns (bytes memory key_) {
+    function messageFeeParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.messageFee";
     }
 
     /// @inheritdoc IRateRegistry
-    function storageFeeParameterKey() public pure returns (bytes memory key_) {
+    function storageFeeParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.storageFee";
     }
 
     /// @inheritdoc IRateRegistry
-    function congestionFeeParameterKey() public pure returns (bytes memory key_) {
+    function congestionFeeParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.congestionFee";
     }
 
     /// @inheritdoc IRateRegistry
-    function targetRatePerMinuteParameterKey() public pure returns (bytes memory key_) {
+    function targetRatePerMinuteParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.targetRatePerMinute";
     }
 
     /// @inheritdoc IRateRegistry
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.migrator";
     }
 

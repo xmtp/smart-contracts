@@ -20,9 +20,9 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract DistributionManagerTests is Test {
-    bytes internal constant _MIGRATOR_KEY = "xmtp.distributionManager.migrator";
-    bytes internal constant _PAUSED_KEY = "xmtp.distributionManager.paused";
-    bytes internal constant _PROTOCOL_FEES_RECIPIENT_KEY = "xmtp.distributionManager.protocolFeesRecipient";
+    string internal constant _MIGRATOR_KEY = "xmtp.distributionManager.migrator";
+    string internal constant _PAUSED_KEY = "xmtp.distributionManager.paused";
+    string internal constant _PROTOCOL_FEES_RECIPIENT_KEY = "xmtp.distributionManager.protocolFeesRecipient";
 
     DistributionManagerHarness internal _manager;
 

@@ -19,7 +19,7 @@ contract SettlementChainParameterRegistry is ISettlementChainParameterRegistry, 
         public
         pure
         override(IParameterRegistry, ParameterRegistry)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.settlementChainParameterRegistry.migrator";
     }
@@ -29,7 +29,7 @@ contract SettlementChainParameterRegistry is ISettlementChainParameterRegistry, 
         public
         pure
         override(IParameterRegistry, ParameterRegistry)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.settlementChainParameterRegistry.isAdmin";
     }

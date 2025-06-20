@@ -188,10 +188,10 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     function ONE_HUNDRED_PERCENT() external pure returns (uint16 oneHundredPercent_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the protocol fee rate.
-    function protocolFeeRateParameterKey() external pure returns (bytes memory key_);
+    function protocolFeeRateParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

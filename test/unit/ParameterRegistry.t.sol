@@ -17,9 +17,9 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract ParameterRegistryTests is Test {
-    bytes internal constant _DELIMITER = ".";
-    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.parameterRegistry.isAdmin";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.parameterRegistry.migrator";
+    string internal constant _DELIMITER = ".";
+    string internal constant _ADMIN_PARAMETER_KEY = "xmtp.parameterRegistry.isAdmin";
+    string internal constant _MIGRATOR_KEY = "xmtp.parameterRegistry.migrator";
 
     ParameterRegistryHarness internal _registry;
 
@@ -76,23 +76,23 @@ contract ParameterRegistryTests is Test {
     function test_set_several_notAdmin() external {
         vm.expectRevert(IParameterRegistry.NotAdmin.selector);
         vm.prank(_unauthorized);
-        _registry.set(new bytes[](0), new bytes32[](0));
+        _registry.set(new string[](0), new bytes32[](0));
     }
 
     function test_set_several_noKeys() external {
         vm.expectRevert(IParameterRegistry.NoKeys.selector);
         vm.prank(_admin1);
-        _registry.set(new bytes[](0), new bytes32[](0));
+        _registry.set(new string[](0), new bytes32[](0));
     }
 
     function test_set_several_arrayLengthMismatch() external {
         vm.expectRevert(IParameterRegistry.ArrayLengthMismatch.selector);
         vm.prank(_admin1);
-        _registry.set(new bytes[](1), new bytes32[](2));
+        _registry.set(new string[](1), new bytes32[](2));
     }
 
     function test_set_several() external {
-        bytes[] memory keys_ = new bytes[](2);
+        string[] memory keys_ = new string[](2);
 
         keys_[0] = "this.is.a.parameter";
         keys_[1] = "this.is.another.parameter";
@@ -169,7 +169,7 @@ contract ParameterRegistryTests is Test {
     }
 
     function test_migrate() external {
-        _registry.__setRegistryParameter(hex"f1f1f1f1", bytes32(uint256(1010101)));
+        _registry.__setRegistryParameter("test_test", bytes32(uint256(1010101)));
 
         address newImplementation_ = address(new ParameterRegistryHarness());
         address migrator_ = address(new MockMigrator(newImplementation_));
@@ -201,7 +201,7 @@ contract ParameterRegistryTests is Test {
             bytes32(uint256(1))
         );
 
-        assertEq(_registry.__getRegistryParameter(hex"f1f1f1f1"), bytes32(uint256(1010101)));
+        assertEq(_registry.__getRegistryParameter("test_test"), bytes32(uint256(1010101)));
     }
 
     /* ============ isAdmin ============ */
@@ -221,11 +221,11 @@ contract ParameterRegistryTests is Test {
 
     function test_get_several_noKeys() external {
         vm.expectRevert(IParameterRegistry.NoKeys.selector);
-        _registry.get(new bytes[](0));
+        _registry.get(new string[](0));
     }
 
     function test_get_several() external {
-        bytes[] memory keys_ = new bytes[](2);
+        string[] memory keys_ = new string[](2);
 
         keys_[0] = "this.is.a.parameter";
         keys_[1] = "this.is.another.parameter";
@@ -250,10 +250,10 @@ contract ParameterRegistryTests is Test {
         _registry.__setRegistryParameter("this.is.a.parameter", bytes32(uint256(1010101)));
 
         assertEq(_registry.get("this.is.a.parameter"), bytes32(uint256(1010101)));
-        assertEq(_registry.get(bytes("this.is.a.parameter")), bytes32(uint256(1010101)));
-        assertEq(_registry.get(abi.encodePacked("this.is.a.parameter")), bytes32(uint256(1010101)));
+        assertEq(_registry.get(string(bytes("this.is.a.parameter"))), bytes32(uint256(1010101)));
+        assertEq(_registry.get(string(abi.encodePacked("this.is.a.parameter"))), bytes32(uint256(1010101)));
 
         // NOTE: Encoding a string non-compactly is a different key.
-        assertNotEq(_registry.get(abi.encode("this.is.a.parameter")), bytes32(uint256(1010101)));
+        assertNotEq(_registry.get(string(abi.encode("this.is.a.parameter"))), bytes32(uint256(1010101)));
     }
 }
