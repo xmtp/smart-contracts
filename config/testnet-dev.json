@@ -3,11 +3,12 @@
     "appChainId": "241320161",
     "appChainParameterRegistryImplementation": "0x6ee80265b09280Adb6bE54B48dbeD7B8c1d0FCD3",
     "deployer": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
+    "deployMockUnderlyingFeeToken": true,
     "distributionManagerImplementation": "0x25fCe4b37ecdddB0a17AF60ef7842af857785877",
     "distributionManagerProxy": "0x4D054077bDE58D2B1882EF03274324a00365E76a",
     "distributionManagerProxySalt": "DistributionManager_0",
     "factory": "0x456699A99383A8FfE3b93d905a79a3279b406898",
-    "feeTokenImplementation": "0xDE689A07e449f9893d0F304873f228bbd8A6e776",
+    "feeTokenImplementation": "0x8fdFfC282CA659574077Ba23fdaBF3B0869771c3",
     "feeTokenProxy": "0xD6eae1b6a9E28daf9cF0E2965274D9AfCb5C146f",
     "feeTokenProxySalt": "FeeToken_0",
     "gatewayProxy": "0xB67200aEa2560718Ed70D3595c59714D145D3dE7",
@@ -72,5 +73,5 @@
             }
         }
     },
-    "underlyingFeeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+    "underlyingFeeToken": "0xd7f561a1E11Eb35F80E74943b1198aCFAcf17ac4"
 }

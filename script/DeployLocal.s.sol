@@ -338,7 +338,7 @@ contract DeployLocalScripts is Script {
 
     function _deployUnderlyingFeeToken() internal returns (address token_) {
         vm.startBroadcast(_privateKey);
-        token_ = address(new MockERC20("Underlying Fee Token", "UFT"));
+        token_ = address(new MockERC20("Underlying Fee Token", "UFT", 6));
         vm.stopBroadcast();
     }
 

@@ -53,6 +53,10 @@ import {
 
 import { IERC20Like, IBridgeLike, IERC20InboxLike, IArbRetryableTxPrecompileLike } from "./Interfaces.sol";
 
+/* ============ Test Contract Imports ============ */
+
+import { MockERC20 } from "../utils/Mocks.sol";
+
 contract DeployTests is Test {
     error MessageDataHashMismatch(uint256 messageNumber_);
     error UnexpectedInbox(address inbox_);
@@ -134,6 +138,8 @@ contract DeployTests is Test {
     uint256 internal _settlementChainId;
     uint256 internal _appChainId;
 
+    MockERC20 internal _underlyingFeeToken;
+
     IFactory internal _settlementChainFactory;
     IFactory internal _appChainFactory;
 
@@ -174,7 +180,7 @@ contract DeployTests is Test {
         _appChainId = block.chainid;
     }
 
-    function test_deployProtocol() external {
+    function test_deployTestnetProtocol() external {
         // Deploy the Factory on the settlement chain.
         _settlementChainFactory = _deploySettlementChainFactory();
 
@@ -197,10 +203,14 @@ contract DeployTests is Test {
 
         console.log("settlementChainParameterRegistryProxy: %s", address(_settlementChainParameterRegistryProxy));
 
+        _underlyingFeeToken = _deployUnderlyingFeeToken();
+
+        console.log("underlyingFeeToken: %s", address(_underlyingFeeToken));
+
         // Deploy the Fee Token on the settlement chain.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_settlementChainParameterRegistryProxy),
-            _USDC
+            address(_underlyingFeeToken)
         );
 
         console.log("feeTokenImplementation: %s", address(feeTokenImplementation_));
@@ -459,6 +469,14 @@ contract DeployTests is Test {
     }
 
     /* ============ Fee Token Helpers ============ */
+
+    function _deployUnderlyingFeeToken() internal returns (MockERC20 token_) {
+        vm.selectFork(_settlementChainForkId);
+
+        vm.startPrank(_deployer);
+        token_ = new MockERC20("Underlying Fee Token", "UFT", 6);
+        vm.stopPrank();
+    }
 
     function _deployFeeTokenImplementation(
         address parameterRegistry_,
