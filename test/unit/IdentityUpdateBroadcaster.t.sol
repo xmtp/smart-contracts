@@ -16,10 +16,10 @@ import { Utils } from "../utils/Utils.sol";
 contract IdentityUpdateBroadcasterTests is Test {
     bytes32 internal constant _ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
-    bytes internal constant _PAUSED_KEY = "xmtp.identityUpdateBroadcaster.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.identityUpdateBroadcaster.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+    string internal constant _PAUSED_KEY = "xmtp.identityUpdateBroadcaster.paused";
+    string internal constant _MIGRATOR_KEY = "xmtp.identityUpdateBroadcaster.migrator";
+    string internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.minPayloadSize";
+    string internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
     IdentityUpdateBroadcasterHarness internal _broadcaster;
 

@@ -16,10 +16,10 @@ import { Utils } from "../utils/Utils.sol";
 contract GroupMessageBroadcasterTests is Test {
     bytes32 internal constant _ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
-    bytes internal constant _PAUSED_KEY = "xmtp.groupMessageBroadcaster.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.groupMessageBroadcaster.migrator";
-    bytes internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.minPayloadSize";
-    bytes internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.maxPayloadSize";
+    string internal constant _PAUSED_KEY = "xmtp.groupMessageBroadcaster.paused";
+    string internal constant _MIGRATOR_KEY = "xmtp.groupMessageBroadcaster.migrator";
+    string internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.minPayloadSize";
+    string internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
     GroupMessageBroadcasterHarness internal _broadcaster;
 

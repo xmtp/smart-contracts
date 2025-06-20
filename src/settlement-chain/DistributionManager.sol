@@ -280,17 +280,17 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IDistributionManager
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.distributionManager.migrator";
     }
 
     /// @inheritdoc IDistributionManager
-    function pausedParameterKey() public pure returns (bytes memory key_) {
+    function pausedParameterKey() public pure returns (string memory key_) {
         return "xmtp.distributionManager.paused";
     }
 
     /// @inheritdoc IDistributionManager
-    function protocolFeesRecipientParameterKey() public pure returns (bytes memory key_) {
+    function protocolFeesRecipientParameterKey() public pure returns (string memory key_) {
         return "xmtp.distributionManager.protocolFeesRecipient";
     }
 

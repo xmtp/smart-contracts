@@ -40,30 +40,30 @@ import { MockERC20 } from "../test/utils/Mocks.sol";
 contract DeployLocalScripts is Script {
     string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
 
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+    string internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
 
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+    string internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.minPayloadSize";
 
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
-    bytes internal constant _PAYER_REGISTRY_SETTLER_KEY = "xmtp.payerRegistry.settler";
-    bytes internal constant _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
-    bytes internal constant _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
-    bytes internal constant _PAYER_REGISTRY_WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
+    string internal constant _PAYER_REGISTRY_SETTLER_KEY = "xmtp.payerRegistry.settler";
+    string internal constant _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
+    string internal constant _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
+    string internal constant _PAYER_REGISTRY_WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
 
-    bytes internal constant _RATE_REGISTRY_MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
-    bytes internal constant _RATE_REGISTRY_STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
-    bytes internal constant _RATE_REGISTRY_CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
-    bytes internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
+    string internal constant _RATE_REGISTRY_MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
+    string internal constant _RATE_REGISTRY_STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
+    string internal constant _RATE_REGISTRY_CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
+    string internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
 
-    bytes internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
-    bytes internal constant _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
+    string internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    string internal constant _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
 
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MIN_PAYLOAD_SIZE = 78;
     uint256 internal constant _GROUP_MESSAGE_BROADCASTER_STARTING_MAX_PAYLOAD_SIZE = 4_194_304;
@@ -466,7 +466,7 @@ contract DeployLocalScripts is Script {
     /* ============ Broadcaster Helpers ============ */
 
     function _setBroadcasterStartingParameters() internal {
-        bytes[] memory keys_ = new bytes[](4);
+        string[] memory keys_ = new string[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
@@ -594,7 +594,7 @@ contract DeployLocalScripts is Script {
     }
 
     function _setPayerRegistryStartingParameters() internal {
-        bytes[] memory keys_ = new bytes[](4);
+        string[] memory keys_ = new string[](4);
         keys_[0] = _PAYER_REGISTRY_SETTLER_KEY;
         keys_[1] = _PAYER_REGISTRY_FEE_DISTRIBUTOR_KEY;
         keys_[2] = _PAYER_REGISTRY_MINIMUM_DEPOSIT_KEY;
@@ -677,7 +677,7 @@ contract DeployLocalScripts is Script {
     }
 
     function _setRateRegistryStartingRates() internal {
-        bytes[] memory keys_ = new bytes[](4);
+        string[] memory keys_ = new string[](4);
         keys_[0] = _RATE_REGISTRY_MESSAGE_FEE_KEY;
         keys_[1] = _RATE_REGISTRY_STORAGE_FEE_KEY;
         keys_[2] = _RATE_REGISTRY_CONGESTION_FEE_KEY;
@@ -757,7 +757,7 @@ contract DeployLocalScripts is Script {
     }
 
     function _setNodeRegistryStartingParameters() internal {
-        bytes[] memory keys_ = new bytes[](2);
+        string[] memory keys_ = new string[](2);
         keys_[0] = _NODE_REGISTRY_ADMIN_KEY;
         keys_[1] = _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY;
 

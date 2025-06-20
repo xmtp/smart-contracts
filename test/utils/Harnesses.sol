@@ -26,19 +26,19 @@ import { SettlementChainParameterRegistry } from "../../src/settlement-chain/Set
 contract PayloadBroadcasterHarness is PayloadBroadcaster {
     constructor(address parameterRegistry_) PayloadBroadcaster(parameterRegistry_) {}
 
-    function minPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
+    function minPayloadSizeParameterKey() public pure override returns (string memory key_) {
         return "xmtp.payloadBroadcaster.minPayloadSize";
     }
 
-    function maxPayloadSizeParameterKey() public pure override returns (bytes memory key_) {
+    function maxPayloadSizeParameterKey() public pure override returns (string memory key_) {
         return "xmtp.payloadBroadcaster.maxPayloadSize";
     }
 
-    function migratorParameterKey() public pure override returns (bytes memory key_) {
+    function migratorParameterKey() public pure override returns (string memory key_) {
         return "xmtp.payloadBroadcaster.migrator";
     }
 
-    function pausedParameterKey() public pure override returns (bytes memory key_) {
+    function pausedParameterKey() public pure override returns (string memory key_) {
         return "xmtp.payloadBroadcaster.paused";
     }
 
@@ -270,43 +270,43 @@ contract PayerRegistryHarness is PayerRegistry {
 }
 
 contract ParameterRegistryHarness is ParameterRegistry {
-    function migratorParameterKey() public pure override returns (bytes memory key_) {
+    function migratorParameterKey() public pure override returns (string memory key_) {
         return "xmtp.parameterRegistry.migrator";
     }
 
-    function adminParameterKey() public pure override returns (bytes memory key_) {
+    function adminParameterKey() public pure override returns (string memory key_) {
         return "xmtp.parameterRegistry.isAdmin";
     }
 
-    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(string calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 
-    function __setRegistryParameter(bytes calldata key_, address value_) external {
+    function __setRegistryParameter(string calldata key_, address value_) external {
         __setRegistryParameter(key_, bytes32(uint256(uint160(value_))));
     }
 
-    function __setRegistryParameter(bytes calldata key_, bool value_) external {
+    function __setRegistryParameter(string calldata key_, bool value_) external {
         __setRegistryParameter(key_, value_ ? bytes32(uint256(1)) : bytes32(uint256(0)));
     }
 
-    function __setRegistryParameter(bytes calldata key_, uint256 value_) external {
+    function __setRegistryParameter(string calldata key_, uint256 value_) external {
         __setRegistryParameter(key_, bytes32(value_));
     }
 
-    function __setRegistryParameter(bytes calldata key_, bytes32 value_) public {
+    function __setRegistryParameter(string calldata key_, bytes32 value_) public {
         _getParameterRegistryStorage().parameters[key_] = value_;
     }
 }
 
 contract SettlementChainParameterRegistryHarness is SettlementChainParameterRegistry {
-    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(string calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 }
 
 contract AppChainParameterRegistryHarness is AppChainParameterRegistry {
-    function __getRegistryParameter(bytes calldata key_) external view returns (bytes32 value_) {
+    function __getRegistryParameter(string calldata key_) external view returns (bytes32 value_) {
         return _getRegistryParameter(key_);
     }
 }
@@ -353,32 +353,32 @@ contract AppChainGatewayHarness is AppChainGateway {
         _getAppChainGatewayStorage().paused = paused_;
     }
 
-    function __setKeyNonce(bytes calldata key_, uint256 nonce_) external {
+    function __setKeyNonce(string calldata key_, uint256 nonce_) external {
         _getAppChainGatewayStorage().keyNonces[key_] = nonce_;
     }
 
-    function __getKeyNonce(bytes calldata key_) external view returns (uint256 nonce_) {
+    function __getKeyNonce(string calldata key_) external view returns (uint256 nonce_) {
         return _getAppChainGatewayStorage().keyNonces[key_];
     }
 }
 
 contract ParameterKeysHarness {
-    function getKey(bytes[] calldata keyComponents_) external pure returns (bytes memory key_) {
+    function getKey(string[] calldata keyComponents_) external pure returns (string memory key_) {
         return ParameterKeys.getKey(keyComponents_);
     }
 
     function combineKeyComponents(
-        bytes calldata left_,
-        bytes calldata right_
-    ) external pure returns (bytes memory key_) {
+        string calldata left_,
+        string calldata right_
+    ) external pure returns (string memory key_) {
         return ParameterKeys.combineKeyComponents(left_, right_);
     }
 
-    function addressToKeyComponent(address account_) external pure returns (bytes memory keyComponent_) {
+    function addressToKeyComponent(address account_) external pure returns (string memory keyComponent_) {
         return ParameterKeys.addressToKeyComponent(account_);
     }
 
-    function uint256ToKeyComponent(uint256 value_) external pure returns (bytes memory keyComponent_) {
+    function uint256ToKeyComponent(uint256 value_) external pure returns (string memory keyComponent_) {
         return ParameterKeys.uint256ToKeyComponent(value_);
     }
 }
@@ -580,52 +580,64 @@ contract FeeTokenHarness is FeeToken {
 }
 
 contract RegistryParametersHarness {
-    function setRegistryParameter(address parameterRegistry_, bytes calldata key_, bytes32 value_) external {
+    function setRegistryParameter(address parameterRegistry_, string calldata key_, bytes32 value_) external {
         RegistryParameters.setRegistryParameter(parameterRegistry_, key_, value_);
     }
 
     function getRegistryParameters(
         address parameterRegistry_,
-        bytes[] calldata keys_
+        string[] calldata keys_
     ) external view returns (bytes32[] memory values_) {
         return RegistryParameters.getRegistryParameters(parameterRegistry_, keys_);
     }
 
     function getRegistryParameter(
         address parameterRegistry_,
-        bytes calldata key_
+        string calldata key_
     ) external view returns (bytes32 value_) {
         return RegistryParameters.getRegistryParameter(parameterRegistry_, key_);
     }
 
     function getAddressParameter(
         address parameterRegistry_,
-        bytes calldata key_
+        string calldata key_
     ) external view returns (address value_) {
         return RegistryParameters.getAddressParameter(parameterRegistry_, key_);
     }
 
-    function getBoolParameter(address parameterRegistry_, bytes calldata key_) external view returns (bool value_) {
+    function getBoolParameter(address parameterRegistry_, string calldata key_) external view returns (bool value_) {
         return RegistryParameters.getBoolParameter(parameterRegistry_, key_);
     }
 
-    function getUint8Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint8 value_) {
+    function getUint8Parameter(address parameterRegistry_, string calldata key_) external view returns (uint8 value_) {
         return RegistryParameters.getUint8Parameter(parameterRegistry_, key_);
     }
 
-    function getUint16Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint16 value_) {
+    function getUint16Parameter(
+        address parameterRegistry_,
+        string calldata key_
+    ) external view returns (uint16 value_) {
         return RegistryParameters.getUint16Parameter(parameterRegistry_, key_);
     }
 
-    function getUint32Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint32 value_) {
+    function getUint32Parameter(
+        address parameterRegistry_,
+        string calldata key_
+    ) external view returns (uint32 value_) {
         return RegistryParameters.getUint32Parameter(parameterRegistry_, key_);
     }
 
-    function getUint64Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint64 value_) {
+    function getUint64Parameter(
+        address parameterRegistry_,
+        string calldata key_
+    ) external view returns (uint64 value_) {
         return RegistryParameters.getUint64Parameter(parameterRegistry_, key_);
     }
 
-    function getUint96Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint96 value_) {
+    function getUint96Parameter(
+        address parameterRegistry_,
+        string calldata key_
+    ) external view returns (uint96 value_) {
         return RegistryParameters.getUint96Parameter(parameterRegistry_, key_);
     }
 

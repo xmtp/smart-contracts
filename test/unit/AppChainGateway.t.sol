@@ -21,9 +21,9 @@ import { Utils } from "../utils/Utils.sol";
 contract AppChainGatewayTests is Test {
     address internal constant _ARB_SYS = 0x0000000000000000000000000000000000000064; // address(100)
 
-    bytes internal constant _DELIMITER = ".";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
-    bytes internal constant _PAUSED_KEY = "xmtp.appChainGateway.paused";
+    string internal constant _DELIMITER = ".";
+    string internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
+    string internal constant _PAUSED_KEY = "xmtp.appChainGateway.paused";
 
     AppChainGatewayHarness internal _gateway;
 
@@ -202,13 +202,13 @@ contract AppChainGatewayTests is Test {
 
     function test_receiveParameters_notSettlementChainGateway() external {
         vm.expectRevert(IAppChainGateway.NotSettlementChainGateway.selector);
-        _gateway.receiveParameters(0, new bytes[](0), new bytes32[](0));
+        _gateway.receiveParameters(0, new string[](0), new bytes32[](0));
     }
 
     function test_receiveParameters() external {
         _gateway.__setKeyNonce("this.is.a.skipped.parameter", 1);
 
-        bytes[] memory keys_ = new bytes[](3);
+        string[] memory keys_ = new string[](3);
 
         keys_[0] = "this.is.a.used.parameter";
         keys_[1] = "this.is.a.skipped.parameter";
@@ -221,7 +221,7 @@ contract AppChainGatewayTests is Test {
 
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("set(bytes,bytes32)", keys_[0], values_[0]),
+            abi.encodeWithSignature("set(string,bytes32)", keys_[0], values_[0]),
             ""
         );
 
@@ -229,7 +229,7 @@ contract AppChainGatewayTests is Test {
 
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("set(bytes,bytes32)", keys_[2], values_[2]),
+            abi.encodeWithSignature("set(string,bytes32)", keys_[2], values_[2]),
             ""
         );
 

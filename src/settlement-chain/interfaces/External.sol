@@ -80,7 +80,7 @@ interface IERC20InboxLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IAppChainGatewayLike {
-    function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 }
 
 /**

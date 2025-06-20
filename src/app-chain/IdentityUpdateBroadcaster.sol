@@ -38,7 +38,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.minPayloadSize";
     }
@@ -48,7 +48,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.maxPayloadSize";
     }
@@ -58,7 +58,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.migrator";
     }
@@ -68,7 +68,7 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.paused";
     }

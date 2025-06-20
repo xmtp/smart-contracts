@@ -18,7 +18,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      * @dev    The `values` are not emitted, as they are not relevant to indexing this contract, and will be emitted
      *         by the app chain parameter registry.
      */
-    event ParametersReceived(uint256 indexed nonce, bytes[] keys);
+    event ParametersReceived(uint256 indexed nonce, string[] keys);
 
     /**
      * @notice Emitted when the pause status is set.
@@ -84,7 +84,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  values_ The values of each parameter.
      * @dev    The caller must be the settlement chain gateway's L3 alias address.
      */
-    function receiveParameters(uint256 nonce_, bytes[] calldata keys_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 
     /**
      * @notice Updates the pause status.
@@ -107,10 +107,10 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     function settlementChainGatewayAlias() external view returns (address settlementChainGatewayAlias_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the paused status.
-    function pausedParameterKey() external pure returns (bytes memory key_);
+    function pausedParameterKey() external pure returns (string memory key_);
 
     /// @notice The pause status.
     function paused() external view returns (bool paused_);

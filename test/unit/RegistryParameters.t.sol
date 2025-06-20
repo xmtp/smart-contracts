@@ -22,7 +22,7 @@ contract RegistryParametersTests is Test {
     function test_setRegistryParameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("set(bytes,bytes32)", bytes("key"), bytes32("value")),
+            abi.encodeWithSignature("set(string,bytes32)", string("key"), bytes32("value")),
             ""
         );
 
@@ -32,15 +32,15 @@ contract RegistryParametersTests is Test {
     /* ============ getRegistryParameters ============ */
 
     function test_getRegistryParameters() external {
-        bytes[] memory keys_ = new bytes[](1);
-        keys_[0] = bytes("key");
+        string[] memory keys_ = new string[](1);
+        keys_[0] = "key";
 
         bytes32[] memory values_ = new bytes32[](1);
         values_[0] = "value";
 
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes[])", keys_),
+            abi.encodeWithSignature("get(string[])", keys_),
             abi.encode(values_)
         );
 
@@ -52,10 +52,10 @@ contract RegistryParametersTests is Test {
     /* ============ getRegistryParameter ============ */
 
     function test_getRegistryParameter() external {
-        bytes memory key_ = bytes("key");
+        string memory key_ = "key";
         bytes32 value_ = "value";
 
-        Utils.expectAndMockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", key_), abi.encode(value_));
+        Utils.expectAndMockCall(_parameterRegistry, abi.encodeWithSignature("get(string)", key_), abi.encode(value_));
 
         bytes32 result_ = _registryParameters.getRegistryParameter(_parameterRegistry, key_);
         assertEq(result_, value_);
@@ -66,7 +66,7 @@ contract RegistryParametersTests is Test {
     function test_getAddressParameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint160).max) + 1)
         );
 
@@ -80,7 +80,7 @@ contract RegistryParametersTests is Test {
 
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(expected_)
         );
 
@@ -90,7 +90,11 @@ contract RegistryParametersTests is Test {
     /* ============ getBoolParameter ============ */
 
     function test_getBoolParameter_parameterOutOfTypeBounds() external {
-        Utils.expectAndMockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", bytes("key")), abi.encode(2));
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(string)", string("key")),
+            abi.encode(2)
+        );
 
         vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
 
@@ -98,11 +102,19 @@ contract RegistryParametersTests is Test {
     }
 
     function test_getBoolParameter() external {
-        Utils.expectAndMockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", bytes("key")), abi.encode(0));
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(string)", string("key")),
+            abi.encode(0)
+        );
 
         assertEq(_registryParameters.getBoolParameter(_parameterRegistry, "key"), false);
 
-        Utils.expectAndMockCall(_parameterRegistry, abi.encodeWithSignature("get(bytes)", bytes("key")), abi.encode(1));
+        Utils.expectAndMockCall(
+            _parameterRegistry,
+            abi.encodeWithSignature("get(string)", string("key")),
+            abi.encode(1)
+        );
 
         assertEq(_registryParameters.getBoolParameter(_parameterRegistry, "key"), true);
     }
@@ -112,7 +124,7 @@ contract RegistryParametersTests is Test {
     function test_getUint8Parameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint8).max) + 1)
         );
 
@@ -124,7 +136,7 @@ contract RegistryParametersTests is Test {
     function test_getUint8Parameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(type(uint8).max)
         );
 
@@ -136,7 +148,7 @@ contract RegistryParametersTests is Test {
     function test_getUint16Parameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint16).max) + 1)
         );
 
@@ -148,7 +160,7 @@ contract RegistryParametersTests is Test {
     function test_getUint16Parameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(type(uint16).max)
         );
 
@@ -160,7 +172,7 @@ contract RegistryParametersTests is Test {
     function test_getUint32Parameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint32).max) + 1)
         );
 
@@ -172,7 +184,7 @@ contract RegistryParametersTests is Test {
     function test_getUint32Parameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(type(uint32).max)
         );
 
@@ -184,7 +196,7 @@ contract RegistryParametersTests is Test {
     function test_getUint64Parameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint64).max) + 1)
         );
 
@@ -196,7 +208,7 @@ contract RegistryParametersTests is Test {
     function test_getUint64Parameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(type(uint64).max)
         );
 
@@ -208,7 +220,7 @@ contract RegistryParametersTests is Test {
     function test_getUint96Parameter_parameterOutOfTypeBounds() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(uint256(type(uint96).max) + 1)
         );
 
@@ -220,7 +232,7 @@ contract RegistryParametersTests is Test {
     function test_getUint96Parameter() external {
         Utils.expectAndMockCall(
             _parameterRegistry,
-            abi.encodeWithSignature("get(bytes)", bytes("key")),
+            abi.encodeWithSignature("get(string)", string("key")),
             abi.encode(type(uint96).max)
         );
 

@@ -298,22 +298,22 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the settler.
-    function settlerParameterKey() external pure returns (bytes memory key_);
+    function settlerParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the fee distributor.
-    function feeDistributorParameterKey() external pure returns (bytes memory key_);
+    function feeDistributorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the minimum deposit.
-    function minimumDepositParameterKey() external pure returns (bytes memory key_);
+    function minimumDepositParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the withdraw lock period.
-    function withdrawLockPeriodParameterKey() external pure returns (bytes memory key_);
+    function withdrawLockPeriodParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the paused status.
-    function pausedParameterKey() external pure returns (bytes memory key_);
+    function pausedParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

@@ -41,7 +41,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
      */
     struct AppChainGatewayStorage {
         bool paused;
-        mapping(bytes key => uint256 nonce) keyNonces;
+        mapping(string key => uint256 nonce) keyNonces;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.AppChainGateway")) - 1)) & ~bytes32(uint256(0xff))
@@ -109,7 +109,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /// @inheritdoc IAppChainGateway
     function receiveParameters(
         uint256 nonce_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         bytes32[] calldata values_
     ) external onlySettlementChainGateway {
         AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
@@ -117,7 +117,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         emit ParametersReceived(nonce_, keys_);
 
         for (uint256 index_; index_ < keys_.length; ++index_) {
-            bytes calldata key_ = keys_[index_];
+            string calldata key_ = keys_[index_];
 
             // Each key is checked against its nonce, and ignored if the nonce is lower than the stored nonce. This is
             // to prevent out-of-order parameter receipts. For example, if the settlement chain gateway sends key A
@@ -149,12 +149,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IAppChainGateway
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.appChainGateway.migrator";
     }
 
     /// @inheritdoc IAppChainGateway
-    function pausedParameterKey() public pure returns (bytes memory key_) {
+    function pausedParameterKey() public pure returns (string memory key_) {
         return "xmtp.appChainGateway.paused";
     }
 
