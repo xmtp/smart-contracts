@@ -38,6 +38,8 @@ import {
 
 import { Utils } from "./utils/Utils.sol";
 
+import { MockERC20 } from "../test/utils/Mocks.sol";
+
 contract DeployScripts is Script {
     error DeployerNotSet();
     error EnvironmentContainsAppChainData();
@@ -222,12 +224,12 @@ contract DeployScripts is Script {
 
     /* ============ Individual Deployers ============ */
 
-    function deployFactory() public returns (address factory_) {
+    function deployFactory() public {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        factory_ = FactoryDeployer.deploy();
+        address factory_ = FactoryDeployer.deploy();
 
         console.log("Factory: %s", factory_);
 
@@ -240,7 +242,19 @@ contract DeployScripts is Script {
         vm.stopBroadcast();
     }
 
-    function deployFeeTokenImplementation() public returns (address implementation_) {
+    function deployUnderlyingFeeToken() public {
+        if (_deploymentData.deployMockUnderlyingFeeToken) {
+            vm.startBroadcast(_deployer);
+            address token_ = address(new MockERC20("Underlying Fee Token", "UFT", 6));
+            vm.stopBroadcast();
+
+            if (token_ != _deploymentData.underlyingFeeToken) revert UnexpectedImplementation();
+        }
+
+        console.log("Underlying Fee Token: %s", _deploymentData.underlyingFeeToken);
+    }
+
+    function deployFeeTokenImplementation() public {
         if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -248,7 +262,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = FeeTokenDeployer.deployImplementation(
+        (address implementation_, ) = FeeTokenDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.underlyingFeeToken
@@ -269,7 +283,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployFeeTokenProxy() public returns (address proxy_) {
+    function deployFeeTokenProxy() public {
         if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
@@ -277,7 +291,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = FeeTokenDeployer.deployProxy(
+        (address proxy_, , ) = FeeTokenDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.feeTokenImplementation,
             _deploymentData.feeTokenProxySalt
@@ -292,13 +306,15 @@ contract DeployScripts is Script {
         if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) revert UnexpectedProxy();
     }
 
-    function deploySettlementChainParameterRegistryImplementation() public returns (address implementation_) {
+    function deploySettlementChainParameterRegistryImplementation() public {
         if (_deploymentData.settlementChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(_deploymentData.factory);
+        (address implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(
+            _deploymentData.factory
+        );
 
         vm.stopBroadcast();
 
@@ -309,7 +325,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deploySettlementChainParameterRegistryProxy() public returns (address proxy_) {
+    function deploySettlementChainParameterRegistryProxy() public {
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.settlementChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
@@ -324,7 +340,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
+        (address proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.settlementChainParameterRegistryImplementation,
             _deploymentData.parameterRegistryProxySalt,
@@ -349,7 +365,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deploySettlementChainGatewayImplementation() public returns (address implementation_) {
+    function deploySettlementChainGatewayImplementation() public {
         if (_deploymentData.settlementChainGatewayImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -358,7 +374,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
+        (address implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.gatewayProxy,
@@ -384,7 +400,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deploySettlementChainGatewayProxy() public returns (address proxy_) {
+    function deploySettlementChainGatewayProxy() public {
         if (_deploymentData.gatewayProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.settlementChainGatewayImplementation == address(0)) revert ImplementationNotSet();
@@ -394,7 +410,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
+        (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.settlementChainGatewayImplementation,
             _deploymentData.gatewayProxySalt
@@ -411,7 +427,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployPayerRegistryImplementation() public returns (address implementation_) {
+    function deployPayerRegistryImplementation() public {
         if (_deploymentData.payerRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -419,7 +435,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = PayerRegistryDeployer.deployImplementation(
+        (address implementation_, ) = PayerRegistryDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.feeTokenProxy
@@ -440,7 +456,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployPayerRegistryProxy() public returns (address proxy_) {
+    function deployPayerRegistryProxy() public {
         if (_deploymentData.payerRegistryProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.payerRegistryImplementation == address(0)) revert ImplementationNotSet();
@@ -450,7 +466,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = PayerRegistryDeployer.deployProxy(
+        (address proxy_, , ) = PayerRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.payerRegistryImplementation,
             _deploymentData.payerRegistryProxySalt
@@ -467,14 +483,14 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployRateRegistryImplementation() public returns (address implementation_) {
+    function deployRateRegistryImplementation() public {
         if (_deploymentData.rateRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = RateRegistryDeployer.deployImplementation(
+        (address implementation_, ) = RateRegistryDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy
         );
@@ -490,7 +506,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployRateRegistryProxy() public returns (address proxy_) {
+    function deployRateRegistryProxy() public {
         if (_deploymentData.rateRegistryProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.rateRegistryImplementation == address(0)) revert ImplementationNotSet();
@@ -500,7 +516,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = RateRegistryDeployer.deployProxy(
+        (address proxy_, , ) = RateRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.rateRegistryImplementation,
             _deploymentData.rateRegistryProxySalt
@@ -517,14 +533,14 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployNodeRegistryImplementation() public returns (address implementation_) {
+    function deployNodeRegistryImplementation() public {
         if (_deploymentData.nodeRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = NodeRegistryDeployer.deployImplementation(
+        (address implementation_, ) = NodeRegistryDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy
         );
@@ -540,7 +556,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployNodeRegistryProxy() public returns (address proxy_) {
+    function deployNodeRegistryProxy() public {
         if (_deploymentData.nodeRegistryProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.nodeRegistryImplementation == address(0)) revert ImplementationNotSet();
@@ -550,7 +566,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = NodeRegistryDeployer.deployProxy(
+        (address proxy_, , ) = NodeRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.nodeRegistryImplementation,
             _deploymentData.nodeRegistryProxySalt
@@ -567,7 +583,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployPayerReportManagerImplementation() public returns (address implementation_) {
+    function deployPayerReportManagerImplementation() public {
         if (_deploymentData.payerReportManagerImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -576,7 +592,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
+        (address implementation_, ) = PayerReportManagerDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.nodeRegistryProxy,
@@ -602,7 +618,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployPayerReportManagerProxy() public returns (address proxy_) {
+    function deployPayerReportManagerProxy() public {
         if (_deploymentData.payerReportManagerProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.payerReportManagerImplementation == address(0)) revert ImplementationNotSet();
@@ -615,7 +631,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = PayerReportManagerDeployer.deployProxy(
+        (address proxy_, , ) = PayerReportManagerDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.payerReportManagerImplementation,
             _deploymentData.payerReportManagerProxySalt
@@ -632,7 +648,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployDistributionManagerImplementation() public returns (address implementation_) {
+    function deployDistributionManagerImplementation() public {
         if (_deploymentData.distributionManagerImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -643,7 +659,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = DistributionManagerDeployer.deployImplementation(
+        (address implementation_, ) = DistributionManagerDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.nodeRegistryProxy,
@@ -679,7 +695,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployDistributionManagerProxy() public returns (address proxy_) {
+    function deployDistributionManagerProxy() public {
         if (_deploymentData.distributionManagerProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.distributionManagerImplementation == address(0)) revert ImplementationNotSet();
@@ -692,7 +708,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = DistributionManagerDeployer.deployProxy(
+        (address proxy_, , ) = DistributionManagerDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.distributionManagerImplementation,
             _deploymentData.distributionManagerProxySalt
@@ -709,13 +725,13 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployAppChainParameterRegistryImplementation() public returns (address implementation_) {
+    function deployAppChainParameterRegistryImplementation() public {
         if (_deploymentData.appChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = AppChainParameterRegistryDeployer.deployImplementation(_deploymentData.factory);
+        (address implementation_, ) = AppChainParameterRegistryDeployer.deployImplementation(_deploymentData.factory);
 
         vm.stopBroadcast();
 
@@ -726,7 +742,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployAppChainParameterRegistryProxy() public returns (address proxy_) {
+    function deployAppChainParameterRegistryProxy() public {
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.appChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
@@ -743,7 +759,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = AppChainParameterRegistryDeployer.deployProxy(
+        (address proxy_, , ) = AppChainParameterRegistryDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.appChainParameterRegistryImplementation,
             _deploymentData.parameterRegistryProxySalt,
@@ -766,7 +782,7 @@ contract DeployScripts is Script {
         if (!IAppChainParameterRegistry(proxy_).isAdmin(_deploymentData.gatewayProxy)) revert UnexpectedProxy();
     }
 
-    function deployAppChainGatewayImplementation() public returns (address implementation_) {
+    function deployAppChainGatewayImplementation() public {
         if (_deploymentData.appChainGatewayImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -774,7 +790,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
+        (address implementation_, ) = AppChainGatewayDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy,
             _deploymentData.gatewayProxy
@@ -802,7 +818,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployAppChainGatewayProxy() public returns (address proxy_) {
+    function deployAppChainGatewayProxy() public {
         if (_deploymentData.gatewayProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.appChainGatewayImplementation == address(0)) revert ImplementationNotSet();
@@ -812,7 +828,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = AppChainGatewayDeployer.deployProxy(
+        (address proxy_, , ) = AppChainGatewayDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.appChainGatewayImplementation,
             _deploymentData.gatewayProxySalt
@@ -829,14 +845,14 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployGroupMessageBroadcasterImplementation() public returns (address implementation_) {
+    function deployGroupMessageBroadcasterImplementation() public {
         if (_deploymentData.groupMessageBroadcasterImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = GroupMessageBroadcasterDeployer.deployImplementation(
+        (address implementation_, ) = GroupMessageBroadcasterDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy
         );
@@ -852,7 +868,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployGroupMessageBroadcasterProxy() public returns (address proxy_) {
+    function deployGroupMessageBroadcasterProxy() public {
         if (_deploymentData.groupMessageBroadcasterProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.groupMessageBroadcasterImplementation == address(0)) revert ImplementationNotSet();
@@ -865,7 +881,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
+        (address proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.groupMessageBroadcasterImplementation,
             _deploymentData.groupMessageBroadcasterProxySalt
@@ -884,14 +900,14 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployIdentityUpdateBroadcasterImplementation() public returns (address implementation_) {
+    function deployIdentityUpdateBroadcasterImplementation() public {
         if (_deploymentData.identityUpdateBroadcasterImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        (implementation_, ) = IdentityUpdateBroadcasterDeployer.deployImplementation(
+        (address implementation_, ) = IdentityUpdateBroadcasterDeployer.deployImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy
         );
@@ -909,7 +925,7 @@ contract DeployScripts is Script {
         }
     }
 
-    function deployIdentityUpdateBroadcasterProxy() public returns (address proxy_) {
+    function deployIdentityUpdateBroadcasterProxy() public {
         if (_deploymentData.identityUpdateBroadcasterProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.identityUpdateBroadcasterImplementation == address(0)) revert ImplementationNotSet();
@@ -922,7 +938,7 @@ contract DeployScripts is Script {
 
         vm.startBroadcast(_privateKey);
 
-        (proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
+        (address proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
             _deploymentData.factory,
             _deploymentData.identityUpdateBroadcasterImplementation,
             _deploymentData.identityUpdateBroadcasterProxySalt

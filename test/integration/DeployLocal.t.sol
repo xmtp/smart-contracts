@@ -236,7 +236,7 @@ contract DeployLocalTests is Test {
 
     function _deployUnderlyingFeeToken() internal returns (MockERC20 token_) {
         vm.startPrank(_deployer);
-        token_ = new MockERC20("Underlying Fee Token", "UFT");
+        token_ = new MockERC20("Underlying Fee Token", "UFT", 6);
         vm.stopPrank();
     }
 

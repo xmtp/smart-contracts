@@ -17,6 +17,7 @@ library Utils {
         uint256 appChainId;
         address appChainParameterRegistryImplementation;
         address deployer;
+        bool deployMockUnderlyingFeeToken;
         address distributionManagerImplementation;
         address distributionManagerProxy;
         bytes32 distributionManagerProxySalt;
@@ -70,6 +71,7 @@ library Utils {
             ".appChainParameterRegistryImplementation"
         );
         deploymentData_.deployer = stdJson.readAddress(json_, ".deployer");
+        deploymentData_.deployMockUnderlyingFeeToken = stdJson.readBool(json_, ".deployMockUnderlyingFeeToken");
         deploymentData_.distributionManagerImplementation = stdJson.readAddress(
             json_,
             ".distributionManagerImplementation"
