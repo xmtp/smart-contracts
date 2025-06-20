@@ -11,9 +11,9 @@ import { SettlementChainParameterRegistryHarness } from "../utils/Harnesses.sol"
 import { Utils } from "../utils/Utils.sol";
 
 contract SettlementChainParameterRegistryTests is Test {
-    bytes internal constant _DELIMITER = ".";
-    bytes internal constant _ADMIN_PARAMETER_KEY = "xmtp.settlementChainParameterRegistry.isAdmin";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.settlementChainParameterRegistry.migrator";
+    string internal constant _DELIMITER = ".";
+    string internal constant _ADMIN_PARAMETER_KEY = "xmtp.settlementChainParameterRegistry.isAdmin";
+    string internal constant _MIGRATOR_KEY = "xmtp.settlementChainParameterRegistry.migrator";
 
     SettlementChainParameterRegistryHarness internal _registry;
 

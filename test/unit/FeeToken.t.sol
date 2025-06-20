@@ -25,7 +25,7 @@ contract FeeTokenTests is Test {
             abi.encodePacked("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
         );
 
-    bytes internal constant _MIGRATOR_KEY = "xmtp.feeToken.migrator";
+    string internal constant _MIGRATOR_KEY = "xmtp.feeToken.migrator";
 
     FeeTokenHarness internal _token;
 

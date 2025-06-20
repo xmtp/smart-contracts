@@ -181,13 +181,13 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the paused status.
-    function pausedParameterKey() external pure returns (bytes memory key_);
+    function pausedParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the protocol fees recipient.
-    function protocolFeesRecipientParameterKey() external pure returns (bytes memory key_);
+    function protocolFeesRecipientParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

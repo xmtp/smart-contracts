@@ -34,7 +34,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
         address indexed inbox,
         uint256 indexed messageNumber,
         uint256 nonce,
-        bytes[] keys
+        string[] keys
     );
 
     /**
@@ -160,7 +160,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function sendParameters(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external;
@@ -182,7 +182,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function sendParametersAsRetryableTickets(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -210,7 +210,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function sendParametersAsRetryableTicketsWithPermit(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_,
@@ -238,7 +238,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function sendParametersAsRetryableTicketsFromUnderlying(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -267,7 +267,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      */
     function sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_,
@@ -306,13 +306,13 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the inbox.
-    function inboxParameterKey() external pure returns (bytes memory key_);
+    function inboxParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the paused status.
-    function pausedParameterKey() external pure returns (bytes memory key_);
+    function pausedParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

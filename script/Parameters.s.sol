@@ -37,16 +37,16 @@ contract ParameterScripts is Script {
     uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
     uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000; // 2 gwei per gas.
 
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+    string internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.minPayloadSize";
 
-    bytes internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+    string internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.minPayloadSize";
 
-    bytes internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
     Utils.DeploymentData internal _deploymentData;
@@ -96,7 +96,7 @@ contract ParameterScripts is Script {
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
-        (bytes[] memory keys_, bytes32[] memory values_) = Utils.parseStartingParameters(
+        (string[] memory keys_, bytes32[] memory values_) = Utils.parseStartingParameters(
             string.concat("config/", _environment, ".json")
         );
 
@@ -117,7 +117,7 @@ contract ParameterScripts is Script {
         if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
-        bytes[] memory keys_ = new bytes[](4);
+        string[] memory keys_ = new string[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;

@@ -226,12 +226,12 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayerReportManager
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerReportManager.migrator";
     }
 
     /// @inheritdoc IPayerReportManager
-    function protocolFeeRateParameterKey() public pure returns (bytes memory key_) {
+    function protocolFeeRateParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerReportManager.protocolFeeRate";
     }
 

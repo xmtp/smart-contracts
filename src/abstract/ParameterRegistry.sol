@@ -14,9 +14,9 @@ import { Migratable } from "./Migratable.sol";
 /**
  * @title  Abstract implementation for a Parameter Registry.
  * @notice A parameter registry is a contract that stores key-value pairs of parameters used by a protocol. Keys should
- *         be globally unique and human-readable strings (as bytes), for easier parsing and indexing. Keys can be set by
- *         admins, and whether an account is an admin is itself a key-value pair in the registry, which means that
- *         admins can be added and removed by other admins, and the parameter registry can be orphaned.
+ *         be globally unique and human-readable strings, for easier parsing and indexing. Keys can be set by admins,
+ *         and whether an account is an admin is itself a key-value pair in the registry, which means that admins can be
+ *         added and removed by other admins, and the parameter registry can be orphaned.
  */
 abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializable {
     /* ============ UUPS Storage ============ */
@@ -27,7 +27,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
      * @param  parameters A mapping of key-value pairs of parameters.
      */
     struct ParameterRegistryStorage {
-        mapping(bytes key => bytes32 value) parameters;
+        mapping(string key => bytes32 value) parameters;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.ParameterRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -63,7 +63,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     function initialize(address[] calldata admins_) external initializer {
         ParameterRegistryStorage storage $ = _getParameterRegistryStorage();
 
-        bytes memory adminParameterKey_ = adminParameterKey();
+        string memory adminParameterKey_ = adminParameterKey();
 
         // Each admin-specific key is set to true (i.e. 1).
         for (uint256 index_; index_ < admins_.length; ++index_) {
@@ -74,7 +74,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IParameterRegistry
-    function set(bytes[] calldata keys_, bytes32[] calldata values_) external onlyAdmin {
+    function set(string[] calldata keys_, bytes32[] calldata values_) external onlyAdmin {
         if (keys_.length == 0) revert NoKeys();
         if (keys_.length != values_.length) revert ArrayLengthMismatch();
 
@@ -86,7 +86,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     }
 
     /// @inheritdoc IParameterRegistry
-    function set(bytes calldata key_, bytes32 value_) external onlyAdmin {
+    function set(string calldata key_, bytes32 value_) external onlyAdmin {
         _setParameter(_getParameterRegistryStorage(), key_, value_);
     }
 
@@ -98,10 +98,10 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IParameterRegistry
-    function migratorParameterKey() public pure virtual returns (bytes memory key_);
+    function migratorParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IParameterRegistry
-    function adminParameterKey() public pure virtual returns (bytes memory key_);
+    function adminParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IParameterRegistry
     function isAdmin(address account_) public view returns (bool isAdmin_) {
@@ -109,7 +109,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     }
 
     /// @inheritdoc IParameterRegistry
-    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_) {
+    function get(string[] calldata keys_) external view returns (bytes32[] memory values_) {
         if (keys_.length == 0) revert NoKeys();
 
         values_ = new bytes32[](keys_.length);
@@ -121,13 +121,13 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     }
 
     /// @inheritdoc IParameterRegistry
-    function get(bytes calldata key_) external view returns (bytes32 value_) {
+    function get(string calldata key_) external view returns (bytes32 value_) {
         return _getParameterRegistryStorage().parameters[key_];
     }
 
     /* ============ Internal Interactive Functions ============ */
 
-    function _setParameter(ParameterRegistryStorage storage $, bytes memory key_, bytes32 value_) internal {
+    function _setParameter(ParameterRegistryStorage storage $, string memory key_, bytes32 value_) internal {
         emit ParameterSet(key_, $.parameters[key_] = value_);
     }
 
@@ -139,11 +139,14 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
      *      For example, if the admin parameter key is "pr.isAdmin", then the key for admin
      *      0x1234567890123456789012345678901234567890 is "pr.isAdmin.0x1234567890123456789012345678901234567890".
      */
-    function _getAdminKey(bytes memory adminParameterKey_, address account_) internal pure returns (bytes memory key_) {
+    function _getAdminKey(
+        string memory adminParameterKey_,
+        address account_
+    ) internal pure returns (string memory key_) {
         return ParameterKeys.combineKeyComponents(adminParameterKey_, ParameterKeys.addressToKeyComponent(account_));
     }
 
-    function _getRegistryParameter(bytes memory key_) internal view returns (bytes32 value_) {
+    function _getRegistryParameter(string memory key_) internal view returns (bytes32 value_) {
         return _getParameterRegistryStorage().parameters[key_];
     }
 

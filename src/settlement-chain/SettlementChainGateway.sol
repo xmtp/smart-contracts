@@ -140,7 +140,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParameters(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_
     ) external whenNotPaused {
@@ -162,7 +162,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTickets(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -173,7 +173,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTicketsWithPermit(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_,
@@ -190,7 +190,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTicketsFromUnderlying(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -201,7 +201,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @inheritdoc ISettlementChainGateway
     function sendParametersAsRetryableTicketsFromUnderlyingWithPermit(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_,
@@ -275,17 +275,17 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /// @inheritdoc ISettlementChainGateway
-    function inboxParameterKey() public pure returns (bytes memory key_) {
+    function inboxParameterKey() public pure returns (string memory key_) {
         return "xmtp.settlementChainGateway.inbox";
     }
 
     /// @inheritdoc ISettlementChainGateway
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.settlementChainGateway.migrator";
     }
 
     /// @inheritdoc ISettlementChainGateway
-    function pausedParameterKey() public pure returns (bytes memory key_) {
+    function pausedParameterKey() public pure returns (string memory key_) {
         return "xmtp.settlementChainGateway.paused";
     }
 
@@ -341,7 +341,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Sends parameters to the app chain via a contract transaction.
     function _sendParameters(
         uint256 chainId_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         bytes memory data_,
@@ -365,7 +365,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Sends parameters to the app chains via a retryable tickets, pulling fee tokens from the caller.
     function _sendParametersAsRetryableTicketsFromFeeToken(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -381,7 +381,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Sends parameters to the app chains via a retryable tickets, pulling underlying fee tokens from the caller.
     function _sendParametersAsRetryableTicketsFromUnderlying(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -394,7 +394,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Sends parameters to the app chains via a retryable tickets.
     function _sendParametersAsRetryableTickets(
         uint256[] calldata chainIds_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 amountToSend_
@@ -427,7 +427,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Sends parameters to the app chain via a retryable ticket.
     function _sendParametersAsRetryableTicket(
         uint256 chainId_,
-        bytes[] calldata keys_,
+        string[] calldata keys_,
         uint256 gasLimit_,
         uint256 gasPrice_,
         uint256 feeTokensToSend_,
@@ -489,7 +489,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      */
     function _getEncodedParameters(
         uint256 nonce_,
-        bytes[] calldata keys_
+        string[] calldata keys_
     ) internal view returns (bytes memory encoded_) {
         if (keys_.length == 0) revert NoKeys();
 
@@ -506,7 +506,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      *      For example, if the inbox parameter key is "xmtp.settlementChainGateway.inbox", then the key for chain ID
      *      1 is "xmtp.settlementChainGateway.inbox.1".
      */
-    function _getInboxKey(bytes memory inboxParameterKey_, uint256 chainId_) internal pure returns (bytes memory key_) {
+    function _getInboxKey(
+        string memory inboxParameterKey_,
+        uint256 chainId_
+    ) internal pure returns (string memory key_) {
         return ParameterKeys.combineKeyComponents(inboxParameterKey_, ParameterKeys.uint256ToKeyComponent(chainId_));
     }
 
