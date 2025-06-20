@@ -208,6 +208,10 @@ contract PayerRegistryHarness is PayerRegistry {
 
     constructor(address registry_, address token_) PayerRegistry(registry_, token_) {}
 
+    function __finalizeWithdrawal() external {
+        _finalizeWithdrawal();
+    }
+
     function __setSettler(address settler_) external {
         _getPayerRegistryStorage().settler = settler_;
     }
@@ -259,6 +263,10 @@ contract PayerRegistryHarness is PayerRegistry {
     function __getPendingWithdrawableTimestamp(address payer_) external view returns (uint32 withdrawableTimestamp_) {
         return _getPayerRegistryStorage().payers[payer_].withdrawableTimestamp;
     }
+
+    function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
+        return _underlyingFeeToken;
+    }
 }
 
 contract ParameterRegistryHarness is ParameterRegistry {
@@ -307,15 +315,31 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
     constructor(
         address parameterRegistry_,
         address appChainGateway_,
-        address appChainNativeToken_
-    ) SettlementChainGateway(parameterRegistry_, appChainGateway_, appChainNativeToken_) {}
+        address feeToken_
+    ) SettlementChainGateway(parameterRegistry_, appChainGateway_, feeToken_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getSettlementChainGatewayStorage().paused = paused_;
+    }
+
+    function __setInbox(uint256 chainId_, address inbox_) external {
+        _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_;
+    }
 
     function __setNonce(uint256 nonce_) external {
         _getSettlementChainGatewayStorage().nonce = nonce_;
     }
 
+    function __getInbox(uint256 chainId_) external view returns (address inbox_) {
+        return _getSettlementChainGatewayStorage().inboxes[chainId_];
+    }
+
     function __getNonce() external view returns (uint256 nonce_) {
         return _getSettlementChainGatewayStorage().nonce;
+    }
+
+    function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
+        return _underlyingFeeToken;
     }
 }
 
@@ -324,6 +348,10 @@ contract AppChainGatewayHarness is AppChainGateway {
         address parameterRegistry_,
         address settlementChainGateway_
     ) AppChainGateway(parameterRegistry_, settlementChainGateway_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getAppChainGatewayStorage().paused = paused_;
+    }
 
     function __setKeyNonce(bytes calldata key_, uint256 nonce_) external {
         _getAppChainGatewayStorage().keyNonces[key_] = nonce_;
@@ -485,8 +513,20 @@ contract DistributionManagerHarness is DistributionManager {
         address token_
     ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, payerRegistry_, token_) {}
 
-    function __setProtocolFeesDestination(address protocolFeesDestination_) external {
-        _getDistributionManagerStorage().protocolFeesDestination = protocolFeesDestination_;
+    function __prepareProtocolFeesWithdrawal(address protocolFeesRecipient_) external returns (uint96 withdrawn_) {
+        return _prepareProtocolFeesWithdrawal(protocolFeesRecipient_);
+    }
+
+    function __prepareWithdrawal(uint256 nodeId_, address recipient_) external returns (uint96 withdrawn_) {
+        return _prepareWithdrawal(uint32(nodeId_), recipient_);
+    }
+
+    function __setPauseStatus(bool paused_) external {
+        _getDistributionManagerStorage().paused = paused_;
+    }
+
+    function __setProtocolFeesRecipient(address protocolFeesRecipient_) external {
+        _getDistributionManagerStorage().protocolFeesRecipient = protocolFeesRecipient_;
     }
 
     function __setOwedProtocolFees(uint256 owedProtocolFees_) external {

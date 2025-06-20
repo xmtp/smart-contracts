@@ -7,7 +7,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
-import { IERC20Like, IPermitErc20Like } from "./interfaces/External.sol";
+import { IERC20Like, IFeeTokenLike, IPermitErc20Like } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
@@ -18,7 +18,7 @@ import { Migratable } from "../abstract/Migratable.sol";
  * @notice This contract is responsible for:
  *           - handling deposits, withdrawals, and usage settlements for payers,
  *           - settling usage fees for payers,
- *           - sending excess tokens to the fee distributor.
+ *           - sending excess fee tokens to the fee distributor.
  */
 contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
@@ -27,7 +27,10 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     address public immutable parameterRegistry;
 
     /// @inheritdoc IPayerRegistry
-    address public immutable token;
+    address public immutable feeToken;
+
+    /// @dev The address of the token underlying the fee token.
+    address internal immutable _underlyingFeeToken;
 
     /* ============ UUPS Storage ============ */
 
@@ -82,14 +85,17 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /**
      * @notice Constructor for the implementation contract, such that the implementation cannot be initialized.
      * @param  parameterRegistry_ The address of the parameter registry.
-     * @param  token_             The address of the token.
-     * @dev    The parameter registry and token must not be the zero address.
-     * @dev    The parameter registry and token are immutable so that they are inlined in the contract code, and have
-     *         minimal gas cost.
+     * @param  feeToken_          The address of the fee token.
+     * @dev    The parameter registry and fee token must not be the zero address.
+     * @dev    The parameter registry and fee token are immutable so that they are inlined in the contract code, and
+     *         have minimal gas cost.
      */
-    constructor(address parameterRegistry_, address token_) {
+    constructor(address parameterRegistry_, address feeToken_) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
-        if (_isZero(token = token_)) revert ZeroToken();
+        if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
+
+        _underlyingFeeToken = IFeeTokenLike(feeToken).underlying();
+
         _disableInitializers();
     }
 
@@ -101,8 +107,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IPayerRegistry
-    function deposit(address payer_, uint96 amount_) external whenNotPaused {
-        _deposit(payer_, amount_);
+    function deposit(address payer_, uint96 amount_) external {
+        _depositFeeToken(payer_, amount_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -113,26 +119,27 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external whenNotPaused {
-        // Ignore return value, as the permit may have already been used, and the allowance already approved.
-        // slither-disable-start unchecked-lowlevel
-        // slither-disable-start low-level-calls
-        address(token).call(
-            abi.encodeWithSelector(
-                IPermitErc20Like.permit.selector,
-                msg.sender,
-                address(this),
-                amount_,
-                deadline_,
-                v_,
-                r_,
-                s_
-            )
-        );
-        // slither-disable-end unchecked-lowlevel
-        // slither-disable-end low-level-calls
+    ) external {
+        _usePermit(feeToken, amount_, deadline_, v_, r_, s_);
+        _depositFeeToken(payer_, amount_);
+    }
 
-        _deposit(payer_, amount_);
+    /// @inheritdoc IPayerRegistry
+    function depositFromUnderlying(address payer_, uint96 amount_) external {
+        _depositFromUnderlying(payer_, amount_);
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function depositFromUnderlyingWithPermit(
+        address payer_,
+        uint96 amount_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external {
+        _usePermit(_underlyingFeeToken, amount_, deadline_, v_, r_, s_);
+        _depositFromUnderlying(payer_, amount_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -176,27 +183,17 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /// @inheritdoc IPayerRegistry
-    function finalizeWithdrawal(address recipient_) external whenNotPaused {
-        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
-        Payer storage payer_ = $.payers[msg.sender];
-        uint96 pendingWithdrawal_ = payer_.pendingWithdrawal;
+    function finalizeWithdrawal(address recipient_) external {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(recipient_, _finalizeWithdrawal());
+    }
 
-        if (pendingWithdrawal_ == 0) revert NoPendingWithdrawal();
-        if (payer_.balance < 0) revert PayerInDebt();
-
-        // slither-disable-next-line timestamp
-        if (block.timestamp < payer_.withdrawableTimestamp) {
-            revert WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp);
-        }
-
-        delete payer_.pendingWithdrawal;
-        delete payer_.withdrawableTimestamp;
-
-        $.totalDeposits -= _toInt104(pendingWithdrawal_);
-
-        emit WithdrawalFinalized(msg.sender);
-
-        SafeTransferLib.safeTransfer(token, recipient_, pendingWithdrawal_);
+    /// @inheritdoc IPayerRegistry
+    function finalizeWithdrawalIntoUnderlying(address recipient_) external {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unused-return
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, _finalizeWithdrawal());
     }
 
     /// @inheritdoc IPayerRegistry
@@ -233,7 +230,9 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         emit ExcessTransferred(excess_);
 
-        SafeTransferLib.safeTransfer(token, feeDistributor_, excess_);
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transfer(feeDistributor_, excess_);
     }
 
     /// @inheritdoc IPayerRegistry
@@ -384,7 +383,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
         uint96 totalWithdrawable_ = _getTotalWithdrawable($.totalDeposits, $.totalDebt);
-        uint96 tokenBalance_ = uint96(IERC20Like(token).balanceOf(address(this)));
+        uint96 tokenBalance_ = uint96(IERC20Like(feeToken).balanceOf(address(this)));
 
         return tokenBalance_ > totalWithdrawable_ ? tokenBalance_ - totalWithdrawable_ : 0;
     }
@@ -440,23 +439,33 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /**
-     * @dev Returns the debt represented by a balance, if any.
+     * @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
-    function _getDebt(int104 balance_) internal pure returns (uint96 debt_) {
-        return balance_ < 0 ? uint96(uint104(-balance_)) : 0;
+    function _depositFeeToken(address payer_, uint96 amount_) internal {
+        // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // slither-disable-next-line unchecked-transfer
+        IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
+        _deposit(payer_, amount_);
     }
 
     /**
-     * @dev Transfers `amount_` of tokens from the caller to this contract to satisfy a deposit for `payer_`.
+     * @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
-    function _deposit(address payer_, uint96 amount_) internal {
+    function _depositFromUnderlying(address payer_, uint96 amount_) internal {
+        SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
+        IFeeTokenLike(feeToken).deposit(amount_);
+        _deposit(payer_, amount_);
+    }
+
+    /**
+     * @dev Satisfies a deposit for `payer_`.
+     */
+    function _deposit(address payer_, uint96 amount_) internal whenNotPaused {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
         if (amount_ < $.minimumDeposit) {
             revert InsufficientDeposit(amount_, $.minimumDeposit);
         }
-
-        SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount_);
 
         uint96 debtRepaid_ = _increaseBalance(payer_, amount_);
 
@@ -467,7 +476,60 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         emit Deposit(payer_, amount_);
     }
 
+    /**
+     * @dev Finalizes a pending withdrawal for the caller.
+     */
+    function _finalizeWithdrawal() internal whenNotPaused returns (uint96 pendingWithdrawal_) {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        Payer storage payer_ = $.payers[msg.sender];
+        pendingWithdrawal_ = payer_.pendingWithdrawal;
+
+        if (pendingWithdrawal_ == 0) revert NoPendingWithdrawal();
+        if (payer_.balance < 0) revert PayerInDebt();
+
+        // slither-disable-next-line timestamp
+        if (block.timestamp < payer_.withdrawableTimestamp) {
+            revert WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp);
+        }
+
+        delete payer_.pendingWithdrawal;
+        delete payer_.withdrawableTimestamp;
+
+        $.totalDeposits -= _toInt104(pendingWithdrawal_);
+
+        emit WithdrawalFinalized(msg.sender);
+    }
+
+    /**
+     * @dev Uses a permit to approve the deposit of `amount_` of `token_` from the caller to this contract.
+     * @dev Silently ignore a failing permit, as it may indicate that the permit was already used and/or the allowance
+     *      has already been approved.
+     */
+    function _usePermit(address token_, uint256 amount_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) internal {
+        // Ignore return value, as the permit may have already been used, and the allowance already approved.
+        // slither-disable-next-line unchecked-lowlevel
+        address(token_).call(
+            abi.encodeWithSelector(
+                IPermitErc20Like.permit.selector,
+                msg.sender,
+                address(this),
+                amount_,
+                deadline_,
+                v_,
+                r_,
+                s_
+            )
+        );
+    }
+
     /* ============ Internal View/Pure Functions ============ */
+
+    /**
+     * @dev Returns the debt represented by a balance, if any.
+     */
+    function _getDebt(int104 balance_) internal pure returns (uint96 debt_) {
+        return balance_ < 0 ? uint96(uint104(-balance_)) : 0;
+    }
 
     /**
      * @dev Returns the sum of all withdrawable balances (sum of all positive payer balances and pending withdrawals).

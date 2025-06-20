@@ -46,8 +46,8 @@ contract AppChainParameterRegistryTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_registry)), _implementation);
         assertEq(_registry.implementation(), _implementation);
-        assertEq(keccak256(_registry.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
-        assertEq(keccak256(_registry.adminParameterKey()), keccak256(_ADMIN_PARAMETER_KEY));
+        assertEq(_registry.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_registry.adminParameterKey(), _ADMIN_PARAMETER_KEY);
 
         assertEq(
             _registry.__getRegistryParameter(
