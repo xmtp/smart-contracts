@@ -7,6 +7,7 @@ import { AddressAliasHelper } from "../libraries/AddressAliasHelper.sol";
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
+import { IArbSysLike, ISettlementChainGatewayLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -18,6 +19,9 @@ import { Migratable } from "../abstract/Migratable.sol";
  */
 contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
+
+    /// @dev The Arbitrum system precompile address.
+    address internal constant _ARB_SYS = 0x0000000000000000000000000000000000000064; // address(100)
 
     /// @inheritdoc IAppChainGateway
     address public immutable parameterRegistry;
@@ -36,6 +40,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
      * @param  keyNonces A mapping of keys and their corresponding nonces, to track order of parameter receipts.
      */
     struct AppChainGatewayStorage {
+        bool paused;
         mapping(bytes key => uint256 nonce) keyNonces;
     }
 
@@ -55,6 +60,11 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /// @notice Modifier to ensure the caller is the settlement chain gateway (i.e. its L3 alias address).
     modifier onlySettlementChainGateway() {
         _revertIfNotSettlementChainGateway();
+        _;
+    }
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
         _;
     }
 
@@ -87,6 +97,16 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IAppChainGateway
+    function withdraw(address recipient_) external payable whenNotPaused {
+        _withdraw(recipient_, ISettlementChainGatewayLike.withdraw.selector);
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function withdrawIntoUnderlying(address recipient_) external payable whenNotPaused {
+        _withdraw(recipient_, ISettlementChainGatewayLike.withdrawIntoUnderlying.selector);
+    }
+
+    /// @inheritdoc IAppChainGateway
     function receiveParameters(
         uint256 nonce_,
         bytes[] calldata keys_,
@@ -111,6 +131,16 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         }
     }
 
+    /// @inheritdoc IAppChainGateway
+    function updatePauseStatus() external {
+        bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
+        AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
+
+        if (paused_ == $.paused) revert NoChange();
+
+        emit PauseStatusUpdated($.paused = paused_);
+    }
+
     /// @inheritdoc IMigratable
     function migrate() external {
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
@@ -119,8 +149,33 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IAppChainGateway
-    function migratorParameterKey() public pure virtual returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (bytes memory key_) {
         return "xmtp.appChainGateway.migrator";
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function pausedParameterKey() public pure returns (bytes memory key_) {
+        return "xmtp.appChainGateway.paused";
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function paused() external view returns (bool paused_) {
+        return _getAppChainGatewayStorage().paused;
+    }
+
+    /* ============ Internal Interactive Functions ============ */
+
+    function _withdraw(address recipient_, bytes4 selector_) internal {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+        if (msg.value == 0) revert ZeroWithdrawalAmount();
+
+        uint256 messageId_ = IArbSysLike(_ARB_SYS).sendTxToL1{ value: msg.value }(
+            settlementChainGateway,
+            abi.encodeWithSelector(selector_, recipient_)
+        );
+
+        // slither-disable-next-line reentrancy-events
+        emit Withdrawal(msg.sender, messageId_, recipient_, msg.value);
     }
 
     /* ============ Internal View/Pure Functions ============ */
@@ -131,5 +186,9 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     function _revertIfNotSettlementChainGateway() internal view {
         if (msg.sender != settlementChainGatewayAlias) revert NotSettlementChainGateway();
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getAppChainGatewayStorage().paused) revert Paused();
     }
 }

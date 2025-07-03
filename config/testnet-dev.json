@@ -1,55 +1,59 @@
 {
-    "appChainGatewayImplementation": "0xC3F639e83C3dD7e3193Db78fb34f5f75eC5613fc",
+    "appChainGatewayImplementation": "0xdb8Baca710DE7281A2962A8669FEd2876f990f37",
     "appChainId": "241320161",
-    "appChainNativeToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    "appChainParameterRegistryImplementation": "0xC331A65D21D5146BB4D0863330A1FC2f4CA8a5d4",
-    "deployer": "0xBC0d5ADdb45E3F5b37806cacf9112C16a54414a8",
-    "distributionManagerImplementation": "0xCd848b51438f1329f3751B6e0ED3Ab2795113EB8",
-    "distributionManagerProxy": "0xCAdaC2439CEb7125b11a482Ab3AEe7dEB78279DA",
+    "appChainParameterRegistryImplementation": "0x6ee80265b09280Adb6bE54B48dbeD7B8c1d0FCD3",
+    "deployer": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
+    "deployMockUnderlyingFeeToken": true,
+    "distributionManagerImplementation": "0x25fCe4b37ecdddB0a17AF60ef7842af857785877",
+    "distributionManagerProxy": "0x4D054077bDE58D2B1882EF03274324a00365E76a",
     "distributionManagerProxySalt": "DistributionManager_0",
-    "factory": "0xeC7a8cf14FA757BAeC8B948444f7E1931ebB0A03",
-    "feeTokenImplementation": "0x0000000000000000000000000000000000000000",
-    "feeTokenProxy": "0x0000000000000000000000000000000000000000",
+    "factory": "0x456699A99383A8FfE3b93d905a79a3279b406898",
+    "feeTokenImplementation": "0x8fdFfC282CA659574077Ba23fdaBF3B0869771c3",
+    "feeTokenProxy": "0xD6eae1b6a9E28daf9cF0E2965274D9AfCb5C146f",
     "feeTokenProxySalt": "FeeToken_0",
-    "gatewayProxy": "0x323454f0Ca2101C776CA822A913b9a1a897b6C44",
+    "gatewayProxy": "0xB67200aEa2560718Ed70D3595c59714D145D3dE7",
     "gatewayProxySalt": "Gateway_0",
-    "groupMessageBroadcasterImplementation": "0xE39C822d3B0A0F1f5fFCdDcB9edc28952d265db6",
-    "groupMessageBroadcasterProxy": "0x3e1093E91Cde49736841B2413ca1f1094e030F6F",
+    "groupMessageBroadcasterImplementation": "0xDA8D4467ef4f4D42e4437F084E9347e5ec858C22",
+    "groupMessageBroadcasterProxy": "0xD7118C1c138eEE731584Cac59C91C9F57dd1aac2",
     "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0",
-    "identityUpdateBroadcasterImplementation": "0xDFF36aDe2fDF116a86202e8BC5D1846b7793a364",
-    "identityUpdateBroadcasterProxy": "0x0A6A935837b4a2038d8fEce99cd5741545248F5A",
+    "identityUpdateBroadcasterImplementation": "0xd5aE861c34513137Eb53e9808d8B2E3B350e269F",
+    "identityUpdateBroadcasterProxy": "0x230F7bC37C8b1394A3b9150Cbce0C66834A6A6BF",
     "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
-    "initializableImplementation": "0xfEAB32AEdddC2D61ed46Ad7a3C1355C34cf82Ff2",
-    "nodeRegistryImplementation": "0x0a04AB48BBf4985FbD61Edae082889B2E72A9904",
-    "nodeRegistryProxy": "0xD651849b326b01EBC67527C6570B20103DF7d4E0",
+    "initializableImplementation": "0x7FC77E95037B64eFbBD4A57918395938fAbA9128",
+    "nodeRegistryImplementation": "0x66242cf751f87685B318380F698013CDD0049E2c",
+    "nodeRegistryProxy": "0x473AfF72216Bc87a6dAd829A1412Af70d6Cd12Ec",
     "nodeRegistryProxySalt": "NodeRegistry_0",
-    "parameterRegistryProxy": "0xedDf03cfAB0756939BF62c129Ebd48ab9D142388",
+    "parameterRegistryProxy": "0xeED6590D84817d48177984B8a7145FBc6CE4A163",
     "parameterRegistryProxySalt": "ParameterRegistry_0",
-    "payerRegistryImplementation": "0xC139373926823124e9dE552917f30B20bD116143",
-    "payerRegistryProxy": "0x3Ce54917177666d1a331fbb3F208a3B91218EC00",
+    "payerRegistryImplementation": "0x65c8bD44a9a0A3F49082614386E5f635B361A0B4",
+    "payerRegistryProxy": "0x84705e1c7b1F98f97fc627e3114F2c7FA311A573",
     "payerRegistryProxySalt": "PayerRegistry_0",
-    "payerReportManagerImplementation": "0x6975c70190b6A58f0954Cc3aAcf66635ae325106",
-    "payerReportManagerProxy": "0x6a31917FD897497A5CE3487f4aeF98EB0B00E0FA",
+    "payerReportManagerImplementation": "0xe126b8eb2e35507620100678F053DD8F7c4Bc2a7",
+    "payerReportManagerProxy": "0xbD9272Ead237A72aD498792911fd9134AF18b44D",
     "payerReportManagerProxySalt": "PayerReportManager_0",
-    "rateRegistryImplementation": "0x623bb86A377AE00C1bB8d4E2124BB44515F24aB3",
-    "rateRegistryProxy": "0xdF3F8523FCdd590ec81d84b2eE0980E461D6d0f4",
+    "rateRegistryImplementation": "0xa510a0778aD779F47112908811BA2ce2DefDF77a",
+    "rateRegistryProxy": "0x250B59586bd5E22a08546B0F4bCd16E72115AD43",
     "rateRegistryProxySalt": "RateRegistry_0",
-    "settlementChainGatewayImplementation": "0x2272cB4d9E3f6DCaC6d7D203df78766EA8aD6691",
+    "settlementChainGatewayImplementation": "0x3D5c3bd245793F65BaAA905D353F99Ab780e20a1",
     "settlementChainId": "84532",
-    "settlementChainInboxToAppchain": "0xd06d8E471F0EeB1bb516303EdE399d004Acb1615",
     "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
     "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
     "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
-    "settlementChainParameterRegistryImplementation": "0xa975145Ffa80cB106157232F3069Ebab2f8391C5",
+    "settlementChainParameterRegistryImplementation": "0xF2F17D83387250c75270e7351642cC25a133C9B3",
     "startingParameters": {
         "xmtp": {
+            "settlementChainGateway": {
+                "inbox": {
+                    "241320161": "0x0000000000000000000000000000000000000000"
+                }
+            },
             "nodeRegistry": {
                 "admin": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
                 "maxCanonicalNodes": "100"
             },
             "payerRegistry": {
-                "settler": "0x6a31917FD897497A5CE3487f4aeF98EB0B00E0FA",
-                "feeDistributor": "0xCAdaC2439CEb7125b11a482Ab3AEe7dEB78279DA",
+                "settler": "0xbD9272Ead237A72aD498792911fd9134AF18b44D",
+                "feeDistributor": "0x4D054077bDE58D2B1882EF03274324a00365E76a",
                 "minimumDeposit": "10000000",
                 "withdrawLockPeriod": "172800"
             },
@@ -68,5 +72,6 @@
                 "maxPayloadSize": "4194304"
             }
         }
-    }
+    },
+    "underlyingFeeToken": "0xd7f561a1E11Eb35F80E74943b1198aCFAcf17ac4"
 }

@@ -8,19 +8,19 @@ import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 library PayerRegistryDeployer {
     error ZeroFactory();
     error ZeroParameterRegistry();
-    error ZeroToken();
+    error ZeroFeeToken();
     error ZeroImplementation();
 
     function deployImplementation(
         address factory_,
         address parameterRegistry_,
-        address token_
+        address feeToken_
     ) internal returns (address implementation_, bytes memory constructorArguments_) {
         if (factory_ == address(0)) revert ZeroFactory();
         if (parameterRegistry_ == address(0)) revert ZeroParameterRegistry();
-        if (token_ == address(0)) revert ZeroToken();
+        if (feeToken_ == address(0)) revert ZeroFeeToken();
 
-        constructorArguments_ = abi.encode(parameterRegistry_, token_);
+        constructorArguments_ = abi.encode(parameterRegistry_, feeToken_);
 
         bytes memory creationCode_ = abi.encodePacked(type(PayerRegistry).creationCode, constructorArguments_);
 
@@ -43,9 +43,9 @@ library PayerRegistryDeployer {
     function getImplementation(
         address factory_,
         address parameterRegistry_,
-        address token_
+        address feeToken_
     ) internal view returns (address implementation_) {
-        bytes memory constructorArguments_ = abi.encode(parameterRegistry_, token_);
+        bytes memory constructorArguments_ = abi.encode(parameterRegistry_, feeToken_);
         bytes memory creationCode_ = abi.encodePacked(type(PayerRegistry).creationCode, constructorArguments_);
 
         return IFactory(factory_).computeImplementationAddress(creationCode_);

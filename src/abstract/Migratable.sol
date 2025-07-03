@@ -40,7 +40,6 @@ abstract contract Migratable is IMigratable {
         // NOTE: Can merge into `Upgraded` event since it must conform to the EIP-1967 standard.
         emit Migrated(migrator_);
 
-        // slither-disable-next-line low-level-calls
         (bool success_, bytes memory returnData_) = migrator_.delegatecall("");
 
         if (!success_) revert MigrationFailed(migrator_, returnData_);

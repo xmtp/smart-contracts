@@ -19,12 +19,17 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract AppChainGatewayTests is Test {
+    address internal constant _ARB_SYS = 0x0000000000000000000000000000000000000064; // address(100)
+
     bytes internal constant _DELIMITER = ".";
     bytes internal constant _MIGRATOR_KEY = "xmtp.appChainGateway.migrator";
+    bytes internal constant _PAUSED_KEY = "xmtp.appChainGateway.paused";
 
     AppChainGatewayHarness internal _gateway;
 
     address internal _implementation;
+
+    address internal _alice = makeAddr("alice");
 
     address internal _parameterRegistry = makeAddr("parameterRegistry");
     address internal _settlementChainGateway = makeAddr("settlementChainGateway");
@@ -61,10 +66,136 @@ contract AppChainGatewayTests is Test {
     function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_gateway)), _implementation);
         assertEq(_gateway.implementation(), _implementation);
-        assertEq(keccak256(_gateway.migratorParameterKey()), keccak256(_MIGRATOR_KEY));
+        assertEq(_gateway.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_gateway.pausedParameterKey(), _PAUSED_KEY);
         assertEq(_gateway.parameterRegistry(), _parameterRegistry);
         assertEq(_gateway.settlementChainGateway(), _settlementChainGateway);
         assertEq(_gateway.settlementChainGatewayAlias(), _settlementChainGatewayAlias);
+        assertFalse(_gateway.paused());
+    }
+
+    /* ============ withdraw ============ */
+
+    function test_withdraw_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(IAppChainGateway.Paused.selector);
+        _gateway.withdraw(address(0));
+    }
+
+    function test_withdraw_zeroRecipient() external {
+        vm.expectRevert(IAppChainGateway.ZeroRecipient.selector);
+        _gateway.withdraw{ value: 0 }(address(0));
+    }
+
+    function test_withdraw_zeroWithdrawalAmount() external {
+        vm.expectRevert(IAppChainGateway.ZeroWithdrawalAmount.selector);
+        _gateway.withdraw{ value: 0 }(address(1));
+    }
+
+    function test_withdraw_noArbSys() external {
+        vm.expectRevert();
+        _gateway.withdraw{ value: 1 }(address(1));
+    }
+
+    function test_withdraw_arbSysRevert() external {
+        vm.mockCallRevert(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdraw(address)", address(1))
+            ),
+            ""
+        );
+
+        vm.expectRevert();
+
+        _gateway.withdraw{ value: 1 }(address(1));
+    }
+
+    function test_withdraw() external {
+        vm.deal(_alice, 2);
+
+        Utils.expectAndMockCall(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdraw(address)", address(1))
+            ),
+            abi.encode(11)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
+
+        vm.prank(_alice);
+        _gateway.withdraw{ value: 1 }(address(1));
+
+        assertEq(_alice.balance, 1);
+    }
+
+    /* ============ withdrawIntoUnderlying ============ */
+
+    function test_withdrawIntoUnderlying_paused() external {
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(IAppChainGateway.Paused.selector);
+        _gateway.withdrawIntoUnderlying(address(0));
+    }
+
+    function test_withdrawIntoUnderlying_zeroRecipient() external {
+        vm.expectRevert(IAppChainGateway.ZeroRecipient.selector);
+        _gateway.withdrawIntoUnderlying{ value: 0 }(address(0));
+    }
+
+    function test_withdrawIntoUnderlying_zeroWithdrawalAmount() external {
+        vm.expectRevert(IAppChainGateway.ZeroWithdrawalAmount.selector);
+        _gateway.withdrawIntoUnderlying{ value: 0 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying_noArbSys() external {
+        vm.expectRevert();
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying_arbSysRevert() external {
+        vm.mockCallRevert(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+            ),
+            ""
+        );
+
+        vm.expectRevert();
+
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
+    }
+
+    function test_withdrawIntoUnderlying() external {
+        vm.deal(_alice, 2);
+
+        Utils.expectAndMockCall(
+            _ARB_SYS,
+            abi.encodeWithSignature(
+                "sendTxToL1(address,bytes)",
+                _settlementChainGateway,
+                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+            ),
+            abi.encode(11)
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
+
+        vm.prank(_alice);
+        _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
+
+        assertEq(_alice.balance, 1);
     }
 
     /* ============ receiveParameters ============ */
@@ -111,6 +242,52 @@ contract AppChainGatewayTests is Test {
         assertEq(_gateway.__getKeyNonce("this.is.a.used.parameter"), 1);
         assertEq(_gateway.__getKeyNonce("this.is.a.skipped.parameter"), 1);
         assertEq(_gateway.__getKeyNonce("this.is.another.used.parameter"), 1);
+    }
+
+    /* ============ updatePauseStatus ============ */
+
+    function test_updatePauseStatus_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(2)));
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _gateway.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus_noChange() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        vm.expectRevert(IAppChainGateway.NoChange.selector);
+
+        _gateway.updatePauseStatus();
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _gateway.__setPauseStatus(true);
+
+        vm.expectRevert(IAppChainGateway.NoChange.selector);
+
+        _gateway.updatePauseStatus();
+    }
+
+    function test_updatePauseStatus() external {
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.PauseStatusUpdated(true);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, bytes32(uint256(1)));
+
+        _gateway.updatePauseStatus();
+
+        assertTrue(_gateway.paused());
+
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.PauseStatusUpdated(false);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAUSED_KEY, 0);
+
+        _gateway.updatePauseStatus();
+
+        assertFalse(_gateway.paused());
     }
 
     /* ============ migrate ============ */
