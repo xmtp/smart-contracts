@@ -426,6 +426,7 @@ contract PayerReportManagerHarness is PayerReportManager {
         uint96 feesSettled_,
         uint32 offset_,
         bool isSettled_,
+        uint16 protocolFeeRate_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) external {
@@ -436,10 +437,15 @@ contract PayerReportManagerHarness is PayerReportManager {
                 feesSettled: feesSettled_,
                 offset: offset_,
                 isSettled: isSettled_,
+                protocolFeeRate: protocolFeeRate_,
                 payersMerkleRoot: payersMerkleRoot_,
                 nodeIds: nodeIds_
             })
         );
+    }
+
+    function __setProtocolFeeRate(uint16 protocolFeeRate_) external {
+        _getPayerReportManagerStorage().protocolFeeRate = protocolFeeRate_;
     }
 
     function __verifySignatures(
@@ -479,6 +485,14 @@ contract DistributionManagerHarness is DistributionManager {
         address token_
     ) DistributionManager(parameterRegistry_, nodeRegistry_, payerReportManager_, payerRegistry_, token_) {}
 
+    function __setProtocolFeesDestination(address protocolFeesDestination_) external {
+        _getDistributionManagerStorage().protocolFeesDestination = protocolFeesDestination_;
+    }
+
+    function __setOwedProtocolFees(uint256 owedProtocolFees_) external {
+        _getDistributionManagerStorage().owedProtocolFees = uint96(owedProtocolFees_);
+    }
+
     function __setOwedFees(uint256 nodeId_, uint256 owedFees_) external {
         _getDistributionManagerStorage().owedFees[uint32(nodeId_)] = uint96(owedFees_);
     }
@@ -487,15 +501,25 @@ contract DistributionManagerHarness is DistributionManager {
         _getDistributionManagerStorage().totalOwedFees = uint96(totalOwedFees_);
     }
 
-    function __setHasClaimed(
+    function __setAreProtocolFeesClaimed(
+        uint256 originatorNodeId_,
+        uint256 payerReportIndex_,
+        bool areClaimed_
+    ) external {
+        _getDistributionManagerStorage().areProtocolFeesClaimed[uint32(originatorNodeId_)][
+            payerReportIndex_
+        ] = areClaimed_;
+    }
+
+    function __setAreFeesClaimed(
         uint256 nodeId_,
         uint256 originatorNodeId_,
         uint256 payerReportIndex_,
-        bool hasClaimed_
+        bool areClaimed_
     ) external {
-        _getDistributionManagerStorage().hasClaimed[uint32(nodeId_)][uint32(originatorNodeId_)][
+        _getDistributionManagerStorage().areFeesClaimed[uint32(nodeId_)][uint32(originatorNodeId_)][
             payerReportIndex_
-        ] = hasClaimed_;
+        ] = areClaimed_;
     }
 }
 
@@ -547,6 +571,10 @@ contract RegistryParametersHarness {
 
     function getUint8Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint8 value_) {
         return RegistryParameters.getUint8Parameter(parameterRegistry_, key_);
+    }
+
+    function getUint16Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint16 value_) {
+        return RegistryParameters.getUint16Parameter(parameterRegistry_, key_);
     }
 
     function getUint32Parameter(address parameterRegistry_, bytes calldata key_) external view returns (uint32 value_) {

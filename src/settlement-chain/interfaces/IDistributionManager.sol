@@ -12,6 +12,14 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**
+     * @notice Emitted when protocol fees are claimed.
+     * @param  originatorNodeId The ID of the originator node of the payer report.
+     * @param  payerReportIndex The index of the payer report.
+     * @param  amount           The amount of protocol fees claimed.
+     */
+    event ProtocolFeesClaim(uint32 indexed originatorNodeId, uint256 indexed payerReportIndex, uint96 amount);
+
+    /**
      * @notice Emitted when a claim is made.
      * @param  nodeId           The ID of the node.
      * @param  originatorNodeId The ID of the originator node of the payer report.
@@ -26,11 +34,23 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     );
 
     /**
+     * @notice Emitted when protocol fees are withdrawn.
+     * @param  amount The amount of protocol fees withdrawn.
+     */
+    event ProtocolFeesWithdrawal(uint96 amount);
+
+    /**
      * @notice Emitted when a withdrawal of owed fees is made.
      * @param  nodeId The ID of the node.
      * @param  amount The amount of tokens withdrawn.
      */
     event Withdrawal(uint32 indexed nodeId, uint96 amount);
+
+    /**
+     * @notice Emitted when the protocol fees destination is updated.
+     * @param  protocolFeesDestination The new protocol fees destination.
+     */
+    event ProtocolFeesDestinationUpdated(address protocolFeesDestination);
 
     /* ============ Custom Errors ============ */
 
@@ -79,6 +99,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
      */
     error TransferFailed();
 
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
+
+    /// @notice Thrown when the protocol fees destination is zero (i.e. address(0)).
+    error ZeroProtocolFeesDestination();
+
     /* ============ Initialization ============ */
 
     /**
@@ -87,6 +113,17 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     function initialize() external;
 
     /* ============ Interactive Functions ============ */
+
+    /**
+     * @notice Claims protocol fees.
+     * @param  originatorNodeIds_  The IDs of the originator nodes of the payer reports.
+     * @param  payerReportIndices_ The payer report indices for each of the respective originator node IDs.
+     * @return claimed_            The amount of protocol fees claimed.
+     */
+    function claimProtocolFees(
+        uint32[] calldata originatorNodeIds_,
+        uint256[] calldata payerReportIndices_
+    ) external returns (uint96 claimed_);
 
     /**
      * @notice Claims fees for a node for an array of payer reports.
@@ -103,6 +140,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     ) external returns (uint96 claimed_);
 
     /**
+     * @notice Withdraws protocol fees.
+     * @return withdrawn_ The amount of protocol fees withdrawn.
+     */
+    function withdrawProtocolFees() external returns (uint96 withdrawn_);
+
+    /**
      * @notice Withdraws fees for a node.
      * @param  nodeId_      The ID of the node.
      * @param  destination_ The address to withdraw the fees to.
@@ -110,10 +153,18 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
      */
     function withdraw(uint32 nodeId_, address destination_) external returns (uint96 withdrawn_);
 
+    /**
+     * @notice Updates the protocol fees destination.
+     */
+    function updateProtocolFeesDestination() external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the protocol fees destination.
+    function protocolFeesDestinationParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
@@ -130,6 +181,12 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice The address of the token.
     function token() external view returns (address token_);
 
+    /// @notice The address of the protocol fees destination.
+    function protocolFeesDestination() external view returns (address protocolFeesDestination_);
+
+    /// @notice The amount of claimed protocol fees owed to the protocol.
+    function owedProtocolFees() external view returns (uint96 owedProtocolFees_);
+
     /// @notice The total amount of fees owed.
     function totalOwedFees() external view returns (uint96 totalOwedFees_);
 
@@ -141,15 +198,26 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     function getOwedFees(uint32 nodeId_) external view returns (uint96 owedFees_);
 
     /**
-     * @notice Returns whether a node has claimed a payer report.
+     * @notice Returns whether protocol fees associated with a settled payer report have been claimed.
+     * @param  originatorNodeId_ The ID of the originator node of the payer report.
+     * @param  payerReportIndex_ The index of the payer report.
+     * @return areClaimed_       Whether protocol fees associated with a settled payer report have been claimed.
+     */
+    function areProtocolFeesClaimed(
+        uint32 originatorNodeId_,
+        uint256 payerReportIndex_
+    ) external view returns (bool areClaimed_);
+
+    /**
+     * @notice Returns whether a node has claimed fees associated with a settled payer report.
      * @param  nodeId_           The ID of the node.
      * @param  originatorNodeId_ The ID of the originator node of the payer report.
      * @param  payerReportIndex_ The index of the payer report.
-     * @return hasClaimed_       Whether the node has claimed fees associated with a settled payer report.
+     * @return areClaimed_       Whether the node has claimed fees associated with a settled payer report.
      */
-    function getHasClaimed(
+    function areFeesClaimed(
         uint32 nodeId_,
         uint32 originatorNodeId_,
         uint256 payerReportIndex_
-    ) external view returns (bool hasClaimed_);
+    ) external view returns (bool areClaimed_);
 }

@@ -21,6 +21,7 @@ import { Utils } from "../utils/Utils.sol";
 
 contract DistributionManagerTests is Test {
     bytes internal constant _MIGRATOR_KEY = "xmtp.distributionManager.migrator";
+    bytes internal constant _PROTOCOL_FEES_DESTINATION_KEY = "xmtp.distributionManager.protocolFeesDestination";
 
     DistributionManagerHarness internal _manager;
 
@@ -95,6 +96,7 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.payerReportManager(), _payerReportManager);
         assertEq(_manager.token(), _token);
         assertEq(_manager.migratorParameterKey(), _MIGRATOR_KEY);
+        assertEq(_manager.protocolFeesDestinationParameterKey(), _PROTOCOL_FEES_DESTINATION_KEY);
     }
 
     /* ============ initializer ============ */
@@ -102,6 +104,161 @@ contract DistributionManagerTests is Test {
     function test_initialize_reinitialization() external {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         _manager.initialize();
+    }
+
+    /* ============ claimProtocolFees ============ */
+
+    function test_claimProtocolFees_arrayLengthMismatch() external {
+        vm.expectRevert(IDistributionManager.ArrayLengthMismatch.selector);
+
+        vm.prank(_alice);
+        _manager.claimProtocolFees(new uint32[](0), new uint256[](1));
+    }
+
+    function test_claimProtocolFees_alreadyClaimed() external {
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 2;
+        originatorNodeIds_[1] = 3;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 0;
+        payerReportIndices_[1] = 0;
+
+        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+
+        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 0,
+            offset: 0,
+            isSettled: true,
+            protocolFeeRate: 0,
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 0,
+            offset: 0,
+            isSettled: true,
+            protocolFeeRate: 0,
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        _manager.__setAreProtocolFeesClaimed(3, 0, true); // Protocol fee already claimed node 3's 0th payer report.
+
+        vm.mockCall(
+            _payerReportManager,
+            abi.encodeWithSignature("getPayerReports(uint32[],uint256[])", originatorNodeIds_, payerReportIndices_),
+            abi.encode(payerReports_)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(IDistributionManager.AlreadyClaimed.selector, 3, 0));
+
+        vm.prank(_alice);
+        _manager.claimProtocolFees(originatorNodeIds_, payerReportIndices_);
+    }
+
+    function test_claimProtocolFees_payerReportNotSettled() external {
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 2;
+        originatorNodeIds_[1] = 3;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 0;
+        payerReportIndices_[1] = 0;
+
+        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+
+        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 0,
+            offset: 0,
+            isSettled: true,
+            protocolFeeRate: 0,
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 0,
+            offset: 0,
+            isSettled: false, // Second payer report is not settled.
+            protocolFeeRate: 0,
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        vm.mockCall(
+            _payerReportManager,
+            abi.encodeWithSignature("getPayerReports(uint32[],uint256[])", originatorNodeIds_, payerReportIndices_),
+            abi.encode(payerReports_)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(IDistributionManager.PayerReportNotSettled.selector, 3, 0));
+
+        vm.prank(_alice);
+        _manager.claimProtocolFees(originatorNodeIds_, payerReportIndices_);
+    }
+
+    function test_claimProtocolFees() external {
+        _manager.__setOwedProtocolFees(300);
+
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 2;
+        originatorNodeIds_[1] = 3;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 0;
+        payerReportIndices_[1] = 1;
+
+        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+
+        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 100,
+            offset: 0,
+            isSettled: true,
+            protocolFeeRate: 1_000, // 10%
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+            startSequenceId: 0,
+            endSequenceId: 0,
+            feesSettled: 200,
+            offset: 0,
+            isSettled: true,
+            protocolFeeRate: 750, // 7.5%
+            payersMerkleRoot: 0,
+            nodeIds: new uint32[](0)
+        });
+
+        Utils.expectAndMockCall(
+            _payerReportManager,
+            abi.encodeWithSignature("getPayerReports(uint32[],uint256[])", originatorNodeIds_, payerReportIndices_),
+            abi.encode(payerReports_)
+        );
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesClaim(2, 0, 10); // 10% of 100.
+        emit IDistributionManager.ProtocolFeesClaim(3, 1, 15); // 7.5% of 200.
+
+        vm.prank(_alice);
+        uint96 claimed_ = _manager.claimProtocolFees(originatorNodeIds_, payerReportIndices_);
+
+        assertEq(claimed_, 10 + 15);
+        assertEq(_manager.owedProtocolFees(), 300 + claimed_);
+        assertEq(_manager.areProtocolFeesClaimed(2, 0), true);
+        assertEq(_manager.areProtocolFeesClaimed(3, 1), true);
     }
 
     /* ============ claim ============ */
@@ -146,6 +303,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
@@ -156,11 +314,12 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
 
-        _manager.__setHasClaimed(1, 3, 0, true); // Node 1 has already claimed node 3's 0th payer report.
+        _manager.__setAreFeesClaimed(1, 3, 0, true); // Node 1 has already claimed node 3's 0th payer report.
 
         vm.mockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
 
@@ -198,6 +357,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
@@ -208,6 +368,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: false, // Second payer report is not settled.
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
@@ -252,6 +413,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIdsContainingNode1_
         });
@@ -262,6 +424,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 0,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 0,
             payersMerkleRoot: 0,
             nodeIds: nodeIdsNotContainingNode1_ // Node 1 is not in the second payer report.
         });
@@ -305,6 +468,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 100,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 1_000, // 10%
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
@@ -315,6 +479,7 @@ contract DistributionManagerTests is Test {
             feesSettled: 200,
             offset: 0,
             isSettled: true,
+            protocolFeeRate: 750, // 7.5%
             payersMerkleRoot: 0,
             nodeIds: nodeIds_
         });
@@ -328,20 +493,219 @@ contract DistributionManagerTests is Test {
         );
 
         vm.expectEmit(address(_manager));
-        emit IDistributionManager.Claim(1, 2, 0, uint96(100) / 3);
-        emit IDistributionManager.Claim(1, 3, 1, uint96(200) / 3);
+        emit IDistributionManager.Claim(1, 2, 0, uint96(90) / 3); // 90 after 10% protocol fees.
+        emit IDistributionManager.Claim(1, 3, 1, uint96(185) / 3); // 185 after 7.5% protocol fees.
 
         vm.prank(_alice);
         uint96 claimed_ = _manager.claim(1, originatorNodeIds_, payerReportIndices_);
 
-        assertEq(claimed_, (uint96(100) / 3) + (uint96(200) / 3));
+        assertEq(claimed_, (uint96(90) / 3) + (uint96(185) / 3));
         assertEq(_manager.getOwedFees(1), 300 + claimed_);
         assertEq(_manager.totalOwedFees(), 500 + claimed_);
-        assertEq(_manager.getHasClaimed(1, 2, 0), true);
-        assertEq(_manager.getHasClaimed(1, 3, 1), true);
+        assertEq(_manager.areFeesClaimed(1, 2, 0), true);
+        assertEq(_manager.areFeesClaimed(1, 3, 1), true);
     }
 
     // TODO: Maybe a fuzz test for claim.
+
+    /* ============ withdrawProtocolFees ============ */
+
+    function test_withdrawProtocolFees_noFeesOwed() external {
+        vm.expectRevert(IDistributionManager.NoFeesOwed.selector);
+
+        vm.prank(_alice);
+        _manager.withdrawProtocolFees();
+    }
+
+    function test_withdrawProtocolFees_zeroAvailableBalance() external {
+        _manager.__setOwedProtocolFees(1);
+
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(0));
+        vm.mockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(0));
+
+        vm.expectRevert(IDistributionManager.ZeroAvailableBalance.selector);
+
+        vm.prank(_alice);
+        _manager.withdrawProtocolFees();
+    }
+
+    function test_withdrawProtocolFees_zeroProtocolFeesDestination() external {
+        _manager.__setOwedProtocolFees(1);
+
+        vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(1));
+
+        vm.expectRevert(IDistributionManager.ZeroProtocolFeesDestination.selector);
+
+        vm.prank(_alice);
+        _manager.withdrawProtocolFees();
+    }
+
+    function test_withdrawProtocolFees_partial_noPayerRegistryExcess() external {
+        _manager.__setProtocolFeesDestination(address(1));
+        _manager.__setOwedProtocolFees(10);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(5)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(0));
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesWithdrawal(5);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", address(1), 5),
+            abi.encode(true)
+        );
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdrawProtocolFees();
+
+        assertEq(withdrawn_, 5);
+        assertEq(_manager.owedProtocolFees(), 5);
+    }
+
+    function test_withdrawProtocolFees_full_noPayerRegistryExcess() external {
+        _manager.__setProtocolFeesDestination(address(1));
+        _manager.__setOwedProtocolFees(10);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(10)
+        );
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesWithdrawal(10);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", address(1), 10),
+            abi.encode(true)
+        );
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdrawProtocolFees();
+
+        assertEq(withdrawn_, 10);
+        assertEq(_manager.owedProtocolFees(), 0);
+    }
+
+    function test_withdrawProtocolFees_partial_withPayerRegistryExcess() external {
+        _manager.__setProtocolFeesDestination(address(1));
+        _manager.__setOwedProtocolFees(10);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(5)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(3));
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesWithdrawal(8);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", address(1), 8),
+            abi.encode(true)
+        );
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdrawProtocolFees();
+
+        assertEq(withdrawn_, 8);
+        assertEq(_manager.owedProtocolFees(), 2);
+    }
+
+    function test_withdrawProtocolFees_full_withPayerRegistryExcess() external {
+        _manager.__setProtocolFeesDestination(address(1));
+        _manager.__setOwedProtocolFees(15);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+            abi.encode(10)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("sendExcessToFeeDistributor()"), abi.encode(5));
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesWithdrawal(15);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", address(1), 15),
+            abi.encode(true)
+        );
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdrawProtocolFees();
+
+        assertEq(withdrawn_, 15);
+        assertEq(_manager.owedProtocolFees(), 0);
+    }
+
+    function testFuzz_withdrawProtocolFees(
+        uint96 owedProtocolFees_,
+        uint96 availableBalance_,
+        uint96 payerRegistryExcess_
+    ) external {
+        _manager.__setProtocolFeesDestination(address(1));
+
+        owedProtocolFees_ = uint96(_bound(owedProtocolFees_, 0, type(uint96).max));
+        availableBalance_ = uint96(_bound(availableBalance_, 0, type(uint96).max));
+        payerRegistryExcess_ = uint96(_bound(payerRegistryExcess_, 0, type(uint96).max - availableBalance_));
+
+        _manager.__setOwedProtocolFees(owedProtocolFees_);
+
+        if (owedProtocolFees_ > 0) {
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("balanceOf(address)", address(_manager)),
+                abi.encode(uint256(availableBalance_))
+            );
+        }
+
+        if (owedProtocolFees_ > 0 && availableBalance_ < owedProtocolFees_) {
+            Utils.expectAndMockCall(
+                _payerRegistry,
+                abi.encodeWithSignature("sendExcessToFeeDistributor()"),
+                abi.encode(uint256(payerRegistryExcess_))
+            );
+        }
+
+        uint96 expectedWithdrawal_ = availableBalance_ + payerRegistryExcess_ > owedProtocolFees_
+            ? owedProtocolFees_
+            : availableBalance_ + payerRegistryExcess_;
+
+        if (owedProtocolFees_ == 0) {
+            vm.expectRevert(IDistributionManager.NoFeesOwed.selector);
+        } else if (availableBalance_ + payerRegistryExcess_ == 0) {
+            vm.expectRevert(IDistributionManager.ZeroAvailableBalance.selector);
+        } else {
+            vm.expectEmit(address(_manager));
+            emit IDistributionManager.ProtocolFeesWithdrawal(expectedWithdrawal_);
+
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("transfer(address,uint256)", address(1), expectedWithdrawal_),
+                abi.encode(true)
+            );
+        }
+
+        vm.prank(_alice);
+        uint96 withdrawn_ = _manager.withdrawProtocolFees();
+
+        if (owedProtocolFees_ == 0 || availableBalance_ + payerRegistryExcess_ == 0) return;
+
+        assertEq(withdrawn_, expectedWithdrawal_);
+        assertEq(_manager.owedProtocolFees(), owedProtocolFees_ - expectedWithdrawal_);
+    }
 
     /* ============ withdraw ============ */
 
@@ -372,7 +736,7 @@ contract DistributionManagerTests is Test {
     }
 
     function test_withdraw_zeroAvailableBalance() external {
-        _manager.__setOwedFees(1, 3);
+        _manager.__setOwedFees(1, 1);
 
         vm.mockCall(_nodeRegistry, abi.encodeWithSignature("ownerOf(uint256)", 1), abi.encode(_alice));
         vm.mockCall(_token, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(0));
@@ -401,6 +765,12 @@ contract DistributionManagerTests is Test {
         vm.expectEmit(address(_manager));
         emit IDistributionManager.Withdrawal(1, 5);
 
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 5),
+            abi.encode(true)
+        );
+
         vm.prank(_alice);
         uint96 withdrawn_ = _manager.withdraw(1, _alice);
 
@@ -423,6 +793,12 @@ contract DistributionManagerTests is Test {
 
         vm.expectEmit(address(_manager));
         emit IDistributionManager.Withdrawal(1, 10);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 10),
+            abi.encode(true)
+        );
 
         vm.prank(_alice);
         uint96 withdrawn_ = _manager.withdraw(1, _alice);
@@ -449,6 +825,12 @@ contract DistributionManagerTests is Test {
         vm.expectEmit(address(_manager));
         emit IDistributionManager.Withdrawal(1, 8);
 
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 8),
+            abi.encode(true)
+        );
+
         vm.prank(_alice);
         uint96 withdrawn_ = _manager.withdraw(1, _alice);
 
@@ -473,6 +855,12 @@ contract DistributionManagerTests is Test {
 
         vm.expectEmit(address(_manager));
         emit IDistributionManager.Withdrawal(1, 15);
+
+        Utils.expectAndMockCall(
+            _token,
+            abi.encodeWithSignature("transfer(address,uint256)", _alice, 15),
+            abi.encode(true)
+        );
 
         vm.prank(_alice);
         uint96 withdrawn_ = _manager.withdraw(1, _alice);
@@ -525,6 +913,12 @@ contract DistributionManagerTests is Test {
         } else {
             vm.expectEmit(address(_manager));
             emit IDistributionManager.Withdrawal(1, expectedWithdrawal_);
+
+            Utils.expectAndMockCall(
+                _token,
+                abi.encodeWithSignature("transfer(address,uint256)", _alice, expectedWithdrawal_),
+                abi.encode(true)
+            );
         }
 
         vm.prank(_alice);
@@ -535,6 +929,51 @@ contract DistributionManagerTests is Test {
         assertEq(withdrawn_, expectedWithdrawal_);
         assertEq(_manager.getOwedFees(1), owedFees_ - expectedWithdrawal_);
         assertEq(_manager.totalOwedFees(), totalOwedFees_ - expectedWithdrawal_);
+    }
+
+    /* ============ updateProtocolFeesDestination ============ */
+
+    function test_updateProtocolFeesDestination_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PROTOCOL_FEES_DESTINATION_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _manager.updateProtocolFeesDestination();
+    }
+
+    function test_updateProtocolFeesDestination_noChange() external {
+        _manager.__setProtocolFeesDestination(address(1));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PROTOCOL_FEES_DESTINATION_KEY,
+            bytes32(uint256(uint160(address(1))))
+        );
+
+        vm.expectRevert(IDistributionManager.NoChange.selector);
+
+        _manager.updateProtocolFeesDestination();
+    }
+
+    function test_updateProtocolFeesDestination() external {
+        _manager.__setProtocolFeesDestination(address(1));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PROTOCOL_FEES_DESTINATION_KEY,
+            bytes32(uint256(uint160(address(2))))
+        );
+
+        vm.expectEmit(address(_manager));
+        emit IDistributionManager.ProtocolFeesDestinationUpdated(address(2));
+
+        _manager.updateProtocolFeesDestination();
+
+        assertEq(_manager.protocolFeesDestination(), address(2));
     }
 
     /* ============ migrate ============ */
@@ -589,7 +1028,7 @@ contract DistributionManagerTests is Test {
 
     function test_migrate() external {
         _manager.__setOwedFees(1, 2);
-        _manager.__setHasClaimed(1, 2, 0, true);
+        _manager.__setAreFeesClaimed(1, 2, 0, true);
 
         address newImplementation_ = address(
             new DistributionManagerHarness(
@@ -625,7 +1064,19 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.token(), _token);
 
         assertEq(_manager.getOwedFees(1), 2);
-        assertEq(_manager.getHasClaimed(1, 2, 0), true);
+        assertEq(_manager.areFeesClaimed(1, 2, 0), true);
+    }
+
+    /* ============ owedProtocolFees ============ */
+
+    function test_owedProtocolFees() external {
+        _manager.__setOwedProtocolFees(1);
+
+        assertEq(_manager.owedProtocolFees(), 1);
+
+        _manager.__setOwedProtocolFees(100);
+
+        assertEq(_manager.owedProtocolFees(), 100);
     }
 
     /* ============ totalOwedFees ============ */
@@ -650,23 +1101,35 @@ contract DistributionManagerTests is Test {
         assertEq(_manager.getOwedFees(3), 4);
     }
 
-    /* ============ getHasClaimed ============ */
+    /* ============ areProtocolFeesClaimed ============ */
 
-    function test_getHasClaimed() external {
-        _manager.__setHasClaimed(1, 2, 0, true);
-        _manager.__setHasClaimed(1, 2, 1, false);
-        _manager.__setHasClaimed(1, 3, 0, true);
+    function test_areProtocolFeesClaimed() external {
+        _manager.__setAreProtocolFeesClaimed(2, 0, true);
+        _manager.__setAreProtocolFeesClaimed(2, 1, false);
+        _manager.__setAreProtocolFeesClaimed(3, 0, true);
 
-        _manager.__setHasClaimed(2, 2, 0, false);
-        _manager.__setHasClaimed(2, 2, 1, true);
-        _manager.__setHasClaimed(2, 3, 0, false);
+        assertEq(_manager.areProtocolFeesClaimed(2, 0), true);
+        assertEq(_manager.areProtocolFeesClaimed(2, 1), false);
+        assertEq(_manager.areProtocolFeesClaimed(3, 0), true);
+    }
 
-        assertEq(_manager.getHasClaimed(1, 2, 0), true);
-        assertEq(_manager.getHasClaimed(1, 2, 1), false);
-        assertEq(_manager.getHasClaimed(1, 3, 0), true);
+    /* ============ areFeesClaimed ============ */
 
-        assertEq(_manager.getHasClaimed(2, 2, 0), false);
-        assertEq(_manager.getHasClaimed(2, 2, 1), true);
-        assertEq(_manager.getHasClaimed(2, 3, 0), false);
+    function test_areFeesClaimed() external {
+        _manager.__setAreFeesClaimed(1, 2, 0, true);
+        _manager.__setAreFeesClaimed(1, 2, 1, false);
+        _manager.__setAreFeesClaimed(1, 3, 0, true);
+
+        _manager.__setAreFeesClaimed(2, 2, 0, false);
+        _manager.__setAreFeesClaimed(2, 2, 1, true);
+        _manager.__setAreFeesClaimed(2, 3, 0, false);
+
+        assertEq(_manager.areFeesClaimed(1, 2, 0), true);
+        assertEq(_manager.areFeesClaimed(1, 2, 1), false);
+        assertEq(_manager.areFeesClaimed(1, 3, 0), true);
+
+        assertEq(_manager.areFeesClaimed(2, 2, 0), false);
+        assertEq(_manager.areFeesClaimed(2, 2, 1), true);
+        assertEq(_manager.areFeesClaimed(2, 3, 0), false);
     }
 }

@@ -20,6 +20,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  feesSettled      The total fees already settled for this report.
      * @param  offset           The next index in the merkle tree that has yet to be processed/settled.
      * @param  isSettled        Whether the payer report is completely processed/settled.
+     * @param  protocolFees     The portion of the fees settled that is reserved for the protocol.
      * @param  payersMerkleRoot The payers merkle root.
      * @param  nodeIds          The active node IDs during the reporting period.
      */
@@ -29,6 +30,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
         uint96 feesSettled;
         uint32 offset;
         bool isSettled;
+        uint16 protocolFeeRate;
         bytes32 payersMerkleRoot;
         uint32[] nodeIds;
     }
@@ -81,6 +83,12 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
         uint96 feesSettled
     );
 
+    /**
+     * @notice Emitted when the protocol fee rate is updated.
+     * @param  protocolFeeRate The new protocol fee rate.
+     */
+    event ProtocolFeeRateUpdated(uint16 protocolFeeRate);
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
@@ -115,6 +123,12 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /// @notice Thrown when the length of two input arrays do not match when they should.
     error ArrayLengthMismatch();
+
+    /// @notice Thrown when the protocol fee rate is invalid.
+    error InvalidProtocolFeeRate();
+
+    /// @notice Thrown when there is no change to an updated parameter.
+    error NoChange();
 
     /* ============ Initialization ============ */
 
@@ -158,14 +172,26 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
         bytes32[] calldata proofElements_
     ) external;
 
+    /**
+     * @notice Updates the protocol fee rate.
+     */
+    function updateProtocolFeeRate() external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice Returns the EIP712 typehash used in the encoding of a signed digest for a payer report.
     // slither-disable-next-line naming-convention
     function PAYER_REPORT_TYPEHASH() external pure returns (bytes32 payerReportTypehash_);
 
+    /// @notice One hundred percent (in basis points).
+    // slither-disable-next-line naming-convention
+    function ONE_HUNDRED_PERCENT() external pure returns (uint16 oneHundredPercent_);
+
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (bytes memory key_);
+
+    /// @notice The parameter registry key used to fetch the protocol fee rate.
+    function protocolFeeRateParameterKey() external pure returns (bytes memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
@@ -175,6 +201,9 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /// @notice The address of the payer registry.
     function payerRegistry() external view returns (address payerRegistry_);
+
+    /// @notice The protocol fee rate (in basis points).
+    function protocolFeeRate() external view returns (uint16 protocolFeeRate_);
 
     /**
      * @notice Returns an array of specific payer reports.
