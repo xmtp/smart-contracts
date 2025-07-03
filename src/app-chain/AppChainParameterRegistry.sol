@@ -18,7 +18,7 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         public
         pure
         override(IParameterRegistry, ParameterRegistry)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.appChainParameterRegistry.migrator";
     }
@@ -28,7 +28,7 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         public
         pure
         override(IParameterRegistry, ParameterRegistry)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.appChainParameterRegistry.isAdmin";
     }

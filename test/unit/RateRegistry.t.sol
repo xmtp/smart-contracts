@@ -17,11 +17,11 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract RateRegistryTests is Test {
-    bytes internal constant _MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
-    bytes internal constant _STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
-    bytes internal constant _CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
-    bytes internal constant _TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.rateRegistry.migrator";
+    string internal constant _MESSAGE_FEE_KEY = "xmtp.rateRegistry.messageFee";
+    string internal constant _STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
+    string internal constant _CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
+    string internal constant _TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
+    string internal constant _MIGRATOR_KEY = "xmtp.rateRegistry.migrator";
 
     RateRegistryHarness internal _registry;
 

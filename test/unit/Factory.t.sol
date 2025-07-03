@@ -103,11 +103,7 @@ contract FactoryTests is Test {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
         address expectedProxy_ = _getExpectedProxy(_alice, 0);
 
-        vm.mockCallRevert(
-            expectedProxy_,
-            abi.encodeWithSelector(IInitializable.initialize.selector, foo_, bytes("")),
-            ""
-        );
+        vm.mockCallRevert(expectedProxy_, abi.encodeWithSelector(IInitializable.initialize.selector, foo_, ""), "");
 
         vm.expectRevert();
 

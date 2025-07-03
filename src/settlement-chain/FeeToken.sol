@@ -166,7 +166,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
     }
 
     /// @inheritdoc IFeeToken
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.feeToken.migrator";
     }
 

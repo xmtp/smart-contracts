@@ -13,7 +13,7 @@ library ParameterKeys {
     /* ============ Constants ============ */
 
     /// @dev The delimiter used to combine key components.
-    bytes internal constant DELIMITER = ".";
+    string internal constant DELIMITER = ".";
 
     /* ============ View/Pure Functions ============ */
 
@@ -22,7 +22,7 @@ library ParameterKeys {
      * @param  keyComponents_ The key components to combine.
      * @return key_           The combined key.
      */
-    function getKey(bytes[] memory keyComponents_) internal pure returns (bytes memory key_) {
+    function getKey(string[] memory keyComponents_) internal pure returns (string memory key_) {
         if (keyComponents_.length == 0) revert IParameterKeysErrors.NoKeyComponents();
 
         // TODO: Perhaps compute the final size of the key and allocate the memory in one go. Best in assembly.
@@ -31,15 +31,18 @@ library ParameterKeys {
         }
     }
 
-    function combineKeyComponents(bytes memory left_, bytes memory right_) internal pure returns (bytes memory key_) {
-        return abi.encodePacked(left_, DELIMITER, right_);
+    function combineKeyComponents(
+        string memory left_,
+        string memory right_
+    ) internal pure returns (string memory key_) {
+        return string.concat(left_, DELIMITER, right_);
     }
 
-    function addressToKeyComponent(address account_) internal pure returns (bytes memory keyComponent_) {
-        return bytes(Strings.toHexString(account_));
+    function addressToKeyComponent(address account_) internal pure returns (string memory keyComponent_) {
+        return Strings.toHexString(account_);
     }
 
-    function uint256ToKeyComponent(uint256 value_) internal pure returns (bytes memory keyComponent_) {
-        return bytes(Strings.toString(value_));
+    function uint256ToKeyComponent(uint256 value_) internal pure returns (string memory keyComponent_) {
+        return Strings.toString(value_);
     }
 }

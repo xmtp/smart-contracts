@@ -141,7 +141,7 @@ interface IFeeToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable, IRegis
     function underlying() external view returns (address underlying_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

@@ -19,9 +19,9 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract NodeRegistryTests is Test {
-    bytes internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
-    bytes internal constant _MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
+    string internal constant _ADMIN_KEY = "xmtp.nodeRegistry.admin";
+    string internal constant _MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
+    string internal constant _MIGRATOR_KEY = "xmtp.nodeRegistry.migrator";
 
     uint32 internal constant _NODE_INCREMENT = 100;
 

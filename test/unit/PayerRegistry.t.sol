@@ -17,12 +17,12 @@ import { MockMigrator } from "../utils/Mocks.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract PayerRegistryTests is Test {
-    bytes internal constant _PAUSED_KEY = "xmtp.payerRegistry.paused";
-    bytes internal constant _MIGRATOR_KEY = "xmtp.payerRegistry.migrator";
-    bytes internal constant _MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
-    bytes internal constant _WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
-    bytes internal constant _SETTLER_KEY = "xmtp.payerRegistry.settler";
-    bytes internal constant _FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
+    string internal constant _PAUSED_KEY = "xmtp.payerRegistry.paused";
+    string internal constant _MIGRATOR_KEY = "xmtp.payerRegistry.migrator";
+    string internal constant _MINIMUM_DEPOSIT_KEY = "xmtp.payerRegistry.minimumDeposit";
+    string internal constant _WITHDRAW_LOCK_PERIOD_KEY = "xmtp.payerRegistry.withdrawLockPeriod";
+    string internal constant _SETTLER_KEY = "xmtp.payerRegistry.settler";
+    string internal constant _FEE_DISTRIBUTOR_KEY = "xmtp.payerRegistry.feeDistributor";
 
     PayerRegistryHarness internal _registry;
 

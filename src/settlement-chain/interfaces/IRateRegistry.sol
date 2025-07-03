@@ -83,19 +83,19 @@ interface IRateRegistry is IMigratable, IRegistryParametersErrors {
     function getRatesCount() external view returns (uint256 count_);
 
     /// @notice The parameter registry key used to fetch the message fee.
-    function messageFeeParameterKey() external pure returns (bytes memory key_);
+    function messageFeeParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the storage fee.
-    function storageFeeParameterKey() external pure returns (bytes memory key_);
+    function storageFeeParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the congestion fee.
-    function congestionFeeParameterKey() external pure returns (bytes memory key_);
+    function congestionFeeParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the target rate per minute.
-    function targetRatePerMinuteParameterKey() external pure returns (bytes memory key_);
+    function targetRatePerMinuteParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

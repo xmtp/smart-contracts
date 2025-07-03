@@ -82,16 +82,16 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the minimum payload size.
-    function minPayloadSizeParameterKey() external pure returns (bytes memory key_);
+    function minPayloadSizeParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the maximum payload size.
-    function maxPayloadSizeParameterKey() external pure returns (bytes memory key_);
+    function maxPayloadSizeParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the paused status.
-    function pausedParameterKey() external pure returns (bytes memory key_);
+    function pausedParameterKey() external pure returns (string memory key_);
 
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);

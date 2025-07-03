@@ -38,7 +38,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.groupMessageBroadcaster.minPayloadSize";
     }
@@ -48,7 +48,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.groupMessageBroadcaster.maxPayloadSize";
     }
@@ -58,7 +58,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.groupMessageBroadcaster.migrator";
     }
@@ -68,7 +68,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         public
         pure
         override(IPayloadBroadcaster, PayloadBroadcaster)
-        returns (bytes memory key_)
+        returns (string memory key_)
     {
         return "xmtp.groupMessageBroadcaster.paused";
     }

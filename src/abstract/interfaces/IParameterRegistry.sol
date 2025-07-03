@@ -19,7 +19,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @param  value The value of the parameter (which can represent any value type).
      * @dev    Values that are not value types (e.g. bytes, arrays, structs, etc.) must be the hash of their contents.
      */
-    event ParameterSet(bytes indexed key, bytes32 indexed value);
+    event ParameterSet(string indexed key, bytes32 indexed value);
 
     /* ============ Custom Errors ============ */
 
@@ -50,7 +50,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @dev    The length of the `keys_` and `values_` arrays must be the same.
      * @dev    The caller must be an admin.
      */
-    function set(bytes[] calldata keys_, bytes32[] calldata values_) external;
+    function set(string[] calldata keys_, bytes32[] calldata values_) external;
 
     /**
      * @notice Sets a parameter.
@@ -58,7 +58,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @param  value_ The value of the parameter.
      * @dev    The caller must be an admin.
      */
-    function set(bytes calldata key_, bytes32 value_) external;
+    function set(string calldata key_, bytes32 value_) external;
 
     /* ============ View/Pure Functions ============ */
 
@@ -75,7 +75,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @return values_ The values of each parameter.
      * @dev    The default value for each parameter is bytes32(0).
      */
-    function get(bytes[] calldata keys_) external view returns (bytes32[] memory values_);
+    function get(string[] calldata keys_) external view returns (bytes32[] memory values_);
 
     /**
      * @notice Gets the value of a parameter.
@@ -83,19 +83,19 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @return value_ The value of the parameter.
      * @dev    The default value for a parameter is bytes32(0).
      */
-    function get(bytes calldata key_) external view returns (bytes32 value_);
+    function get(string calldata key_) external view returns (bytes32 value_);
 
     /**
      * @notice The parameter registry key used to fetch the migrator.
      * @return key_ The key of the migrator parameter.
      * @dev    Uniquely, the parameter registry uses itself, so the key-value pair is stored in the contract itself.
      */
-    function migratorParameterKey() external pure returns (bytes memory key_);
+    function migratorParameterKey() external pure returns (string memory key_);
 
     /**
      * @notice The parameter registry key used to fetch the status of an admin.
      * @return key_ The key of the admin parameter, which is a component of the full key, when prefixing an address.
      * @dev    Uniquely, the parameter registry uses itself, so the key-value pair is stored in the contract itself.
      */
-    function adminParameterKey() external pure returns (bytes memory key_);
+    function adminParameterKey() external pure returns (string memory key_);
 }

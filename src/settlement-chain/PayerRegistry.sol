@@ -309,32 +309,32 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayerRegistry
-    function settlerParameterKey() public pure returns (bytes memory key_) {
+    function settlerParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.settler";
     }
 
     /// @inheritdoc IPayerRegistry
-    function feeDistributorParameterKey() public pure returns (bytes memory key_) {
+    function feeDistributorParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.feeDistributor";
     }
 
     /// @inheritdoc IPayerRegistry
-    function minimumDepositParameterKey() public pure returns (bytes memory key_) {
+    function minimumDepositParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.minimumDeposit";
     }
 
     /// @inheritdoc IPayerRegistry
-    function withdrawLockPeriodParameterKey() public pure returns (bytes memory key_) {
+    function withdrawLockPeriodParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.withdrawLockPeriod";
     }
 
     /// @inheritdoc IPayerRegistry
-    function pausedParameterKey() public pure returns (bytes memory key_) {
+    function pausedParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.paused";
     }
 
     /// @inheritdoc IPayerRegistry
-    function migratorParameterKey() public pure returns (bytes memory key_) {
+    function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.payerRegistry.migrator";
     }
 

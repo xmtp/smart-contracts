@@ -18,27 +18,27 @@ contract ParameterKeysTests is Test {
 
     function test_getKey_noKeyComponents() external {
         vm.expectRevert(IParameterKeysErrors.NoKeyComponents.selector);
-        _parameterKeys.getKey(new bytes[](0));
+        _parameterKeys.getKey(new string[](0));
     }
 
     function test_getKey() external view {
-        bytes[] memory keyComponents_ = new bytes[](4);
+        string[] memory keyComponents_ = new string[](4);
         keyComponents_[0] = "this";
         keyComponents_[1] = "is";
         keyComponents_[2] = "a";
         keyComponents_[3] = "key";
 
-        bytes memory key_ = _parameterKeys.getKey(keyComponents_);
+        string memory key_ = _parameterKeys.getKey(keyComponents_);
         assertEq(key_, "this.is.a.key");
     }
 
     /* ============ combineKeyComponents ============ */
 
     function test_combineKeyComponents() external view {
-        bytes memory left_ = "left";
-        bytes memory right_ = "right";
+        string memory left_ = "left";
+        string memory right_ = "right";
 
-        bytes memory key_ = _parameterKeys.combineKeyComponents(left_, right_);
+        string memory key_ = _parameterKeys.combineKeyComponents(left_, right_);
         assertEq(key_, "left.right");
     }
 
