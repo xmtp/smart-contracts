@@ -10,6 +10,7 @@ import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
 import { FeeTokenDeployer } from "./deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
+import { MockUnderlyingFeeTokenDeployer } from "./deployers/MockUnderlyingFeeTokenDeployer.sol";
 import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
 import { PayerRegistryDeployer } from "./deployers/PayerRegistryDeployer.sol";
 import { PayerReportManagerDeployer } from "./deployers/PayerReportManagerDeployer.sol";
@@ -38,7 +39,7 @@ import {
 
 import { Utils } from "./utils/Utils.sol";
 
-import { MockERC20 } from "../test/utils/Mocks.sol";
+import { MockUnderlyingFeeToken } from "../test/utils/Mocks.sol";
 
 contract DeployScripts is Script {
     error DeployerNotSet();
@@ -100,16 +101,23 @@ contract DeployScripts is Script {
 
     /* ============ Main Entrypoints ============ */
 
+    function deployBaseSettlementChainComponents() external {
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+
+        deployFactory();
+        deploySettlementChainParameterRegistryImplementation();
+        deploySettlementChainParameterRegistryProxy();
+        deployMockUnderlyingFeeTokenImplementation();
+        deployMockUnderlyingFeeTokenProxy();
+        deployFeeTokenImplementation();
+        deployFeeTokenProxy();
+    }
+
     function deploySettlementChainComponents() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
         uint256 blockNumber_ = block.number;
 
-        deployFactory();
-        deployFeeTokenImplementation();
-        deployFeeTokenProxy();
-        deploySettlementChainParameterRegistryImplementation();
-        deploySettlementChainParameterRegistryProxy();
         deploySettlementChainGatewayImplementation();
         deploySettlementChainGatewayProxy();
         deployPayerRegistryImplementation();
@@ -126,14 +134,19 @@ contract DeployScripts is Script {
         _writeSettlementChainData(blockNumber_);
     }
 
+    function deployBaseAppChainComponents() external {
+        if (block.chainid != _deploymentData.appChainId) revert UnexpectedChainId();
+
+        deployFactory();
+        deployAppChainParameterRegistryImplementation();
+        deployAppChainParameterRegistryProxy();
+    }
+
     function deployAppChainComponents() external {
         if (block.chainid != _deploymentData.appChainId) revert UnexpectedChainId();
 
         uint256 blockNumber_ = block.number;
 
-        deployFactory();
-        deployAppChainParameterRegistryImplementation();
-        deployAppChainParameterRegistryProxy();
         deployAppChainGatewayImplementation();
         deployAppChainGatewayProxy();
         deployGroupMessageBroadcasterImplementation();
@@ -242,70 +255,6 @@ contract DeployScripts is Script {
         vm.stopBroadcast();
     }
 
-    function deployUnderlyingFeeToken() public {
-        if (_deploymentData.deployMockUnderlyingFeeToken) {
-            vm.startBroadcast(_deployer);
-            address token_ = address(new MockERC20("Underlying Fee Token", "UFT", 6));
-            vm.stopBroadcast();
-
-            if (token_ != _deploymentData.underlyingFeeToken) revert UnexpectedImplementation();
-        }
-
-        console.log("Underlying Fee Token: %s", _deploymentData.underlyingFeeToken);
-    }
-
-    function deployFeeTokenImplementation() public {
-        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
-        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
-        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
-        if (_deploymentData.underlyingFeeToken == address(0)) revert UnderlyingFeeTokenNotSet();
-
-        vm.startBroadcast(_privateKey);
-
-        (address implementation_, ) = FeeTokenDeployer.deployImplementation(
-            _deploymentData.factory,
-            _deploymentData.parameterRegistryProxy,
-            _deploymentData.underlyingFeeToken
-        );
-
-        vm.stopBroadcast();
-
-        console.log("FeeToken Implementation: %s", implementation_);
-
-        if (implementation_ != _deploymentData.feeTokenImplementation) revert UnexpectedImplementation();
-
-        if (IFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
-        }
-
-        if (IFeeToken(implementation_).underlying() != _deploymentData.underlyingFeeToken) {
-            revert UnexpectedImplementation();
-        }
-    }
-
-    function deployFeeTokenProxy() public {
-        if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
-        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
-        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
-        if (_deploymentData.feeTokenProxySalt == 0) revert ProxySaltNotSet();
-
-        vm.startBroadcast(_privateKey);
-
-        (address proxy_, , ) = FeeTokenDeployer.deployProxy(
-            _deploymentData.factory,
-            _deploymentData.feeTokenImplementation,
-            _deploymentData.feeTokenProxySalt
-        );
-
-        vm.stopBroadcast();
-
-        console.log("FeeToken Proxy: %s", proxy_);
-
-        if (proxy_ != _deploymentData.feeTokenProxy) revert UnexpectedProxy();
-
-        if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) revert UnexpectedProxy();
-    }
-
     function deploySettlementChainParameterRegistryImplementation() public {
         if (_deploymentData.settlementChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
@@ -363,6 +312,106 @@ contract DeployScripts is Script {
         for (uint256 index_; index_ < admins_.length; ++index_) {
             if (!ISettlementChainParameterRegistry(proxy_).isAdmin(admins_[index_])) revert UnexpectedProxy();
         }
+    }
+
+    function deployMockUnderlyingFeeTokenImplementation() public {
+        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (address implementation_, ) = MockUnderlyingFeeTokenDeployer.deployImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy
+        );
+
+        vm.stopBroadcast();
+
+        console.log("MockUnderlyingFeeToken Implementation: %s", implementation_);
+
+        if (implementation_ != _deploymentData.mockUnderlyingFeeTokenImplementation) revert UnexpectedImplementation();
+
+        if (MockUnderlyingFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedImplementation();
+        }
+    }
+
+    function deployMockUnderlyingFeeTokenProxy() public {
+        if (_deploymentData.underlyingFeeToken == address(0)) revert ProxyNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.mockUnderlyingFeeTokenProxySalt == 0) revert ProxySaltNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (address proxy_, , ) = MockUnderlyingFeeTokenDeployer.deployProxy(
+            _deploymentData.factory,
+            _deploymentData.mockUnderlyingFeeTokenImplementation,
+            _deploymentData.mockUnderlyingFeeTokenProxySalt
+        );
+
+        vm.stopBroadcast();
+
+        console.log("MockUnderlyingFeeToken Proxy: %s", proxy_);
+
+        if (proxy_ != _deploymentData.underlyingFeeToken) revert UnexpectedProxy();
+
+        if (MockUnderlyingFeeToken(proxy_).implementation() != _deploymentData.mockUnderlyingFeeTokenImplementation) {
+            revert UnexpectedProxy();
+        }
+    }
+
+    function deployFeeTokenImplementation() public {
+        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+        if (_deploymentData.underlyingFeeToken == address(0)) revert UnderlyingFeeTokenNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (address implementation_, ) = FeeTokenDeployer.deployImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy,
+            _deploymentData.underlyingFeeToken
+        );
+
+        vm.stopBroadcast();
+
+        console.log("FeeToken Implementation: %s", implementation_);
+
+        if (implementation_ != _deploymentData.feeTokenImplementation) revert UnexpectedImplementation();
+
+        if (IFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedImplementation();
+        }
+
+        if (IFeeToken(implementation_).underlying() != _deploymentData.underlyingFeeToken) {
+            revert UnexpectedImplementation();
+        }
+    }
+
+    function deployFeeTokenProxy() public {
+        if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.feeTokenProxySalt == 0) revert ProxySaltNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (address proxy_, , ) = FeeTokenDeployer.deployProxy(
+            _deploymentData.factory,
+            _deploymentData.feeTokenImplementation,
+            _deploymentData.feeTokenProxySalt
+        );
+
+        vm.stopBroadcast();
+
+        console.log("FeeToken Proxy: %s", proxy_);
+
+        if (proxy_ != _deploymentData.feeTokenProxy) revert UnexpectedProxy();
+
+        if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) revert UnexpectedProxy();
     }
 
     function deploySettlementChainGatewayImplementation() public {
