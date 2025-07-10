@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { ERC20 } from "../../lib/oz/contracts/token/ERC20/ERC20.sol";
-import { ERC20Permit } from "../../lib/oz/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {
+    ERC20PermitUpgradeable
+} from "../../lib/oz-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+
+import { RegistryParameters } from "../../src/libraries/RegistryParameters.sol";
+
+import { Migratable } from "../../src/abstract/Migratable.sol";
 
 contract MockMigrator {
     uint256 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
@@ -22,18 +27,31 @@ contract MockMigrator {
     }
 }
 
-contract MockERC20 is ERC20Permit {
-    uint8 internal immutable _decimals;
+contract MockUnderlyingFeeToken is Migratable, ERC20PermitUpgradeable {
+    address public immutable parameterRegistry;
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20Permit(name_) ERC20(name_, symbol_) {
-        _decimals = decimals_;
+    constructor(address parameterRegistry_) {
+        parameterRegistry = parameterRegistry_;
+    }
+
+    function initialize() external initializer {
+        __ERC20Permit_init("Mock USD");
+        __ERC20_init("Mock USD", "mUSD");
     }
 
     function mint(address to_, uint256 amount_) external {
         _mint(to_, amount_);
     }
 
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
+    function migrate() external {
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
+    }
+
+    function decimals() public view virtual override returns (uint8 decimals_) {
+        return 6;
+    }
+
+    function migratorParameterKey() public pure returns (string memory key_) {
+        return "xmtp.mockUnderlyingFeeToken.migrator";
     }
 }

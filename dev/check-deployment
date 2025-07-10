@@ -35,8 +35,8 @@ else
     CHECK_FUNC="checkAppChainComponents()"
 fi
 
-echo "⧖ Checking $CHAIN_TYPE deployment on $ENVIRONMENT."
+echo "⧖ Checking $CHAIN_TYPE deployment on $CHAIN_NAME for $ENVIRONMENT."
 
 ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$CHECK_FUNC"
 
-echo "✔ Done checking $CHAIN_TYPE deployment on $ENVIRONMENT."
+echo "✔ Done checking $CHAIN_TYPE deployment on $CHAIN_NAME for $ENVIRONMENT."

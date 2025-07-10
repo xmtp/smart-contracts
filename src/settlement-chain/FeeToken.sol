@@ -82,8 +82,8 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
 
     /// @inheritdoc IFeeToken
     function initialize() public initializer {
-        __ERC20Permit_init("XMTP Fee Token");
-        __ERC20_init("XMTP Fee Token", "fXMTP");
+        __ERC20Permit_init("XMTP USD Fee Token");
+        __ERC20_init("XMTP USD Fee Token", "xUSD");
     }
 
     /* ============ Interactive Functions ============ */

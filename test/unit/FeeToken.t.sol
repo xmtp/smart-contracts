@@ -75,8 +75,8 @@ contract FeeTokenTests is Test {
         assertEq(_token.parameterRegistry(), _parameterRegistry);
         assertEq(_token.underlying(), _underlying);
         assertEq(_token.migratorParameterKey(), _MIGRATOR_KEY);
-        assertEq(_token.name(), "XMTP Fee Token");
-        assertEq(_token.symbol(), "fXMTP");
+        assertEq(_token.name(), "XMTP USD Fee Token");
+        assertEq(_token.symbol(), "xUSD");
         assertEq(_token.decimals(), 6);
     }
 
@@ -531,12 +531,12 @@ contract FeeTokenTests is Test {
     function test_getPermitDigest() external view {
         assertEq(
             _token.getPermitDigest(address(1), address(2), 3, 4, 5),
-            0x3c4cff0a5a8822560856c7cd9e77f655ae8359848a9b04929664f14982445bf9
+            0x60be5dd30cb9f4c0048cae1064b95b8204b1d722dda6907df648860af00c1d2e
         );
 
         assertEq(
             _token.getPermitDigest(address(10), address(20), 30, 40, 50),
-            0x6b3cfa5c0d5686778d6c9cc81bc956e8b3c2e8f912280a9cd31535120a3048b0
+            0x3b25af714b2dd39785f124b7ce931a634595f6147f951af018aba03dace1c684
         );
     }
 
@@ -548,7 +548,7 @@ contract FeeTokenTests is Test {
             keccak256(
                 abi.encode(
                     _EIP712_DOMAIN_HASH,
-                    keccak256(bytes("XMTP Fee Token")),
+                    keccak256(bytes("XMTP USD Fee Token")),
                     keccak256(bytes("1")),
                     block.chainid,
                     address(_token)
@@ -580,7 +580,7 @@ contract FeeTokenTests is Test {
         ) = _token.eip712Domain();
 
         assertEq(fields_, hex"0f");
-        assertEq(name_, "XMTP Fee Token");
+        assertEq(name_, "XMTP USD Fee Token");
         assertEq(version_, "1");
         assertEq(chainId_, block.chainid);
         assertEq(verifyingContract_, address(_token));

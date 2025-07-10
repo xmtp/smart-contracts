@@ -14,18 +14,6 @@ fi
 ENVIRONMENT=$1
 CHAIN_TYPE=$2
 
-# Validate environment parameter
-if [[ ! "$ENVIRONMENT" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
-    echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
-    exit 1
-fi
-
-# Validate chain type
-if [ "$CHAIN_TYPE" != "settlement-chain" ] && [ "$CHAIN_TYPE" != "app-chain" ]; then
-    echo "Error: chain-type must be either 'settlement-chain' or 'app-chain'"
-    exit 1
-fi
-
 CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "$CHAIN_TYPE")
 
 # Determine the deployment function based on chain type
@@ -35,10 +23,10 @@ else
     DEPLOY_FUNC="deployAppChainComponents()"
 fi
 
-echo "⧖ Deploying $CHAIN_TYPE contracts on $ENVIRONMENT."
+echo "⧖ Deploying $CHAIN_TYPE contracts on $CHAIN_NAME for $ENVIRONMENT."
 
 ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
 
-echo "✔ Done deploying $CHAIN_TYPE contracts on $ENVIRONMENT."
+echo "✔ Done deploying $CHAIN_TYPE contracts on $CHAIN_NAME for $ENVIRONMENT."
 
 ./dev/check-deployment $ENVIRONMENT $CHAIN_TYPE
