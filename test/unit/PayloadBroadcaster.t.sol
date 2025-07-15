@@ -21,6 +21,7 @@ contract PayloadBroadcasterTests is Test {
     string internal constant _MIGRATOR_KEY = "xmtp.payloadBroadcaster.migrator";
     string internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.minPayloadSize";
     string internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.payloadBroadcaster.maxPayloadSize";
+    string internal constant _PAYLOAD_BOOTSTRAPPER_KEY = "xmtp.payloadBroadcaster.payloadBootstrapper";
 
     PayloadBroadcasterHarness internal _broadcaster;
 
@@ -59,6 +60,7 @@ contract PayloadBroadcasterTests is Test {
         assertEq(_broadcaster.migratorParameterKey(), _MIGRATOR_KEY);
         assertEq(_broadcaster.pausedParameterKey(), _PAUSED_KEY);
         assertFalse(_broadcaster.paused());
+        assertEq(_broadcaster.payloadBootstrapper(), address(0));
         assertEq(_broadcaster.parameterRegistry(), _parameterRegistry);
         assertEq(_broadcaster.minPayloadSize(), 0);
         assertEq(_broadcaster.maxPayloadSize(), 0);
@@ -205,6 +207,51 @@ contract PayloadBroadcasterTests is Test {
         _broadcaster.updatePauseStatus();
 
         assertFalse(_broadcaster.paused());
+    }
+
+    /* ============ updatePayloadBootstrapper ============ */
+
+    function test_updatePayloadBootstrapper_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PAYLOAD_BOOTSTRAPPER_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _broadcaster.updatePayloadBootstrapper();
+    }
+
+    function test_updatePayloadBootstrapper_noChange() external {
+        _broadcaster.__setPayloadBootstrapper(address(1));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PAYLOAD_BOOTSTRAPPER_KEY,
+            bytes32(uint256(uint160(address(1))))
+        );
+
+        vm.expectRevert(IPayloadBroadcaster.NoChange.selector);
+
+        _broadcaster.updatePayloadBootstrapper();
+    }
+
+    function test_updatePayloadBootstrapper() external {
+        _broadcaster.__setPayloadBootstrapper(address(1));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _PAYLOAD_BOOTSTRAPPER_KEY,
+            bytes32(uint256(uint160(address(2))))
+        );
+
+        vm.expectEmit(address(_broadcaster));
+        emit IPayloadBroadcaster.PayloadBootstrapperUpdated(address(2));
+
+        _broadcaster.updatePayloadBootstrapper();
+
+        assertEq(_broadcaster.payloadBootstrapper(), address(2));
     }
 
     /* ============ migrate ============ */

@@ -32,6 +32,12 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
      */
     event PauseStatusUpdated(bool indexed paused);
 
+    /**
+     * @notice Emitted when the payload bootstrapper is updated.
+     * @param  payloadBootstrapper The new payload bootstrapper.
+     */
+    event PayloadBootstrapperUpdated(address indexed payloadBootstrapper);
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is zero (i.e. address(0)).
@@ -51,6 +57,12 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
 
     /// @notice Thrown when some pauseable function is called when the payload broadcaster is paused.
     error Paused();
+
+    /// @notice Thrown when some function is called when the payload broadcaster is not paused.
+    error NotPaused();
+
+    /// @notice Thrown when the payload bootstrapper is not the caller.
+    error NotPayloadBootstrapper();
 
     /* ============ Initialization ============ */
 
@@ -79,6 +91,12 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
      */
     function updatePauseStatus() external;
 
+    /**
+     * @notice Updates the payload bootstrapper.
+     * @dev    Ensures the new payload bootstrapper is not equal to the old payload bootstrapper.
+     */
+    function updatePayloadBootstrapper() external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the minimum payload size.
@@ -93,6 +111,9 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
     /// @notice The parameter registry key used to fetch the paused status.
     function pausedParameterKey() external pure returns (string memory key_);
 
+    /// @notice The parameter registry key used to fetch the payload bootstrapper.
+    function payloadBootstrapperParameterKey() external pure returns (string memory key_);
+
     /// @notice The address of the parameter registry.
     function parameterRegistry() external view returns (address parameterRegistry_);
 
@@ -104,4 +125,7 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
 
     /// @notice The pause status.
     function paused() external view returns (bool paused_);
+
+    /// @notice The payload bootstrapper.
+    function payloadBootstrapper() external view returns (address payloadBootstrapper_);
 }

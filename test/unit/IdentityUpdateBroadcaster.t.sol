@@ -20,12 +20,14 @@ contract IdentityUpdateBroadcasterTests is Test {
     string internal constant _MIGRATOR_KEY = "xmtp.identityUpdateBroadcaster.migrator";
     string internal constant _MIN_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.minPayloadSize";
     string internal constant _MAX_PAYLOAD_SIZE_KEY = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+    string internal constant _PAYLOAD_BOOTSTRAPPER_KEY = "xmtp.identityUpdateBroadcaster.payloadBootstrapper";
 
     IdentityUpdateBroadcasterHarness internal _broadcaster;
 
     address internal _implementation;
 
     address internal _parameterRegistry = makeAddr("parameterRegistry");
+    address internal _payloadBootstrapper = makeAddr("payloadBootstrapper");
 
     function setUp() external {
         _implementation = address(new IdentityUpdateBroadcasterHarness(_parameterRegistry));
@@ -57,7 +59,9 @@ contract IdentityUpdateBroadcasterTests is Test {
         assertEq(_broadcaster.maxPayloadSizeParameterKey(), _MAX_PAYLOAD_SIZE_KEY);
         assertEq(_broadcaster.migratorParameterKey(), _MIGRATOR_KEY);
         assertEq(_broadcaster.pausedParameterKey(), _PAUSED_KEY);
+        assertEq(_broadcaster.payloadBootstrapperParameterKey(), _PAYLOAD_BOOTSTRAPPER_KEY);
         assertFalse(_broadcaster.paused());
+        assertEq(_broadcaster.payloadBootstrapper(), address(0));
         assertEq(_broadcaster.parameterRegistry(), _parameterRegistry);
         assertEq(_broadcaster.minPayloadSize(), 0);
         assertEq(_broadcaster.maxPayloadSize(), 0);
@@ -160,5 +164,77 @@ contract IdentityUpdateBroadcasterTests is Test {
         if (shouldFail_) return;
 
         assertEq(_broadcaster.__getSequenceId(), sequenceId_ + 1);
+    }
+
+    /* ============ bootstrapIdentityUpdates ============ */
+
+    function test_bootstrapIdentityUpdates_whenNotPaused() external {
+        _broadcaster.__setPauseStatus(false);
+
+        vm.expectRevert(IPayloadBroadcaster.NotPaused.selector);
+
+        _broadcaster.bootstrapIdentityUpdates(new bytes32[](0), new bytes[](0), new uint64[](0));
+    }
+
+    function test_bootstrapIdentityUpdates_notPayloadBootstrapper() external {
+        _broadcaster.__setPauseStatus(true);
+
+        vm.expectRevert(IPayloadBroadcaster.NotPayloadBootstrapper.selector);
+
+        _broadcaster.bootstrapIdentityUpdates(new bytes32[](0), new bytes[](0), new uint64[](0));
+    }
+
+    function test_bootstrapIdentityUpdates_arrayLengthMismatch() external {
+        _broadcaster.__setPauseStatus(true);
+        _broadcaster.__setPayloadBootstrapper(_payloadBootstrapper);
+
+        vm.expectRevert(IIdentityUpdateBroadcaster.ArrayLengthMismatch.selector);
+
+        vm.prank(_payloadBootstrapper);
+        _broadcaster.bootstrapIdentityUpdates(new bytes32[](1), new bytes[](0), new uint64[](1));
+
+        vm.expectRevert(IIdentityUpdateBroadcaster.ArrayLengthMismatch.selector);
+
+        vm.prank(_payloadBootstrapper);
+        _broadcaster.bootstrapIdentityUpdates(new bytes32[](1), new bytes[](1), new uint64[](0));
+    }
+
+    function test_bootstrapIdentityUpdates_emptyArray() external {
+        _broadcaster.__setPauseStatus(true);
+        _broadcaster.__setPayloadBootstrapper(_payloadBootstrapper);
+
+        vm.expectRevert(IIdentityUpdateBroadcaster.EmptyArray.selector);
+
+        vm.prank(_payloadBootstrapper);
+        _broadcaster.bootstrapIdentityUpdates(new bytes32[](0), new bytes[](0), new uint64[](0));
+    }
+
+    function test_bootstrapIdentityUpdates() external {
+        _broadcaster.__setPauseStatus(true);
+        _broadcaster.__setPayloadBootstrapper(_payloadBootstrapper);
+        _broadcaster.__setSequenceId(5);
+
+        bytes32[] memory inboxIds_ = new bytes32[](2);
+        inboxIds_[0] = bytes32(uint256(1));
+        inboxIds_[1] = bytes32(uint256(2));
+
+        bytes[] memory identityUpdates_ = new bytes[](2);
+        identityUpdates_[0] = Utils.generatePayload(1);
+        identityUpdates_[1] = Utils.generatePayload(1);
+
+        uint64[] memory sequenceIds_ = new uint64[](2);
+        sequenceIds_[0] = 18;
+        sequenceIds_[1] = 9;
+
+        vm.expectEmit(address(_broadcaster));
+        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(inboxIds_[0], identityUpdates_[0], sequenceIds_[0]);
+
+        vm.expectEmit(address(_broadcaster));
+        emit IIdentityUpdateBroadcaster.IdentityUpdateCreated(inboxIds_[1], identityUpdates_[1], sequenceIds_[1]);
+
+        vm.prank(_payloadBootstrapper);
+        _broadcaster.bootstrapIdentityUpdates(inboxIds_, identityUpdates_, sequenceIds_);
+
+        assertEq(_broadcaster.__getSequenceId(), 18);
     }
 }

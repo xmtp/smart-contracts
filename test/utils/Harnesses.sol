@@ -42,6 +42,10 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
         return "xmtp.payloadBroadcaster.paused";
     }
 
+    function payloadBootstrapperParameterKey() public pure override returns (string memory key_) {
+        return "xmtp.payloadBroadcaster.payloadBootstrapper";
+    }
+
     function __setPauseStatus(bool paused_) external {
         _getPayloadBroadcasterStorage().paused = paused_;
     }
@@ -56,6 +60,10 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
 
     function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
         _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
+    }
+
+    function __setPayloadBootstrapper(address payloadBootstrapper_) external {
+        _getPayloadBroadcasterStorage().payloadBootstrapper = payloadBootstrapper_;
     }
 
     function __getSequenceId() external view returns (uint64 sequenceId_) {
@@ -82,6 +90,10 @@ contract GroupMessageBroadcasterHarness is GroupMessageBroadcaster {
         _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
     }
 
+    function __setPayloadBootstrapper(address payloadBootstrapper_) external {
+        _getPayloadBroadcasterStorage().payloadBootstrapper = payloadBootstrapper_;
+    }
+
     function __getSequenceId() external view returns (uint64 sequenceId_) {
         return _getPayloadBroadcasterStorage().sequenceId;
     }
@@ -104,6 +116,10 @@ contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
 
     function __setMaxPayloadSize(uint256 maxPayloadSize_) external {
         _getPayloadBroadcasterStorage().maxPayloadSize = uint32(maxPayloadSize_);
+    }
+
+    function __setPayloadBootstrapper(address payloadBootstrapper_) external {
+        _getPayloadBroadcasterStorage().payloadBootstrapper = payloadBootstrapper_;
     }
 
     function __getSequenceId() external view returns (uint64 sequenceId_) {

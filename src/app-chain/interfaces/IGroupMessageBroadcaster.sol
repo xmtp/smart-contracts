@@ -18,6 +18,14 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
      */
     event MessageSent(bytes32 indexed groupId, bytes message, uint64 indexed sequenceId);
 
+    /* ============ Custom Errors ============ */
+
+    /// @notice Thrown when the array lengths do not match.
+    error ArrayLengthMismatch();
+
+    /// @notice Thrown when a supplied array is empty.
+    error EmptyArray();
+
     /* ============ Interactive Functions ============ */
 
     /**
@@ -27,4 +35,16 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
      * @dev    Ensures the payload length is within the allowed range and increments the sequence ID.
      */
     function addMessage(bytes32 groupId_, bytes calldata message_) external;
+
+    /**
+     * @notice Bootstraps messages to satisfy a migration.
+     * @param  groupIds_    The group IDs.
+     * @param  messages_    The messages in bytes.
+     * @param  sequenceIds_ The sequence IDs.
+     */
+    function bootstrapMessages(
+        bytes32[] calldata groupIds_,
+        bytes[] calldata messages_,
+        uint64[] calldata sequenceIds_
+    ) external;
 }

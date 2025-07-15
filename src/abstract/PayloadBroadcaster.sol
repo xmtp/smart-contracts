@@ -36,6 +36,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint32 maxPayloadSize;
         uint64 sequenceId;
         bool paused;
+        address payloadBootstrapper;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayloadBroadcaster")) - 1)) & ~bytes32(uint256(0xff))
@@ -103,6 +104,20 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         emit PauseStatusUpdated($.paused = paused_);
     }
 
+    /// @inheritdoc IPayloadBroadcaster
+    function updatePayloadBootstrapper() external {
+        address payloadBootstrapper_ = RegistryParameters.getAddressParameter(
+            parameterRegistry,
+            payloadBootstrapperParameterKey()
+        );
+
+        PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
+
+        if (payloadBootstrapper_ == $.payloadBootstrapper) revert NoChange();
+
+        emit PayloadBootstrapperUpdated($.payloadBootstrapper = payloadBootstrapper_);
+    }
+
     /// @inheritdoc IMigratable
     function migrate() external {
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
@@ -123,6 +138,9 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
     function pausedParameterKey() public pure virtual returns (string memory key_);
 
     /// @inheritdoc IPayloadBroadcaster
+    function payloadBootstrapperParameterKey() public pure virtual returns (string memory key_);
+
+    /// @inheritdoc IPayloadBroadcaster
     function minPayloadSize() external view returns (uint32 size_) {
         return _getPayloadBroadcasterStorage().minPayloadSize;
     }
@@ -137,6 +155,11 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         return _getPayloadBroadcasterStorage().paused;
     }
 
+    /// @inheritdoc IPayloadBroadcaster
+    function payloadBootstrapper() external view returns (address payloadBootstrapper_) {
+        return _getPayloadBroadcasterStorage().payloadBootstrapper;
+    }
+
     /* ============ Internal View/Pure Functions ============ */
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
@@ -147,11 +170,19 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         if (_getPayloadBroadcasterStorage().paused) revert Paused();
     }
 
+    function _revertIfNotPaused() internal view {
+        if (!_getPayloadBroadcasterStorage().paused) revert NotPaused();
+    }
+
     function _revertIfInvalidPayloadSize(uint256 payloadSize_) internal view {
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
         if (payloadSize_ < $.minPayloadSize || payloadSize_ > $.maxPayloadSize) {
             revert InvalidPayloadSize(payloadSize_, $.minPayloadSize, $.maxPayloadSize);
         }
+    }
+
+    function _revertIfNotPayloadBootstrapper() internal view {
+        if (_getPayloadBroadcasterStorage().payloadBootstrapper != msg.sender) revert NotPayloadBootstrapper();
     }
 }
