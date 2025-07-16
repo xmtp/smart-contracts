@@ -132,12 +132,6 @@ contract DeployLocalScripts is Script {
         // Deploy the Factory.
         _factory = _deployFactory();
 
-        // Deploy the underlying fee token.
-        address underlyingFeeTokenImplementation_ = _deployMockUnderlyingFeeTokenImplementation(
-            address(_parameterRegistryProxy)
-        );
-        _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(underlyingFeeTokenImplementation_);
-
         // Deploy the Parameter Registry.
         address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
 
@@ -146,6 +140,13 @@ contract DeployLocalScripts is Script {
             parameterRegistryImplementation_,
             _deployer
         );
+
+        // Deploy the underlying fee token.
+        address underlyingFeeTokenImplementation_ = _deployMockUnderlyingFeeTokenImplementation(
+            address(_parameterRegistryProxy)
+        );
+
+        _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(underlyingFeeTokenImplementation_);
 
         // Deploy the Fee Token.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(

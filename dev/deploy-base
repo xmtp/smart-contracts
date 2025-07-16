@@ -12,25 +12,28 @@ fi
 
 CHAIN_NAME=$1
 
-# Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|base_mainnet|xmtp_sepolia|xmtp_mainnet)$ ]]; then
+case "$CHAIN_NAME" in
+  base_sepolia)
+    DEPLOY_FUNC="deployBaseSettlementChainComponents()"
+    ENVIRONMENT="testnet-dev"
+    ;;
+  base_mainnet)
+    DEPLOY_FUNC="deployBaseSettlementChainComponents()"
+    ENVIRONMENT="mainnet"
+    ;;
+  xmtp_sepolia)
+    DEPLOY_FUNC="deployBaseAppChainComponents()"
+    ENVIRONMENT="testnet-dev"
+    ;;
+  xmtp_mainnet)
+    DEPLOY_FUNC="deployBaseAppChainComponents()"
+    ENVIRONMENT="mainnet"
+    ;;
+  *)
     echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet"
     exit 1
-fi
-
-# Determine the deployment function based on chain type
-if [ "$CHAIN_NAME" = "base_sepolia" ] || [ "$CHAIN_NAME" = "base_mainnet" ]; then
-    DEPLOY_FUNC="deployBaseSettlementChainComponents()"
-else
-    DEPLOY_FUNC="deployBaseAppChainComponents()"
-fi
-
-# Determine the environment based on chain name
-if [ "$CHAIN_NAME" = "base_sepolia" ] || [ "$CHAIN_NAME" = "xmtp_sepolia" ]; then
-    ENVIRONMENT="testnet-dev" # testnet-dev should be the first testnet environment to exist
-else
-    ENVIRONMENT="mainnet"
-fi
+    ;;
+esac
 
 echo "⧖ Deploying base contracts on $CHAIN_NAME."
 

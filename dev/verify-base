@@ -15,7 +15,7 @@ fi
 # Check if both arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
-    echo "chain-name: The chain to verify (e.g. base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet)"
+    echo "chain-name: The chain to verify (e.g. base_sepolia, xmtp_sepolia)"
     echo "explorer: The explorer to use (e.g. basescan, blockscout, alchemy)"
     exit 1
 fi
@@ -24,34 +24,24 @@ CHAIN_NAME=$1
 EXPLORER=$2
 
 # Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|base_mainnet|xmtp_sepolia|xmtp_mainnet)$ ]]; then
-    echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet"
+if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|xmtp_sepolia)$ ]]; then
+    echo "Error: Invalid chain name. Must be one of: base_sepolia, xmtp_sepolia"
     exit 1
 fi
 
-# Determine the environment based on chain name
-if [ "$CHAIN_NAME" = "base_sepolia" ] || [ "$CHAIN_NAME" = "xmtp_sepolia" ]; then
-    ENVIRONMENT="testnet-dev" # testnet-dev should be the first testnet environment to exist
-else
-    ENVIRONMENT="mainnet"
-fi
-
-# Determine the chain ID based on chain name
-if [ "$CHAIN_NAME" = "base_sepolia" ]; then
-    CHAIN_ID="84532"
-elif [ "$CHAIN_NAME" = "xmtp_sepolia" ]; then
-    CHAIN_ID="241320161"
-else
-    echo "mainnets not yet supported"
-    exit 1
-fi
-
-# Determine the chain type based on chain name
-if [ "$CHAIN_NAME" = "base_sepolia" ] || [ "$CHAIN_NAME" = "base_mainnet" ]; then
-    CHAIN_TYPE="settlement-chain"
-else
-    CHAIN_TYPE="app-chain"
-fi
+# Determine properties based on chain name
+case "$CHAIN_NAME" in
+    "base_sepolia")
+        ENVIRONMENT="testnet-dev"
+        CHAIN_ID="84532"
+        CHAIN_TYPE="settlement-chain"
+        ;;
+    "xmtp_sepolia")
+        ENVIRONMENT="testnet-dev"
+        CHAIN_ID="241320161"
+        CHAIN_TYPE="app-chain"
+        ;;
+esac
 
 # Validate for app-chain/alchemy
 if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \

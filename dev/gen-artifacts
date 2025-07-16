@@ -79,7 +79,7 @@ function main() {
         generate_artifacts "src/settlement-chain/${contract}.sol" "${contract}"
     done
 
-    contracts=("MockERC20")
+    contracts=("MockUnderlyingFeeToken")
     for contract in "${contracts[@]}"; do
         echo "⧖ Generating artifacts for mock contract: ${contract}."
         generate_artifacts "test/utils/Mocks.sol" "${contract}"
