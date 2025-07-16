@@ -26,8 +26,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     /* ============ Constants/Immutables ============ */
 
     // solhint-disable-next-line max-line-length
-    /// @dev keccak256("PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)")
-    bytes32 public constant PAYER_REPORT_TYPEHASH = 0x30503e47cf573d37e2be5212eb8a3f06caca0f3ab0d379e7d05758b47b23d658;
+    /// @dev keccak256("PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,uint32 endMinuteSinceEpoch,bytes32 payersMerkleRoot,uint32[] nodeIds)")
+    bytes32 public constant PAYER_REPORT_TYPEHASH = 0x3737a2cced99bb28fc5aede45aa81d3ce0aa9137c5f417641835d0d71d303346;
 
     /// @inheritdoc IPayerReportManager
     uint16 public constant ONE_HUNDRED_PERCENT = 10_000;
@@ -97,12 +97,14 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
     ) external returns (uint256 payerReportIndex_) {
-        PayerReportManagerStorage storage $ = _getPayerReportManagerStorage();
-        PayerReport[] storage payerReports_ = $.payerReportsByOriginator[originatorNodeId_];
+        PayerReport[] storage payerReports_ = _getPayerReportManagerStorage().payerReportsByOriginator[
+            originatorNodeId_
+        ];
 
         payerReportIndex_ = payerReports_.length;
 
@@ -121,6 +123,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             originatorNodeId_: originatorNodeId_,
             startSequenceId_: startSequenceId_,
             endSequenceId_: endSequenceId_,
+            endMinuteSinceEpoch_: endMinuteSinceEpoch_,
             payersMerkleRoot_: payersMerkleRoot_,
             nodeIds_: nodeIds_,
             signatures_: signatures_
@@ -133,7 +136,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                 feesSettled: 0,
                 offset: 0,
                 isSettled: payersMerkleRoot_ == SequentialMerkleProofs.EMPTY_TREE_ROOT,
-                protocolFeeRate: $.protocolFeeRate,
+                protocolFeeRate: _getPayerReportManagerStorage().protocolFeeRate,
                 payersMerkleRoot: payersMerkleRoot_,
                 nodeIds: nodeIds_
             })
@@ -144,6 +147,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             payerReportIndex: payerReportIndex_,
             startSequenceId: startSequenceId_,
             endSequenceId: endSequenceId_,
+            endMinuteSinceEpoch: endMinuteSinceEpoch_,
             payersMerkleRoot: payersMerkleRoot_,
             nodeIds: nodeIds_,
             signingNodeIds: validSigningNodeIds_
@@ -245,10 +249,19 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) external view returns (bytes32 digest_) {
-        return _getPayerReportDigest(originatorNodeId_, startSequenceId_, endSequenceId_, payersMerkleRoot_, nodeIds_);
+        return
+            _getPayerReportDigest(
+                originatorNodeId_,
+                startSequenceId_,
+                endSequenceId_,
+                endMinuteSinceEpoch_,
+                payersMerkleRoot_,
+                nodeIds_
+            );
     }
 
     /// @inheritdoc IPayerReportManager
@@ -301,6 +314,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) internal view returns (bytes32 digest_) {
@@ -312,6 +326,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                         originatorNodeId_,
                         startSequenceId_,
                         endSequenceId_,
+                        endMinuteSinceEpoch_,
                         payersMerkleRoot_,
                         keccak256(abi.encodePacked(nodeIds_))
                     )
@@ -331,6 +346,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
@@ -339,6 +355,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             originatorNodeId_,
             startSequenceId_,
             endSequenceId_,
+            endMinuteSinceEpoch_,
             payersMerkleRoot_,
             nodeIds_
         );

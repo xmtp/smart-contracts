@@ -496,6 +496,7 @@ contract PayerReportManagerHarness is PayerReportManager {
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
@@ -505,6 +506,7 @@ contract PayerReportManagerHarness is PayerReportManager {
                 originatorNodeId_,
                 startSequenceId_,
                 endSequenceId_,
+                endMinuteSinceEpoch_,
                 payersMerkleRoot_,
                 nodeIds_,
                 signatures_
