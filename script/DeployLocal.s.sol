@@ -26,6 +26,7 @@ import { FactoryDeployer } from "./deployers/FactoryDeployer.sol";
 import { FeeTokenDeployer } from "./deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "./deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "./deployers/IdentityUpdateBroadcasterDeployer.sol";
+import { MockUnderlyingFeeTokenDeployer } from "./deployers/MockUnderlyingFeeTokenDeployer.sol";
 import { NodeRegistryDeployer } from "./deployers/NodeRegistryDeployer.sol";
 import { PayerRegistryDeployer } from "./deployers/PayerRegistryDeployer.sol";
 import { PayerReportManagerDeployer } from "./deployers/PayerReportManagerDeployer.sol";
@@ -35,7 +36,7 @@ import { SettlementChainParameterRegistryDeployer } from "./deployers/Settlement
 
 /* ============ Mock Imports ============ */
 
-import { MockERC20 } from "../test/utils/Mocks.sol";
+import { MockUnderlyingFeeToken } from "../test/utils/Mocks.sol";
 
 contract DeployLocalScripts is Script {
     string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
@@ -85,6 +86,7 @@ contract DeployLocalScripts is Script {
     bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "FeeToken_0";
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
+    bytes32 internal constant _MOCK_UNDERLYING_FEE_TOKEN_PROXY_SALT = "MockUnderlyingFeeToken_0";
     bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
     bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
@@ -95,7 +97,7 @@ contract DeployLocalScripts is Script {
 
     address internal _deployer;
 
-    address internal _underlyingFeeToken;
+    MockUnderlyingFeeToken internal _underlyingFeeTokenProxy;
 
     IFactory internal _factory;
 
@@ -130,9 +132,6 @@ contract DeployLocalScripts is Script {
         // Deploy the Factory.
         _factory = _deployFactory();
 
-        // Deploy the underlying fee token.
-        _underlyingFeeToken = _deployUnderlyingFeeToken();
-
         // Deploy the Parameter Registry.
         address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
 
@@ -142,10 +141,17 @@ contract DeployLocalScripts is Script {
             _deployer
         );
 
+        // Deploy the underlying fee token.
+        address underlyingFeeTokenImplementation_ = _deployMockUnderlyingFeeTokenImplementation(
+            address(_parameterRegistryProxy)
+        );
+
+        _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(underlyingFeeTokenImplementation_);
+
         // Deploy the Fee Token.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_parameterRegistryProxy),
-            _underlyingFeeToken
+            address(_underlyingFeeTokenProxy)
         );
 
         _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
@@ -247,7 +253,7 @@ contract DeployLocalScripts is Script {
         vm.serializeAddress("root", "appChainParameterRegistry", address(_parameterRegistryProxy));
         vm.serializeAddress("root", "settlementChainGateway", address(0));
         vm.serializeAddress("root", "appChainGateway", address(0));
-        vm.serializeAddress("root", "underlyingFeeToken", _underlyingFeeToken);
+        vm.serializeAddress("root", "underlyingFeeToken", address(_underlyingFeeTokenProxy));
         vm.serializeAddress("root", "feeToken", address(_feeTokenProxy));
         vm.serializeAddress("root", "payerRegistry", address(_payerRegistryProxy));
         vm.serializeAddress("root", "rateRegistry", address(_rateRegistryProxy));
@@ -336,10 +342,33 @@ contract DeployLocalScripts is Script {
 
     /* ============ Underlying Fee Token Helpers ============ */
 
-    function _deployUnderlyingFeeToken() internal returns (address token_) {
+    function _deployMockUnderlyingFeeTokenImplementation(
+        address parameterRegistry_
+    ) internal returns (address implementation_) {
         vm.startBroadcast(_privateKey);
-        token_ = address(new MockERC20("Underlying Fee Token", "UFT", 6));
+        (implementation_, ) = MockUnderlyingFeeTokenDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_
+        );
         vm.stopBroadcast();
+    }
+
+    function _deployMockUnderlyingFeeTokenProxy(
+        address implementation_
+    ) internal returns (MockUnderlyingFeeToken token_) {
+        vm.startBroadcast(_privateKey);
+        (address proxy_, , ) = MockUnderlyingFeeTokenDeployer.deployProxy(
+            address(_factory),
+            implementation_,
+            _MOCK_UNDERLYING_FEE_TOKEN_PROXY_SALT
+        );
+        vm.stopBroadcast();
+
+        token_ = MockUnderlyingFeeToken(proxy_);
+
+        if (token_.implementation() != implementation_) {
+            revert("Mock underlying fee token implementation mismatch");
+        }
     }
 
     /* ============ Parameter Registry Helpers ============ */

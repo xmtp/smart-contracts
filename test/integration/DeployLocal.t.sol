@@ -26,6 +26,7 @@ import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
 import { FeeTokenDeployer } from "../../script/deployers/FeeTokenDeployer.sol";
 import { GroupMessageBroadcasterDeployer } from "../../script/deployers/GroupMessageBroadcasterDeployer.sol";
 import { IdentityUpdateBroadcasterDeployer } from "../../script/deployers/IdentityUpdateBroadcasterDeployer.sol";
+import { MockUnderlyingFeeTokenDeployer } from "../../script/deployers/MockUnderlyingFeeTokenDeployer.sol";
 import { NodeRegistryDeployer } from "../../script/deployers/NodeRegistryDeployer.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 import { PayerReportManagerDeployer } from "../../script/deployers/PayerReportManagerDeployer.sol";
@@ -41,7 +42,7 @@ import { IERC20Like } from "./Interfaces.sol";
 
 /* ============ Mock Imports ============ */
 
-import { MockERC20 } from "../utils/Mocks.sol";
+import { MockUnderlyingFeeToken } from "../utils/Mocks.sol";
 
 contract DeployLocalTests is Test {
     string internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
@@ -87,6 +88,7 @@ contract DeployLocalTests is Test {
 
     bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
     bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "FeeToken_0";
+    bytes32 internal constant _MOCK_UNDERLYING_FEE_TOKEN_PROXY_SALT = "MockUnderlyingFeeToken_0";
     bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
     bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
     bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
@@ -100,7 +102,7 @@ contract DeployLocalTests is Test {
     address internal _admin = makeAddr("admin");
     address internal _alice = makeAddr("alice");
 
-    MockERC20 internal _underlyingFeeToken;
+    MockUnderlyingFeeToken internal _underlyingFeeTokenProxy;
 
     IFactory internal _factory;
 
@@ -131,9 +133,6 @@ contract DeployLocalTests is Test {
         // Deploy the Factory.
         _factory = _deployFactory();
 
-        // Deploy the underlying fee token.
-        _underlyingFeeToken = _deployUnderlyingFeeToken();
-
         // Deploy the Parameter Registry.
         address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
 
@@ -143,10 +142,17 @@ contract DeployLocalTests is Test {
             _admin
         );
 
+        // Deploy the mock underlying fee token.
+        address underlyingFeeTokenImplementation_ = _deployMockUnderlyingFeeTokenImplementation(
+            address(_parameterRegistryProxy)
+        );
+
+        _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(underlyingFeeTokenImplementation_);
+
         // Deploy the Fee Token.
         address feeTokenImplementation_ = _deployFeeTokenImplementation(
             address(_parameterRegistryProxy),
-            address(_underlyingFeeToken)
+            address(_underlyingFeeTokenProxy)
         );
 
         _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
@@ -232,14 +238,6 @@ contract DeployLocalTests is Test {
         vm.stopPrank();
     }
 
-    /* ============ Underlying Fee Token Helpers ============ */
-
-    function _deployUnderlyingFeeToken() internal returns (MockERC20 token_) {
-        vm.startPrank(_deployer);
-        token_ = new MockERC20("Underlying Fee Token", "UFT", 6);
-        vm.stopPrank();
-    }
-
     /* ============ Parameter Registry Helpers ============ */
 
     function _deploySettlementChainParameterRegistryImplementation() internal returns (address implementation_) {
@@ -268,6 +266,37 @@ contract DeployLocalTests is Test {
 
         assertEq(registry_.implementation(), implementation_);
         assertTrue(registry_.isAdmin(admin_));
+    }
+
+    /* ============ Mock Underlying Fee Token Helpers ============ */
+
+    function _deployMockUnderlyingFeeTokenImplementation(
+        address parameterRegistry_
+    ) internal returns (address implementation_) {
+        vm.startPrank(_deployer);
+        (implementation_, ) = MockUnderlyingFeeTokenDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_
+        );
+        vm.stopPrank();
+
+        assertEq(MockUnderlyingFeeToken(implementation_).parameterRegistry(), parameterRegistry_);
+    }
+
+    function _deployMockUnderlyingFeeTokenProxy(
+        address implementation_
+    ) internal returns (MockUnderlyingFeeToken token_) {
+        vm.startPrank(_deployer);
+        (address proxy_, , ) = MockUnderlyingFeeTokenDeployer.deployProxy(
+            address(_factory),
+            implementation_,
+            _MOCK_UNDERLYING_FEE_TOKEN_PROXY_SALT
+        );
+        vm.stopPrank();
+
+        token_ = MockUnderlyingFeeToken(proxy_);
+
+        assertEq(token_.implementation(), implementation_);
     }
 
     /* ============ Fee Token Helpers ============ */
@@ -687,7 +716,7 @@ contract DeployLocalTests is Test {
     /* ============ Token Helpers ============ */
 
     function _giveUnderlying(address recipient_, uint256 amount_) internal {
-        _underlyingFeeToken.mint(recipient_, amount_);
+        _underlyingFeeTokenProxy.mint(recipient_, amount_);
     }
 
     function _approveTokens(address token_, address account_, address spender_, uint256 amount_) internal {

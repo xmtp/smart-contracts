@@ -17,7 +17,6 @@ library Utils {
         uint256 appChainId;
         address appChainParameterRegistryImplementation;
         address deployer;
-        bool deployMockUnderlyingFeeToken;
         address distributionManagerImplementation;
         address distributionManagerProxy;
         bytes32 distributionManagerProxySalt;
@@ -34,6 +33,8 @@ library Utils {
         address identityUpdateBroadcasterProxy;
         bytes32 identityUpdateBroadcasterProxySalt;
         address initializableImplementation;
+        address mockUnderlyingFeeTokenImplementation;
+        bytes32 mockUnderlyingFeeTokenProxySalt;
         address nodeRegistryImplementation;
         address nodeRegistryProxy;
         bytes32 nodeRegistryProxySalt;
@@ -71,7 +72,6 @@ library Utils {
             ".appChainParameterRegistryImplementation"
         );
         deploymentData_.deployer = stdJson.readAddress(json_, ".deployer");
-        deploymentData_.deployMockUnderlyingFeeToken = stdJson.readBool(json_, ".deployMockUnderlyingFeeToken");
         deploymentData_.distributionManagerImplementation = stdJson.readAddress(
             json_,
             ".distributionManagerImplementation"
@@ -103,6 +103,14 @@ library Utils {
             stdJson.readString(json_, ".identityUpdateBroadcasterProxySalt")
         );
         deploymentData_.initializableImplementation = stdJson.readAddress(json_, ".initializableImplementation");
+        deploymentData_.mockUnderlyingFeeTokenImplementation = stdJson.readAddressOr(
+            json_,
+            ".mockUnderlyingFeeTokenImplementation",
+            address(0)
+        );
+        deploymentData_.mockUnderlyingFeeTokenProxySalt = stringToBytes32(
+            stdJson.readStringOr(json_, ".mockUnderlyingFeeTokenProxySalt", "")
+        );
         deploymentData_.nodeRegistryImplementation = stdJson.readAddress(json_, ".nodeRegistryImplementation");
         deploymentData_.nodeRegistryProxy = stdJson.readAddress(json_, ".nodeRegistryProxy");
         deploymentData_.nodeRegistryProxySalt = stringToBytes32(stdJson.readString(json_, ".nodeRegistryProxySalt"));

@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+source "$(dirname "$0")/utils"
+
+# Check if both arguments are provided
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <chain-name>"
+    echo "chain-name: The chain to deploy to (e.g. base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet)"
+    exit 1
+fi
+
+CHAIN_NAME=$1
+
+case "$CHAIN_NAME" in
+  base_sepolia)
+    DEPLOY_FUNC="deployBaseSettlementChainComponents()"
+    ENVIRONMENT="testnet-dev"
+    ;;
+  base_mainnet)
+    DEPLOY_FUNC="deployBaseSettlementChainComponents()"
+    ENVIRONMENT="mainnet"
+    ;;
+  xmtp_sepolia)
+    DEPLOY_FUNC="deployBaseAppChainComponents()"
+    ENVIRONMENT="testnet-dev"
+    ;;
+  xmtp_mainnet)
+    DEPLOY_FUNC="deployBaseAppChainComponents()"
+    ENVIRONMENT="mainnet"
+    ;;
+  *)
+    echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet"
+    exit 1
+    ;;
+esac
+
+echo "⧖ Deploying base contracts on $CHAIN_NAME."
+
+ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
+
+echo "✔ Done deploying base contracts on $CHAIN_NAME."
