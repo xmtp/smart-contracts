@@ -18,6 +18,14 @@ interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
      */
     event IdentityUpdateCreated(bytes32 indexed inboxId, bytes update, uint64 indexed sequenceId);
 
+    /* ============ Custom Errors ============ */
+
+    /// @notice Thrown when the array lengths do not match.
+    error ArrayLengthMismatch();
+
+    /// @notice Thrown when a supplied array is empty.
+    error EmptyArray();
+
     /* ============ Interactive Functions ============ */
 
     /**
@@ -27,4 +35,16 @@ interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
      * @dev    Ensures the payload length is within the allowed range and increments the sequence ID.
      */
     function addIdentityUpdate(bytes32 inboxId_, bytes calldata identityUpdate_) external;
+
+    /**
+     * @notice Bootstraps identity updates to satisfy a migration.
+     * @param  inboxIds_        The inbox IDs.
+     * @param  identityUpdates_ The identity updates in bytes.
+     * @param  sequenceIds_     The sequence IDs.
+     */
+    function bootstrapIdentityUpdates(
+        bytes32[] calldata inboxIds_,
+        bytes[] calldata identityUpdates_,
+        uint64[] calldata sequenceIds_
+    ) external;
 }

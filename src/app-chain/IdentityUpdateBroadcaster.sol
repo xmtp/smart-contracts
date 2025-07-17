@@ -31,6 +31,36 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         }
     }
 
+    /// @inheritdoc IIdentityUpdateBroadcaster
+    function bootstrapIdentityUpdates(
+        bytes32[] calldata inboxIds_,
+        bytes[] calldata identityUpdates_,
+        uint64[] calldata sequenceIds_
+    ) external {
+        _revertIfNotPaused();
+        _revertIfNotPayloadBootstrapper();
+
+        if (inboxIds_.length != identityUpdates_.length || inboxIds_.length != sequenceIds_.length) {
+            revert ArrayLengthMismatch();
+        }
+
+        if (inboxIds_.length == 0) revert EmptyArray();
+
+        uint64 maxSequenceId_ = _getPayloadBroadcasterStorage().sequenceId;
+
+        for (uint256 index_; index_ < inboxIds_.length; ++index_) {
+            uint64 sequenceId_ = sequenceIds_[index_];
+
+            emit IdentityUpdateCreated(inboxIds_[index_], identityUpdates_[index_], sequenceId_);
+
+            if (sequenceId_ > maxSequenceId_) {
+                maxSequenceId_ = sequenceId_;
+            }
+        }
+
+        _getPayloadBroadcasterStorage().sequenceId = maxSequenceId_;
+    }
+
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayloadBroadcaster
@@ -71,5 +101,15 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.paused";
+    }
+
+    /// @inheritdoc IPayloadBroadcaster
+    function payloadBootstrapperParameterKey()
+        public
+        pure
+        override(IPayloadBroadcaster, PayloadBroadcaster)
+        returns (string memory key_)
+    {
+        return "xmtp.identityUpdateBroadcaster.payloadBootstrapper";
     }
 }

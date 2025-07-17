@@ -31,6 +31,36 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         }
     }
 
+    /// @inheritdoc IGroupMessageBroadcaster
+    function bootstrapMessages(
+        bytes32[] calldata groupIds_,
+        bytes[] calldata messages_,
+        uint64[] calldata sequenceIds_
+    ) external {
+        _revertIfNotPaused();
+        _revertIfNotPayloadBootstrapper();
+
+        if (groupIds_.length != messages_.length || groupIds_.length != sequenceIds_.length) {
+            revert ArrayLengthMismatch();
+        }
+
+        if (groupIds_.length == 0) revert EmptyArray();
+
+        uint64 maxSequenceId_ = _getPayloadBroadcasterStorage().sequenceId;
+
+        for (uint256 index_; index_ < groupIds_.length; ++index_) {
+            uint64 sequenceId_ = sequenceIds_[index_];
+
+            emit MessageSent(groupIds_[index_], messages_[index_], sequenceId_);
+
+            if (sequenceId_ > maxSequenceId_) {
+                maxSequenceId_ = sequenceId_;
+            }
+        }
+
+        _getPayloadBroadcasterStorage().sequenceId = maxSequenceId_;
+    }
+
     /* ============ View/Pure Functions ============ */
 
     /// @inheritdoc IPayloadBroadcaster
@@ -71,5 +101,15 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         returns (string memory key_)
     {
         return "xmtp.groupMessageBroadcaster.paused";
+    }
+
+    /// @inheritdoc IPayloadBroadcaster
+    function payloadBootstrapperParameterKey()
+        public
+        pure
+        override(IPayloadBroadcaster, PayloadBroadcaster)
+        returns (string memory key_)
+    {
+        return "xmtp.groupMessageBroadcaster.payloadBootstrapper";
     }
 }

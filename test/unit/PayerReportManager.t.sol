@@ -111,6 +111,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 11,
             endSequenceId_: 11,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
@@ -136,6 +137,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 10,
             endSequenceId_: 9,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
@@ -158,6 +160,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 1,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -169,7 +172,7 @@ contract PayerReportManagerTests is Test {
             1
         );
 
-        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk);
+        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk);
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: signature_ });
 
@@ -183,6 +186,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -210,17 +214,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 1, 2, 0, new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory validSigningNodeIds_ = new uint32[](2);
@@ -258,6 +262,7 @@ contract PayerReportManagerTests is Test {
             payerReportIndex: 1,
             startSequenceId: 1,
             endSequenceId: 2,
+            endMinuteSinceEpoch: 0,
             payersMerkleRoot: 0,
             nodeIds: new uint32[](0),
             signingNodeIds: validSigningNodeIds_
@@ -270,6 +275,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 1,
             endSequenceId_: 2,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -310,17 +316,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(uint256(1)), new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(uint256(1)), new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 1, 2, bytes32(uint256(1)), new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory validSigningNodeIds_ = new uint32[](2);
@@ -358,6 +364,7 @@ contract PayerReportManagerTests is Test {
             payerReportIndex: 1,
             startSequenceId: 1,
             endSequenceId: 2,
+            endMinuteSinceEpoch: 0,
             payersMerkleRoot: bytes32(uint256(1)),
             nodeIds: new uint32[](0),
             signingNodeIds: validSigningNodeIds_
@@ -367,6 +374,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 1,
             endSequenceId_: 2,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: bytes32(uint256(1)),
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -761,6 +769,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -776,6 +785,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
@@ -789,17 +799,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
@@ -835,6 +845,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -853,17 +864,17 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer2Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer2Pk)
         });
 
         signatures_[2] = IPayerReportManager.PayerReportSignature({
             nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, 0, new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer3Pk)
         });
 
         uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
@@ -899,6 +910,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             signatures_: signatures_
@@ -937,6 +949,7 @@ contract PayerReportManagerTests is Test {
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
             privateKey_: _signer1Pk
@@ -975,10 +988,11 @@ contract PayerReportManagerTests is Test {
                 originatorNodeId_: 1,
                 startSequenceId_: 2,
                 endSequenceId_: 3,
-                payersMerkleRoot_: bytes32(uint256(4)),
-                nodeIds_: new uint32[](5)
+                endMinuteSinceEpoch_: 4,
+                payersMerkleRoot_: bytes32(uint256(5)),
+                nodeIds_: new uint32[](6)
             }),
-            0x7ee285f7b9ef917539bee4149484c08415ecdc7532763230f366ba4c5881f6cf
+            0xe95b9352b7afb9da83952cce75aba1d466ed7daeafc009c1964b85b8fe08bc09
         );
 
         assertEq(
@@ -986,10 +1000,11 @@ contract PayerReportManagerTests is Test {
                 originatorNodeId_: 10,
                 startSequenceId_: 20,
                 endSequenceId_: 30,
-                payersMerkleRoot_: bytes32(uint256(40)),
-                nodeIds_: new uint32[](50)
+                endMinuteSinceEpoch_: 40,
+                payersMerkleRoot_: bytes32(uint256(50)),
+                nodeIds_: new uint32[](60)
             }),
-            0xa83b4d83dbbcece40b01dd738ad4d8636714bf0ef6c047ec58b9192bdaf8e72d
+            0x1dcb9deef4cebf9e13169296e27dee6166ed09af01b62f5c65dff9b3a9afb82d
         );
     }
 
@@ -1009,10 +1024,11 @@ contract PayerReportManagerTests is Test {
                 originatorNodeId_: 1,
                 startSequenceId_: 2,
                 endSequenceId_: 3,
+                endMinuteSinceEpoch_: 4,
                 payersMerkleRoot_: payersMerkleRoot_,
                 nodeIds_: nodeIds_
             }),
-            0x1ec269bb27455a17e615c98f34f05a635943526e8fddff7b6a81a73bb1468b9c
+            0x79f316f2836745161f3020e431db382ce57aab339df1429de068a62bf940295b
         );
     }
 
@@ -1156,7 +1172,7 @@ contract PayerReportManagerTests is Test {
         assertEq(
             _manager.PAYER_REPORT_TYPEHASH(),
             keccak256(
-                "PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,bytes32 payersMerkleRoot,uint32[] nodeIds)"
+                "PayerReport(uint32 originatorNodeId,uint64 startSequenceId,uint64 endSequenceId,uint32 endMinuteSinceEpoch,bytes32 payersMerkleRoot,uint32[] nodeIds)"
             )
         );
     }
@@ -1189,6 +1205,7 @@ contract PayerReportManagerTests is Test {
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] memory nodeIds_,
         uint256 privateKey_
@@ -1199,6 +1216,7 @@ contract PayerReportManagerTests is Test {
                     originatorNodeId_,
                     startSequenceId_,
                     endSequenceId_,
+                    endMinuteSinceEpoch_,
                     payersMerkleRoot_,
                     nodeIds_
                 ),

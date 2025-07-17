@@ -49,19 +49,21 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /**
      * @notice Emitted when a payer report is submitted.
-     * @param  originatorNodeId The originator node ID.
-     * @param  payerReportIndex The index of the newly stored report.
-     * @param  startSequenceId  The start sequence ID.
-     * @param  endSequenceId    The end sequence ID.
-     * @param  payersMerkleRoot The payers merkle root.
-     * @param  nodeIds          The active node IDs during the reporting period.
-     * @param  signingNodeIds   The node IDs of the signers of the payer report.
+     * @param  originatorNodeId    The originator node ID.
+     * @param  payerReportIndex    The index of the newly stored report.
+     * @param  startSequenceId     The start sequence ID.
+     * @param  endSequenceId       The end sequence ID.
+     * @param  endMinuteSinceEpoch The timestamp of the message at `endSequenceId`.
+     * @param  payersMerkleRoot    The payers merkle root.
+     * @param  nodeIds             The active node IDs during the reporting period.
+     * @param  signingNodeIds      The node IDs of the signers of the payer report.
      */
     event PayerReportSubmitted(
         uint32 indexed originatorNodeId,
         uint256 indexed payerReportIndex,
         uint64 startSequenceId,
         uint64 indexed endSequenceId,
+        uint32 endMinuteSinceEpoch,
         bytes32 payersMerkleRoot,
         uint32[] nodeIds,
         uint32[] signingNodeIds
@@ -141,18 +143,20 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /**
      * @notice Submits a payer report.
-     * @param  originatorNodeId_ The originator node ID.
-     * @param  startSequenceId_  The start sequence ID.
-     * @param  endSequenceId_    The end sequence ID.
-     * @param  payersMerkleRoot_ The payers merkle root.
-     * @param  nodeIds_          The active node IDs during the reporting period.
-     * @param  signatures_       The signature objects for the payer report.
-     * @return payerReportIndex_ The index of the payer report in the originator's payer report array.
+     * @param  originatorNodeId_    The originator node ID.
+     * @param  startSequenceId_     The start sequence ID.
+     * @param  endSequenceId_       The end sequence ID.
+     * @param  endMinuteSinceEpoch_ The timestamp of the message at `endSequenceId`.
+     * @param  payersMerkleRoot_    The payers merkle root.
+     * @param  nodeIds_             The active node IDs during the reporting period.
+     * @param  signatures_          The signature objects for the payer report.
+     * @return payerReportIndex_    The index of the payer report in the originator's payer report array.
      */
     function submit(
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_,
         PayerReportSignature[] calldata signatures_
@@ -230,17 +234,19 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /**
      * @notice Returns the EIP-712 digest for a payer report.
-     * @param  originatorNodeId_ The originator node ID.
-     * @param  startSequenceId_  The start sequence ID.
-     * @param  endSequenceId_    The end sequence ID.
-     * @param  payersMerkleRoot_ The payers merkle root.
-     * @param  nodeIds_          The active node IDs during the reporting period.
-     * @return digest_           The EIP-712 digest.
+     * @param  originatorNodeId_    The originator node ID.
+     * @param  startSequenceId_     The start sequence ID.
+     * @param  endSequenceId_       The end sequence ID.
+     * @param  endMinuteSinceEpoch_ The timestamp of the message at `endSequenceId`.
+     * @param  payersMerkleRoot_    The payers merkle root.
+     * @param  nodeIds_             The active node IDs during the reporting period.
+     * @return digest_              The EIP-712 digest.
      */
     function getPayerReportDigest(
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
         uint32[] calldata nodeIds_
     ) external view returns (bytes32 digest_);
