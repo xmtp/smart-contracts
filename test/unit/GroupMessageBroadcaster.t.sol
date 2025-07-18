@@ -14,7 +14,7 @@ import { GroupMessageBroadcasterHarness } from "../utils/Harnesses.sol";
 import { Utils } from "../utils/Utils.sol";
 
 contract GroupMessageBroadcasterTests is Test {
-    bytes32 internal constant _ID = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+    bytes16 internal constant _ID = 0x1234567890abcdef1234567890abcdef;
 
     string internal constant _PAUSED_KEY = "xmtp.groupMessageBroadcaster.paused";
     string internal constant _MIGRATOR_KEY = "xmtp.groupMessageBroadcaster.migrator";
@@ -173,7 +173,7 @@ contract GroupMessageBroadcasterTests is Test {
 
         vm.expectRevert(IPayloadBroadcaster.NotPaused.selector);
 
-        _broadcaster.bootstrapMessages(new bytes32[](0), new bytes[](0), new uint64[](0));
+        _broadcaster.bootstrapMessages(new bytes16[](0), new bytes[](0), new uint64[](0));
     }
 
     function test_bootstrapMessages_notPayloadBootstrapper() external {
@@ -181,7 +181,7 @@ contract GroupMessageBroadcasterTests is Test {
 
         vm.expectRevert(IPayloadBroadcaster.NotPayloadBootstrapper.selector);
 
-        _broadcaster.bootstrapMessages(new bytes32[](0), new bytes[](0), new uint64[](0));
+        _broadcaster.bootstrapMessages(new bytes16[](0), new bytes[](0), new uint64[](0));
     }
 
     function test_bootstrapMessages_arrayLengthMismatch() external {
@@ -191,12 +191,12 @@ contract GroupMessageBroadcasterTests is Test {
         vm.expectRevert(IGroupMessageBroadcaster.ArrayLengthMismatch.selector);
 
         vm.prank(_payloadBootstrapper);
-        _broadcaster.bootstrapMessages(new bytes32[](1), new bytes[](0), new uint64[](1));
+        _broadcaster.bootstrapMessages(new bytes16[](1), new bytes[](0), new uint64[](1));
 
         vm.expectRevert(IGroupMessageBroadcaster.ArrayLengthMismatch.selector);
 
         vm.prank(_payloadBootstrapper);
-        _broadcaster.bootstrapMessages(new bytes32[](1), new bytes[](1), new uint64[](0));
+        _broadcaster.bootstrapMessages(new bytes16[](1), new bytes[](1), new uint64[](0));
     }
 
     function test_bootstrapMessages_emptyArray() external {
@@ -206,7 +206,7 @@ contract GroupMessageBroadcasterTests is Test {
         vm.expectRevert(IGroupMessageBroadcaster.EmptyArray.selector);
 
         vm.prank(_payloadBootstrapper);
-        _broadcaster.bootstrapMessages(new bytes32[](0), new bytes[](0), new uint64[](0));
+        _broadcaster.bootstrapMessages(new bytes16[](0), new bytes[](0), new uint64[](0));
     }
 
     function test_bootstrapMessages() external {
@@ -214,9 +214,9 @@ contract GroupMessageBroadcasterTests is Test {
         _broadcaster.__setPayloadBootstrapper(_payloadBootstrapper);
         _broadcaster.__setSequenceId(5);
 
-        bytes32[] memory groupIds_ = new bytes32[](2);
-        groupIds_[0] = bytes32(uint256(1));
-        groupIds_[1] = bytes32(uint256(2));
+        bytes16[] memory groupIds_ = new bytes16[](2);
+        groupIds_[0] = bytes16(uint128(1));
+        groupIds_[1] = bytes16(uint128(2));
 
         bytes[] memory messages_ = new bytes[](2);
         messages_[0] = Utils.generatePayload(1);

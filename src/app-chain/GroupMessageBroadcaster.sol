@@ -22,7 +22,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IGroupMessageBroadcaster
-    function addMessage(bytes32 groupId_, bytes calldata message_) external {
+    function addMessage(bytes16 groupId_, bytes calldata message_) external {
         _revertIfPaused();
         _revertIfInvalidPayloadSize(message_.length);
 
@@ -33,7 +33,7 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
 
     /// @inheritdoc IGroupMessageBroadcaster
     function bootstrapMessages(
-        bytes32[] calldata groupIds_,
+        bytes16[] calldata groupIds_,
         bytes[] calldata messages_,
         uint64[] calldata sequenceIds_
     ) external {

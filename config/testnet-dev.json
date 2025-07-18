@@ -13,7 +13,7 @@
     "feeTokenProxySalt": "FeeToken_0",
     "gatewayProxy": "0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3",
     "gatewayProxySalt": "Gateway_0_0",
-    "groupMessageBroadcasterImplementation": "0x98A78026c1705017015eD026b0be580B28D7f995",
+    "groupMessageBroadcasterImplementation": "0x8Cb63814244cDE3c769C9d84C12A448826d38EE0",
     "groupMessageBroadcasterProxy": "0xbDF24fD4bBaE0E3CCd42Fb6C07EC6eA347A1Ef87",
     "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0_0",
     "identityUpdateBroadcasterImplementation": "0xb9eb25f3CF7B8ed9BAD69da60dF279cb0aB4ccd7",
