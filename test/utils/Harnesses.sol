@@ -11,6 +11,7 @@ import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProo
 import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
 import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
+import { Factory } from "../../src/any-chain/Factory.sol";
 import { FeeToken } from "../../src/settlement-chain/FeeToken.sol";
 import { GroupMessageBroadcaster } from "../../src/app-chain/GroupMessageBroadcaster.sol";
 import { IdentityUpdateBroadcaster } from "../../src/app-chain/IdentityUpdateBroadcaster.sol";
@@ -671,5 +672,13 @@ contract AddressAliasHelperHarness {
 
     function fromAlias(address alias_) external pure returns (address account_) {
         return AddressAliasHelper.fromAlias(alias_);
+    }
+}
+
+contract FactoryHarness is Factory {
+    constructor(address parameterRegistry_) Factory(parameterRegistry_) {}
+
+    function __setPauseStatus(bool paused_) external {
+        _getFactoryStorage().paused = paused_;
     }
 }

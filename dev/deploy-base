@@ -6,7 +6,7 @@ source "$(dirname "$0")/utils"
 # Check if both arguments are provided
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <chain-name>"
-    echo "chain-name: The chain to deploy to (e.g. base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet)"
+    echo "chain-name: The chain to deploy to (e.g. base_sepolia, base_mainnet, xmtp_ropsten, xmtp_mainnet)"
     exit 1
 fi
 
@@ -21,7 +21,7 @@ case "$CHAIN_NAME" in
     DEPLOY_FUNC="deployBaseSettlementChainComponents()"
     ENVIRONMENT="mainnet"
     ;;
-  xmtp_sepolia)
+  xmtp_ropsten)
     DEPLOY_FUNC="deployBaseAppChainComponents()"
     ENVIRONMENT="testnet-dev"
     ;;
@@ -30,7 +30,7 @@ case "$CHAIN_NAME" in
     ENVIRONMENT="mainnet"
     ;;
   *)
-    echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_sepolia, xmtp_mainnet"
+    echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_ropsten, xmtp_mainnet"
     exit 1
     ;;
 esac

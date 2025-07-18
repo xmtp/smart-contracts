@@ -54,6 +54,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
      */
     constructor(address parameterRegistry_) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+
         _disableInitializers();
     }
 

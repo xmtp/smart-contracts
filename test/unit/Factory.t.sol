@@ -3,11 +3,19 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
 import { IInitializable } from "../../src/any-chain/interfaces/IInitializable.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
-import { Factory } from "../../src/any-chain/Factory.sol";
 import { Proxy } from "../../src/any-chain/Proxy.sol";
+
+import { FactoryHarness } from "../utils/Harnesses.sol";
+import { MockMigrator } from "../utils/Mocks.sol";
+import { Utils } from "../utils/Utils.sol";
 
 contract Foo {
     uint256 public constant CONSTANT_VALUE = 123;
@@ -27,33 +35,66 @@ contract Foo {
 }
 
 contract FactoryTests is Test {
-    Factory internal _factory;
+    string internal constant _PAUSED_KEY = "xmtp.factory.paused";
+    string internal constant _MIGRATOR_KEY = "xmtp.factory.migrator";
+
+    FactoryHarness internal _factory;
+
+    address internal _implementation;
+
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
 
     address internal _alice = makeAddr("alice");
     address internal _bob = makeAddr("bob");
 
     function setUp() external {
+        _implementation = address(new FactoryHarness(_parameterRegistry));
+
         vm.prank(_alice);
-        _factory = new Factory();
+        _factory = FactoryHarness(address(new Proxy(_implementation)));
+
+        address expectedInitializableImplementation_ = vm.computeCreateAddress(address(_factory), 1);
+
+        vm.expectEmit(address(_factory));
+        emit IFactory.InitializableImplementationDeployed(expectedInitializableImplementation_);
+
+        _factory.initialize();
     }
 
     /* ============ constructor ============ */
 
-    function test_constructor() external {
-        address expectedFactory_ = vm.computeCreateAddress(_alice, 1);
-        address expectedInitializableImplementation_ = vm.computeCreateAddress(expectedFactory_, 1);
+    function test_constructor_zeroParameterRegistry() external {
+        vm.expectRevert(IFactory.ZeroParameterRegistry.selector);
+        new FactoryHarness(address(0));
+    }
 
-        vm.expectEmit(expectedFactory_);
-        emit IFactory.InitializableImplementationDeployed(expectedInitializableImplementation_);
+    /* ============ initial state ============ */
 
-        vm.prank(_alice);
-        Factory factory_ = new Factory();
+    function test_initialState() external view {
+        assertEq(Utils.getImplementationFromSlot(address(_factory)), _implementation);
+        assertEq(_factory.implementation(), _implementation);
+        assertEq(_factory.pausedParameterKey(), _PAUSED_KEY);
+        assertEq(_factory.migratorParameterKey(), _MIGRATOR_KEY);
+        assertFalse(_factory.paused());
+        assertEq(_factory.parameterRegistry(), _parameterRegistry);
+        assertEq(_factory.initializableImplementation(), vm.computeCreateAddress(address(_factory), 1));
+    }
 
-        assertEq(address(factory_), expectedFactory_);
-        assertEq(factory_.initializableImplementation(), expectedInitializableImplementation_);
+    /* ============ initializer ============ */
+
+    function test_initialize_reinitialization() external {
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        _factory.initialize();
     }
 
     /* ============ deployImplementation ============ */
+
+    function test_deployImplementation_paused() external {
+        _factory.__setPauseStatus(true);
+
+        vm.expectRevert(IFactory.Paused.selector);
+        _factory.deployImplementation(hex"ff11ff");
+    }
 
     function test_deployImplementation_emptyBytecode() external {
         vm.expectRevert(IFactory.EmptyBytecode.selector);
@@ -83,6 +124,13 @@ contract FactoryTests is Test {
     }
 
     /* ============ deployProxy ============ */
+
+    function test_deployProxy_paused() external {
+        _factory.__setPauseStatus(true);
+
+        vm.expectRevert(IFactory.Paused.selector);
+        _factory.deployProxy(address(0), 0, "");
+    }
 
     function test_deployProxy_invalidImplementation() external {
         vm.expectRevert(IFactory.InvalidImplementation.selector);
@@ -145,6 +193,79 @@ contract FactoryTests is Test {
     function test_computeProxyAddress() external view {
         address expectedProxy_ = _getExpectedProxy(_alice, 0);
         assertEq(_factory.computeProxyAddress(_alice, 0), expectedProxy_);
+    }
+
+    /* ============ migrate ============ */
+
+    function test_migrate_parameterOutOfTypeBounds() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(type(uint160).max) + 1)
+        );
+
+        vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _factory.migrate();
+    }
+
+    function test_migrate_zeroMigrator() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIGRATOR_KEY, 0);
+        vm.expectRevert(IMigratable.ZeroMigrator.selector);
+        _factory.migrate();
+    }
+
+    function test_migrate_migrationFailed() external {
+        address migrator_ = makeAddr("migrator");
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
+
+        bytes memory revertData_ = abi.encodeWithSignature("Failed()");
+
+        vm.mockCallRevert(migrator_, bytes(""), revertData_);
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.MigrationFailed.selector, migrator_, revertData_));
+
+        _factory.migrate();
+    }
+
+    function test_migrate_emptyCode() external {
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(address(1))))
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(IMigratable.EmptyCode.selector, address(1)));
+
+        _factory.migrate();
+    }
+
+    function test_migrate() external {
+        address newParameterRegistry_ = makeAddr("newParameterRegistry");
+        address newImplementation_ = address(new FactoryHarness(newParameterRegistry_));
+        address migrator_ = address(new MockMigrator(newImplementation_));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MIGRATOR_KEY,
+            bytes32(uint256(uint160(migrator_)))
+        );
+
+        vm.expectEmit(address(_factory));
+        emit IMigratable.Migrated(migrator_);
+
+        vm.expectEmit(address(_factory));
+        emit IERC1967.Upgraded(newImplementation_);
+
+        _factory.migrate();
+
+        assertEq(Utils.getImplementationFromSlot(address(_factory)), newImplementation_);
+        assertEq(_factory.parameterRegistry(), newParameterRegistry_);
     }
 
     /* ============ helper functions ============ */

@@ -38,7 +38,7 @@ get_chain_name() {
         if [ "$chain_type" = "settlement-chain" ]; then
             echo "base_sepolia"
         else
-            echo "xmtp_sepolia"
+            echo "xmtp_ropsten"
         fi
     fi
 }
