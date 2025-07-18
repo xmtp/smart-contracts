@@ -1237,10 +1237,22 @@ contract DeployTests is Test {
         return IFactory(_SETTLEMENT_CHAIN_FACTORY).computeProxyAddress(_DEPLOYER, _GATEWAY_PROXY_SALT);
     }
 
+    /**
+     * @dev This address calculation assume the following deployment order:
+     *          1. Factory proxy (nonce 0)
+     *          2. Factory implementation (nonce 1)
+     *      Any deviation from this order will result in incorrect addresses
+     */
     function _getExpectedFactoryImplementation() internal view returns (address expectedFactoryImplementation_) {
         return vm.computeCreateAddress(_DEPLOYER, 1);
     }
 
+    /**
+     * @dev This address calculation assume the following deployment order:
+     *          1. Factory proxy (nonce 0)
+     *          2. Factory implementation (nonce 1)
+     *      Any deviation from this order will result in incorrect addresses
+     */
     function _getExpectedParameterRegistryProxy() internal view returns (address expectedParameterRegistryProxy_) {
         address expectedFactoryProxyAddress_ = vm.computeCreateAddress(_DEPLOYER, 0);
         address expectedFactoryImplementationAddress_ = vm.computeCreateAddress(_DEPLOYER, 1);
