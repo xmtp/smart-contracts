@@ -16,7 +16,7 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
      * @param  message    The message in bytes. Contains the full MLS group message payload.
      * @param  sequenceId The unique sequence ID of the message.
      */
-    event MessageSent(bytes32 indexed groupId, bytes message, uint64 indexed sequenceId);
+    event MessageSent(bytes16 indexed groupId, bytes message, uint64 indexed sequenceId);
 
     /* ============ Custom Errors ============ */
 
@@ -34,7 +34,7 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
      * @param  message_ The message in bytes.
      * @dev    Ensures the payload length is within the allowed range and increments the sequence ID.
      */
-    function addMessage(bytes32 groupId_, bytes calldata message_) external;
+    function addMessage(bytes16 groupId_, bytes calldata message_) external;
 
     /**
      * @notice Bootstraps messages to satisfy a migration.
@@ -43,7 +43,7 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
      * @param  sequenceIds_ The sequence IDs.
      */
     function bootstrapMessages(
-        bytes32[] calldata groupIds_,
+        bytes16[] calldata groupIds_,
         bytes[] calldata messages_,
         uint64[] calldata sequenceIds_
     ) external;
