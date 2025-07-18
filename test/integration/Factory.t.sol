@@ -6,6 +6,7 @@ import { Test } from "../../lib/forge-std/src/Test.sol";
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
 
 import { Factory } from "../../src/any-chain/Factory.sol";
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 contract Foo {
     uint256 public constant CONSTANT_VALUE = 123;
@@ -27,12 +28,18 @@ contract Foo {
 contract FactoryTests is Test {
     Factory internal _factory;
 
+    address internal _parameterRegistry = makeAddr("parameterRegistry");
+
     address internal _alice = makeAddr("alice");
     address internal _bob = makeAddr("bob");
 
     function setUp() external {
+        address implementation_ = address(new Factory(_parameterRegistry));
+
         vm.prank(_alice);
-        _factory = new Factory();
+        _factory = Factory(address(new Proxy(implementation_)));
+
+        _factory.initialize();
     }
 
     function test_deployImplementation() external {

@@ -21,6 +21,7 @@ library Utils {
         address distributionManagerProxy;
         bytes32 distributionManagerProxySalt;
         address factory;
+        address factoryImplementation;
         address feeTokenImplementation;
         address feeTokenProxy;
         bytes32 feeTokenProxySalt;
@@ -81,6 +82,7 @@ library Utils {
             stdJson.readString(json_, ".distributionManagerProxySalt")
         );
         deploymentData_.factory = stdJson.readAddress(json_, ".factory");
+        deploymentData_.factoryImplementation = stdJson.readAddress(json_, ".factoryImplementation");
         deploymentData_.feeTokenImplementation = stdJson.readAddress(json_, ".feeTokenImplementation");
         deploymentData_.feeTokenProxy = stdJson.readAddress(json_, ".feeTokenProxy");
         deploymentData_.feeTokenProxySalt = stringToBytes32(stdJson.readString(json_, ".feeTokenProxySalt"));

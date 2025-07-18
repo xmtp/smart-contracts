@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Test } from "../../lib/forge-std/src/Test.sol";
+import { Test, console } from "../../lib/forge-std/src/Test.sol";
 
 /* ============ Source Interface Imports ============ */
 
@@ -35,6 +35,10 @@ import { RateRegistryDeployer } from "../../script/deployers/RateRegistryDeploye
 import {
     SettlementChainParameterRegistryDeployer
 } from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
+
+/* ============ Source Imports ============ */
+
+import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 /* ============ Test Interface Imports ============ */
 
@@ -130,8 +134,15 @@ contract DeployLocalTests is Test {
     }
 
     function test_deployLocalProtocol() external {
+        // Get the expected parameter registry proxy address.
+        address expectedParameterRegistryProxy_ = _getExpectedParameterRegistryProxy();
+
         // Deploy the Factory.
-        _factory = _deployFactory();
+        address factoryImplementation_ = _deployFactoryImplementation(expectedParameterRegistryProxy_);
+
+        _factory = _deployFactoryProxy(factoryImplementation_);
+
+        _initializeFactory();
 
         // Deploy the Parameter Registry.
         address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
@@ -232,9 +243,27 @@ contract DeployLocalTests is Test {
 
     /* ============ Factory Helpers ============ */
 
-    function _deployFactory() internal returns (IFactory factory_) {
+    function _deployFactoryImplementation(address parameterRegistry_) internal returns (address implementation_) {
         vm.startPrank(_deployer);
-        factory_ = IFactory(FactoryDeployer.deploy());
+        (implementation_, ) = FactoryDeployer.deployImplementation(parameterRegistry_);
+        vm.stopPrank();
+
+        assertEq(IFactory(implementation_).parameterRegistry(), parameterRegistry_);
+    }
+
+    function _deployFactoryProxy(address implementation_) internal returns (IFactory factory_) {
+        vm.startPrank(_deployer);
+        (address proxy_, , ) = FactoryDeployer.deployProxy(implementation_);
+        vm.stopPrank();
+
+        factory_ = IFactory(proxy_);
+
+        assertEq(factory_.implementation(), implementation_);
+    }
+
+    function _initializeFactory() internal {
+        vm.startPrank(_deployer);
+        _factory.initialize();
         vm.stopPrank();
     }
 
@@ -722,5 +751,29 @@ contract DeployLocalTests is Test {
     function _approveTokens(address token_, address account_, address spender_, uint256 amount_) internal {
         vm.prank(account_);
         IERC20Like(token_).approve(spender_, amount_);
+    }
+
+    /* ============ Expected Address Getters ============ */
+
+    function _getExpectedParameterRegistryProxy() internal view returns (address expectedParameterRegistryProxy_) {
+        address expectedFactoryImplementationAddress_ = vm.computeCreateAddress(_deployer, 0);
+        address expectedFactoryProxyAddress_ = vm.computeCreateAddress(_deployer, 1);
+
+        address expectedInitializableImplementation_ = vm.computeCreateAddress(
+            expectedFactoryImplementationAddress_,
+            1
+        );
+
+        bytes memory initCode_ = abi.encodePacked(
+            type(Proxy).creationCode,
+            abi.encode(expectedInitializableImplementation_)
+        );
+
+        return
+            vm.computeCreate2Address(
+                keccak256(abi.encode(_deployer, _PARAMETER_REGISTRY_PROXY_SALT)),
+                keccak256(initCode_),
+                expectedFactoryProxyAddress_
+            );
     }
 }

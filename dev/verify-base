@@ -15,7 +15,7 @@ fi
 # Check if both arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
-    echo "chain-name: The chain to verify (e.g. base_sepolia, xmtp_sepolia)"
+    echo "chain-name: The chain to verify (e.g. base_sepolia, xmtp_ropsten)"
     echo "explorer: The explorer to use (e.g. basescan, blockscout, alchemy)"
     exit 1
 fi
@@ -24,8 +24,8 @@ CHAIN_NAME=$1
 EXPLORER=$2
 
 # Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|xmtp_sepolia)$ ]]; then
-    echo "Error: Invalid chain name. Must be one of: base_sepolia, xmtp_sepolia"
+if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|xmtp_ropsten)$ ]]; then
+    echo "Error: Invalid chain name. Must be one of: base_sepolia, xmtp_ropsten"
     exit 1
 fi
 
@@ -36,7 +36,7 @@ case "$CHAIN_NAME" in
         CHAIN_ID="84532"
         CHAIN_TYPE="settlement-chain"
         ;;
-    "xmtp_sepolia")
+    "xmtp_ropsten")
         ENVIRONMENT="testnet-dev"
         CHAIN_ID="241320161"
         CHAIN_TYPE="app-chain"
@@ -73,7 +73,7 @@ elif [ "$EXPLORER" = "alchemy" ]; then
     if [ "$ENVIRONMENT" = "mainnet" ]; then
         EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
     else
-        EXPLORER_URL="https://xmtp-testnet.explorer.alchemy.com/api\?"
+        EXPLORER_URL="https://xmtp-ropsten.explorer.alchemy.com/api\?"
     fi
 else
     echo "Error: explorer must be basescan, blockscout, or alchemy"

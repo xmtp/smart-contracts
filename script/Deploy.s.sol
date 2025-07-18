@@ -51,6 +51,7 @@ contract DeployScripts is Script {
     error FeeTokenProxyNotSet();
     error GatewayProxyNotSet();
     error ImplementationNotSet();
+    error InitializableImplementationNotSet();
     error NodeRegistryProxyNotSet();
     error ParameterRegistryProxyNotSet();
     error PayerRegistryProxyNotSet();
@@ -104,7 +105,10 @@ contract DeployScripts is Script {
     function deployBaseSettlementChainComponents() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
-        deployFactory();
+        // NOTE: Deploy the factory proxy first, so that the first address deployed by the deployer is the "factory".
+        deployFactoryProxy();
+        deployFactoryImplementation();
+        initializeFactory();
         deploySettlementChainParameterRegistryImplementation();
         deploySettlementChainParameterRegistryProxy();
         deployMockUnderlyingFeeTokenImplementation();
@@ -137,7 +141,10 @@ contract DeployScripts is Script {
     function deployBaseAppChainComponents() external {
         if (block.chainid != _deploymentData.appChainId) revert UnexpectedChainId();
 
-        deployFactory();
+        // NOTE: Deploy the factory proxy first, so that the first address deployed by the deployer is the "factory".
+        deployFactoryProxy();
+        deployFactoryImplementation();
+        initializeFactory();
         deployAppChainParameterRegistryImplementation();
         deployAppChainParameterRegistryProxy();
     }
@@ -237,22 +244,60 @@ contract DeployScripts is Script {
 
     /* ============ Individual Deployers ============ */
 
-    function deployFactory() public {
-        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+    function deployFactoryImplementation() public {
+        if (_deploymentData.factoryImplementation == address(0)) revert ImplementationNotSet();
 
         vm.startBroadcast(_privateKey);
 
-        address factory_ = FactoryDeployer.deploy();
-
-        console.log("Factory: %s", factory_);
-
-        if (factory_ != _deploymentData.factory) revert UnexpectedFactory();
-
-        if (IFactory(factory_).initializableImplementation() != _deploymentData.initializableImplementation) {
-            revert UnexpectedFactory();
-        }
+        (address implementation_, ) = FactoryDeployer.deployImplementation(_deploymentData.parameterRegistryProxy);
 
         vm.stopBroadcast();
+
+        console.log("Factory Implementation: %s", implementation_);
+
+        if (implementation_ != _deploymentData.factoryImplementation) revert UnexpectedImplementation();
+
+        if (IFactory(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedImplementation();
+        }
+    }
+
+    function deployFactoryProxy() public {
+        if (_deploymentData.factory == address(0)) revert ProxyNotSet();
+        if (_deploymentData.factoryImplementation == address(0)) revert ImplementationNotSet();
+
+        vm.startBroadcast(_privateKey);
+
+        (address proxy_, , ) = FactoryDeployer.deployProxy(_deploymentData.factoryImplementation);
+
+        vm.stopBroadcast();
+
+        console.log("Factory Proxy: %s", proxy_);
+
+        if (proxy_ != _deploymentData.factory) revert UnexpectedProxy();
+
+        // NOTE: The factory implementation may not yet be deployed, so `factory_.implementation()` may revert.
+    }
+
+    function initializeFactory() public {
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.factoryImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.initializableImplementation == address(0)) revert InitializableImplementationNotSet();
+
+        vm.startBroadcast(_privateKey);
+        IFactory(_deploymentData.factory).initialize();
+        vm.stopBroadcast();
+
+        if (IFactory(_deploymentData.factory).implementation() != _deploymentData.factoryImplementation) {
+            revert UnexpectedProxy();
+        }
+
+        if (
+            IFactory(_deploymentData.factory).initializableImplementation() !=
+            _deploymentData.initializableImplementation
+        ) {
+            revert UnexpectedProxy();
+        }
     }
 
     function deploySettlementChainParameterRegistryImplementation() public {

@@ -80,6 +80,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      */
     constructor(address parameterRegistry_) {
         if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+
         _disableInitializers();
     }
 

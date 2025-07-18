@@ -74,7 +74,7 @@ elif [ "$EXPLORER" = "alchemy" ]; then
     if [ "$ENVIRONMENT" = "mainnet" ]; then
         EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
     else
-        EXPLORER_URL="https://xmtp-testnet.explorer.alchemy.com/api\?"
+        EXPLORER_URL="https://xmtp-ropsten.explorer.alchemy.com/api\?"
     fi
 else
     echo "Error: explorer must be basescan, blockscout, or alchemy"

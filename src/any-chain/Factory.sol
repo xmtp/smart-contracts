@@ -3,10 +3,16 @@ pragma solidity 0.8.28;
 
 import { Create2 } from "../../lib/oz/contracts/utils/Create2.sol";
 
+import { Initializable as OZInitializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+
+import { RegistryParameters } from "../libraries/RegistryParameters.sol";
+
 import { IFactory } from "./interfaces/IFactory.sol";
 import { IInitializable } from "./interfaces/IInitializable.sol";
+import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Initializable } from "./Initializable.sol";
+import { Migratable } from "../abstract/Migratable.sol";
 import { Proxy } from "./Proxy.sol";
 
 /**
@@ -19,25 +25,68 @@ import { Proxy } from "./Proxy.sol";
  *         degrees of freedom. This is helpful for ensuring the address of a future/planned contract is constant, while
  *         the implementation is not yet finalized or deployed.
  */
-contract Factory is IFactory {
+contract Factory is IFactory, Migratable, OZInitializable {
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc IFactory
-    address public immutable initializableImplementation;
+    address public immutable parameterRegistry;
+
+    /* ============ UUPS Storage ============ */
+
+    /**
+     * @custom:storage-location erc7201:xmtp.storage.Factory
+     * @notice The UUPS storage for the factory.
+     * @param  paused The pause status.
+     */
+    struct FactoryStorage {
+        bool paused;
+        address initializableImplementation;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("xmtp.storage.Factory")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant _FACTORY_STORAGE_LOCATION =
+        0x98606aa366980dbfce6aa523610c4eabfe62443511d67e10c2c7afde009fbf00; // TODO: Update this.
+
+    function _getFactoryStorage() internal pure returns (FactoryStorage storage $) {
+        // slither-disable-next-line assembly
+        assembly {
+            $.slot := _FACTORY_STORAGE_LOCATION
+        }
+    }
+
+    /* ============ Modifiers ============ */
+
+    modifier whenNotPaused() {
+        _revertIfPaused();
+        _;
+    }
 
     /* ============ Constructor ============ */
 
     /**
      * @notice Constructor that deploys the initializable implementation.
+     * @param  parameterRegistry_ The address of the parameter registry.
+     * @dev    The parameter registry must not be the zero address.
      */
-    constructor() {
-        emit InitializableImplementationDeployed(initializableImplementation = address(new Initializable()));
+    constructor(address parameterRegistry_) {
+        if (_isZero(parameterRegistry = parameterRegistry_)) revert ZeroParameterRegistry();
+
+        _disableInitializers();
+    }
+
+    /* ============ Initialization ============ */
+
+    /// @inheritdoc IFactory
+    function initialize() external initializer {
+        emit InitializableImplementationDeployed(
+            _getFactoryStorage().initializableImplementation = address(new Initializable())
+        );
     }
 
     /* ============ Interactive Functions ============ */
 
     /// @inheritdoc IFactory
-    function deployImplementation(bytes calldata bytecode_) external returns (address implementation_) {
+    function deployImplementation(bytes calldata bytecode_) external whenNotPaused returns (address implementation_) {
         if (bytecode_.length == 0) revert EmptyBytecode();
 
         bytes32 bytecodeHash_ = keccak256(bytecode_);
@@ -52,13 +101,13 @@ contract Factory is IFactory {
         address implementation_,
         bytes32 salt_,
         bytes calldata initializeCallData_
-    ) external returns (address proxy_) {
+    ) external whenNotPaused returns (address proxy_) {
         if (implementation_ == address(0)) revert InvalidImplementation();
 
         // Append the initializable implementation address as a constructor argument to the proxy deploy code, and use
         // the sender's address combined with their chosen salt as the final salt.
         proxy_ = _create2(
-            abi.encodePacked(type(Proxy).creationCode, abi.encode(initializableImplementation)),
+            abi.encodePacked(type(Proxy).creationCode, abi.encode(_getFactoryStorage().initializableImplementation)),
             keccak256(abi.encode(msg.sender, salt_))
         );
 
@@ -68,7 +117,32 @@ contract Factory is IFactory {
         IInitializable(proxy_).initialize(implementation_, initializeCallData_);
     }
 
+    /// @inheritdoc IMigratable
+    function migrate() external {
+        _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
+    }
+
     /* ============ View/Pure Functions ============ */
+
+    /// @inheritdoc IFactory
+    function pausedParameterKey() public pure returns (string memory key_) {
+        return "xmtp.factory.paused";
+    }
+
+    /// @inheritdoc IFactory
+    function migratorParameterKey() public pure returns (string memory key_) {
+        return "xmtp.factory.migrator";
+    }
+
+    /// @inheritdoc IFactory
+    function paused() external view returns (bool paused_) {
+        return _getFactoryStorage().paused;
+    }
+
+    /// @inheritdoc IFactory
+    function initializableImplementation() external view returns (address initializableImplementation_) {
+        return _getFactoryStorage().initializableImplementation;
+    }
 
     /// @inheritdoc IFactory
     function computeImplementationAddress(bytes calldata bytecode_) external view returns (address implementation_) {
@@ -78,7 +152,10 @@ contract Factory is IFactory {
 
     /// @inheritdoc IFactory
     function computeProxyAddress(address caller_, bytes32 salt_) external view returns (address proxy_) {
-        bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(initializableImplementation));
+        bytes memory initCode_ = abi.encodePacked(
+            type(Proxy).creationCode,
+            abi.encode(_getFactoryStorage().initializableImplementation)
+        );
         return Create2.computeAddress(keccak256(abi.encode(caller_, salt_)), keccak256(initCode_));
     }
 
@@ -98,5 +175,9 @@ contract Factory is IFactory {
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
+    }
+
+    function _revertIfPaused() internal view {
+        if (_getFactoryStorage().paused) revert Paused();
     }
 }

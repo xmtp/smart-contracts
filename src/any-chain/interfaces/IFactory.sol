@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+
 /**
  * @title Interface for a Factory contract that deterministically deploys implementations and proxies.
  */
-interface IFactory {
+interface IFactory is IMigratable {
     /* ============ Events ============ */
 
     /**
@@ -40,6 +42,9 @@ interface IFactory {
 
     /* ============ Custom Errors ============ */
 
+    /// @notice Thrown when the parameter registry is the zero address.
+    error ZeroParameterRegistry();
+
     /// @notice Thrown when the implementation is the zero address.
     error InvalidImplementation();
 
@@ -48,6 +53,16 @@ interface IFactory {
 
     /// @notice Thrown when the deployment of a contract (e.g. an implementation or proxy) fails.
     error DeployFailed();
+
+    /// @notice Thrown when the factory is paused.
+    error Paused();
+
+    /* ============ Initialization ============ */
+
+    /**
+     * @notice Initializes the contract.
+     */
+    function initialize() external;
 
     /* ============ Interactive Functions ============ */
 
@@ -72,6 +87,18 @@ interface IFactory {
     ) external returns (address proxy_);
 
     /* ============ View/Pure Functions ============ */
+
+    /// @notice The parameter registry key used to fetch the paused status.
+    function pausedParameterKey() external pure returns (string memory key_);
+
+    /// @notice The parameter registry key used to fetch the migrator.
+    function migratorParameterKey() external pure returns (string memory key_);
+
+    /// @notice The pause status.
+    function paused() external view returns (bool paused_);
+
+    /// @notice The address of the parameter registry.
+    function parameterRegistry() external view returns (address parameterRegistry_);
 
     /**
      * @notice The address of the first temporary implementation that proxies will proxy.
