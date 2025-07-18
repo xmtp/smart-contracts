@@ -70,7 +70,7 @@ contract FactoryTests is Test {
 
     /* ============ initial state ============ */
 
-    function test_initialState_xxx() external view {
+    function test_initialState() external view {
         assertEq(Utils.getImplementationFromSlot(address(_factory)), _implementation);
         assertEq(_factory.implementation(), _implementation);
         assertEq(_factory.pausedParameterKey(), _PAUSED_KEY);

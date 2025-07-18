@@ -38,7 +38,7 @@ case "$CHAIN_NAME" in
         ;;
     "xmtp_ropsten")
         ENVIRONMENT="testnet-dev"
-        CHAIN_ID="241320161"
+        CHAIN_ID="351243127"
         CHAIN_TYPE="app-chain"
         ;;
 esac
