@@ -133,7 +133,7 @@ jobs:
         run: forge test -vvv
         env:
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
-          XMTP_SEPOLIA_RPC_URL: ${{ secrets.XMTP_SEPOLIA_RPC_URL }}
+          XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
   gas:
     name: Gas Report
@@ -165,13 +165,13 @@ jobs:
       - run: chmod +x /usr/local/bin/forge
 
       - name: Run Forge tests with gas report
-        run: forge test --fuzz-seed 10101 --gas-report --gas-limit 2000000000 > gasreport.ansi
+        run: forge test --fuzz-seed 10101 --gas-report --gas-limit 3000000000 > gasreport.ansi
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
-          XMTP_SEPOLIA_RPC_URL: ${{ secrets.XMTP_SEPOLIA_RPC_URL }}
+          XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.21
@@ -219,10 +219,10 @@ jobs:
 
       - name: Run coverage
         id: coverage
-        run: forge coverage --no-match-coverage "(script|test)" --gas-limit 2000000000 --report lcov && lcov --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage
+        run: forge coverage --no-match-coverage "(script|test)" --no-match-test test_deployTestnetProtocol --gas-limit 3000000000 --report lcov && lcov --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage
         env:
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
-          XMTP_SEPOLIA_RPC_URL: ${{ secrets.XMTP_SEPOLIA_RPC_URL }}
+          XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v4
