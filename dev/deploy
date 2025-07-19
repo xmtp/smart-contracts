@@ -29,4 +29,6 @@ ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-ur
 
 echo "✔ Done deploying $CHAIN_TYPE contracts on $CHAIN_NAME for $ENVIRONMENT."
 
+sleep 2
+
 ./dev/check-deployment $ENVIRONMENT $CHAIN_TYPE

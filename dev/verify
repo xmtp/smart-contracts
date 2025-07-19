@@ -51,45 +51,13 @@ if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \
     exit 1
 fi
 
-# Determine VERIFIER and EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
-if [ "$EXPLORER" = "basescan" ]; then
-    VERIFIER="etherscan"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://api.basescan.org/api"
-    else
-        EXPLORER_URL="https://api-sepolia.basescan.org/api"
-    fi
-elif [ "$EXPLORER" = "blockscout" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://base.blockscout.com/api?"
-    else
-        EXPLORER_URL="https://base-sepolia.blockscout.com/api?"
-    fi
-elif [ "$EXPLORER" = "alchemy" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
-    else
-        EXPLORER_URL="https://xmtp-ropsten.explorer.alchemy.com/api\?"
-    fi
-else
-    echo "Error: explorer must be basescan, blockscout, or alchemy"
-    exit 1
-fi
+VERIFIER=$(get_verifier "$EXPLORER")
+EXPLORER_URL=$(get_explorer_url "$ENVIRONMENT" "$EXPLORER")
+API_KEY=$(get_api_key "$EXPLORER")
 
 echo "⧖ Verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
 
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-    # Validate BASESCAN_API_KEY is set
-    if [ -z "${BASESCAN_API_KEY:-}" ]; then
-        echo "Error: BASESCAN_API_KEY not found in .env file"
-        exit 1
-    fi
-
     DISTRIBUTION_MANAGER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "distributionManagerImplementation")
     DISTRIBUTION_MANAGER_PROXY=$(get_environment_value "$ENVIRONMENT" "distributionManagerProxy")
     FEE_TOKEN_PROXY=$(get_environment_value "$ENVIRONMENT" "feeTokenProxy")
@@ -230,12 +198,6 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo "--> Proxy verification is inconsistent due to etherscan-like explorer bugs. Manually confirm and/or perform proxy verification in the explorer.<--"
     fi
 else
-    # Validate BLOCKSCOUT_API_KEY is set
-    if [ -z "${BLOCKSCOUT_API_KEY:-}" ]; then
-        echo "Error: BLOCKSCOUT_API_KEY not found in .env file"
-        exit 1
-    fi
-
     APP_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "appChainGatewayImplementation")
     GATEWAY_PROXY=$(get_environment_value "$ENVIRONMENT" "gatewayProxy")
     GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "groupMessageBroadcasterImplementation")

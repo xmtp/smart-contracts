@@ -90,16 +90,16 @@ contract DeployLocalTests is Test {
 
     uint256 internal constant _NODE_REGISTRY_STARTING_MAX_CANONICAL_NODES = 100;
 
-    bytes32 internal constant _DISTRIBUTION_MANAGER_PROXY_SALT = "DistributionManager_0";
+    bytes32 internal constant _distributionManagerProxySalt = "DistributionManager_0";
     bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "FeeToken_0";
     bytes32 internal constant _MOCK_UNDERLYING_FEE_TOKEN_PROXY_SALT = "MockUnderlyingFeeToken_0";
-    bytes32 internal constant _GROUP_MESSAGE_BROADCASTER_PROXY_SALT = "GroupMessageBroadcaster_0";
-    bytes32 internal constant _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT = "IdentityUpdateBroadcaster_0";
-    bytes32 internal constant _NODE_REGISTRY_PROXY_SALT = "NodeRegistry_0";
+    bytes32 internal constant _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_0";
+    bytes32 internal constant _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_0";
+    bytes32 internal constant _nodeRegistryProxySalt = "NodeRegistry_0";
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
-    bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
-    bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "PayerReportManager_0";
-    bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
+    bytes32 internal constant _payerRegistryProxySalt = "PayerRegistry_0";
+    bytes32 internal constant _payerReportManagerProxySalt = "PayerReportManager_0";
+    bytes32 internal constant _rateRegistryProxySalt = "RateRegistry_0";
 
     address internal _deployer;
 
@@ -374,7 +374,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _GROUP_MESSAGE_BROADCASTER_PROXY_SALT
+            _groupMessageBroadcasterProxySalt
         );
         vm.stopPrank();
 
@@ -405,7 +405,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _IDENTITY_UPDATE_BROADCASTER_PROXY_SALT
+            _identityUpdateBroadcasterProxySalt
         );
         vm.stopPrank();
 
@@ -506,7 +506,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = PayerRegistryDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _PAYER_REGISTRY_PROXY_SALT
+            _payerRegistryProxySalt
         );
         vm.stopPrank();
 
@@ -566,7 +566,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = RateRegistryDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _RATE_REGISTRY_PROXY_SALT
+            _rateRegistryProxySalt
         );
         vm.stopPrank();
 
@@ -629,7 +629,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = NodeRegistryDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _NODE_REGISTRY_PROXY_SALT
+            _nodeRegistryProxySalt
         );
         vm.stopPrank();
 
@@ -690,7 +690,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = PayerReportManagerDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _PAYER_REPORT_MANAGER_PROXY_SALT
+            _payerReportManagerProxySalt
         );
         vm.stopPrank();
 
@@ -733,7 +733,7 @@ contract DeployLocalTests is Test {
         (address proxy_, , ) = DistributionManagerDeployer.deployProxy(
             address(_factory),
             implementation_,
-            _DISTRIBUTION_MANAGER_PROXY_SALT
+            _distributionManagerProxySalt
         );
         vm.stopPrank();
 

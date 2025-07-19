@@ -7,4 +7,6 @@ forge script script/DeployLocal.s.sol:DeployLocalScripts --rpc-url anvil --broad
 
 echo "✔ Done deploying local contracts."
 
+sleep 2
+
 ./dev/check-local-deployment

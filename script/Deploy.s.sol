@@ -360,7 +360,9 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenImplementation() public {
-        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) revert ImplementationNotSet();
+        // Skip deployment if the mock underlying fee token implementation is not set.
+        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
+
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
@@ -383,6 +385,9 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenProxy() public {
+        // Skip deployment if the mock underlying fee token implementation is not set.
+        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
+
         if (_deploymentData.underlyingFeeToken == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) revert ImplementationNotSet();

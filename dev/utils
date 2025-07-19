@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    source .env
+fi
+
 get_chain_name() {
     local environment=$1
     local chain_type=$2
@@ -67,4 +72,62 @@ get_environment_value() {
     fi
 
     echo "$value"
+}
+
+get_verifier() {
+    local explorer=$1
+
+    if [ "$explorer" = "basescan" ]; then
+        echo "etherscan"
+    elif [ "$explorer" = "blockscout" ]; then
+        echo "blockscout"
+    elif [ "$explorer" = "alchemy" ]; then
+        echo "blockscout"
+    else
+        echo "Error: explorer must be basescan, blockscout, or alchemy"
+        exit 1
+    fi
+}
+
+get_explorer_url() {
+    local environment=$1
+    local explorer=$2
+
+    if [ "$explorer" = "basescan" ]; then
+        if [ "$environment" = "mainnet" ]; then
+            echo "https://api.basescan.org/api"
+        else
+            echo "https://api-sepolia.basescan.org/api"
+        fi
+    elif [ "$explorer" = "blockscout" ]; then
+        if [ "$environment" = "mainnet" ]; then
+            echo "https://base.blockscout.com/api/"
+        else
+            echo "https://base-sepolia.blockscout.com/api/"
+        fi
+    elif [ "$explorer" = "alchemy" ]; then
+        if [ "$environment" = "mainnet" ]; then
+            echo "https://xmtp.explorer.alchemy.com/api/"
+        else
+            echo "https://xmtp-ropsten.explorer.alchemy.com/api/"
+        fi
+    else
+        echo "Error: explorer must be basescan, blockscout, or alchemy"
+        exit 1
+    fi
+}
+
+get_api_key() {
+    local explorer=$1
+
+    if [ "$explorer" = "basescan" ]; then
+        echo $BASESCAN_API_KEY
+    elif [ "$explorer" = "blockscout" ]; then
+        echo $BLOCKSCOUT_API_KEY
+    elif [ "$explorer" = "alchemy" ]; then
+        echo ""
+    else
+        echo "Error: explorer must be basescan, blockscout, or alchemy"
+        exit 1
+    fi
 }
