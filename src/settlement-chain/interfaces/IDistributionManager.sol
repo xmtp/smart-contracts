@@ -78,7 +78,7 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the caller is not the owner of the specified node.
     error NotNodeOwner();
 
-    /// @notice Thrown when the length of two input arrays do not match when they should.
+    /// @notice Thrown when the length of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when a payer report has already been claimed.
@@ -99,7 +99,7 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the contract's available balance is zero.
     error ZeroAvailableBalance();
 
-    /// @notice Thrown when the contract is paused.
+    /// @notice Thrown when some pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when there is no change to an updated parameter.
@@ -131,7 +131,7 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
      * @param  originatorNodeIds_  The IDs of the originator nodes of the payer reports.
      * @param  payerReportIndices_ The payer report indices for each of the respective originator node IDs.
      * @return claimed_            The amount of fees claimed.
-     * @dev    The node IDs in `originatorNodeIds_` do not need to be unique.
+     * @dev    The node IDs in `originatorNodeIds_` don't need to be unique.
      */
     function claim(
         uint32 nodeId_,

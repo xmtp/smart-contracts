@@ -6,7 +6,7 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
 
 /**
  * @title  Interface for the Payer Registry.
- * @notice This interfaces exposes functionality:
+ * @notice This interface exposes functionality:
  *           - for payers to deposit, request withdrawals, and finalize withdrawals of a fee token,
  *           - for some settler contract to settle usage fees for payers,
  *           - for anyone to send excess fee tokens in the contract to the fee distributor.
@@ -167,11 +167,17 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
-    /// @notice Thrown when the payer registry is paused.
+    /// @notice Thrown when some pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when there is no excess fee tokens to transfer to the fee distributor.
     error NoExcess();
+
+    /// @notice Thrown when the payer is the zero address.
+    error ZeroPayer();
+
+    /// @notice Thrown when the recipient is the zero address.
+    error ZeroRecipient();
 
     /* ============ Initialization ============ */
 

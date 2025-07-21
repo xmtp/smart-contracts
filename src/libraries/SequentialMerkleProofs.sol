@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 import { ISequentialMerkleProofsErrors } from "./interfaces/ISequentialMerkleProofsErrors.sol";
 
 /**
- * @title  Library for verifying sequential merkle proofs.
- * @notice A sequential merkle proof is a proof that leaves appear sequentially in a merkle tree.
+ * @title  Library for verifying sequential Merkle proofs.
+ * @notice A sequential Merkle proof is a proof that leaves appear sequentially in a Merkle tree.
  */
 library SequentialMerkleProofs {
     /* ============ Constants ============ */
@@ -24,12 +24,12 @@ library SequentialMerkleProofs {
     /* ============ Main Functions ============ */
 
     /**
-     * @notice Verifies a sequential merkle proof.
-     * @param  root_          The root of the merkle tree.
+     * @notice Verifies a sequential Merkle proof.
+     * @param  root_          The root of the Merkle tree.
      * @param  startingIndex_ The index of the first leaf provided.
      * @param  leaves_        The leaves to prove sequential existence from the starting index.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
+     * @param  proofElements_ The Merkle proof data.
+     * @dev    proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
      * @dev    Can also revert with an array out-of-bounds access panic.
      */
     function verify(
@@ -44,11 +44,11 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the root of a sequential merkle proof.
+     * @notice Gets the root of a sequential Merkle proof.
      * @param  startingIndex_ The index of the first leaf provided.
      * @param  leaves_        The leaves to prove sequential existence from the starting index.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
+     * @param  proofElements_ The Merkle proof data.
+     * @dev    proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
      * @dev    Can also revert with an array out-of-bounds access panic.
      */
     function getRoot(
@@ -60,9 +60,9 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Extracts the leaf count from a sequential merkle proof, without verifying the proof.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree.
+     * @notice Extracts the leaf count from a sequential Merkle proof, without verifying the proof.
+     * @param  proofElements_ The Merkle proof data.
+     * @dev    proofElements_[0] is the total number of leaves in the Merkle tree.
      * @dev    Does not verify the proof. Only extracts the leaf count from the proof elements.
      */
     function getLeafCount(bytes32[] calldata proofElements_) internal pure returns (uint32 leafCount_) {
@@ -119,8 +119,8 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the balanced leaf count for a sequential merkle proof.
-     * @param  leafCount_         The number of leaves in the merkle tree.
+     * @notice Gets the balanced leaf count for a sequential Merkle proof.
+     * @param  leafCount_         The number of leaves in the Merkle tree.
      * @return balancedLeafCount_ The balanced leaf count.
      */
     function _getBalancedLeafCount(uint256 leafCount_) internal pure returns (uint256 balancedLeafCount_) {
@@ -128,11 +128,11 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the root of a sequential merkle proof.
+     * @notice Gets the root of a sequential Merkle proof.
      * @param  startingIndex_ The index of the first leaf provided.
      * @param  hashes_        The leaf hashes (in reverse order) to prove sequential existence from the starting index.
-     * @param  proofElements_         The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
+     * @param  proofElements_         The Merkle proof data.
+     * @dev    proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
      */
     function _getRoot(
         uint256 startingIndex_,
@@ -305,7 +305,7 @@ library SequentialMerkleProofs {
 
     /**
      * @notice Hashes the topmost 32-byte node in the tree, combined with the tree's leaf count, into a 32-byte root.
-     * @param  leafCount_ The number of leaves in the merkle tree.
+     * @param  leafCount_ The number of leaves in the Merkle tree.
      * @param  node_      The topmost node in the tree.
      * @return hash_      The root hash of the tree.
      */

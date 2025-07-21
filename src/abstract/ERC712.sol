@@ -20,7 +20,7 @@ abstract contract ERC712 is IERC712 {
     /**
      * @custom:storage-location erc7201:xmtp.storage.ERC712
      * @notice The UUPS storage for the ERC712 contract.
-     * @param  initialDomainSeparator Initial EIP-712 domain separator set at intialization.
+     * @param  initialDomainSeparator Initial EIP-712 domain separator set at initialization.
      */
     struct ERC712Storage {
         bytes32 initialDomainSeparator;
@@ -88,13 +88,9 @@ abstract contract ERC712 is IERC712 {
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), internalDigest_));
     }
 
-    /**
-     * @dev The name of the contract.
-     */
+    /// @dev The name of the contract.
     function _name() internal view virtual returns (string memory name_);
 
-    /**
-     * @dev The version of the contract.
-     */
+    /// @dev The version of the contract.
     function _version() internal view virtual returns (string memory version_);
 }

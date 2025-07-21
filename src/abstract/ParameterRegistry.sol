@@ -61,13 +61,19 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /// @inheritdoc IParameterRegistry
     function initialize(address[] calldata admins_) external initializer {
+        if (admins_.length == 0) revert EmptyAdmins();
+
         ParameterRegistryStorage storage $ = _getParameterRegistryStorage();
 
         string memory adminParameterKey_ = adminParameterKey();
 
         // Each admin-specific key is set to true (i.e. 1).
         for (uint256 index_; index_ < admins_.length; ++index_) {
-            _setParameter($, _getAdminKey(adminParameterKey_, admins_[index_]), bytes32(uint256(1)));
+            address admin_ = admins_[index_];
+
+            if (admin_ == address(0)) revert ZeroAdmin();
+
+            _setParameter($, _getAdminKey(adminParameterKey_, admin_), bytes32(uint256(1)));
         }
     }
 
@@ -92,6 +98,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressFromRawParameter(_getRegistryParameter(migratorParameterKey())));
     }
 

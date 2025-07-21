@@ -133,6 +133,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes32 r_,
         bytes32 s_
     ) external whenNotPaused {
+        // NOTE: There is no issue if the underlying fee token permit use results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy. Further, the permit must be used before being
+        //       able to pull any underlying fee tokens from the caller.
         _usePermit(_underlyingFeeToken, amount_, deadline_, v_, r_, s_);
         _depositFromUnderlying(chainId_, amount_);
     }
@@ -210,6 +213,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         bytes32 r_,
         bytes32 s_
     ) external whenNotPaused returns (uint256 totalSent_) {
+        // NOTE: There is no issue if the underlying fee token permit use results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy. Further, the permit must be used before being
+        //       able to pull any underlying fee tokens from the caller.
         _usePermit(_underlyingFeeToken, amountToSend_ * chainIds_.length, deadline_, v_, r_, s_);
 
         return _sendParametersAsRetryableTicketsFromUnderlying(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
@@ -217,6 +223,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function updateInbox(uint256 chainId_) external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address inbox_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
             _getInboxKey(inboxParameterKey(), chainId_)
@@ -228,6 +235,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function updatePauseStatus() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
         SettlementChainGatewayStorage storage $ = _getSettlementChainGatewayStorage();
 
@@ -238,14 +246,20 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /// @inheritdoc ISettlementChainGateway
     function withdraw(address recipient_) external returns (uint256 amount_) {
-        // NOTE: It is safe to just send/withdraw the the balance, as this contract should only hold fee tokens if it
-        //       was sent them right before this function is called.
+        // NOTE: It's safe to just send/withdraw the balance, without access controls or balance validation, since this
+        //       contract should only hold fee tokens if it was sent them right before this function is called. To be
+        //       more clear, a user has already instructed the ArbSys bridge on an app chain to `sendTxToL1` with the
+        //       call data of `withdraw(someAccount)`, so the Outbox will send the fee tokens to this contract and then
+        //       immediately execute that call data to withdraw the fee tokens to `someAccount`.
         amount_ = IERC20Like(feeToken).balanceOf(address(this));
+
+        if (amount_ == 0) revert ZeroBalance();
 
         emit Withdrawal(amount_, recipient_);
 
@@ -256,9 +270,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function withdrawIntoUnderlying(address recipient_) external returns (uint256 amount_) {
-        // NOTE: It is safe to just send/withdraw the the balance, as this contract should only hold fee tokens if it
-        //       was sent them right before this function is called.
+        // NOTE: It's safe to just send/withdraw the balance, without access controls or balance validation, since this
+        //       contract should only hold fee tokens if it was sent them right before this function is called. To be
+        //       more clear, a user has already instructed the ArbSys bridge on an app chain to `sendTxToL1` with the
+        //       call data of `withdrawIntoUnderlying(someAccount)`, so the Outbox will send the fee tokens to this
+        //       contract and then immediately execute that call data to unwrap the fee tokens to `someAccount`.
         amount_ = IERC20Like(feeToken).balanceOf(address(this));
+
+        if (amount_ == 0) revert ZeroBalance();
 
         emit Withdrawal(amount_, recipient_);
 
@@ -304,6 +323,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit to an app chain.
     function _depositFeeToken(uint256 chainId_, uint256 amount_) internal {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IERC20Like(feeToken).transferFrom` nor `_deposit` can result in a reentrancy.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
         _deposit(chainId_, amount_);
@@ -314,12 +335,18 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      *      chain.
      */
     function _depositFromUnderlying(uint256 chainId_, uint256 amount_) internal {
+        // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy.
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IFeeTokenLike(feeToken).deposit` nor `_deposit` can result in a reentrancy.
         _pullAndConvertUnderlying(amount_);
         _deposit(chainId_, amount_);
     }
 
     /// @dev Deposits fee tokens into an inbox, to be used as native gas token on the app chain.
     function _deposit(uint256 chainId_, uint256 amount_) internal {
+        if (amount_ == 0) revert ZeroAmount();
+
         address inbox_ = _getInbox(chainId_);
 
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
@@ -370,8 +397,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasPrice_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
-        // Pull the fee tokens from the caller.
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IERC20Like(feeToken).transferFrom` nor `_sendParametersAsRetryableTickets` can result in a
+        //       reentrancy.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), totalSent_ = amountToSend_ * chainIds_.length);
 
@@ -386,6 +415,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256 gasPrice_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
+        // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy.
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IFeeTokenLike(feeToken).deposit` nor `_sendParametersAsRetryableTickets` can result in a
+        //       reentrancy.
         _pullAndConvertUnderlying(totalSent_ = amountToSend_ * chainIds_.length);
 
         _sendParametersAsRetryableTickets(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
@@ -442,6 +476,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         // slither-disable-next-line unused-return
         IERC20Like(feeToken).approve(inbox_, feeTokensToSend_);
 
+        // NOTE: No need to validate `gasLimit_` and/or `gasPrice_` since the purpose of retryable tickets are to allow
+        //       the gas parameters to be modified and the ticket retried on the app chain later, if needed. Further,
+        //       `IERC20InboxLike.createRetryableTicket` already does some sanity checks on value and gas parameters.
         uint256 messageNumber_ = IERC20InboxLike(inbox_).createRetryableTicket({
             to_: appChainGateway,
             l2CallValue_: 0,

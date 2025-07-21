@@ -23,13 +23,13 @@ interface IERC5267 is IERC712 {
      *                            they are listed (i.e. name, version, chainId, verifyingContract, and salt).
      * @return name_              The user readable name of signing domain.
      * @return version_           The current major version of the signing domain.
-     * @return chainId_           The EIP-155 chain id.
+     * @return chainId_           The EIP-155 chain ID.
      * @return verifyingContract_ The address of the contract that will verify the signature.
      * @return salt_              A disambiguating salt for the protocol.
      * @return extensions_        A list of EIP numbers, each of which MUST refer to an EIP that extends EIP-712 with
-     *                              new domain fields, along with a method to obtain the value for those fields, and
-     *                              potentially conditions for inclusion. The value of fields does not affect their
-     *                              inclusion.
+     *                            new domain fields, along with a method to obtain the value for those fields, and
+     *                            potentially conditions for inclusion. The value of fields don't affect their
+     *                            inclusion.
      */
     function eip712Domain()
         external

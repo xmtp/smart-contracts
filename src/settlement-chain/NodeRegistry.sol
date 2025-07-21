@@ -13,7 +13,7 @@ import { Migratable } from "../abstract/Migratable.sol";
 /**
  * @title  Implementation of the Node Registry
  *
- * @notice This contract is responsible for minting NFTs and assigning them to node owner.
+ * @notice This contract is responsible for minting NFTs and assigning them to node owners.
  *         Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
  *         In addition to the standard ERC721 functionality, the contract supports node-specific features,
  *         including node property updates.
@@ -177,8 +177,8 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function updateAdmin() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address admin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
-
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
         if (admin_ == $.admin) revert NoChange();
@@ -188,6 +188,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function updateMaxCanonicalNodes() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint8 maxCanonicalNodes_ = RegistryParameters.getUint8Parameter(
             parameterRegistry,
             maxCanonicalNodesParameterKey()
@@ -203,6 +204,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 

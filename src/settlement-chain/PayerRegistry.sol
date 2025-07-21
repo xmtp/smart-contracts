@@ -120,6 +120,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         bytes32 r_,
         bytes32 s_
     ) external {
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither the permit use nor `_depositFeeToken` can result in a reentrancy.
         _usePermit(feeToken, amount_, deadline_, v_, r_, s_);
         _depositFeeToken(payer_, amount_);
     }
@@ -138,6 +140,9 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         bytes32 r_,
         bytes32 s_
     ) external {
+        // NOTE: There is no issue if the underlying fee token permit use results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy. Further, the permit must be used before being
+        //       able to pull any underlying fee tokens from the caller.
         _usePermit(_underlyingFeeToken, amount_, deadline_, v_, r_, s_);
         _depositFromUnderlying(payer_, amount_);
     }
@@ -186,14 +191,14 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     function finalizeWithdrawal(address recipient_) external {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
-        IERC20Like(feeToken).transfer(recipient_, _finalizeWithdrawal());
+        IERC20Like(feeToken).transfer(recipient_, _finalizeWithdrawal(recipient_));
     }
 
     /// @inheritdoc IPayerRegistry
     function finalizeWithdrawalIntoUnderlying(address recipient_) external {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unused-return
-        IFeeTokenLike(feeToken).withdrawTo(recipient_, _finalizeWithdrawal());
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, _finalizeWithdrawal(recipient_));
     }
 
     /// @inheritdoc IPayerRegistry
@@ -237,6 +242,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateSettler() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address settler_ = RegistryParameters.getAddressParameter(parameterRegistry, settlerParameterKey());
 
         if (_isZero(settler_)) revert ZeroSettler();
@@ -250,6 +256,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateFeeDistributor() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address feeDistributor_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
             feeDistributorParameterKey()
@@ -266,6 +273,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateMinimumDeposit() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint96 minimumDeposit_ = RegistryParameters.getUint96Parameter(parameterRegistry, minimumDepositParameterKey());
 
         if (minimumDeposit_ == 0) revert ZeroMinimumDeposit();
@@ -279,6 +287,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updateWithdrawLockPeriod() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint32 withdrawLockPeriod_ = RegistryParameters.getUint32Parameter(
             parameterRegistry,
             withdrawLockPeriodParameterKey()
@@ -293,6 +302,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function updatePauseStatus() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
@@ -303,6 +313,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
@@ -443,6 +454,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      */
     function _depositFeeToken(address payer_, uint96 amount_) internal {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IERC20Like(feeToken).transferFrom` nor `_deposit` can result in a reentrancy.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
         _deposit(payer_, amount_);
@@ -452,7 +465,12 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @dev Transfers `amount_` of fee tokens from the caller to this contract to satisfy a deposit for `payer_`.
      */
     function _depositFromUnderlying(address payer_, uint96 amount_) internal {
+        // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
+        //       deposit flow will proceed normally after the reentrancy.
         SafeTransferLib.safeTransferFrom(_underlyingFeeToken, msg.sender, address(this), amount_);
+
+        // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
+        //       neither `IFeeTokenLike(feeToken).deposit` nor `_deposit` can result in a reentrancy.
         IFeeTokenLike(feeToken).deposit(amount_);
         _deposit(payer_, amount_);
     }
@@ -461,6 +479,8 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @dev Satisfies a deposit for `payer_`.
      */
     function _deposit(address payer_, uint96 amount_) internal whenNotPaused {
+        if (_isZero(payer_)) revert ZeroPayer();
+
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
         if (amount_ < $.minimumDeposit) {
@@ -477,9 +497,13 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     }
 
     /**
-     * @dev Finalizes a pending withdrawal for the caller.
+     * @dev    Finalizes a pending withdrawal for the caller.
+     * @param  recipient_         The address to send the withdrawal to.
+     * @return pendingWithdrawal_ The amount of the pending withdrawal.
      */
-    function _finalizeWithdrawal() internal whenNotPaused returns (uint96 pendingWithdrawal_) {
+    function _finalizeWithdrawal(address recipient_) internal whenNotPaused returns (uint96 pendingWithdrawal_) {
+        if (_isZero(recipient_)) revert ZeroRecipient();
+
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
         Payer storage payer_ = $.payers[msg.sender];
         pendingWithdrawal_ = payer_.pendingWithdrawal;

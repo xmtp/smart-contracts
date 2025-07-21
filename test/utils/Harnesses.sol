@@ -225,8 +225,8 @@ contract PayerRegistryHarness is PayerRegistry {
 
     constructor(address registry_, address token_) PayerRegistry(registry_, token_) {}
 
-    function __finalizeWithdrawal() external {
-        _finalizeWithdrawal();
+    function __finalizeWithdrawal(address recipient_) external {
+        _finalizeWithdrawal(recipient_);
     }
 
     function __setSettler(address settler_) external {

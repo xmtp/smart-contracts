@@ -7,6 +7,8 @@ import {
 
 import { RegistryParameters } from "../../src/libraries/RegistryParameters.sol";
 
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+
 import { Migratable } from "../../src/abstract/Migratable.sol";
 
 contract MockMigrator {
@@ -24,6 +26,8 @@ contract MockMigrator {
         assembly {
             sstore(_IMPLEMENTATION_SLOT, implementation_)
         }
+
+        emit IERC1967.Upgraded(implementation_);
     }
 }
 

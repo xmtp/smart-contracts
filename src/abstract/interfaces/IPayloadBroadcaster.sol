@@ -55,7 +55,7 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
-    /// @notice Thrown when some pauseable function is called when the payload broadcaster is paused.
+    /// @notice Thrown when some pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when some function is called when the payload broadcaster is not paused.

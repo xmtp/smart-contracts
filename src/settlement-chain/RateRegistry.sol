@@ -67,6 +67,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
     /// @inheritdoc IRateRegistry
     function updateRates() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         RateRegistryStorage storage $ = _getRateRegistryStorage();
 
         uint64 messageFee_ = RegistryParameters.getUint64Parameter(parameterRegistry, messageFeeParameterKey());
@@ -89,6 +90,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 

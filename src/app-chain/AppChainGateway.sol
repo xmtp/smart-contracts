@@ -37,7 +37,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     /**
      * @custom:storage-location erc7201:xmtp.storage.AppChainGateway
      * @notice The UUPS storage for the app chain gateway.
-     * @param  keyNonces A mapping of keys and their corresponding nonces, to track order of parameter receipts.
+     * @param  keyNonces A mapping of keys and their corresponding nonces, to track order of parameter receptions.
      */
     struct AppChainGatewayStorage {
         bool paused;
@@ -120,7 +120,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
             string calldata key_ = keys_[index_];
 
             // Each key is checked against its nonce, and ignored if the nonce is lower than the stored nonce. This is
-            // to prevent out-of-order parameter receipts. For example, if the settlement chain gateway sends key A
+            // to prevent out-of-order parameter receptions. For example, if the settlement chain gateway sends key A
             // when it has a value of 10, and then again shortly after when it has a value of 5, the key cannot be set
             // out of order. Either the A=10 comes first, then the A=5, or the A=5 comes first, and the A=10 is ignored.
             if ($.keyNonces[key_] >= nonce_) continue;
@@ -133,6 +133,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IAppChainGateway
     function updatePauseStatus() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
         AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
 
@@ -143,6 +144,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 

@@ -43,6 +43,20 @@ contract ParameterRegistryTests is Test {
 
     /* ============ initialize ============ */
 
+    function test_initialize_emptyAdmins() external {
+        ParameterRegistryHarness registry_ = ParameterRegistryHarness(address(new Proxy(_implementation)));
+
+        vm.expectRevert(IParameterRegistry.EmptyAdmins.selector);
+        registry_.initialize(new address[](0));
+    }
+
+    function test_initialize_zeroAdmin() external {
+        ParameterRegistryHarness registry_ = ParameterRegistryHarness(address(new Proxy(_implementation)));
+
+        vm.expectRevert(IParameterRegistry.ZeroAdmin.selector);
+        registry_.initialize(new address[](1));
+    }
+
     function test_initialize_reinitialization() external {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         _registry.initialize(new address[](0));
