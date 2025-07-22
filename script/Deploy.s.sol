@@ -390,7 +390,6 @@ contract DeployScripts is Script {
 
         if (_deploymentData.underlyingFeeToken == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
-        if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.mockUnderlyingFeeTokenProxySalt == 0) revert ProxySaltNotSet();
 
         vm.startBroadcast(_privateKey);

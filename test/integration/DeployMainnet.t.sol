@@ -18,7 +18,7 @@ import { Proxy } from "../../src/any-chain/Proxy.sol";
 
 import { DeployTests } from "./Deploy.sol";
 
-contract DeployTestnetTests is DeployTests {
+contract DeployMainnetTests is DeployTests {
     function setUp() public override {
         super.setUp();
 
