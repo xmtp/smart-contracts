@@ -32,6 +32,12 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
     /// @notice Thrown when the array length mismatch (e.g. when setting multiple parameters).
     error ArrayLengthMismatch();
 
+    /// @notice Thrown when the array of admins is empty.
+    error EmptyAdmins();
+
+    /// @notice Thrown when an admin is the zero address.
+    error ZeroAdmin();
+
     /* ============ Initialization ============ */
 
     /**

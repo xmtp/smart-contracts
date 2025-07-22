@@ -55,7 +55,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
-    /// @notice Thrown when the app chain gateway is paused.
+    /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
     /* ============ Initialization ============ */

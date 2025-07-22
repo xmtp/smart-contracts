@@ -18,10 +18,10 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  startSequenceId  The start sequence ID.
      * @param  endSequenceId    The end sequence ID.
      * @param  feesSettled      The total fees already settled for this report.
-     * @param  offset           The next index in the merkle tree that has yet to be processed/settled.
+     * @param  offset           The next index in the Merkle tree that has yet to be processed/settled.
      * @param  isSettled        Whether the payer report is completely processed/settled.
      * @param  protocolFees     The portion of the fees settled that is reserved for the protocol.
-     * @param  payersMerkleRoot The payers merkle root.
+     * @param  payersMerkleRoot The payers Merkle root.
      * @param  nodeIds          The active node IDs during the reporting period.
      */
     struct PayerReport {
@@ -54,7 +54,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  startSequenceId     The start sequence ID.
      * @param  endSequenceId       The end sequence ID.
      * @param  endMinuteSinceEpoch The timestamp of the message at `endSequenceId`.
-     * @param  payersMerkleRoot    The payers merkle root.
+     * @param  payersMerkleRoot    The payers Merkle root.
      * @param  nodeIds             The active node IDs during the reporting period.
      * @param  signingNodeIds      The node IDs of the signers of the payer report.
      */
@@ -120,10 +120,13 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Thrown when the payer report has already been entirely settled.
     error PayerReportEntirelySettled();
 
+    /// @notice Thrown when the length of the payer fees array is too long.
+    error PayerFeesLengthTooLong();
+
     /// @notice Thrown when failing to settle usage via the payer registry.
     error SettleUsageFailed(bytes returnData_);
 
-    /// @notice Thrown when the length of two input arrays do not match when they should.
+    /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when the protocol fee rate is invalid.
@@ -147,7 +150,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  startSequenceId_     The start sequence ID.
      * @param  endSequenceId_       The end sequence ID.
      * @param  endMinuteSinceEpoch_ The timestamp of the message at `endSequenceId`.
-     * @param  payersMerkleRoot_    The payers merkle root.
+     * @param  payersMerkleRoot_    The payers Merkle root.
      * @param  nodeIds_             The active node IDs during the reporting period.
      * @param  signatures_          The signature objects for the payer report.
      * @return payerReportIndex_    The index of the payer report in the originator's payer report array.
@@ -167,7 +170,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  originatorNodeId_ The originator node ID.
      * @param  payerReportIndex_ The payer report index.
      * @param  payerFees_        The sequential payer fees to settle.
-     * @param  proofElements_    The sequential merkle proof elements for the payer fees to settle.
+     * @param  proofElements_    The sequential Merkle proof elements for the payer fees to settle.
      */
     function settle(
         uint32 originatorNodeId_,
@@ -214,7 +217,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  originatorNodeIds_  An array of originator node IDs.
      * @param  payerReportIndices_ An array of payer report indices for each of the respective originator node IDs.
      * @return payerReports_       The array of payer reports.
-     * @dev    The node IDs in `originatorNodeIds_` do not need to be unique.
+     * @dev    The node IDs in `originatorNodeIds_` don't need to be unique.
      */
     function getPayerReports(
         uint32[] calldata originatorNodeIds_,
@@ -238,7 +241,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
      * @param  startSequenceId_     The start sequence ID.
      * @param  endSequenceId_       The end sequence ID.
      * @param  endMinuteSinceEpoch_ The timestamp of the message at `endSequenceId`.
-     * @param  payersMerkleRoot_    The payers merkle root.
+     * @param  payersMerkleRoot_    The payers Merkle root.
      * @param  nodeIds_             The active node IDs during the reporting period.
      * @return digest_              The EIP-712 digest.
      */

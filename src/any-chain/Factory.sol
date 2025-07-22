@@ -21,9 +21,9 @@ import { Proxy } from "./Proxy.sol";
  *         only be deployed once on each chain. Implementations deployed use their own bytecode hash as their salt, so
  *         a unique bytecode (including constructor arguments) will have only one possible address. Proxies deployed use
  *         the sender's address combined with a salt of the sender's choosing as a final salt, and the constructor
- *         arguments are always the same (i.e. the "initializable implementation"), so the their address has only 2
- *         degrees of freedom. This is helpful for ensuring the address of a future/planned contract is constant, while
- *         the implementation is not yet finalized or deployed.
+ *         arguments are always the same (i.e. the "initializable implementation"), so an address has only 2 degrees
+ *         of freedom. This is helpful for ensuring the address of a future/planned contract is constant, while the
+ *         implementation is not yet finalized or deployed.
  */
 contract Factory is IFactory, Migratable, OZInitializable {
     /* ============ Constants/Immutables ============ */
@@ -92,7 +92,8 @@ contract Factory is IFactory, Migratable, OZInitializable {
         bytes32 bytecodeHash_ = keccak256(bytecode_);
 
         // NOTE: Since an implementation is expected to be proxied, it can be a singleton, so its address can depend
-        //       entirely on its bytecode, thus a unique bytecode will have only one possible address.
+        //       entirely on its bytecode, thus a unique bytecode will have only one possible address. Because of this,
+        //       it does not matter who deploys the specific bytecode implementation, or if the call is frontrun.
         emit ImplementationDeployed(implementation_ = _create2(bytecode_, bytecodeHash_), bytecodeHash_);
     }
 
@@ -102,7 +103,7 @@ contract Factory is IFactory, Migratable, OZInitializable {
         bytes32 salt_,
         bytes calldata initializeCallData_
     ) external whenNotPaused returns (address proxy_) {
-        if (implementation_ == address(0)) revert InvalidImplementation();
+        if (_isZero(implementation_)) revert InvalidImplementation();
 
         // Append the initializable implementation address as a constructor argument to the proxy deploy code, and use
         // the sender's address combined with their chosen salt as the final salt.
@@ -119,6 +120,7 @@ contract Factory is IFactory, Migratable, OZInitializable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 

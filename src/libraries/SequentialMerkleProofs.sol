@@ -4,33 +4,33 @@ pragma solidity 0.8.28;
 import { ISequentialMerkleProofsErrors } from "./interfaces/ISequentialMerkleProofsErrors.sol";
 
 /**
- * @title  Library for verifying sequential merkle proofs.
- * @notice A sequential merkle proof is a proof that leaves appear sequentially in a merkle tree.
+ * @title  Library for verifying sequential Merkle proofs.
+ * @dev    A sequential Merkle proof is a proof that leaves appear sequentially in a Merkle tree.
  */
 library SequentialMerkleProofs {
     /* ============ Constants ============ */
 
     bytes32 internal constant EMPTY_TREE_ROOT = 0;
 
-    /// @notice The leaf prefix used to hash to a leaf ("leaf|").
+    /// @dev The leaf prefix used to hash to a leaf ("leaf|").
     bytes5 internal constant LEAF_PREFIX = 0x6c6561667c;
 
-    /// @notice The node prefix used to hash to a node ("node|").
+    /// @dev The node prefix used to hash to a node ("node|").
     bytes5 internal constant NODE_PREFIX = 0x6e6f64657c;
 
-    /// @notice The root prefix used to hash to a root.
+    /// @dev The root prefix used to hash to a root.
     bytes5 internal constant ROOT_PREFIX = 0x726f6f747c;
 
     /* ============ Main Functions ============ */
 
     /**
-     * @notice Verifies a sequential merkle proof.
-     * @param  root_          The root of the merkle tree.
-     * @param  startingIndex_ The index of the first leaf provided.
-     * @param  leaves_        The leaves to prove sequential existence from the starting index.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
-     * @dev    Can also revert with an array out-of-bounds access panic.
+     * @dev   Verifies a sequential Merkle proof.
+     * @param root_          The root of the Merkle tree.
+     * @param startingIndex_ The index of the first leaf provided.
+     * @param leaves_        The leaves to prove sequential existence from the starting index.
+     * @param proofElements_ The Merkle proof data.
+     * @dev   proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
+     * @dev   Can also revert with an array out-of-bounds access panic.
      */
     function verify(
         bytes32 root_,
@@ -44,12 +44,12 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the root of a sequential merkle proof.
-     * @param  startingIndex_ The index of the first leaf provided.
-     * @param  leaves_        The leaves to prove sequential existence from the starting index.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
-     * @dev    Can also revert with an array out-of-bounds access panic.
+     * @dev   Gets the root of a sequential Merkle proof.
+     * @param startingIndex_ The index of the first leaf provided.
+     * @param leaves_        The leaves to prove sequential existence from the starting index.
+     * @param proofElements_ The Merkle proof data.
+     * @dev   proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
+     * @dev   Can also revert with an array out-of-bounds access panic.
      */
     function getRoot(
         uint256 startingIndex_,
@@ -60,10 +60,10 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Extracts the leaf count from a sequential merkle proof, without verifying the proof.
-     * @param  proofElements_ The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree.
-     * @dev    Does not verify the proof. Only extracts the leaf count from the proof elements.
+     * @dev   Extracts the leaf count from a sequential Merkle proof, without verifying the proof.
+     * @param proofElements_ The Merkle proof data.
+     * @dev   proofElements_[0] is the total number of leaves in the Merkle tree.
+     * @dev   Does not verify the proof. Only extracts the leaf count from the proof elements.
      */
     function getLeafCount(bytes32[] calldata proofElements_) internal pure returns (uint32 leafCount_) {
         if (proofElements_.length == 0) revert ISequentialMerkleProofsErrors.NoProofElements();
@@ -76,7 +76,7 @@ library SequentialMerkleProofs {
     /* ============ Helper Functions ============ */
 
     /**
-     * @notice Counts number of set bits (1's) in 32-bit unsigned integer.
+     * @dev    Counts number of set bits (1's) in 32-bit unsigned integer.
      * @dev    See https://en.wikipedia.org/wiki/Hamming_weight implementation `popcount64b`.
      * @param  n_        The number to count the set bits of.
      * @return bitCount_ The number of set bits in `n_`.
@@ -98,7 +98,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Rounds a 32-bit unsigned integer up to the nearest power of 2.
+     * @dev    Rounds a 32-bit unsigned integer up to the nearest power of 2.
      * @param  n_        The number to round up to the nearest power of 2.
      * @return powerOf2_ The nearest power of 2 to `n_`.
      * @dev    Literals are inlined as they are very specific to this algorithm/function, and actually improve
@@ -119,8 +119,8 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the balanced leaf count for a sequential merkle proof.
-     * @param  leafCount_         The number of leaves in the merkle tree.
+     * @dev    Gets the balanced leaf count for a sequential Merkle proof.
+     * @param  leafCount_         The number of leaves in the Merkle tree.
      * @return balancedLeafCount_ The balanced leaf count.
      */
     function _getBalancedLeafCount(uint256 leafCount_) internal pure returns (uint256 balancedLeafCount_) {
@@ -128,11 +128,11 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Gets the root of a sequential merkle proof.
-     * @param  startingIndex_ The index of the first leaf provided.
-     * @param  hashes_        The leaf hashes (in reverse order) to prove sequential existence from the starting index.
-     * @param  proofElements_         The merkle proof data.
-     * @dev    proofElements_[0] is the total number of leaves in the merkle tree, the rest are the decommitments.
+     * @dev   Gets the root of a sequential Merkle proof.
+     * @param startingIndex_ The index of the first leaf provided.
+     * @param hashes_        The leaf hashes (in reverse order) to prove sequential existence from the starting index.
+     * @param proofElements_         The Merkle proof data.
+     * @dev   proofElements_[0] is the total number of leaves in the Merkle tree, the rest are the decommitments.
      */
     function _getRoot(
         uint256 startingIndex_,
@@ -213,8 +213,8 @@ library SequentialMerkleProofs {
                 ? highestLeafNodeIndex_ - (readIndex_ + 1)
                 : treeIndices_[(readIndex_ + 1) % count_];
 
-            /// @dev `root_` will temporarily be used as the right part of the node pair hash, it is being used to
-            ///      save much needed stack space.
+            /// @dev `root_` will temporarily be used as the right part of the node pair hash, it is being used to save
+            ///      much needed stack space.
             // Since we are processing nodes from right to left, then if the current node index is even, and there
             // exists nodes to the right (or else the previous if-continue would have been hit), then the right part of
             // the hash is a decommitment. If the current node index is odd, then the right part of the hash we already
@@ -261,7 +261,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Checks if the left part of the hash should be an existing computed hash.
+     * @dev    Checks if the left part of the hash should be an existing computed hash.
      * @param  nodeIndex_            The index of the current node in the tree indices array.
      * @param  nextNodeIndex_        The index of the next (lower) node in the tree indices array.
      * @return isLeftAnExistingHash_ True if the left part of the hash should be an existing computed hash.
@@ -276,7 +276,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Hashes a leaf of arbitrary size into a 32-byte leaf node.
+     * @dev    Hashes a leaf of arbitrary size into a 32-byte leaf node.
      * @param  leaf_ The leaf to hash.
      * @return hash_ The hash of the leaf.
      */
@@ -285,7 +285,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Hashes a pair of 32-byte nodes into a 32-byte parent node.
+     * @dev    Hashes a pair of 32-byte nodes into a 32-byte parent node.
      * @param  leftNode_  The left node to hash.
      * @param  rightNode_ The right node to hash.
      * @return hash_      The hash of the pair of nodes.
@@ -295,7 +295,7 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Hashes a 32-byte node, without a right paired node, into a 32-byte parent node.
+     * @dev    Hashes a 32-byte node, without a right paired node, into a 32-byte parent node.
      * @param  node_ The node to hash.
      * @return hash_ The hash of the node.
      */
@@ -304,8 +304,8 @@ library SequentialMerkleProofs {
     }
 
     /**
-     * @notice Hashes the topmost 32-byte node in the tree, combined with the tree's leaf count, into a 32-byte root.
-     * @param  leafCount_ The number of leaves in the merkle tree.
+     * @dev    Hashes the topmost 32-byte node in the tree, combined with the tree's leaf count, into a 32-byte root.
+     * @param  leafCount_ The number of leaves in the Merkle tree.
      * @param  node_      The topmost node in the tree.
      * @return hash_      The root hash of the tree.
      */
@@ -313,7 +313,7 @@ library SequentialMerkleProofs {
         return keccak256(abi.encodePacked(ROOT_PREFIX, leafCount_, node_));
     }
 
-    /// @notice Get leaf nodes from arbitrary size leaves in calldata, in reverse order.
+    /// @dev Get leaf nodes from arbitrary size leaves in calldata, in reverse order.
     function _getReversedLeafNodesFromLeaves(
         bytes[] calldata leaves_
     ) internal pure returns (bytes32[] memory leafNodes_) {

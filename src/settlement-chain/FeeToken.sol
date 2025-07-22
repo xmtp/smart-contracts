@@ -143,6 +143,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
@@ -216,7 +217,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
 
     function _deposit(address recipient_, uint256 amount_) internal {
         if (amount_ == 0) revert ZeroAmount();
-        if (recipient_ == address(0)) revert ZeroRecipient();
+        if (_isZero(recipient_)) revert ZeroRecipient();
 
         SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount_);
 
@@ -225,7 +226,7 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
 
     function _withdraw(address recipient_, uint256 amount_) internal {
         if (amount_ == 0) revert ZeroAmount();
-        if (recipient_ == address(0)) revert ZeroRecipient();
+        if (_isZero(recipient_)) revert ZeroRecipient();
 
         _burn(msg.sender, amount_);
 

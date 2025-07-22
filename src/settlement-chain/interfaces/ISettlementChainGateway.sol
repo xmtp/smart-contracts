@@ -15,7 +15,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when fee tokens have been sent to the app chain (becoming native gas token).
      * @param  chainId       The chain ID of the target app chain.
-     * @param  inbox         The inbox address, from which you can derive the app chain.
+     * @param  inbox         The inbox address directing funds/messages to the target app chain.
      * @param  messageNumber The message number, unique per inbox.
      * @param  amount        The amount of tokens sent.
      */
@@ -24,7 +24,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when parameters have been sent to the app chain.
      * @param  chainId       The chain ID of the target app chain.
-     * @param  inbox         The inbox address, from which you can derive the app chain.
+     * @param  inbox         The inbox address directing funds/messages to the target app chain.
      * @param  messageNumber The message number, unique per inbox.
      * @param  nonce         The nonce of the parameter transmission (to prevent out-of-sequence resets).
      * @param  keys          The keys of the parameters.
@@ -83,11 +83,17 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the chain ID is not supported.
     error UnsupportedChainId(uint256 chainId);
 
-    /// @notice Thrown when the contract is paused.
+    /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
+
+    /// @notice Thrown when the balance is zero.
+    error ZeroBalance();
+
+    /// @notice Thrown when the amount is zero.
+    error ZeroAmount();
 
     /* ============ Initialization ============ */
 
@@ -177,7 +183,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
      * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
-     * @dev    The total amount of fee tokens that will be pulled form the caller is `chainIds_.length` multiplied by
+     * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
     function sendParametersAsRetryableTickets(
@@ -205,7 +211,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
      * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
-     * @dev    The total amount of fee tokens that will be pulled form the caller is `chainIds_.length` multiplied by
+     * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
     function sendParametersAsRetryableTicketsWithPermit(
@@ -233,7 +239,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
      * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
-     * @dev    The total amount of fee tokens that will be pulled form the caller is `chainIds_.length` multiplied by
+     * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
     function sendParametersAsRetryableTicketsFromUnderlying(
@@ -262,7 +268,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
      * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
-     * @dev    The total amount of fee tokens that will be pulled form the caller is `chainIds_.length` multiplied by
+     * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
     function sendParametersAsRetryableTicketsFromUnderlyingWithPermit(

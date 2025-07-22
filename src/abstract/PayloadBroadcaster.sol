@@ -73,8 +73,8 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMinPayloadSize() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint32 minPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, minPayloadSizeParameterKey());
-
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
         if (minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
@@ -85,8 +85,8 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function updateMaxPayloadSize() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint32 maxPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, maxPayloadSizeParameterKey());
-
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
         if (maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
@@ -97,6 +97,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function updatePauseStatus() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
@@ -107,6 +108,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IPayloadBroadcaster
     function updatePayloadBootstrapper() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address payloadBootstrapper_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
             payloadBootstrapperParameterKey()
@@ -121,6 +123,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 

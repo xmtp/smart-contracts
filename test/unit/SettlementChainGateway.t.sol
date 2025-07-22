@@ -111,6 +111,19 @@ contract SettlementChainGatewayTests is Test {
         _gateway.deposit(1111, 100);
     }
 
+    function test_deposit_zeroAmount() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.ZeroAmount.selector);
+
+        vm.prank(_alice);
+        _gateway.deposit(1111, 0);
+    }
+
     function test_deposit_unsupportedChainId() external {
         vm.mockCall(
             _feeToken,
@@ -203,6 +216,34 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_zeroAmount() external {
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(ISettlementChainGateway.ZeroAmount.selector);
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, 0, 0, 0, 0, 0);
     }
 
     function test_depositWithPermit_unsupportedChainId() external {
@@ -355,6 +396,21 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositFromUnderlying(1111, 100);
+    }
+
+    function test_depositFromUnderlying_zeroAmount() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(ISettlementChainGateway.ZeroAmount.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, 0);
     }
 
     function test_depositFromUnderlying_unsupportedChainId() external {
@@ -513,6 +569,36 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositFromUnderlyingWithPermit(1111, 100, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_zeroAmount() external {
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 0),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(ISettlementChainGateway.ZeroAmount.selector);
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, 0, 0, 0, 0, 0);
     }
 
     function test_depositFromUnderlyingWithPermit_unsupportedChainId() external {
@@ -1672,6 +1758,14 @@ contract SettlementChainGatewayTests is Test {
 
     /* ============ withdraw ============ */
 
+    function test_withdraw_zeroBalance() external {
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(0));
+
+        vm.expectRevert(ISettlementChainGateway.ZeroBalance.selector);
+
+        _gateway.withdraw(address(0));
+    }
+
     function test_withdraw_feeTokenTransferFailed_reverts() external {
         vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));
 
@@ -1704,6 +1798,14 @@ contract SettlementChainGatewayTests is Test {
     }
 
     /* ============ withdrawIntoUnderlying ============ */
+
+    function test_withdrawIntoUnderlying_zeroBalance() external {
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(0));
+
+        vm.expectRevert(ISettlementChainGateway.ZeroBalance.selector);
+
+        _gateway.withdrawIntoUnderlying(address(0));
+    }
 
     function test_withdrawIntoUnderlying_feeTokenWithdrawToFailed_reverts() external {
         vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));

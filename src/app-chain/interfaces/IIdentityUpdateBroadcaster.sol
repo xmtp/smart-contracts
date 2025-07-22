@@ -20,7 +20,7 @@ interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the array lengths do not match.
+    /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when a supplied array is empty.
@@ -29,7 +29,7 @@ interface IIdentityUpdateBroadcaster is IPayloadBroadcaster {
     /* ============ Interactive Functions ============ */
 
     /**
-     * @notice Adds an identity update to an specific inbox ID.
+     * @notice Adds an identity update to a specific inbox ID.
      * @param  inboxId_        The inbox ID.
      * @param  identityUpdate_ The identity update in bytes.
      * @dev    Ensures the payload length is within the allowed range and increments the sequence ID.

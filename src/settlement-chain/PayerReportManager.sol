@@ -15,7 +15,7 @@ import { ERC5267 } from "../abstract/ERC5267.sol";
 import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: If a node signer can sign for more than one node, their signature for a payer report will be identical, and
-//       therefore replayable across their nodes. This may not be ideal, so it might be necessary to include the node id
+//       therefore replayable across their nodes. This may not be ideal, so it might be necessary to include the node ID
 //       of the signing node in the digest.
 
 /**
@@ -178,6 +178,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         // Verify the payer fees provided are the next sequential payer fees from the last settled offset.
         SequentialMerkleProofs.verify(payerReport_.payersMerkleRoot, payerReport_.offset, payerFees_, proofElements_);
 
+        // NOTE: It is safe to cast the length of the `payerFees_` to a `uint32` here, as an array of bytes (even if all
+        //       empty) with length `type(uint32).max` will revert due to memory allocation before this.
         payerReport_.offset += uint32(payerFees_.length);
 
         uint32 leafCount_ = SequentialMerkleProofs.getLeafCount(proofElements_);
@@ -208,11 +210,13 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /// @inheritdoc IPayerReportManager
     function updateProtocolFeeRate() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         uint16 protocolFeeRate_ = RegistryParameters.getUint16Parameter(
             parameterRegistry,
             protocolFeeRateParameterKey()
@@ -303,10 +307,10 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     /**
      * @dev    Returns the EIP-712 digest for a payer report.
-     * @param  originatorNodeId_ The id of the node originator.
+     * @param  originatorNodeId_ The ID of the node originator.
      * @param  startSequenceId_  The start sequence ID.
      * @param  endSequenceId_    The end sequence ID.
-     * @param  payersMerkleRoot_ The payers merkle root.
+     * @param  payersMerkleRoot_ The payers Merkle root.
      * @param  nodeIds_          The active node IDs during the reporting period.
      * @return digest_           The EIP-712 digest.
      */
@@ -363,7 +367,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         // Need to determine how many of the signatures are valid and provided by canonical node operators.
         uint8 validSignatureCount_ = 0;
 
-        // This array will help in constructing the `validSigningNodeIds_` array, who's length may be less than
+        // This array will help in constructing the `validSigningNodeIds_` array, whose length may be less than
         // the length of the `signatures_` array if some of the signatures are invalid.
         bool[] memory isValid_ = new bool[](signatures_.length);
 
@@ -414,6 +418,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         address signer_ = ECDSA.tryRecoverCalldata(digest_, signature_);
 
         // The signature is valid if the recovered signer is not `address(0)` and is the signer of the node.
-        return (signer_ != address(0)) && (signer_ == INodeRegistryLike(nodeRegistry).getSigner(nodeId_));
+        return !_isZero(signer_) && (signer_ == INodeRegistryLike(nodeRegistry).getSigner(nodeId_));
     }
 }

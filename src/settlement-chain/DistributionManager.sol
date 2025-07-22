@@ -17,6 +17,10 @@ import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
+// TODO: While there is no real need to put `withdrawProtocolFees` and/or `withdrawProtocolFeesIntoUnderlying` behind
+//       ACL, it does currently mean that anyone can cause the `protocolFeesRecipient` to receive fee tokens or
+//       underlying tokens, at the caller's will, which is not ideal.
+
 /**
  * @title  Implementation of the Distribution Manager.
  * @notice This contract handles functionality for distributing fees.
@@ -250,6 +254,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IDistributionManager
     function updatePauseStatus() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         bool paused_ = RegistryParameters.getBoolParameter(parameterRegistry, pausedParameterKey());
         DistributionManagerStorage storage $ = _getDistributionManagerStorage();
 
@@ -260,11 +265,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IMigratable
     function migrate() external {
+        // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
         _migrate(RegistryParameters.getAddressParameter(parameterRegistry, migratorParameterKey()));
     }
 
     /// @inheritdoc IDistributionManager
     function updateProtocolFeesRecipient() external {
+        // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address protocolFeesRecipient_ = RegistryParameters.getAddressParameter(
             parameterRegistry,
             protocolFeesRecipientParameterKey()
