@@ -20,7 +20,7 @@ interface IGroupMessageBroadcaster is IPayloadBroadcaster {
 
     /* ============ Custom Errors ============ */
 
-    /// @notice Thrown when the length of input arrays don't match.
+    /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when a supplied array is empty.

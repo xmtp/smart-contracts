@@ -54,7 +54,7 @@ interface IFactory is IMigratable {
     /// @notice Thrown when the deployment of a contract (e.g. an implementation or proxy) fails.
     error DeployFailed();
 
-    /// @notice Thrown when some pausable function is called when the contract is paused.
+    /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
     /* ============ Initialization ============ */

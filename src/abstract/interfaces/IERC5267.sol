@@ -28,8 +28,8 @@ interface IERC5267 is IERC712 {
      * @return salt_              A disambiguating salt for the protocol.
      * @return extensions_        A list of EIP numbers, each of which MUST refer to an EIP that extends EIP-712 with
      *                            new domain fields, along with a method to obtain the value for those fields, and
-     *                            potentially conditions for inclusion. The value of fields don't affect their
-     *                            inclusion.
+     *                            potentially conditions for inclusion. The values of those fields do not affect
+     *                            whether they are included.
      */
     function eip712Domain()
         external

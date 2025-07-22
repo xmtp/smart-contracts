@@ -126,7 +126,7 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Thrown when failing to settle usage via the payer registry.
     error SettleUsageFailed(bytes returnData_);
 
-    /// @notice Thrown when the length of input arrays don't match.
+    /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when the protocol fee rate is invalid.

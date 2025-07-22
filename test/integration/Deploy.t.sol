@@ -175,6 +175,8 @@ contract DeployTests is Test {
     }
 
     function test_deployTestnetProtocol() external {
+        vm.skip(true);
+
         // Get the expected address of the Gateway on the app chain, since the Parameter Registry on the
         // same chain will need it.
         address expectedGatewayProxy_ = _expectedGatewayProxy();

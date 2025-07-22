@@ -78,7 +78,7 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the caller is not the owner of the specified node.
     error NotNodeOwner();
 
-    /// @notice Thrown when the length of input arrays don't match.
+    /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 
     /// @notice Thrown when a payer report has already been claimed.
@@ -99,7 +99,7 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the contract's available balance is zero.
     error ZeroAvailableBalance();
 
-    /// @notice Thrown when some pausable function is called when the contract is paused.
+    /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when there is no change to an updated parameter.

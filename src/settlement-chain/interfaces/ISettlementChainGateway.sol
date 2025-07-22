@@ -15,7 +15,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when fee tokens have been sent to the app chain (becoming native gas token).
      * @param  chainId       The chain ID of the target app chain.
-     * @param  inbox         The inbox address, from which you can derive the app chain.
+     * @param  inbox         The inbox address directing funds/messages to the target app chain.
      * @param  messageNumber The message number, unique per inbox.
      * @param  amount        The amount of tokens sent.
      */
@@ -24,7 +24,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Emitted when parameters have been sent to the app chain.
      * @param  chainId       The chain ID of the target app chain.
-     * @param  inbox         The inbox address, from which you can derive the app chain.
+     * @param  inbox         The inbox address directing funds/messages to the target app chain.
      * @param  messageNumber The message number, unique per inbox.
      * @param  nonce         The nonce of the parameter transmission (to prevent out-of-sequence resets).
      * @param  keys          The keys of the parameters.
@@ -83,7 +83,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the chain ID is not supported.
     error UnsupportedChainId(uint256 chainId);
 
-    /// @notice Thrown when some pausable function is called when the contract is paused.
+    /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
     /// @notice Thrown when there is no change to an updated parameter.
