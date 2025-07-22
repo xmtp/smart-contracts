@@ -117,42 +117,6 @@ contract DeployMainnetTests is DeployTests {
 
         console.log("distributionManagerProxy: %s", address(_distributionManagerProxy));
 
-        // // Deploy the Gateway on the app chain.
-        // address appChainGatewayImplementation_ = _deployAppChainGatewayImplementation(
-        //     _parameterRegistryProxy,
-        //     address(_settlementChainGatewayProxy)
-        // );
-
-        // console.log("appChainGatewayImplementation: %s", address(appChainGatewayImplementation_));
-
-        // _appChainGatewayProxy = _deployAppChainGatewayProxy(appChainGatewayImplementation_);
-
-        // console.log("appChainGatewayProxy: %s", address(_appChainGatewayProxy));
-
-        // // Deploy the Group Message Broadcaster on the app chain.
-        // address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
-        //     _parameterRegistryProxy
-        // );
-
-        // console.log("groupMessageBroadcasterImplementation: %s", address(groupMessageBroadcasterImplementation_));
-
-        // _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(groupMessageBroadcasterImplementation_);
-
-        // console.log("groupMessageBroadcasterProxy: %s", address(_groupMessageBroadcasterProxy));
-
-        // // Deploy the Identity Update Broadcaster on the app chain.
-        // address identityUpdateBroadcasterImplementation_ = _deployIdentityUpdateBroadcasterImplementation(
-        //     _parameterRegistryProxy
-        // );
-
-        // console.log("identityUpdateBroadcasterImplementation: %s", address(identityUpdateBroadcasterImplementation_));
-
-        // _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(
-        //     identityUpdateBroadcasterImplementation_
-        // );
-
-        // console.log("identityUpdateBroadcasterProxy: %s", address(_identityUpdateBroadcasterProxy));
-
         // Set and update the inbox parameters for the settlement chain gateway to communicate with the app chain.
         _setInboxParameters();
         _updateInboxParameters();
@@ -176,10 +140,6 @@ contract DeployMainnetTests is DeployTests {
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
         _setBroadcasterStartingParameters();
-        // _bridgeBroadcasterStartingParameters(_appChainId);
-        // _handleQueuedBridgeEvents();
-        // _assertBroadcasterStartingParameters();
-        // _updateBroadcasterStartingParameters();
     }
 
     function _deployBaseSettlementChainComponents() internal {
