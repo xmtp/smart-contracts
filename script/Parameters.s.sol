@@ -7,6 +7,7 @@ import { IGroupMessageBroadcaster } from "../src/app-chain/interfaces/IGroupMess
 import { IIdentityUpdateBroadcaster } from "../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
 import { INodeRegistry } from "../src/settlement-chain/interfaces/INodeRegistry.sol";
 import { IPayerRegistry } from "../src/settlement-chain/interfaces/IPayerRegistry.sol";
+import { IPayerReportManager } from "../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRateRegistry } from "../src/settlement-chain/interfaces/IRateRegistry.sol";
 import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 
@@ -28,6 +29,7 @@ contract ParameterScripts is Script {
     error NodeRegistryProxyNotSet();
     error ParameterRegistryProxyNotSet();
     error PayerRegistryProxyNotSet();
+    error PayerReportManagerProxyNotSet();
     error PrivateKeyNotSet();
     error RateRegistryProxyNotSet();
     error UnexpectedAdmin();
@@ -111,9 +113,11 @@ contract ParameterScripts is Script {
         updateNodeRegistryStartingParameters();
         updatePayerRegistryStartingParameters();
         updateRateRegistryStartingParameters();
+        updateSettlementChainGatewayStartingParameters();
+        updatePayerReportManagerStartingParameters();
     }
 
-    function bridgeBroadcasterPayloadSizeParameters(uint256[] calldata chainIds_) external {
+    function bridgeBroadcasterPayloadSizeParameters() external {
         if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -133,6 +137,9 @@ contract ParameterScripts is Script {
         vm.startBroadcast(_privateKey);
 
         IERC20Like(_deploymentData.feeTokenProxy).approve(_deploymentData.gatewayProxy, cost_);
+
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = _deploymentData.appChainId;
 
         ISettlementChainGateway(_deploymentData.gatewayProxy).sendParametersAsRetryableTickets(
             chainIds_,
@@ -180,6 +187,24 @@ contract ParameterScripts is Script {
 
         vm.startBroadcast(_privateKey);
         IRateRegistry(_deploymentData.rateRegistryProxy).updateRates();
+        vm.stopBroadcast();
+    }
+
+    function updateSettlementChainGatewayStartingParameters() public {
+        if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+
+        vm.startBroadcast(_privateKey);
+        ISettlementChainGateway(_deploymentData.gatewayProxy).updateInbox(_deploymentData.appChainId);
+        vm.stopBroadcast();
+    }
+
+    function updatePayerReportManagerStartingParameters() public {
+        if (_deploymentData.payerReportManagerProxy == address(0)) revert PayerReportManagerProxyNotSet();
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+
+        vm.startBroadcast(_privateKey);
+        IPayerReportManager(_deploymentData.payerReportManagerProxy).updateProtocolFeeRate();
         vm.stopBroadcast();
     }
 

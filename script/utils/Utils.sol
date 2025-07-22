@@ -5,6 +5,7 @@ import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 
 library Utils {
+    error ArrayLengthMismatch();
     error InvalidInputLength();
 
     enum ParameterType {
@@ -163,28 +164,29 @@ library Utils {
     ) internal view returns (string[] memory keys_, bytes32[] memory values_) {
         string memory json_ = VM.readFile(filePath_);
 
-        string[] memory startingKeys_ = new string[](15);
+        string[] memory startingKeys_ = new string[](16);
         startingKeys_[0] = "xmtp.nodeRegistry.admin";
         startingKeys_[1] = "xmtp.nodeRegistry.maxCanonicalNodes";
         startingKeys_[2] = "xmtp.payerRegistry.settler";
         startingKeys_[3] = "xmtp.payerRegistry.feeDistributor";
         startingKeys_[4] = "xmtp.payerRegistry.minimumDeposit";
         startingKeys_[5] = "xmtp.payerRegistry.withdrawLockPeriod";
-        startingKeys_[6] = "xmtp.rateRegistry.messageFee";
-        startingKeys_[7] = "xmtp.rateRegistry.storageFee";
-        startingKeys_[8] = "xmtp.rateRegistry.congestionFee";
-        startingKeys_[9] = "xmtp.rateRegistry.targetRatePerMinute";
-        startingKeys_[10] = "xmtp.groupMessageBroadcaster.minPayloadSize";
-        startingKeys_[11] = "xmtp.groupMessageBroadcaster.maxPayloadSize";
-        startingKeys_[12] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
-        startingKeys_[13] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+        startingKeys_[6] = "xmtp.payerReportManager.protocolFeeRate";
+        startingKeys_[7] = "xmtp.rateRegistry.messageFee";
+        startingKeys_[8] = "xmtp.rateRegistry.storageFee";
+        startingKeys_[9] = "xmtp.rateRegistry.congestionFee";
+        startingKeys_[10] = "xmtp.rateRegistry.targetRatePerMinute";
+        startingKeys_[11] = "xmtp.groupMessageBroadcaster.minPayloadSize";
+        startingKeys_[12] = "xmtp.groupMessageBroadcaster.maxPayloadSize";
+        startingKeys_[13] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
+        startingKeys_[14] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
 
-        startingKeys_[14] = string.concat(
+        startingKeys_[15] = string.concat(
             "xmtp.settlementChainGateway.inbox.",
-            VM.parseJsonKeys(json_, "xmtp.settlementChainGateway.inbox")[0]
+            VM.parseJsonKeys(json_, ".startingParameters.xmtp.settlementChainGateway.inbox")[0]
         );
 
-        ParameterType[] memory parameterTypes_ = new ParameterType[](15);
+        ParameterType[] memory parameterTypes_ = new ParameterType[](16);
         parameterTypes_[0] = ParameterType.Address;
         parameterTypes_[1] = ParameterType.Uint;
         parameterTypes_[2] = ParameterType.Address;
@@ -199,7 +201,10 @@ library Utils {
         parameterTypes_[11] = ParameterType.Uint;
         parameterTypes_[12] = ParameterType.Uint;
         parameterTypes_[13] = ParameterType.Uint;
-        parameterTypes_[14] = ParameterType.Address;
+        parameterTypes_[14] = ParameterType.Uint;
+        parameterTypes_[15] = ParameterType.Address;
+
+        if (startingKeys_.length != parameterTypes_.length) revert ArrayLengthMismatch();
 
         uint256 count_ = 0;
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# TODO: Why is BASESCAN_API_KEY used everywhere, but not BLOCKSCOUT_API_KEY?
+# TODO: Add verify-check via https://getfoundry.sh/forge/reference/forge-verify-check.html
 
 source "$(dirname "$0")/utils"
 
@@ -15,7 +15,7 @@ fi
 # Check if both arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
-    echo "chain-name: The chain to verify (e.g. base_sepolia, xmtp_ropsten)"
+    echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, xmtp_ropsten)"
     echo "explorer: The explorer to use (e.g. basescan, blockscout, alchemy)"
     exit 1
 fi
@@ -24,13 +24,18 @@ CHAIN_NAME=$1
 EXPLORER=$2
 
 # Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_sepolia|xmtp_ropsten)$ ]]; then
-    echo "Error: Invalid chain name. Must be one of: base_sepolia, xmtp_ropsten"
+if [[ ! "$CHAIN_NAME" =~ ^(base_mainnet|base_sepolia|xmtp_ropsten)$ ]]; then
+    echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten"
     exit 1
 fi
 
 # Determine properties based on chain name
 case "$CHAIN_NAME" in
+    "base_mainnet")
+        ENVIRONMENT="mainnet"
+        CHAIN_ID="8453"
+        CHAIN_TYPE="settlement-chain"
+        ;;
     "base_sepolia")
         ENVIRONMENT="testnet-dev"
         CHAIN_ID="84532"
@@ -50,57 +55,31 @@ if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \
     exit 1
 fi
 
-# Determine VERIFIER and EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
-if [ "$EXPLORER" = "basescan" ]; then
-    VERIFIER="etherscan"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://api.basescan.org/api"
-    else
-        EXPLORER_URL="https://api-sepolia.basescan.org/api"
-    fi
-elif [ "$EXPLORER" = "blockscout" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://base.blockscout.com/api?"
-    else
-        EXPLORER_URL="https://base-sepolia.blockscout.com/api?"
-    fi
-elif [ "$EXPLORER" = "alchemy" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
-    else
-        EXPLORER_URL="https://xmtp-ropsten.explorer.alchemy.com/api\?"
-    fi
-else
-    echo "Error: explorer must be basescan, blockscout, or alchemy"
-    exit 1
-fi
+VERIFIER=$(get_verifier "$EXPLORER")
+EXPLORER_URL=$(get_explorer_url "$ENVIRONMENT" "$EXPLORER")
+API_KEY=$(get_api_key "$EXPLORER")
 
 echo "⧖ Verifying base contracts on $CHAIN_NAME."
 
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-    # Validate BASESCAN_API_KEY is set
-    if [ -z "${BASESCAN_API_KEY:-}" ]; then
-        echo "Error: BASESCAN_API_KEY not found in .env file"
-        exit 1
-    fi
-
     FACTORY=$(get_environment_value "$ENVIRONMENT" "factory")
+    FACTORY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "factoryImplementation")
     FEE_TOKEN_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "feeTokenImplementation")
     FEE_TOKEN_PROXY=$(get_environment_value "$ENVIRONMENT" "feeTokenProxy")
     INITIALIZABLE_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "initializableImplementation")
-    MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "mockUnderlyingFeeTokenImplementation")
     PARAMETER_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "parameterRegistryProxy")
     SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "settlementChainParameterRegistryImplementation")
     UNDERLYING_FEE_TOKEN=$(get_environment_value "$ENVIRONMENT" "underlyingFeeToken")
 
+    if [ "$ENVIRONMENT" = "mainnet" ]; then
+        MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION="0x0000000000000000000000000000000000000000"
+    else
+        MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "mockUnderlyingFeeTokenImplementation")
+    fi
+
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         "$INITIALIZABLE_IMPLEMENTATION" \
         src/any-chain/Initializable.sol:Initializable
 
@@ -108,15 +87,26 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
-        "$FACTORY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$FACTORY_IMPLEMENTATION" \
         src/any-chain/Factory.sol:Factory
 
     sleep 2
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    # Verifying the proxy for the factory should suffice for the explorer to pick up the other proxies.
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$FACTORY_IMPLEMENTATION") \
+        "$FACTORY" \
+        src/any-chain/Proxy.sol:Proxy
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         "$SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
         src/settlement-chain/SettlementChainParameterRegistry.sol:SettlementChainParameterRegistry
 
@@ -124,26 +114,18 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    # Verifying the proxy for the parameter registry should suffice for the explorer to pick up the other proxies.
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
-        "$PARAMETER_REGISTRY_PROXY" \
-        src/any-chain/Proxy.sol:Proxy
+    if [ "$ENVIRONMENT" != "mainnet" ]; then
+        forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+            --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+            "$MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION" \
+            test/utils/Mocks.sol:MockUnderlyingFeeToken
 
-    sleep 2
+        sleep 2
 
-    echo ""
+        echo ""
+    fi
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
-        "$MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION" \
-        test/utils/Mocks.sol:MockUnderlyingFeeToken
-
-    sleep 2
-
-    echo ""
-
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address,address)" "$PARAMETER_REGISTRY_PROXY" "$UNDERLYING_FEE_TOKEN") \
         "$FEE_TOKEN_IMPLEMENTATION" \
         src/settlement-chain/FeeToken.sol:FeeToken
@@ -153,42 +135,48 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
     # NOTE: Proxy verification is inconsistent due to etherscan-like explorer bugs.
     if [ "$EXPLORER" = "basescan" ]; then
         echo ""
+        echo "Verifying Proxy For Factory"
+
+        if ! curl -d "address=${FACTORY}&expectedimplementation=${FACTORY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
+            echo "Warning: Failed to verify proxy for Factory" >&2
+        fi
+
+        echo ""
         echo "Verifying Proxy For SettlementChainParameterRegistry"
 
-        if ! curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for SettlementChainParameterRegistry" >&2
         fi
 
         echo ""
+        echo "Verifying Proxy For FeeToken"
 
-        if ! curl -d "address=${FEE_TOKEN_PROXY}&expectedimplementation=${FEE_TOKEN_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${FEE_TOKEN_PROXY}&expectedimplementation=${FEE_TOKEN_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for FeeToken" >&2
         fi
 
-        echo ""
+        if [ "$ENVIRONMENT" != "mainnet" ]; then
+            echo ""
+            echo "Verifying Proxy For UnderlyingFeeToken"
 
-        if ! curl -d "address=${UNDERLYING_FEE_TOKEN}&expectedimplementation=${MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
-            echo "Warning: Failed to verify proxy for UnderlyingFeeToken" >&2
+            if ! curl -d "address=${UNDERLYING_FEE_TOKEN}&expectedimplementation=${MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
+                echo "Warning: Failed to verify proxy for UnderlyingFeeToken" >&2
+            fi
         fi
 
         echo ""
         echo "--> Proxy verification is inconsistent due to etherscan-like explorer bugs. Manually confirm and/or perform proxy verification in the explorer.<--"
     fi
 else
-    # Validate BLOCKSCOUT_API_KEY is set
-    if [ -z "${BLOCKSCOUT_API_KEY:-}" ]; then
-        echo "Error: BLOCKSCOUT_API_KEY not found in .env file"
-        exit 1
-    fi
-
     APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "appChainParameterRegistryImplementation")
     FACTORY=$(get_environment_value "$ENVIRONMENT" "factory")
+    FACTORY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "factoryImplementation")
     INITIALIZABLE_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "initializableImplementation")
     PARAMETER_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "parameterRegistryProxy")
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         "$INITIALIZABLE_IMPLEMENTATION" \
         src/any-chain/Initializable.sol:Initializable
 
@@ -196,27 +184,28 @@ else
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
-        "$FACTORY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
+        "$FACTORY_IMPLEMENTATION" \
         src/any-chain/Factory.sol:Factory
 
     sleep 2
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
-        "$APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
-        src/app-chain/AppChainParameterRegistry.sol:AppChainParameterRegistry
+    # Verifying the proxy for the factory should suffice for the explorer to pick up the other proxies.
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
+        "$FACTORY" \
+        src/any-chain/Proxy.sol:Proxy
 
     sleep 2
 
     echo ""
 
-    # Verifying the proxy for the parameter registry should suffice for the explorer to pick up the other proxies.
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
-        "$PARAMETER_REGISTRY_PROXY" \
-        src/any-chain/Proxy.sol:Proxy
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        "$APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
+        src/app-chain/AppChainParameterRegistry.sol:AppChainParameterRegistry
 fi
 
 echo "✔ Done verifying base contracts for $CHAIN_NAME."

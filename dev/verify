@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# TODO: Why is BASESCAN_API_KEY used everywhere, but not BLOCKSCOUT_API_KEY?
+# TODO: Add verify-check via https://getfoundry.sh/forge/reference/forge-verify-check.html
 
 source "$(dirname "$0")/utils"
 
@@ -51,45 +51,13 @@ if [[ ("$CHAIN_TYPE" == "app-chain" && "$EXPLORER" != "alchemy") || \
     exit 1
 fi
 
-# Determine VERIFIER and EXPLORER_URL based on EXPLORER, ENVIRONMENT, CHAIN_TYPE
-if [ "$EXPLORER" = "basescan" ]; then
-    VERIFIER="etherscan"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://api.basescan.org/api"
-    else
-        EXPLORER_URL="https://api-sepolia.basescan.org/api"
-    fi
-elif [ "$EXPLORER" = "blockscout" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://base.blockscout.com/api?"
-    else
-        EXPLORER_URL="https://base-sepolia.blockscout.com/api?"
-    fi
-elif [ "$EXPLORER" = "alchemy" ]; then
-    VERIFIER="blockscout"
-
-    if [ "$ENVIRONMENT" = "mainnet" ]; then
-        EXPLORER_URL="https://xmtp.explorer.alchemy.com/api\?"
-    else
-        EXPLORER_URL="https://xmtp-ropsten.explorer.alchemy.com/api\?"
-    fi
-else
-    echo "Error: explorer must be basescan, blockscout, or alchemy"
-    exit 1
-fi
+VERIFIER=$(get_verifier "$EXPLORER")
+EXPLORER_URL=$(get_explorer_url "$ENVIRONMENT" "$EXPLORER")
+API_KEY=$(get_api_key "$EXPLORER")
 
 echo "⧖ Verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
 
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-    # Validate BASESCAN_API_KEY is set
-    if [ -z "${BASESCAN_API_KEY:-}" ]; then
-        echo "Error: BASESCAN_API_KEY not found in .env file"
-        exit 1
-    fi
-
     DISTRIBUTION_MANAGER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "distributionManagerImplementation")
     DISTRIBUTION_MANAGER_PROXY=$(get_environment_value "$ENVIRONMENT" "distributionManagerProxy")
     FEE_TOKEN_PROXY=$(get_environment_value "$ENVIRONMENT" "feeTokenProxy")
@@ -107,7 +75,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address,address,address)" \
             "$PARAMETER_REGISTRY_PROXY" \
             "$GATEWAY_PROXY" \
@@ -119,7 +87,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address,address)" \
             "$PARAMETER_REGISTRY_PROXY" \
             "$FEE_TOKEN_PROXY") \
@@ -130,7 +98,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
         "$RATE_REGISTRY_IMPLEMENTATION" \
         src/settlement-chain/RateRegistry.sol:RateRegistry
@@ -139,7 +107,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
         "$NODE_REGISTRY_IMPLEMENTATION" \
         src/settlement-chain/NodeRegistry.sol:NodeRegistry
@@ -148,7 +116,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address,address,address)" \
             "$PARAMETER_REGISTRY_PROXY" \
             "$NODE_REGISTRY_PROXY" \
@@ -160,7 +128,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BASESCAN_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address,address,address,address,address)" \
             "$PARAMETER_REGISTRY_PROXY" \
             "$NODE_REGISTRY_PROXY" \
@@ -177,7 +145,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For SettlementChainGateway"
 
-        if ! curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for SettlementChainGateway" >&2
         fi
 
@@ -186,7 +154,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For PayerRegistry"
 
-        if ! curl -d "address=${PAYER_REGISTRY_PROXY}&expectedimplementation=${PAYER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${PAYER_REGISTRY_PROXY}&expectedimplementation=${PAYER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for PayerRegistry" >&2
         fi
 
@@ -195,7 +163,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For RateRegistry"
 
-        if ! curl -d "address=${RATE_REGISTRY_PROXY}&expectedimplementation=${RATE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${RATE_REGISTRY_PROXY}&expectedimplementation=${RATE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for RateRegistry" >&2
         fi
 
@@ -204,7 +172,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For NodeRegistry"
 
-        if ! curl -d "address=${NODE_REGISTRY_PROXY}&expectedimplementation=${NODE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${NODE_REGISTRY_PROXY}&expectedimplementation=${NODE_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for NodeRegistry" >&2
         fi
 
@@ -213,7 +181,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For PayerReportManager"
 
-        if ! curl -d "address=${PAYER_REPORT_MANAGER_PROXY}&expectedimplementation=${PAYER_REPORT_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${PAYER_REPORT_MANAGER_PROXY}&expectedimplementation=${PAYER_REPORT_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for PayerReportManager" >&2
         fi
 
@@ -222,7 +190,7 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo ""
         echo "Verifying Proxy For DistributionManager"
 
-        if ! curl -d "address=${DISTRIBUTION_MANAGER_PROXY}&expectedimplementation=${DISTRIBUTION_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${BASESCAN_API_KEY}"; then
+        if ! curl -d "address=${DISTRIBUTION_MANAGER_PROXY}&expectedimplementation=${DISTRIBUTION_MANAGER_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for DistributionManager" >&2
         fi
 
@@ -230,12 +198,6 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo "--> Proxy verification is inconsistent due to etherscan-like explorer bugs. Manually confirm and/or perform proxy verification in the explorer.<--"
     fi
 else
-    # Validate BLOCKSCOUT_API_KEY is set
-    if [ -z "${BLOCKSCOUT_API_KEY:-}" ]; then
-        echo "Error: BLOCKSCOUT_API_KEY not found in .env file"
-        exit 1
-    fi
-
     APP_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "appChainGatewayImplementation")
     GATEWAY_PROXY=$(get_environment_value "$ENVIRONMENT" "gatewayProxy")
     GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "groupMessageBroadcasterImplementation")

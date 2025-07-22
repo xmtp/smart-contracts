@@ -133,6 +133,7 @@ jobs:
         run: forge test -vvv
         env:
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+          BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
           XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
   gas:
@@ -171,6 +172,7 @@ jobs:
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+          BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
           XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
       - name: Compare gas reports
@@ -222,6 +224,7 @@ jobs:
         run: forge coverage --no-match-coverage "(script|test)" --gas-limit 3000000000 --report lcov && lcov --extract lcov.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage
         env:
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+          BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
           XMTP_ROPSTEN_RPC_URL: ${{ secrets.XMTP_ROPSTEN_RPC_URL }}
 
       - name: Report code coverage
