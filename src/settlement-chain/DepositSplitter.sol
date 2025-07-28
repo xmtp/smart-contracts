@@ -46,7 +46,12 @@ contract DepositSplitter is IDepositSplitter {
 
         _underlyingFeeToken = IFeeTokenLike(feeToken_).underlying();
 
+        // NOTE: Can ignore the return value as the fee token is a first party contract with expected behavior.
+
+        // slither-disable-next-line unused-return
         IERC20Like(feeToken_).approve(payerRegistry_, type(uint256).max);
+
+        // slither-disable-next-line unused-return
         IERC20Like(feeToken_).approve(settlementChainGateway_, type(uint256).max);
     }
 

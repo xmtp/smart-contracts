@@ -256,6 +256,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         //       immediately execute that call data to withdraw the fee tokens to `someAccount`.
         amount_ = IERC20Like(feeToken).balanceOf(address(this));
 
+        // slither-disable-next-line incorrect-equality
         if (amount_ == 0) revert ZeroBalance();
 
         emit Withdrawal(amount_, recipient_);
@@ -274,6 +275,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         //       contract and then immediately execute that call data to unwrap the fee tokens to `someAccount`.
         amount_ = IERC20Like(feeToken).balanceOf(address(this));
 
+        // slither-disable-next-line incorrect-equality
         if (amount_ == 0) revert ZeroBalance();
 
         emit Withdrawal(amount_, recipient_);
