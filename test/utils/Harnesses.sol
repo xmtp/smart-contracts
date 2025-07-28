@@ -10,6 +10,7 @@ import { SequentialMerkleProofs } from "../../src/libraries/SequentialMerkleProo
 
 import { AppChainGateway } from "../../src/app-chain/AppChainGateway.sol";
 import { AppChainParameterRegistry } from "../../src/app-chain/AppChainParameterRegistry.sol";
+import { DepositSplitter } from "../../src/settlement-chain/DepositSplitter.sol";
 import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
 import { Factory } from "../../src/any-chain/Factory.sol";
 import { FeeToken } from "../../src/settlement-chain/FeeToken.sol";
@@ -682,5 +683,18 @@ contract FactoryHarness is Factory {
 
     function __setPauseStatus(bool paused_) external {
         _getFactoryStorage().paused = paused_;
+    }
+}
+
+contract DepositSplitterHarness is DepositSplitter {
+    constructor(
+        address feeToken_,
+        address payerRegistry_,
+        address settlementChainGateway_,
+        uint256 appChainId_
+    ) DepositSplitter(feeToken_, payerRegistry_, settlementChainGateway_, appChainId_) {}
+
+    function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
+        return _underlyingFeeToken;
     }
 }

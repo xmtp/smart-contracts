@@ -80,6 +80,8 @@ interface IERC20InboxLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IAppChainGatewayLike {
+    function receiveDeposit(address recipient_, uint256 amount_) external;
+
     function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 }
 
@@ -106,6 +108,8 @@ interface IPayerRegistryLike {
         address payer;
         uint96 fee;
     }
+
+    function deposit(address payer_, uint96 amount_) external;
 
     function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
 
@@ -160,4 +164,18 @@ interface IFeeTokenLike {
     function withdrawTo(address recipient_, uint256 amount_) external returns (bool success_);
 
     function underlying() external view returns (address underlying_);
+}
+
+/**
+ * @title  Subset interface for a SettlementChainGateway.
+ * @notice This is the minimal interface needed by contracts within this subdirectory.
+ */
+interface ISettlementChainGatewayLike {
+    function deposit(
+        uint256 chainId_,
+        address recipient_,
+        uint256 amount_,
+        uint256 gasLimit_,
+        uint256 gasPrice_
+    ) external;
 }

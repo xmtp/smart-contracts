@@ -381,7 +381,7 @@ abstract contract DeployTests is Test {
 
         _approveTokens(_feeTokenProxy, _alice, address(_settlementChainGatewayProxy), cost_);
 
-        _sendParametersAsRetryableTickets(_alice, chainId_, keys_, gasLimit_, _appChainGasPrice, cost_);
+        _sendParameters(_alice, chainId_, keys_, gasLimit_, _appChainGasPrice, cost_);
     }
 
     function _assertBroadcasterStartingParameters() internal {
@@ -774,7 +774,7 @@ abstract contract DeployTests is Test {
 
     /* ============ Bridge Helpers ============ */
 
-    function _sendParametersAsRetryableTickets(
+    function _sendParameters(
         address account_,
         uint256 chainId_,
         string[] memory keys_,
@@ -790,13 +790,7 @@ abstract contract DeployTests is Test {
         chainIds_[0] = chainId_;
 
         vm.prank(account_);
-        _settlementChainGatewayProxy.sendParametersAsRetryableTickets(
-            chainIds_,
-            keys_,
-            gasLimit_,
-            gasPrice_,
-            amountToSend_
-        );
+        _settlementChainGatewayProxy.sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
     }
 
     function _handleQueuedBridgeEvents() internal {

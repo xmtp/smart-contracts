@@ -6,7 +6,7 @@ interface IArbSysLike {
 }
 
 interface ISettlementChainGatewayLike {
-    function withdraw(address recipient_) external;
+    function receiveWithdrawal(address recipient_) external;
 
-    function withdrawIntoUnderlying(address recipient_) external;
+    function receiveWithdrawalIntoUnderlying(address recipient_) external;
 }
