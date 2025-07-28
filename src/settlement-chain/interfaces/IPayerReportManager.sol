@@ -15,18 +15,20 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
 
     /**
      * @notice Represents a payer report.
-     * @param  startSequenceId  The start sequence ID.
-     * @param  endSequenceId    The end sequence ID.
-     * @param  feesSettled      The total fees already settled for this report.
-     * @param  offset           The next index in the Merkle tree that has yet to be processed/settled.
-     * @param  isSettled        Whether the payer report is completely processed/settled.
-     * @param  protocolFees     The portion of the fees settled that is reserved for the protocol.
-     * @param  payersMerkleRoot The payers Merkle root.
-     * @param  nodeIds          The active node IDs during the reporting period.
+     * @param  startSequenceId     The start sequence ID.
+     * @param  endSequenceId       The end sequence ID.
+     * @param  endMinuteSinceEpoch The timestamp of the message at `endSequenceId`.
+     * @param  feesSettled         The total fees already settled for this report.
+     * @param  offset              The next index in the Merkle tree that has yet to be processed/settled.
+     * @param  isSettled           Whether the payer report is completely processed/settled.
+     * @param  protocolFeeRate     The portion of the fees settled that is reserved for the protocol.
+     * @param  payersMerkleRoot    The payers Merkle root.
+     * @param  nodeIds             The active node IDs during the reporting period.
      */
     struct PayerReport {
         uint64 startSequenceId;
         uint64 endSequenceId;
+        uint32 endMinuteSinceEpoch;
         uint96 feesSettled;
         uint32 offset;
         bool isSettled;
