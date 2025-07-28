@@ -133,6 +133,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             PayerReport({
                 startSequenceId: startSequenceId_,
                 endSequenceId: endSequenceId_,
+                endMinuteSinceEpoch: endMinuteSinceEpoch_,
                 feesSettled: 0,
                 offset: 0,
                 isSettled: payersMerkleRoot_ == SequentialMerkleProofs.EMPTY_TREE_ROOT,

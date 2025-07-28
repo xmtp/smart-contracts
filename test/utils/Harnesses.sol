@@ -468,6 +468,7 @@ contract PayerReportManagerHarness is PayerReportManager {
         uint32 originatorNodeId_,
         uint64 startSequenceId_,
         uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
         uint96 feesSettled_,
         uint32 offset_,
         bool isSettled_,
@@ -479,6 +480,7 @@ contract PayerReportManagerHarness is PayerReportManager {
             PayerReport({
                 startSequenceId: startSequenceId_,
                 endSequenceId: endSequenceId_,
+                endMinuteSinceEpoch: endMinuteSinceEpoch_,
                 feesSettled: feesSettled_,
                 offset: offset_,
                 isSettled: isSettled_,
