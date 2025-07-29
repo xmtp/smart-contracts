@@ -3,7 +3,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/utils"
 
-# Check if both arguments are provided
+# Check if all arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <environment> <chain-type>"
     echo "environment: The environment to deploy to (e.g. testnode, testnet-dev, testnet-staging, testnet, mainnet)"

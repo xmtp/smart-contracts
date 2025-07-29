@@ -12,7 +12,7 @@ fi
 
 # TODO: use internal variables for less duplication of comparisons.
 
-# Check if both arguments are provided
+# Check if all arguments are provided
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <environment> <chain-type> <explorer>"
     echo "environment: The environment to deploy to (e.g. testnet-dev, testnet-staging, testnet, mainnet)"

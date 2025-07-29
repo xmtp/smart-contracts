@@ -554,9 +554,13 @@ abstract contract DeployTests is Test {
     ) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_DEPLOYER);
-        (implementation_, ) = PayerRegistryDeployer.deployImplementation(_factory, parameterRegistry_, feeToken_);
-        vm.stopPrank();
+        implementation_ = PayerRegistryDeployer.getImplementation(_factory, parameterRegistry_, feeToken_);
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = PayerRegistryDeployer.deployImplementation(_factory, parameterRegistry_, feeToken_);
+            vm.stopPrank();
+        }
 
         assertEq(IPayerRegistry(implementation_).parameterRegistry(), parameterRegistry_);
         assertEq(IPayerRegistry(implementation_).feeToken(), feeToken_);
@@ -619,9 +623,13 @@ abstract contract DeployTests is Test {
     function _deployRateRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_DEPLOYER);
-        (implementation_, ) = RateRegistryDeployer.deployImplementation(_factory, parameterRegistry_);
-        vm.stopPrank();
+        implementation_ = RateRegistryDeployer.getImplementation(_factory, parameterRegistry_);
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = RateRegistryDeployer.deployImplementation(_factory, parameterRegistry_);
+            vm.stopPrank();
+        }
 
         assertEq(IRateRegistry(implementation_).parameterRegistry(), parameterRegistry_);
     }
@@ -686,9 +694,13 @@ abstract contract DeployTests is Test {
     function _deployNodeRegistryImplementation(address parameterRegistry_) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_DEPLOYER);
-        (implementation_, ) = NodeRegistryDeployer.deployImplementation(_factory, parameterRegistry_);
-        vm.stopPrank();
+        implementation_ = NodeRegistryDeployer.getImplementation(_factory, parameterRegistry_);
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = NodeRegistryDeployer.deployImplementation(_factory, parameterRegistry_);
+            vm.stopPrank();
+        }
 
         assertEq(INodeRegistry(implementation_).parameterRegistry(), parameterRegistry_);
     }
@@ -744,14 +756,23 @@ abstract contract DeployTests is Test {
     ) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_DEPLOYER);
-        (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
+        implementation_ = PayerReportManagerDeployer.getImplementation(
             _factory,
             parameterRegistry_,
             nodeRegistry_,
             payerRegistry_
         );
-        vm.stopPrank();
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
+                _factory,
+                parameterRegistry_,
+                nodeRegistry_,
+                payerRegistry_
+            );
+            vm.stopPrank();
+        }
 
         assertEq(IPayerReportManager(implementation_).parameterRegistry(), parameterRegistry_);
         assertEq(IPayerReportManager(implementation_).nodeRegistry(), nodeRegistry_);
@@ -810,8 +831,7 @@ abstract contract DeployTests is Test {
     ) internal returns (address implementation_) {
         vm.selectFork(_settlementChainForkId);
 
-        vm.startPrank(_DEPLOYER);
-        (implementation_, ) = DistributionManagerDeployer.deployImplementation(
+        implementation_ = DistributionManagerDeployer.getImplementation(
             _factory,
             parameterRegistry_,
             nodeRegistry_,
@@ -819,7 +839,19 @@ abstract contract DeployTests is Test {
             payerRegistry_,
             feeToken_
         );
-        vm.stopPrank();
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = DistributionManagerDeployer.deployImplementation(
+                _factory,
+                parameterRegistry_,
+                nodeRegistry_,
+                payerReportManager_,
+                payerRegistry_,
+                feeToken_
+            );
+            vm.stopPrank();
+        }
 
         assertEq(IDistributionManager(implementation_).parameterRegistry(), parameterRegistry_);
         assertEq(IDistributionManager(implementation_).nodeRegistry(), nodeRegistry_);
@@ -854,15 +886,25 @@ abstract contract DeployTests is Test {
         address settlementChainGatewayProxy_,
         uint256 appChainId_
     ) internal returns (IDepositSplitter splitter_) {
-        vm.startPrank(_DEPLOYER);
-        (address implementation_, ) = DepositSplitterDeployer.deployImplementation(
+        address implementation_ = DepositSplitterDeployer.getImplementation(
             _factory,
             feeTokenProxy_,
             payerRegistryProxy_,
             settlementChainGatewayProxy_,
             appChainId_
         );
-        vm.stopPrank();
+
+        if (implementation_.code.length == 0) {
+            vm.startPrank(_DEPLOYER);
+            (implementation_, ) = DepositSplitterDeployer.deployImplementation(
+                _factory,
+                feeTokenProxy_,
+                payerRegistryProxy_,
+                settlementChainGatewayProxy_,
+                appChainId_
+            );
+            vm.stopPrank();
+        }
 
         splitter_ = IDepositSplitter(implementation_);
 

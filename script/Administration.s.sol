@@ -25,6 +25,7 @@ import { IERC20Like } from "./Interfaces.sol";
 import { Utils } from "./utils/Utils.sol";
 
 contract AdministrationScripts is Script {
+    error AdminNotSet();
     error DeployerNotSet();
     error EnvironmentNotSet();
     error GatewayProxyNotSet();
@@ -83,7 +84,7 @@ contract AdministrationScripts is Script {
 
         address admin_ = vm.envAddress("ADMIN");
 
-        if (admin_ == address(0)) revert DeployerNotSet();
+        if (admin_ == address(0)) revert AdminNotSet();
 
         _admin = vm.addr(_privateKey);
 
@@ -291,7 +292,7 @@ contract AdministrationScripts is Script {
 
         uint256 outputIndex_ = 0;
 
-        for (uint256 index_; index_ < appChainKeys_.length; ++index_) {
+        for (uint256 index_; index_ < keys_.length; ++index_) {
             if (!_isAppChainMigratorParameterKey(keys_[index_])) continue;
 
             appChainKeys_[outputIndex_] = keys_[index_];

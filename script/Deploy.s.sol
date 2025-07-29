@@ -39,8 +39,6 @@ import {
     ISettlementChainParameterRegistry
 } from "../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
 
-import { Factory } from "../src/any-chain/Factory.sol";
-
 import { Utils } from "./utils/Utils.sol";
 
 import { MockUnderlyingFeeToken } from "../test/utils/Mocks.sol";
@@ -248,6 +246,10 @@ contract DeployScripts is Script {
 
         if (vm.parseJsonAddress(json_, ".distributionManager").code.length == 0) {
             revert("Distribution manager does not exist");
+        }
+
+        if (vm.parseJsonAddress(json_, ".depositSplitter").code.length == 0) {
+            revert("Deposit splitter does not exist");
         }
     }
 
@@ -1315,6 +1317,7 @@ contract DeployScripts is Script {
         vm.serializeAddress("root", "nodeRegistry", _deploymentData.nodeRegistryProxy);
         vm.serializeAddress("root", "payerRegistry", _deploymentData.payerRegistryProxy);
         vm.serializeAddress("root", "payerReportManager", _deploymentData.payerReportManagerProxy);
+        vm.serializeAddress("root", "depositSplitter", _deploymentData.depositSplitter);
 
         string memory json_ = vm.serializeAddress("root", "rateRegistry", _deploymentData.rateRegistryProxy);
 
