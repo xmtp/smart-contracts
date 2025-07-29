@@ -58,6 +58,9 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when any pausable function is called when the contract is paused.
     error Paused();
 
+    /// @notice Thrown when the transfer fails.
+    error TransferFailed();
+
     /* ============ Initialization ============ */
 
     /// @notice Initializes the parameter registry, as used by a proxy contract.
@@ -78,13 +81,20 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     function withdrawIntoUnderlying(address recipient_) external payable;
 
     /**
+     * @notice Receives funds from the settlement chain.
+     * @param  recipient_ The address to which the funds will be delivered to.
+     * @param  amount_    The amount of funds to receive.
+     */
+    function receiveDeposit(address recipient_, uint256 amount_) external payable;
+
+    /**
      * @notice Receives parameters from the settlement chain.
      * @param  nonce_  The nonce of the parameter transmission (to prevent out-of-sequence resets).
      * @param  keys_   The keys of the parameters.
      * @param  values_ The values of each parameter.
      * @dev    The caller must be the settlement chain gateway's L3 alias address.
      */
-    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
+    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external payable;
 
     /**
      * @notice Updates the pause status.

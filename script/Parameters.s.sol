@@ -141,7 +141,7 @@ contract ParameterScripts is Script {
         uint256[] memory chainIds_ = new uint256[](1);
         chainIds_[0] = _deploymentData.appChainId;
 
-        ISettlementChainGateway(_deploymentData.gatewayProxy).sendParametersAsRetryableTickets(
+        ISettlementChainGateway(_deploymentData.gatewayProxy).sendParameters(
             chainIds_,
             keys_,
             gasLimit_,

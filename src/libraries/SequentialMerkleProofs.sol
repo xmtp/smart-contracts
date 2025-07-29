@@ -5,7 +5,7 @@ import { ISequentialMerkleProofsErrors } from "./interfaces/ISequentialMerklePro
 
 /**
  * @title  Library for verifying sequential Merkle proofs.
- * @dev    A sequential Merkle proof is a proof that leaves appear sequentially in a Merkle tree.
+ * @notice A sequential Merkle proof is a proof that leaves appear sequentially in a Merkle tree.
  */
 library SequentialMerkleProofs {
     /* ============ Constants ============ */

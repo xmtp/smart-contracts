@@ -98,12 +98,21 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
 
     /// @inheritdoc IAppChainGateway
     function withdraw(address recipient_) external payable whenNotPaused {
-        _withdraw(recipient_, ISettlementChainGatewayLike.withdraw.selector);
+        _withdraw(recipient_, ISettlementChainGatewayLike.receiveWithdrawal.selector);
     }
 
     /// @inheritdoc IAppChainGateway
     function withdrawIntoUnderlying(address recipient_) external payable whenNotPaused {
-        _withdraw(recipient_, ISettlementChainGatewayLike.withdrawIntoUnderlying.selector);
+        _withdraw(recipient_, ISettlementChainGatewayLike.receiveWithdrawalIntoUnderlying.selector);
+    }
+
+    /// @inheritdoc IAppChainGateway
+    function receiveDeposit(address recipient_, uint256 amount_) external payable onlySettlementChainGateway {
+        // NOTE: `recipient_` and `amount_` are coming from the trusted settlement chain gateway.
+        // slither-disable-next-line missing-zero-check
+        (bool success_, ) = recipient_.call{ value: amount_ }("");
+
+        if (!success_) revert TransferFailed();
     }
 
     /// @inheritdoc IAppChainGateway
@@ -111,7 +120,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         uint256 nonce_,
         string[] calldata keys_,
         bytes32[] calldata values_
-    ) external onlySettlementChainGateway {
+    ) external payable onlySettlementChainGateway {
         AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
 
         emit ParametersReceived(nonce_, keys_);

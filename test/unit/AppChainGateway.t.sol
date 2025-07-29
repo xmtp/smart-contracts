@@ -104,7 +104,7 @@ contract AppChainGatewayTests is Test {
             abi.encodeWithSignature(
                 "sendTxToL1(address,bytes)",
                 _settlementChainGateway,
-                abi.encodeWithSignature("withdraw(address)", address(1))
+                abi.encodeWithSignature("receiveWithdrawal(address)", address(1))
             ),
             ""
         );
@@ -122,7 +122,7 @@ contract AppChainGatewayTests is Test {
             abi.encodeWithSignature(
                 "sendTxToL1(address,bytes)",
                 _settlementChainGateway,
-                abi.encodeWithSignature("withdraw(address)", address(1))
+                abi.encodeWithSignature("receiveWithdrawal(address)", address(1))
             ),
             abi.encode(11)
         );
@@ -166,7 +166,7 @@ contract AppChainGatewayTests is Test {
             abi.encodeWithSignature(
                 "sendTxToL1(address,bytes)",
                 _settlementChainGateway,
-                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+                abi.encodeWithSignature("receiveWithdrawalIntoUnderlying(address)", address(1))
             ),
             ""
         );
@@ -184,7 +184,7 @@ contract AppChainGatewayTests is Test {
             abi.encodeWithSignature(
                 "sendTxToL1(address,bytes)",
                 _settlementChainGateway,
-                abi.encodeWithSignature("withdrawIntoUnderlying(address)", address(1))
+                abi.encodeWithSignature("receiveWithdrawalIntoUnderlying(address)", address(1))
             ),
             abi.encode(11)
         );
@@ -196,6 +196,29 @@ contract AppChainGatewayTests is Test {
         _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));
 
         assertEq(_alice.balance, 1);
+    }
+
+    /* ============ receiveDeposit ============ */
+
+    function test_receiveDeposit_notSettlementChainGateway() external {
+        vm.expectRevert(IAppChainGateway.NotSettlementChainGateway.selector);
+        _gateway.receiveDeposit(address(0), 0);
+    }
+
+    function test_receiveDeposit_transferFailed() external {
+        vm.mockCallRevert(address(1), bytes(""), "");
+
+        vm.expectRevert(IAppChainGateway.TransferFailed.selector);
+
+        vm.prank(_settlementChainGatewayAlias);
+        _gateway.receiveDeposit(address(1), 1);
+    }
+
+    function test_receiveDeposit() external {
+        Utils.expectAndMockCall(address(1), "", "");
+
+        vm.prank(_settlementChainGatewayAlias);
+        _gateway.receiveDeposit(address(1), 1);
     }
 
     /* ============ receiveParameters ============ */
