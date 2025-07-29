@@ -14,8 +14,8 @@ ENVIRONMENT=$1
 
 CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
 
-echo "⧖ Setting starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "⧖ Bridging migrator parameters for $ENVIRONMENT."
 
-ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "setStartingParameters()"
+ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "bridgeMigratorParameters()"
 
-echo "✔ Done setting starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "✔ Done bridging migrator parameters for $ENVIRONMENT."

@@ -55,9 +55,11 @@ VERIFIER=$(get_verifier "$EXPLORER")
 EXPLORER_URL=$(get_explorer_url "$ENVIRONMENT" "$EXPLORER")
 API_KEY=$(get_api_key "$EXPLORER")
 
-echo "⧖ Verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
+echo "⧖ Verifying $CHAIN_TYPE contracts for $ENVIRONMENT on $EXPLORER."
 
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
+    APP_CHAIN_ID=$(get_environment_value "$ENVIRONMENT" "appChainId")
+    DEPOSIT_SPLITTER=$(get_environment_value "$ENVIRONMENT" "depositSplitter")
     DISTRIBUTION_MANAGER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "distributionManagerImplementation")
     DISTRIBUTION_MANAGER_PROXY=$(get_environment_value "$ENVIRONMENT" "distributionManagerProxy")
     FEE_TOKEN_PROXY=$(get_environment_value "$ENVIRONMENT" "feeTokenProxy")
@@ -137,6 +139,19 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
             "$FEE_TOKEN_PROXY") \
         "$DISTRIBUTION_MANAGER_IMPLEMENTATION" \
         src/settlement-chain/DistributionManager.sol:DistributionManager
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address,address,uint256)" \
+            "$FEE_TOKEN_PROXY" \
+            "$PAYER_REGISTRY_PROXY" \
+            "$GATEWAY_PROXY" \
+            "$APP_CHAIN_ID") \
+        "$DEPOSIT_SPLITTER" \
+        src/settlement-chain/DepositSplitter.sol:DepositSplitter
 
     sleep 2
 
@@ -230,4 +245,4 @@ else
         src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
 fi
 
-echo "✔ Done verifying $CHAIN_TYPE contracts on $ENVIRONMENT."
+echo "✔ Done verifying $CHAIN_TYPE contracts for $ENVIRONMENT on $EXPLORER."

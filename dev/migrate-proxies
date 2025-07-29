@@ -18,13 +18,13 @@ CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "$CHAIN_TYPE")
 
 # Determine the deployment function based on chain type
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-    UPDATE_FUNC="updateSettlementChainStartingParameters()"
+    UPDATE_FUNC="migrateSettlementChainProxies()"
 else
-    UPDATE_FUNC="updateAppChainStartingParameters()"
+    UPDATE_FUNC="migrateAppChainProxies()"
 fi
 
-echo "⧖ Updating starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "⧖ Migrating $CHAIN_TYPE proxies for $ENVIRONMENT on $CHAIN_NAME."
 
 ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$UPDATE_FUNC"
 
-echo "✔ Done updating starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "✔ Done migrating $CHAIN_TYPE proxies for $ENVIRONMENT on $CHAIN_NAME."

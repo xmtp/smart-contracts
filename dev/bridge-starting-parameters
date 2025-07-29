@@ -12,16 +12,10 @@ fi
 
 ENVIRONMENT=$1
 
-# Validate environment parameter
-if [[ ! "$ENVIRONMENT" =~ ^(testnode|testnet-dev|testnet-staging|testnet|mainnet)$ ]]; then
-    echo "Error: Invalid environment. Must be one of: testnode, testnet-dev, testnet-staging, testnet, mainnet"
-    exit 1
-fi
-
 CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
 
-echo "⧖ Bridging starting broadcaster parameters on $ENVIRONMENT."
+echo "⧖ Bridging starting broadcaster parameters for $ENVIRONMENT."
 
-ENVIRONMENT=$ENVIRONMENT forge script script/Parameters.s.sol:ParameterScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "bridgeBroadcasterPayloadSizeParameters()"
+ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "bridgeBroadcasterPayloadSizeParameters()"
 
-echo "✔ Done bridging starting broadcaster parameters on $ENVIRONMENT."
+echo "✔ Done bridging starting broadcaster parameters for $ENVIRONMENT."

@@ -11,7 +11,7 @@ get_chain_name() {
 
     # Validate inputs
     if [ -z "$environment" ] || [ -z "$chain_type" ]; then
-        echo "Error: Both environment and chain_type parameters are required" >&2
+        echo "Error: Both environment and chain type parameters are required" >&2
         exit 1
     fi
 
@@ -23,7 +23,7 @@ get_chain_name() {
 
     # Validate chain type
     if [ "$chain_type" != "settlement-chain" ] && [ "$chain_type" != "app-chain" ]; then
-        echo "Error: chain_type must be either 'settlement-chain' or 'app-chain'" >&2
+        echo "Error: chain type must be either 'settlement-chain' or 'app-chain'" >&2
         exit 1
     fi
 

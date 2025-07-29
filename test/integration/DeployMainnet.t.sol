@@ -33,9 +33,9 @@ contract DeployMainnetTests is DeployTests {
         _payerReportManagerProxySalt = "PayerReportManager_0";
         _rateRegistryProxySalt = "RateRegistry_0";
 
-        _factoryProxy = 0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1;
-        _parameterRegistryProxy = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
-        _feeTokenProxy = 0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8;
+        _factory = 0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1;
+        _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
+        _feeToken = 0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8;
 
         _settlementChainForkId = vm.createSelectFork("base_mainnet");
         _settlementChainId = block.chainid;
@@ -48,74 +48,71 @@ contract DeployMainnetTests is DeployTests {
 
         // Deploy the Gateway on the settlement chain.
         address settlementChainGatewayImplementation_ = _deploySettlementChainGatewayImplementation(
-            _parameterRegistryProxy,
+            _parameterRegistry,
             expectedGatewayProxy_,
-            _feeTokenProxy
+            _feeToken
         );
 
         console.log("settlementChainGatewayImplementation: %s", address(settlementChainGatewayImplementation_));
 
-        _settlementChainGatewayProxy = _deploySettlementChainGatewayProxy(settlementChainGatewayImplementation_);
+        _settlementChainGateway = _deploySettlementChainGatewayProxy(settlementChainGatewayImplementation_);
 
-        console.log("settlementChainGatewayProxy: %s", address(_settlementChainGatewayProxy));
+        console.log("settlementChainGatewayProxy: %s", address(_settlementChainGateway));
 
         // Deploy the Payer Registry on the settlement chain.
-        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
-            _parameterRegistryProxy,
-            _feeTokenProxy
-        );
+        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(_parameterRegistry, _feeToken);
 
         console.log("payerRegistryImplementation: %s", address(payerRegistryImplementation_));
 
-        _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
+        _payerRegistry = _deployPayerRegistryProxy(payerRegistryImplementation_);
 
-        console.log("payerRegistryProxy: %s", address(_payerRegistryProxy));
+        console.log("payerRegistryProxy: %s", address(_payerRegistry));
 
         // Deploy the Rate Registry on the settlement chain.
-        address rateRegistryImplementation_ = _deployRateRegistryImplementation(_parameterRegistryProxy);
+        address rateRegistryImplementation_ = _deployRateRegistryImplementation(_parameterRegistry);
 
         console.log("rateRegistryImplementation: %s", address(rateRegistryImplementation_));
 
-        _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
+        _rateRegistry = _deployRateRegistryProxy(rateRegistryImplementation_);
 
-        console.log("rateRegistryProxy: %s", address(_rateRegistryProxy));
+        console.log("rateRegistryProxy: %s", address(_rateRegistry));
 
         // Deploy the Node Registry on the settlement chain.
-        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(_parameterRegistryProxy);
+        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(_parameterRegistry);
 
         console.log("nodeRegistryImplementation: %s", address(nodeRegistryImplementation_));
 
-        _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
+        _nodeRegistry = _deployNodeRegistryProxy(nodeRegistryImplementation_);
 
-        console.log("nodeRegistryProxy: %s", address(_nodeRegistryProxy));
+        console.log("nodeRegistryProxy: %s", address(_nodeRegistry));
 
         // Deploy the Payer Report Manager on the settlement chain.
         address payerReportManagerImplementation_ = _deployPayerReportManagerImplementation(
-            _parameterRegistryProxy,
-            address(_nodeRegistryProxy),
-            address(_payerRegistryProxy)
+            _parameterRegistry,
+            address(_nodeRegistry),
+            address(_payerRegistry)
         );
 
         console.log("payerReportManagerImplementation: %s", address(payerReportManagerImplementation_));
 
-        _payerReportManagerProxy = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
+        _payerReportManager = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
 
-        console.log("payerReportManagerProxy: %s", address(_payerReportManagerProxy));
+        console.log("payerReportManagerProxy: %s", address(_payerReportManager));
 
         // Deploy the Distribution Manager on the settlement chain.
         address distributionManagerImplementation_ = _deployDistributionManagerImplementation(
-            _parameterRegistryProxy,
-            address(_nodeRegistryProxy),
-            address(_payerReportManagerProxy),
-            address(_payerRegistryProxy),
-            _feeTokenProxy
+            _parameterRegistry,
+            address(_nodeRegistry),
+            address(_payerReportManager),
+            address(_payerRegistry),
+            _feeToken
         );
 
         console.log("distributionManagerImplementation: %s", address(distributionManagerImplementation_));
 
-        _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
+        _distributionManager = _deployDistributionManagerProxy(distributionManagerImplementation_);
 
-        console.log("distributionManagerProxy: %s", address(_distributionManagerProxy));
+        console.log("distributionManagerProxy: %s", address(_distributionManager));
 
         // Set and update the inbox parameters for the settlement chain gateway to communicate with the app chain.
         _setInboxParameters();
@@ -144,10 +141,10 @@ contract DeployMainnetTests is DeployTests {
 
     function _deployBaseSettlementChainComponents() internal {
         vm.startPrank(_DEPLOYER);
-        (_factoryProxy, , ) = FactoryDeployer.deployProxy(_getExpectedFactoryImplementation());
+        (_factory, , ) = FactoryDeployer.deployProxy(_getExpectedFactoryImplementation());
         vm.stopPrank();
 
-        console.log("Factory Proxy: %s", _factoryProxy);
+        console.log("Factory Proxy: %s", _factory);
 
         address expectedParameterRegistryProxy_ = _getExpectedParameterRegistryProxy();
 
@@ -158,14 +155,14 @@ contract DeployMainnetTests is DeployTests {
         console.log("Factory Implementation: %s", factoryImplementation_);
 
         vm.startPrank(_DEPLOYER);
-        IFactory(_factoryProxy).initialize();
+        IFactory(_factory).initialize();
         vm.stopPrank();
 
-        console.log("Initializable Implementation: %s", IFactory(_factoryProxy).initializableImplementation());
+        console.log("Initializable Implementation: %s", IFactory(_factory).initializableImplementation());
 
         vm.startPrank(_DEPLOYER);
         (address settlementChainParameterRegistryImplementation_, ) = SettlementChainParameterRegistryDeployer
-            .deployImplementation(_factoryProxy);
+            .deployImplementation(_factory);
         vm.stopPrank();
 
         console.log(
@@ -177,20 +174,20 @@ contract DeployMainnetTests is DeployTests {
         admins_[0] = _ADMIN;
 
         vm.startPrank(_DEPLOYER);
-        (_parameterRegistryProxy, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
-            _factoryProxy,
+        (_parameterRegistry, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
+            _factory,
             settlementChainParameterRegistryImplementation_,
             _PARAMETER_REGISTRY_PROXY_SALT,
             admins_
         );
         vm.stopPrank();
 
-        console.log("Settlement Chain Parameter Registry Proxy: %s", _parameterRegistryProxy);
+        console.log("Settlement Chain Parameter Registry Proxy: %s", _parameterRegistry);
 
         vm.startPrank(_DEPLOYER);
         (address feeTokenImplementation_, ) = FeeTokenDeployer.deployImplementation(
-            _factoryProxy,
-            _parameterRegistryProxy,
+            _factory,
+            _parameterRegistry,
             _underlyingFeeToken
         );
         vm.stopPrank();
@@ -198,14 +195,10 @@ contract DeployMainnetTests is DeployTests {
         console.log("Fee Token Implementation: %s", feeTokenImplementation_);
 
         vm.startPrank(_DEPLOYER);
-        (_feeTokenProxy, , ) = FeeTokenDeployer.deployProxy(
-            _factoryProxy,
-            feeTokenImplementation_,
-            _FEE_TOKEN_PROXY_SALT
-        );
+        (_feeToken, , ) = FeeTokenDeployer.deployProxy(_factory, feeTokenImplementation_, _FEE_TOKEN_PROXY_SALT);
         vm.stopPrank();
 
-        console.log("Fee Token Proxy: %s", _feeTokenProxy);
+        console.log("Fee Token Proxy: %s", _feeToken);
     }
 
     /* ============ Token Helpers ============ */
