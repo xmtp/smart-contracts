@@ -978,9 +978,8 @@ abstract contract DeployTests is Test {
     function _getMigratorParameterKey(address proxy_) internal view returns (string memory key_) {
         (bool success_, bytes memory data_) = proxy_.staticcall(abi.encodeWithSignature("migratorParameterKey()"));
 
-        if (!success_) return "";
-
-        return abi.decode(data_, (string));
+        // Return empty string if the proxy doesn't implement `migratorParameterKey()`
+        return success_ ? abi.decode(data_, (string)) : "";
     }
 
     function _migrateOnSettlementChain(address proxy_, address migrator_) internal {

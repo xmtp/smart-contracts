@@ -24,6 +24,8 @@ import { IERC20Like } from "./Interfaces.sol";
 
 import { Utils } from "./utils/Utils.sol";
 
+// TODO: App chain gas price as an ENV parameter via `vm.envOr`.
+
 contract AdministrationScripts is Script {
     error AdminNotSet();
     error DeployerNotSet();
@@ -462,9 +464,8 @@ contract AdministrationScripts is Script {
     function _getMigratorParameterKey(address proxy_) internal view returns (string memory key_) {
         (bool success_, bytes memory data_) = proxy_.staticcall(abi.encodeWithSignature("migratorParameterKey()"));
 
-        if (!success_) return "";
-
-        return abi.decode(data_, (string));
+        // Return empty string if the proxy doesn't implement `migratorParameterKey()`
+        return success_ ? abi.decode(data_, (string)) : "";
     }
 
     function _migrate(address proxy_, address toImplementation_) internal {
