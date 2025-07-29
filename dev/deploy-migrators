@@ -18,13 +18,13 @@ CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "$CHAIN_TYPE")
 
 # Determine the deployment function based on chain type
 if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
-    UPDATE_FUNC="updateSettlementChainStartingParameters()"
+    DEPLOY_FUNC="deploySettlementChainMigrators()"
 else
-    UPDATE_FUNC="updateAppChainStartingParameters()"
+    DEPLOY_FUNC="deployAppChainMigrators()"
 fi
 
-echo "⧖ Updating starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "⧖ Deploying $CHAIN_TYPE migrator contracts for $ENVIRONMENT on $CHAIN_NAME."
 
-ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$UPDATE_FUNC"
+ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
 
-echo "✔ Done updating starting parameters for $ENVIRONMENT on $CHAIN_NAME."
+echo "✔ Done deploying $CHAIN_TYPE migrator contracts for $ENVIRONMENT on $CHAIN_NAME."

@@ -12,7 +12,7 @@ fi
 
 # TODO: use internal variables for less duplication of comparisons.
 
-# Check if both arguments are provided
+# Check if all arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
     echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, xmtp_ropsten)"
@@ -141,12 +141,15 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
             echo "Warning: Failed to verify proxy for Factory" >&2
         fi
 
+        sleep 2
+
         echo ""
         echo "Verifying Proxy For SettlementChainParameterRegistry"
 
         if ! curl -d "address=${PARAMETER_REGISTRY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for SettlementChainParameterRegistry" >&2
         fi
+        sleep 2
 
         echo ""
         echo "Verifying Proxy For FeeToken"
@@ -154,6 +157,8 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         if ! curl -d "address=${FEE_TOKEN_PROXY}&expectedimplementation=${FEE_TOKEN_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
             echo "Warning: Failed to verify proxy for FeeToken" >&2
         fi
+
+        sleep 2
 
         if [ "$ENVIRONMENT" != "mainnet" ]; then
             echo ""

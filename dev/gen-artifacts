@@ -67,13 +67,19 @@ function environments() {
 function main() {
     echo "Generating artifacts with forge version ${forge_version}."
 
-    contracts=("Factory" "AppChainGateway" "AppChainParameterRegistry" "GroupMessageBroadcaster" "IdentityUpdateBroadcaster")
+    contracts=("Factory")
+    for contract in "${contracts[@]}"; do
+        echo "⧖ Generating artifacts for any chain contract: ${contract}."
+        generate_artifacts "src/any-chain/${contract}.sol" "${contract}"
+    done
+
+    contracts=("AppChainGateway" "AppChainParameterRegistry" "GroupMessageBroadcaster" "IdentityUpdateBroadcaster")
     for contract in "${contracts[@]}"; do
         echo "⧖ Generating artifacts for app chain contract: ${contract}."
         generate_artifacts "src/app-chain/${contract}.sol" "${contract}"
     done
 
-    contracts=("Factory" "SettlementChainGateway" "SettlementChainParameterRegistry" "DistributionManager" "FeeToken" "NodeRegistry" "PayerRegistry" "PayerReportManager" "RateRegistry")
+    contracts=("DepositSplitter" "DistributionManager" "FeeToken" "NodeRegistry" "PayerRegistry" "PayerReportManager" "RateRegistry" "SettlementChainGateway" "SettlementChainParameterRegistry")
     for contract in "${contracts[@]}"; do
         echo "⧖ Generating artifacts for settlement chain contract: ${contract}."
         generate_artifacts "src/settlement-chain/${contract}.sol" "${contract}"

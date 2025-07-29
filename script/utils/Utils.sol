@@ -18,6 +18,7 @@ library Utils {
         uint256 appChainId;
         address appChainParameterRegistryImplementation;
         address deployer;
+        address depositSplitter;
         address distributionManagerImplementation;
         address distributionManagerProxy;
         bytes32 distributionManagerProxySalt;
@@ -74,6 +75,7 @@ library Utils {
             ".appChainParameterRegistryImplementation"
         );
         deploymentData_.deployer = stdJson.readAddress(json_, ".deployer");
+        deploymentData_.depositSplitter = stdJson.readAddress(json_, ".depositSplitter");
         deploymentData_.distributionManagerImplementation = stdJson.readAddress(
             json_,
             ".distributionManagerImplementation"
@@ -243,6 +245,53 @@ library Utils {
         string memory key_
     ) internal pure returns (bytes32 value_) {
         value_ = bytes32(stdJson.readUint(json_, key_));
+    }
+
+    function parseMigratorParameters(
+        string memory filePath_
+    ) internal view returns (string[] memory keys_, bytes32[] memory values_) {
+        string memory json_ = VM.readFile(filePath_);
+
+        string[] memory contracts_ = new string[](14);
+        contracts_[0] = "factory";
+        contracts_[1] = "appChainGateway";
+        contracts_[2] = "appChainParameterRegistry";
+        contracts_[3] = "groupMessageBroadcaster";
+        contracts_[4] = "identityUpdateBroadcaster";
+        contracts_[5] = "distributionManager";
+        contracts_[6] = "feeToken";
+        contracts_[7] = "mockUnderlyingFeeToken";
+        contracts_[8] = "nodeRegistry";
+        contracts_[9] = "payerRegistry";
+        contracts_[10] = "payerReportManager";
+        contracts_[11] = "rateRegistry";
+        contracts_[12] = "settlementChainGateway";
+        contracts_[13] = "settlementChainParameterRegistry";
+
+        uint256 count_ = 0;
+
+        for (uint256 index_; index_ < contracts_.length; ++index_) {
+            if (stdJson.readAddress(json_, string.concat(".migrators.", contracts_[index_])) == address(0)) continue;
+
+            ++count_;
+        }
+
+        keys_ = new string[](count_);
+        values_ = new bytes32[](count_);
+
+        uint256 outputIndex_ = 0;
+        for (uint256 index_; index_ < contracts_.length; ++index_) {
+            if (stdJson.readAddress(json_, string.concat(".migrators.", contracts_[index_])) == address(0)) continue;
+
+            keys_[outputIndex_] = string.concat("xmtp.", contracts_[index_], ".migrator");
+
+            values_[outputIndex_] = parseAndEncodeAddressParameter(
+                json_,
+                string.concat(".migrators.", contracts_[index_])
+            );
+
+            ++outputIndex_;
+        }
     }
 
     function stringToBytes32(string memory input_) internal pure returns (bytes32 output_) {

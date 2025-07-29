@@ -14,8 +14,8 @@ ENVIRONMENT=$1
 
 CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
 
-echo "⧖ Bridging starting broadcaster parameters for $ENVIRONMENT."
+echo "⧖ Setting migrator parameters for $ENVIRONMENT on $CHAIN_NAME."
 
-ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "bridgeBroadcasterPayloadSizeParameters()"
+ENVIRONMENT=$ENVIRONMENT forge script script/Administration.s.sol:AdministrationScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "setMigratorParameters()"
 
-echo "✔ Done bridging starting broadcaster parameters for $ENVIRONMENT."
+echo "✔ Done setting migrator parameters for $ENVIRONMENT on $CHAIN_NAME."

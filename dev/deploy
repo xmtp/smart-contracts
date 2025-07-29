@@ -3,7 +3,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/utils"
 
-# Check if both arguments are provided
+# Check if all arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <environment> <chain-type>"
     echo "environment: The environment to deploy to (e.g. testnode, testnet-dev, testnet-staging, testnet, mainnet)"
@@ -23,11 +23,11 @@ else
     DEPLOY_FUNC="deployAppChainComponents()"
 fi
 
-echo "⧖ Deploying $CHAIN_TYPE contracts on $CHAIN_NAME for $ENVIRONMENT."
+echo "⧖ Deploying $CHAIN_TYPE contracts for $ENVIRONMENT on $CHAIN_NAME."
 
 ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
 
-echo "✔ Done deploying $CHAIN_TYPE contracts on $CHAIN_NAME for $ENVIRONMENT."
+echo "✔ Done deploying $CHAIN_TYPE contracts for $ENVIRONMENT on $CHAIN_NAME."
 
 sleep 2
 
