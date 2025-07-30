@@ -57,7 +57,7 @@ Serves as a centralized key-value store for configuration parameters used by all
 
 ### `FeeToken.sol`
 
-An `ERC20`-compliant token that serves as the primary medium of exchange for fees within the protocol. It is a "wrapped" token, meaning it is backed 1:1 by an underlying `stablecoin` (like USDC). Users can `deposit` the underlying token to mint `FeeToken` and `withdraw` `FeeToken` to receive the underlying token back. The `FeeToken` is the gas token on an app chain, and exists to decouple the 3rd party underlying `stablecoin` from an `app chain`'s native gas token. The `FeeToken` has 6 decimals, which, for the time being, matches the decimals of the underlying `stablecoin` (USDC). The USDC is held by the `FeeToken` contract itself, and not transferred to, or held by, any other contract in the protocol.
+An `ERC20`-compliant token that serves as the primary medium of exchange for fees within the protocol. It is a "wrapped" token, meaning it is backed 1:1 by an underlying `stablecoin` (like USDC). Users can `deposit` the underlying token to mint `FeeToken` and `withdraw` `FeeToken` to receive the underlying token back. The `FeeToken` is the gas token on an app chain, and exists to decouple the 3rd party underlying `stablecoin` from an `app chain`'s native gas token. The `FeeToken` has 6 decimals, which matches the decimals of the planned underlying `stablecoin` (USDC). The USDC is held by the `FeeToken` contract itself, and not transferred to, or held by, any other contract in the protocol.
 
 **Interactions**:
 
@@ -67,7 +67,7 @@ An `ERC20`-compliant token that serves as the primary medium of exchange for fee
 
 ### `NodeRegistry.sol`
 
-Manages the identities of the nodes that operate the network. Each node is represented as an `ERC721` NFT (non-enumerable variant), which proves ownership. The registry stores critical information for each node, such as its signing key and network address. It also maintains a distinction between "canonical" nodes, which are the core, trusted operators, and non-canonical ones. A separate `NodeRegistry` admin, defined by the `SettlementChainParameterRegistry`, can add or removed a node form the `canonical` set.
+Manages the identities of the nodes that operate the network. Each node is represented as an `ERC721` NFT (non-enumerable variant), which proves ownership. The registry stores critical information for each node, such as its signing key and network address. It also maintains a distinction between "canonical" nodes, which are the core, trusted operators, and non-canonical ones. A separate `NodeRegistry` admin, defined by the `SettlementChainParameterRegistry`, can add or removed a node from the `canonical` set.
 
 **Interactions**:
 
