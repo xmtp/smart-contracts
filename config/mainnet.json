@@ -1,81 +1,81 @@
 {
-    "appChainGatewayImplementation": "0x0000000000000000000000000000000000000000",
-    "appChainId": "24132016",
-    "appChainParameterRegistryImplementation": "0x0000000000000000000000000000000000000000",
-    "deployer": "0xD940Dd30F750162c12086C6dc68507F7e8C480B4",
-    "depositSplitter": "0x0000000000000000000000000000000000000000",
-    "distributionManagerImplementation": "0x3a4e60361622D9F3C18eaeC4D104cA5a8ea0E2B0",
-    "distributionManagerProxy": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
-    "distributionManagerProxySalt": "DistributionManager_0",
-    "factory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
-    "factoryImplementation": "0x9Be474b7e2d875D10d335b8e48498Af8a0598868",
-    "feeTokenImplementation": "0x644f165B4232F9197b715d942653dEC8f1e1d854",
-    "feeTokenProxy": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
-    "feeTokenProxySalt": "FeeToken_0",
-    "gatewayProxy": "0xF28C4e09cA95824f985665D44195F46a98A7F596",
-    "gatewayProxySalt": "Gateway_0",
-    "groupMessageBroadcasterImplementation": "0x0000000000000000000000000000000000000000",
-    "groupMessageBroadcasterProxy": "0x0000000000000000000000000000000000000000",
-    "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0",
-    "identityUpdateBroadcasterImplementation": "0x0000000000000000000000000000000000000000",
-    "identityUpdateBroadcasterProxy": "0x0000000000000000000000000000000000000000",
-    "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
-    "initializableImplementation": "0x8a5b177657b9B0dd469f7C61e3c34C841883772C",
-    "nodeRegistryImplementation": "0xDce39a57617ED828b7c604d3f0C5FFee51e5059a",
-    "nodeRegistryProxy": "0xF51480D37cD1f531009B40f8f241Bb28f39432cC",
-    "nodeRegistryProxySalt": "NodeRegistry_0",
-    "parameterRegistryProxy": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
-    "parameterRegistryProxySalt": "ParameterRegistry_0",
-    "payerRegistryImplementation": "0xEBF40d66fE7c1dc176eb08dC5bC895C1661ae56b",
-    "payerRegistryProxy": "0x64734A258aEa59892c861D600b2cf8804Fd454b7",
-    "payerRegistryProxySalt": "PayerRegistry_0",
-    "payerReportManagerImplementation": "0xFF819A90DDdfcA96a40B2C7990Fe3eF882a47C82",
-    "payerReportManagerProxy": "0xB148b7bC74a651e70eD27140040fD997560341CF",
-    "payerReportManagerProxySalt": "PayerReportManager_0",
-    "rateRegistryImplementation": "0x3bC1645ACEFdC5e4205857FAf48f04138Ab9C7c9",
-    "rateRegistryProxy": "0x8c1d9cE62c3fc3DB144c7E699Df53B95a1313858",
-    "rateRegistryProxySalt": "RateRegistry_0",
-    "settlementChainGatewayImplementation": "0x43E0AF0d87Cc9e4AC01f69207092702970C858C6",
-    "settlementChainId": "8453",
-    "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
-    "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
-    "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
-    "settlementChainParameterRegistryImplementation": "0x98073E1dC964a3DFB21d86e1934b543f3f9beaA8",
-    "startingParameters": {
-        "xmtp": {
-            "settlementChainGateway": {
-                "inbox": {
-                    "24132016": "0x0000000000000000000000000000000000000000"
-                }
-            },
-            "nodeRegistry": {
-                "admin": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
-                "maxCanonicalNodes": "0"
-            },
-            "payerRegistry": {
-                "settler": "0xB148b7bC74a651e70eD27140040fD997560341CF",
-                "feeDistributor": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
-                "minimumDeposit": "10000000",
-                "withdrawLockPeriod": "172800"
-            },
-            "payerReportManager": {
-                "protocolFeeRate": "0"
-            },
-            "rateRegistry": {
-                "messageFee": "0",
-                "storageFee": "0",
-                "congestionFee": "0",
-                "targetRatePerMinute": "0"
-            },
-            "groupMessageBroadcaster": {
-                "minPayloadSize": "0",
-                "maxPayloadSize": "0"
-            },
-            "identityUpdateBroadcaster": {
-                "minPayloadSize": "0",
-                "maxPayloadSize": "0"
-            }
+  "appChainGatewayImplementation": "0x0000000000000000000000000000000000000000",
+  "appChainId": "24132016",
+  "appChainParameterRegistryImplementation": "0x0000000000000000000000000000000000000000",
+  "deployer": "0xD940Dd30F750162c12086C6dc68507F7e8C480B4",
+  "depositSplitter": "0x0000000000000000000000000000000000000000",
+  "distributionManagerImplementation": "0x3a4e60361622D9F3C18eaeC4D104cA5a8ea0E2B0",
+  "distributionManagerProxy": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
+  "distributionManagerProxySalt": "DistributionManager_0",
+  "factory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
+  "factoryImplementation": "0x9Be474b7e2d875D10d335b8e48498Af8a0598868",
+  "feeTokenImplementation": "0x644f165B4232F9197b715d942653dEC8f1e1d854",
+  "feeTokenProxy": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
+  "feeTokenProxySalt": "FeeToken_0",
+  "gatewayProxy": "0xF28C4e09cA95824f985665D44195F46a98A7F596",
+  "gatewayProxySalt": "Gateway_0",
+  "groupMessageBroadcasterImplementation": "0x0000000000000000000000000000000000000000",
+  "groupMessageBroadcasterProxy": "0x0000000000000000000000000000000000000000",
+  "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0",
+  "identityUpdateBroadcasterImplementation": "0x0000000000000000000000000000000000000000",
+  "identityUpdateBroadcasterProxy": "0x0000000000000000000000000000000000000000",
+  "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
+  "initializableImplementation": "0x8a5b177657b9B0dd469f7C61e3c34C841883772C",
+  "nodeRegistryImplementation": "0xDce39a57617ED828b7c604d3f0C5FFee51e5059a",
+  "nodeRegistryProxy": "0xF51480D37cD1f531009B40f8f241Bb28f39432cC",
+  "nodeRegistryProxySalt": "NodeRegistry_0",
+  "parameterRegistryProxy": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
+  "parameterRegistryProxySalt": "ParameterRegistry_0",
+  "payerRegistryImplementation": "0xEBF40d66fE7c1dc176eb08dC5bC895C1661ae56b",
+  "payerRegistryProxy": "0x64734A258aEa59892c861D600b2cf8804Fd454b7",
+  "payerRegistryProxySalt": "PayerRegistry_0",
+  "payerReportManagerImplementation": "0xFF819A90DDdfcA96a40B2C7990Fe3eF882a47C82",
+  "payerReportManagerProxy": "0xB148b7bC74a651e70eD27140040fD997560341CF",
+  "payerReportManagerProxySalt": "PayerReportManager_0",
+  "rateRegistryImplementation": "0x3bC1645ACEFdC5e4205857FAf48f04138Ab9C7c9",
+  "rateRegistryProxy": "0x8c1d9cE62c3fc3DB144c7E699Df53B95a1313858",
+  "rateRegistryProxySalt": "RateRegistry_0",
+  "settlementChainGatewayImplementation": "0x43E0AF0d87Cc9e4AC01f69207092702970C858C6",
+  "settlementChainId": "8453",
+  "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
+  "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
+  "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
+  "settlementChainParameterRegistryImplementation": "0x98073E1dC964a3DFB21d86e1934b543f3f9beaA8",
+  "startingParameters": {
+    "xmtp": {
+      "settlementChainGateway": {
+        "inbox": {
+          "24132016": "0x0000000000000000000000000000000000000000"
         }
-    },
-    "underlyingFeeToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      },
+      "nodeRegistry": {
+        "admin": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
+        "maxCanonicalNodes": "0"
+      },
+      "payerRegistry": {
+        "settler": "0xB148b7bC74a651e70eD27140040fD997560341CF",
+        "feeDistributor": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
+        "minimumDeposit": "10000000",
+        "withdrawLockPeriod": "172800"
+      },
+      "payerReportManager": {
+        "protocolFeeRate": "0"
+      },
+      "rateRegistry": {
+        "messageFee": "0",
+        "storageFee": "0",
+        "congestionFee": "0",
+        "targetRatePerMinute": "0"
+      },
+      "groupMessageBroadcaster": {
+        "minPayloadSize": "0",
+        "maxPayloadSize": "0"
+      },
+      "identityUpdateBroadcaster": {
+        "minPayloadSize": "0",
+        "maxPayloadSize": "0"
+      }
+    }
+  },
+  "underlyingFeeToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 }
