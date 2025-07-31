@@ -37,11 +37,11 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     event InboxUpdated(uint256 indexed chainId, address indexed inbox);
 
     /**
-     * @notice Emitted when fee tokens have been withdrawn from the settlement chain gateway.
-     * @param  amount    The amount of tokens withdrawn.
+     * @notice Emitted when fee tokens are withdrawn from the app chain.
      * @param  recipient The recipient of the tokens.
+     * @param  amount    The amount of tokens withdrawn.
      */
-    event Withdrawal(uint256 amount, address indexed recipient);
+    event WithdrawalReceived(address indexed recipient, uint256 amount);
 
     /**
      * @notice Emitted when the pause status is set.

@@ -21,6 +21,13 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     event ParametersReceived(uint256 indexed nonce, string[] keys);
 
     /**
+     * @notice Emitted when funds are deposited from the settlement chain.
+     * @param  recipient The address to which the funds will be delivered to.
+     * @param  amount    The amount of funds received.
+     */
+    event DepositReceived(address indexed recipient, uint256 amount);
+
+    /**
      * @notice Emitted when the pause status is set.
      * @param  paused The new pause status.
      */

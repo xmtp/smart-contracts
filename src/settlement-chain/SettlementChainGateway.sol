@@ -259,7 +259,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         // slither-disable-next-line incorrect-equality
         if (amount_ == 0) revert ZeroBalance();
 
-        emit Withdrawal(amount_, recipient_);
+        emit WithdrawalReceived(recipient_, amount_);
 
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
@@ -278,7 +278,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         // slither-disable-next-line incorrect-equality
         if (amount_ == 0) revert ZeroBalance();
 
-        emit Withdrawal(amount_, recipient_);
+        emit WithdrawalReceived(recipient_, amount_);
 
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unused-return
