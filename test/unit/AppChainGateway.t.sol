@@ -217,6 +217,9 @@ contract AppChainGatewayTests is Test {
     function test_receiveDeposit() external {
         Utils.expectAndMockCall(address(1), "", "");
 
+        vm.expectEmit(address(_gateway));
+        emit IAppChainGateway.DepositReceived(address(1), 1);
+
         vm.prank(_settlementChainGatewayAlias);
         _gateway.receiveDeposit(address(1), 1);
     }

@@ -1770,7 +1770,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Withdrawal(100, _alice);
+        emit ISettlementChainGateway.WithdrawalReceived(_alice, 100);
 
         uint256 amount_ = _gateway.receiveWithdrawal(_alice);
 
@@ -1811,7 +1811,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Withdrawal(100, _alice);
+        emit ISettlementChainGateway.WithdrawalReceived(_alice, 100);
 
         uint256 amount_ = _gateway.receiveWithdrawalIntoUnderlying(_alice);
 
