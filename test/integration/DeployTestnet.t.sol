@@ -33,21 +33,21 @@ contract DeployTestnetTests is DeployTests {
         _settlementChainInboxToAppchain = 0xA382f402Cb702484B424AC8e2B7fEE9B032C6b9d;
         _settlementChainBridge = 0xD05baD3cec5E67152178F731aae8025fC1F2DAEA;
 
-        _feeToken = 0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8;
         _factory = 0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1;
+        _feeToken = 0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8;
+        _gateway = 0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3;
         _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
-        _underlyingFeeToken = 0x2d7e0534183dAD09008C97f230d9F4f6425eE859;
+        _underlyingFeeToken = 0x2d7e0534183dAD09008C97f230d9F4f6425eE859; // Mock Underlying Fee Token on Base Ropsten.
 
         _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
 
-        _distributionManagerProxySalt = "DistributionManager_0_0";
-        _gatewayProxySalt = "Gateway_0_0";
-        _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_0_0";
-        _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_0_0";
-        _nodeRegistryProxySalt = "NodeRegistry_0_0";
-        _payerRegistryProxySalt = "PayerRegistry_0_0";
-        _payerReportManagerProxySalt = "PayerReportManager_0_0";
-        _rateRegistryProxySalt = "RateRegistry_0_0";
+        _distributionManagerProxySalt = "DistributionManager_1_0";
+        _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_1_0";
+        _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_1_0";
+        _nodeRegistryProxySalt = "NodeRegistry_1_0";
+        _payerRegistryProxySalt = "PayerRegistry_1_0";
+        _payerReportManagerProxySalt = "PayerReportManager_1_0";
+        _rateRegistryProxySalt = "RateRegistry_1_0";
 
         _settlementChainForkId = vm.createSelectFork("base_sepolia");
         _settlementChainId = block.chainid;
@@ -58,23 +58,6 @@ contract DeployTestnetTests is DeployTests {
 
     function test_deployTestnetProtocol() external {
         vm.skip(true);
-
-        // Get the expected address of the Gateway on the app chain, since the Parameter Registry on the
-        // same chain will need it.
-        address expectedGatewayProxy_ = _expectedGatewayProxy();
-
-        // Deploy the Gateway on the settlement chain.
-        address settlementChainGatewayImplementation_ = _deploySettlementChainGatewayImplementation(
-            _parameterRegistry,
-            expectedGatewayProxy_,
-            _feeToken
-        );
-
-        console.log("settlementChainGatewayImplementation: %s", settlementChainGatewayImplementation_);
-
-        _settlementChainGateway = _deploySettlementChainGatewayProxy(settlementChainGatewayImplementation_);
-
-        console.log("settlementChainGatewayProxy: %s", address(_settlementChainGateway));
 
         // Deploy the Payer Registry on the settlement chain.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(_parameterRegistry, _feeToken);
@@ -132,26 +115,9 @@ contract DeployTestnetTests is DeployTests {
         console.log("distributionManagerProxy: %s", address(_distributionManager));
 
         // Deploy the Deposit Splitter on the settlement chain.
-        _depositSplitter = _deployDepositSplitter(
-            _feeToken,
-            address(_payerRegistry),
-            address(_settlementChainGateway),
-            _appChainId
-        );
+        _depositSplitter = _deployDepositSplitter(_feeToken, address(_payerRegistry), _gateway, _appChainId);
 
         console.log("depositSplitter: %s", address(_depositSplitter));
-
-        // Deploy the Gateway on the app chain.
-        address appChainGatewayImplementation_ = _deployAppChainGatewayImplementation(
-            _parameterRegistry,
-            address(_settlementChainGateway)
-        );
-
-        console.log("appChainGatewayImplementation: %s", appChainGatewayImplementation_);
-
-        _appChainGateway = _deployAppChainGatewayProxy(appChainGatewayImplementation_);
-
-        console.log("appChainGatewayProxy: %s", address(_appChainGateway));
 
         // Deploy the Group Message Broadcaster on the app chain.
         address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
@@ -205,7 +171,6 @@ contract DeployTestnetTests is DeployTests {
     }
 
     function test_migrateTestnetProtocol() external {
-        _appChainGateway = IAppChainGateway(0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3);
         _distributionManager = IDistributionManager(0xbA6bE286C79C4d08f789F5491C894FAd358A31F0);
         _groupMessageBroadcaster = IGroupMessageBroadcaster(0xbDF24fD4bBaE0E3CCd42Fb6C07EC6eA347A1Ef87);
         _identityUpdateBroadcaster = IIdentityUpdateBroadcaster(0x559c8c08A251Cc917ccCde13Caf273156d0c8f35);
@@ -213,7 +178,6 @@ contract DeployTestnetTests is DeployTests {
         _payerRegistry = IPayerRegistry(0x77a9129Cb584DF076a64A995dDEF9158d589D80c);
         _payerReportManager = IPayerReportManager(0x4E514aBB2560CbF85C607f5FD0C51aE7cE2E5b9A);
         _rateRegistry = IRateRegistry(0x89C6Aa3e03224F43290823471E8ed725C35bAcCE);
-        _settlementChainGateway = ISettlementChainGateway(0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3);
 
         // Deploy the Factory implementation on the settlement chain.
         address settlementChainFactoryImplementation_ = _deploySettlementChainFactoryImplementation(_parameterRegistry);
@@ -286,13 +250,13 @@ contract DeployTestnetTests is DeployTests {
 
         // Try to migrate the Gateway on the settlement chain.
         address settlementChainGatewayMigrator_ = _deploySettlementChainMigrator(
-            address(_settlementChainGateway),
+            _gateway,
             settlementChainGatewayImplementation_
         );
 
         console.log("settlementChainGatewayMigrator: %s", settlementChainGatewayMigrator_);
 
-        _migrateOnSettlementChain(address(_settlementChainGateway), settlementChainGatewayMigrator_);
+        _migrateOnSettlementChain(_gateway, settlementChainGatewayMigrator_);
 
         // Deploy the Payer Registry on the settlement chain.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(_parameterRegistry, _feeToken);
@@ -380,12 +344,7 @@ contract DeployTestnetTests is DeployTests {
         _migrateOnSettlementChain(address(_distributionManager), distributionManagerMigrator_);
 
         // Deploy the Deposit Splitter on the settlement chain.
-        _depositSplitter = _deployDepositSplitter(
-            _feeToken,
-            address(_payerRegistry),
-            address(_settlementChainGateway),
-            _appChainId
-        );
+        _depositSplitter = _deployDepositSplitter(_feeToken, address(_payerRegistry), _gateway, _appChainId);
 
         console.log("depositSplitter: %s", address(_depositSplitter));
 
@@ -417,22 +376,16 @@ contract DeployTestnetTests is DeployTests {
         _migrateOnAppChain(_parameterRegistry, appChainParameterRegistryMigrator_);
 
         // Deploy the Gateway on the app chain.
-        address appChainGatewayImplementation_ = _deployAppChainGatewayImplementation(
-            _parameterRegistry,
-            address(_settlementChainGateway)
-        );
+        address appChainGatewayImplementation_ = _deployAppChainGatewayImplementation(_parameterRegistry, _gateway);
 
         console.log("appChainGatewayImplementation: %s", appChainGatewayImplementation_);
 
         // Try to migrate the Gateway on the app chain.
-        address appChainGatewayMigrator_ = _deployAppChainMigrator(
-            address(_appChainGateway),
-            appChainGatewayImplementation_
-        );
+        address appChainGatewayMigrator_ = _deployAppChainMigrator(_gateway, appChainGatewayImplementation_);
 
         console.log("appChainGatewayMigrator: %s", appChainGatewayMigrator_);
 
-        _migrateOnAppChain(address(_appChainGateway), appChainGatewayMigrator_);
+        _migrateOnAppChain(_gateway, appChainGatewayMigrator_);
 
         // Deploy the Group Message Broadcaster on the app chain.
         address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(

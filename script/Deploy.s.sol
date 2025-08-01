@@ -118,6 +118,8 @@ contract DeployScripts is Script {
         deployMockUnderlyingFeeTokenProxy();
         deployFeeTokenImplementation();
         deployFeeTokenProxy();
+        deploySettlementChainGatewayImplementation();
+        deploySettlementChainGatewayProxy();
     }
 
     function deployAllSettlementChainComponentImplementations() external {
@@ -141,7 +143,6 @@ contract DeployScripts is Script {
     }
 
     function deploySettlementChainComponentImplementations() public {
-        deploySettlementChainGatewayImplementation();
         deployPayerRegistryImplementation();
         deployRateRegistryImplementation();
         deployNodeRegistryImplementation();
@@ -151,7 +152,6 @@ contract DeployScripts is Script {
     }
 
     function deploySettlementChainComponentProxies() public {
-        deploySettlementChainGatewayProxy();
         deployPayerRegistryProxy();
         deployRateRegistryProxy();
         deployNodeRegistryProxy();
@@ -168,6 +168,8 @@ contract DeployScripts is Script {
         initializeFactory();
         deployAppChainParameterRegistryImplementation();
         deployAppChainParameterRegistryProxy();
+        deployAppChainGatewayImplementation();
+        deployAppChainGatewayProxy();
     }
 
     function deployAllAppChainComponentImplementations() external {
@@ -189,13 +191,11 @@ contract DeployScripts is Script {
     }
 
     function deployAppChainComponentImplementations() public {
-        deployAppChainGatewayImplementation();
         deployGroupMessageBroadcasterImplementation();
         deployIdentityUpdateBroadcasterImplementation();
     }
 
     function deployAppChainComponentProxies() public {
-        deployAppChainGatewayProxy();
         deployGroupMessageBroadcasterProxy();
         deployIdentityUpdateBroadcasterProxy();
     }
@@ -321,9 +321,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("Factory Implementation: %s", implementation_);
+            console.log("Factory Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.factoryImplementation) revert UnexpectedImplementation();
 
@@ -384,9 +384,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("SettlementChainParameterRegistry Implementation: %s", implementation_);
+            console.log("SettlementChainParameterRegistry Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.settlementChainParameterRegistryImplementation) {
             revert UnexpectedImplementation();
@@ -454,9 +454,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("MockUnderlyingFeeToken Implementation: %s", implementation_);
+            console.log("MockUnderlyingFeeToken Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.mockUnderlyingFeeTokenImplementation) revert UnexpectedImplementation();
 
@@ -514,9 +514,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("FeeToken Implementation: %s", implementation_);
+            console.log("FeeToken Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.feeTokenImplementation) revert UnexpectedImplementation();
 
@@ -577,9 +577,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("SettlementChainGateway Implementation: %s", implementation_);
+            console.log("SettlementChainGateway Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.settlementChainGatewayImplementation) revert UnexpectedImplementation();
 
@@ -645,9 +645,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("PayerRegistry Implementation: %s", implementation_);
+            console.log("PayerRegistry Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.payerRegistryImplementation) revert UnexpectedImplementation();
 
@@ -706,9 +706,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("RateRegistry Implementation: %s", implementation_);
+            console.log("RateRegistry Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.rateRegistryImplementation) revert UnexpectedImplementation();
 
@@ -763,9 +763,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("NodeRegistry Implementation: %s", implementation_);
+            console.log("NodeRegistry Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.nodeRegistryImplementation) revert UnexpectedImplementation();
 
@@ -826,9 +826,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("PayerReportManager Implementation: %s", implementation_);
+            console.log("PayerReportManager Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.payerReportManagerImplementation) revert UnexpectedImplementation();
 
@@ -906,9 +906,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("DistributionManager Implementation: %s", implementation_);
+            console.log("DistributionManager Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.distributionManagerImplementation) revert UnexpectedImplementation();
 
@@ -991,9 +991,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("DepositSplitter: %s", implementation_);
+            console.log("DepositSplitter: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.depositSplitter) revert UnexpectedImplementation();
 
@@ -1026,9 +1026,9 @@ contract DeployScripts is Script {
             (implementation_, ) = AppChainParameterRegistryDeployer.deployImplementation(_deploymentData.factory);
 
             vm.stopBroadcast();
-        }
 
-        console.log("AppChainParameterRegistry Implementation: %s", implementation_);
+            console.log("AppChainParameterRegistry Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.appChainParameterRegistryImplementation) {
             revert UnexpectedImplementation();
@@ -1097,9 +1097,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("AppChainGateway Implementation: %s", implementation_);
+            console.log("AppChainGateway Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.appChainGatewayImplementation) revert UnexpectedImplementation();
 
@@ -1165,9 +1165,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("GroupMessageBroadcaster Implementation: %s", implementation_);
+            console.log("GroupMessageBroadcaster Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.groupMessageBroadcasterImplementation) revert UnexpectedImplementation();
 
@@ -1227,9 +1227,9 @@ contract DeployScripts is Script {
             );
 
             vm.stopBroadcast();
-        }
 
-        console.log("IdentityUpdateBroadcaster Implementation: %s", implementation_);
+            console.log("IdentityUpdateBroadcaster Implementation: %s", implementation_);
+        }
 
         if (implementation_ != _deploymentData.identityUpdateBroadcasterImplementation) {
             revert UnexpectedImplementation();
