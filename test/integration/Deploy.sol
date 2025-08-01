@@ -129,21 +129,22 @@ abstract contract DeployTests is Test {
 
     bytes32 internal constant _FEE_TOKEN_PROXY_SALT = "FeeToken_0";
     bytes32 internal constant _PARAMETER_REGISTRY_PROXY_SALT = "ParameterRegistry_0";
+    bytes32 internal constant _GATEWAY_PROXY_SALT = "Gateway_0_0";
 
     address internal _alice = makeAddr("alice");
 
     address internal _settlementChainInboxToAppchain;
     address internal _settlementChainBridge;
 
-    address internal _feeToken;
     address internal _factory;
+    address internal _feeToken;
+    address internal _gateway;
     address internal _parameterRegistry;
     address internal _underlyingFeeToken;
 
     uint256 internal _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
 
     bytes32 internal _distributionManagerProxySalt;
-    bytes32 internal _gatewayProxySalt;
     bytes32 internal _groupMessageBroadcasterProxySalt;
     bytes32 internal _identityUpdateBroadcasterProxySalt;
     bytes32 internal _nodeRegistryProxySalt;
@@ -157,7 +158,6 @@ abstract contract DeployTests is Test {
     uint256 internal _settlementChainId;
     uint256 internal _appChainId;
 
-    IAppChainGateway internal _appChainGateway;
     IDepositSplitter internal _depositSplitter;
     IDistributionManager internal _distributionManager;
     IGroupMessageBroadcaster internal _groupMessageBroadcaster;
@@ -166,7 +166,6 @@ abstract contract DeployTests is Test {
     IPayerRegistry internal _payerRegistry;
     IPayerReportManager internal _payerReportManager;
     IRateRegistry internal _rateRegistry;
-    ISettlementChainGateway internal _settlementChainGateway;
 
     function setUp() public virtual {
         vm.recordLogs();
@@ -337,7 +336,11 @@ abstract contract DeployTests is Test {
         vm.selectFork(_settlementChainForkId);
 
         vm.startPrank(_DEPLOYER);
-        (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(_factory, implementation_, _gatewayProxySalt);
+        (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
+            _factory,
+            implementation_,
+            _GATEWAY_PROXY_SALT
+        );
         vm.stopPrank();
 
         gateway_ = ISettlementChainGateway(proxy_);
@@ -349,7 +352,7 @@ abstract contract DeployTests is Test {
         vm.selectFork(_appChainForkId);
 
         vm.startPrank(_DEPLOYER);
-        (address proxy_, , ) = AppChainGatewayDeployer.deployProxy(_factory, implementation_, _gatewayProxySalt);
+        (address proxy_, , ) = AppChainGatewayDeployer.deployProxy(_factory, implementation_, _GATEWAY_PROXY_SALT);
         vm.stopPrank();
 
         gateway_ = IAppChainGateway(proxy_);
@@ -379,7 +382,7 @@ abstract contract DeployTests is Test {
         vm.selectFork(_settlementChainForkId);
 
         vm.prank(_ADMIN);
-        _settlementChainGateway.updateInbox(_appChainId);
+        ISettlementChainGateway(_gateway).updateInbox(_appChainId);
     }
 
     /* ============ Group Message Broadcaster Helpers ============ */
@@ -1068,7 +1071,7 @@ abstract contract DeployTests is Test {
 
         _giveUnderlyingFeeTokens(account_, cost_);
         _mintFeeTokens(account_, cost_);
-        _approveTokens(_feeToken, account_, address(_settlementChainGateway), cost_);
+        _approveTokens(_feeToken, account_, _gateway, cost_);
 
         vm.selectFork(_settlementChainForkId);
 
@@ -1076,7 +1079,7 @@ abstract contract DeployTests is Test {
         chainIds_[0] = chainId_;
 
         vm.prank(account_);
-        _settlementChainGateway.sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, cost_);
+        ISettlementChainGateway(_gateway).sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, cost_);
     }
 
     function _handleQueuedBridgeEvents() internal {
@@ -1285,6 +1288,6 @@ abstract contract DeployTests is Test {
 
     function _expectedGatewayProxy() internal returns (address expectedGatewayProxy_) {
         vm.selectFork(_settlementChainForkId);
-        return IFactory(_factory).computeProxyAddress(_DEPLOYER, _gatewayProxySalt);
+        return IFactory(_factory).computeProxyAddress(_DEPLOYER, _GATEWAY_PROXY_SALT);
     }
 }

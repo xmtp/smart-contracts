@@ -70,6 +70,8 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
     PARAMETER_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "parameterRegistryProxy")
     SETTLEMENT_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "settlementChainParameterRegistryImplementation")
     UNDERLYING_FEE_TOKEN=$(get_environment_value "$ENVIRONMENT" "underlyingFeeToken")
+    SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "settlementChainGatewayImplementation")
+    GATEWAY_PROXY=$(get_environment_value "$ENVIRONMENT" "gatewayProxy")
 
     if [ "$ENVIRONMENT" = "mainnet" ]; then
         MOCK_UNDERLYING_FEE_TOKEN_IMPLEMENTATION="0x0000000000000000000000000000000000000000"
@@ -132,6 +134,18 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
     sleep 2
 
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$GATEWAY_PROXY" \
+            "$FEE_TOKEN_PROXY") \
+        "$SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION" \
+        src/settlement-chain/SettlementChainGateway.sol:SettlementChainGateway
+
+    sleep 2
+
     # NOTE: Proxy verification is inconsistent due to etherscan-like explorer bugs.
     if [ "$EXPLORER" = "basescan" ]; then
         echo ""
@@ -160,6 +174,15 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
 
         sleep 2
 
+        echo ""
+        echo "Verifying Proxy For SettlementChainGateway"
+
+        if ! curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
+            echo "Warning: Failed to verify proxy for SettlementChainGateway" >&2
+        fi
+
+        sleep 2
+
         if [ "$ENVIRONMENT" != "mainnet" ]; then
             echo ""
             echo "Verifying Proxy For UnderlyingFeeToken"
@@ -178,6 +201,8 @@ else
     FACTORY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "factoryImplementation")
     INITIALIZABLE_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "initializableImplementation")
     PARAMETER_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "parameterRegistryProxy")
+    GATEWAY_PROXY=$(get_environment_value "$ENVIRONMENT" "gatewayProxy")
+    APP_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "appChainGatewayImplementation")
 
     echo ""
 
@@ -211,6 +236,17 @@ else
     forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         "$APP_CHAIN_PARAMETER_REGISTRY_IMPLEMENTATION" \
         src/app-chain/AppChainParameterRegistry.sol:AppChainParameterRegistry
+
+    sleep 2
+
+    echo ""
+
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
+        --constructor-args $(cast abi-encode "constructor(address,address)" \
+            "$PARAMETER_REGISTRY_PROXY" \
+            "$GATEWAY_PROXY") \
+        "$APP_CHAIN_GATEWAY_IMPLEMENTATION" \
+        src/app-chain/AppChainGateway.sol:AppChainGateway
 fi
 
 echo "✔ Done verifying base contracts for $CHAIN_NAME."

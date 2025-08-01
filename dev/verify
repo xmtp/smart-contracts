@@ -73,19 +73,6 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
     PAYER_REPORT_MANAGER_PROXY=$(get_environment_value "$ENVIRONMENT" "payerReportManagerProxy")
     RATE_REGISTRY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "rateRegistryImplementation")
     RATE_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "rateRegistryProxy")
-    SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "settlementChainGatewayImplementation")
-
-    echo ""
-
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address,address,address)" \
-            "$PARAMETER_REGISTRY_PROXY" \
-            "$GATEWAY_PROXY" \
-            "$FEE_TOKEN_PROXY") \
-        "$SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION" \
-        src/settlement-chain/SettlementChainGateway.sol:SettlementChainGateway
-
-    sleep 2
 
     echo ""
 
@@ -158,15 +145,6 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
     # NOTE: Proxy verification is inconsistent due to etherscan-like explorer bugs.
     if [ "$EXPLORER" = "basescan" ]; then
         echo ""
-        echo "Verifying Proxy For SettlementChainGateway"
-
-        if ! curl -d "address=${GATEWAY_PROXY}&expectedimplementation=${SETTLEMENT_CHAIN_GATEWAY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
-            echo "Warning: Failed to verify proxy for SettlementChainGateway" >&2
-        fi
-
-        sleep 2
-
-        echo ""
         echo "Verifying Proxy For PayerRegistry"
 
         if ! curl -d "address=${PAYER_REGISTRY_PROXY}&expectedimplementation=${PAYER_REGISTRY_IMPLEMENTATION}" "${EXPLORER_URL}?chainid=${CHAIN_ID}&module=contract&action=verifyproxycontract&apikey=${API_KEY}"; then
@@ -213,24 +191,13 @@ if [ "$CHAIN_TYPE" = "settlement-chain" ]; then
         echo "--> Proxy verification is inconsistent due to etherscan-like explorer bugs. Manually confirm and/or perform proxy verification in the explorer.<--"
     fi
 else
-    APP_CHAIN_GATEWAY_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "appChainGatewayImplementation")
-    GATEWAY_PROXY=$(get_environment_value "$ENVIRONMENT" "gatewayProxy")
     GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "groupMessageBroadcasterImplementation")
     IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION=$(get_environment_value "$ENVIRONMENT" "identityUpdateBroadcasterImplementation")
     PARAMETER_REGISTRY_PROXY=$(get_environment_value "$ENVIRONMENT" "parameterRegistryProxy")
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address,address)" \
-            "$PARAMETER_REGISTRY_PROXY" \
-            "$GATEWAY_PROXY") \
-        "$APP_CHAIN_GATEWAY_IMPLEMENTATION" \
-        src/app-chain/AppChainGateway.sol:AppChainGateway
-
-    sleep 2
-
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
         "$GROUP_MESSAGE_BROADCASTER_IMPLEMENTATION" \
         src/app-chain/GroupMessageBroadcaster.sol:GroupMessageBroadcaster
@@ -239,7 +206,7 @@ else
 
     echo ""
 
-    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$BLOCKSCOUT_API_KEY" \
+    forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
         --constructor-args $(cast abi-encode "constructor(address)" "$PARAMETER_REGISTRY_PROXY") \
         "$IDENTITY_UPDATE_BROADCASTER_IMPLEMENTATION" \
         src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
