@@ -1,11 +1,11 @@
 # XMTP Contracts
 
 - [XMTP Contracts](#xmtp-contracts)
-    - [Usage](#usage)
-        - [Prerequisites](#prerequisites)
-        - [Initialize project](#initialize-project)
-    - [Developer tools](#developer-tools)
-    - [Forge scripts](#forge-scripts)
+  - [Usage](#usage)
+    - [Prerequisites](#prerequisites)
+    - [Initialize project](#initialize-project)
+  - [Developer tools](#developer-tools)
+  - [Forge scripts](#forge-scripts)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
@@ -38,7 +38,6 @@ Optionally, [install yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac
 Initialize the project dependencies:
 
 ```shell
-npm install  # if using node
 yarn install # if using yarn
 ```
 
@@ -74,16 +73,65 @@ prettier:       Runs prettier in write mode, potentially modifying files.
 prettier-check: Runs prettier in check mode.
 ```
 
-## Forge scripts
+## Scripts
 
-The project includes deployer and upgrade scripts.
+The project includes deploy and upgrade scripts.
 
-Current available configuration options:
+### Deploying Base Contract
+
+The `FeeToken` is a singleton with respect to the app chain, regardless of environment, and the `FeeToken` relies ona a single `ParameterRegistry`. Further, the `Factory` is also a singleton on each chain as it enables deterministic and consistent addresses across all chains, and it also relies on a single `ParameterRegistry`. And lastly, the `Gateway` is also a singleton on each chain as it not only relies on a single `ParameterRegistry`, but also relays parameters between settlement chain and app chain parameter registries.
+
+Because of this, for each settlement chain, regardless of environment, a set of base contracts must be deployed only once for each settlement chain. This deployment includes the `Factory`, `SettlementChaiParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the settlement chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the app chain.
+
+These are deployed via:
 
 ```shell
-PRIVATE_KEY=0x000000000000000000000000000000000000dEaD
-XMTP_GROUP_MESSAGE_BROADCASTER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
-XMTP_IDENTITY_UPDATE_BROADCASTER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
-XMTP_NODE_REGISTRY_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
-XMTP_RATES_MANAGER_ADMIN_ADDRESS=0x000000000000000000000000000000000000dEaD
+./dev/deploy-base <CHAIN_NAME>
+```
+
+They are verified via:
+
+```shell
+./dev/verify-base <CHAIN_NAME> basescan
+./dev/verify-base <CHAIN_NAME> blockscout
+```
+
+<!-- TODO: Add script and documentation for setting the inbox address for the settlement chain gateway -->
+
+### Deploying Environment Contracts
+
+This deployment includes the `PayerRegistry`, `RateRegistry`, `NodeRegistry`, `PayerReportManager`, `DistributionManager`, and `DepositSplitter` for the settlement chain, and the `GroupMessageBroadcaster`, `IdentityUpdateBroadcaster` for the app chain.
+
+These are deployed via:
+
+```shell
+./dev/deploy <ENVIRONMENT> settlement-chain
+./dev/deploy <ENVIRONMENT> app-chain
+```
+
+They are verified via:
+
+```shell
+./dev/verify <ENVIRONMENT> settlement-chain basescan
+./dev/verify <ENVIRONMENT> settlement-chain blockscout
+./dev/verify <ENVIRONMENT> app-chain alchemy
+```
+
+The starting parameters are defined via:
+
+```shell
+./dev/set-starting-parameters <ENVIRONMENT>
+```
+
+They are bridged via:
+
+```shell
+./dev/bridge-starting-parameters <ENVIRONMENT>
+```
+
+The parameters are applied at each contract via:
+
+```shell
+./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
+./dev/update-starting-parameters <ENVIRONMENT> app-chain
 ```

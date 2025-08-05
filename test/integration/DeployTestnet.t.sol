@@ -41,13 +41,13 @@ contract DeployTestnetTests is DeployTests {
 
         _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
 
-        _distributionManagerProxySalt = "DistributionManager_1_0";
-        _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_1_0";
-        _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_1_0";
-        _nodeRegistryProxySalt = "NodeRegistry_1_0";
-        _payerRegistryProxySalt = "PayerRegistry_1_0";
-        _payerReportManagerProxySalt = "PayerReportManager_1_0";
-        _rateRegistryProxySalt = "RateRegistry_1_0";
+        _distributionManagerProxySalt = "DistributionManager_2_0";
+        _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_2_0";
+        _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_2_0";
+        _nodeRegistryProxySalt = "NodeRegistry_2_0";
+        _payerRegistryProxySalt = "PayerRegistry_2_0";
+        _payerReportManagerProxySalt = "PayerReportManager_2_0";
+        _rateRegistryProxySalt = "RateRegistry_2_0";
 
         _settlementChainForkId = vm.createSelectFork("base_sepolia");
         _settlementChainId = block.chainid;

@@ -7,6 +7,7 @@ import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 library Utils {
     error ArrayLengthMismatch();
     error InvalidInputLength();
+    error InvalidParameterType();
 
     enum ParameterType {
         Address,
@@ -245,14 +246,14 @@ library Utils {
 
     function getParser(
         ParameterType parameterType_
-    ) internal pure returns (function(string memory, string memory) pure returns (bytes32)) {
+    ) internal pure returns (function(string memory, string memory) pure returns (bytes32) parser_) {
         if (parameterType_ == ParameterType.Address) return parseAndEncodeAddressParameter;
 
         if (parameterType_ == ParameterType.Uint) return parseAndEncodeUintParameter;
 
         if (parameterType_ == ParameterType.Boolean) return parseAndEncodeBooleanParameter;
 
-        revert("Invalid parameter type");
+        revert InvalidParameterType();
     }
 
     function parseAndEncodeAddressParameter(
