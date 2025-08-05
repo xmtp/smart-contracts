@@ -25,6 +25,7 @@ import { IERC20Like } from "./Interfaces.sol";
 import { Utils } from "./utils/Utils.sol";
 
 // TODO: App chain gas price as an ENV parameter via `vm.envOr`.
+// TODO: Starting Parameters includes the inbox needed by the base gateways to actually function.
 
 contract AdministrationScripts is Script {
     error AdminNotSet();
@@ -56,11 +57,21 @@ contract AdministrationScripts is Script {
     string internal constant _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.groupMessageBroadcaster.maxPayloadSize";
 
+    string internal constant _GROUP_MESSAGE_BROADCASTER_PAYLOAD_BOOTSTRAPPER_KEY =
+        "xmtp.groupMessageBroadcaster.payloadBootstrapper";
+
+    string internal constant _GROUP_MESSAGE_BROADCASTER_PAUSED_KEY = "xmtp.groupMessageBroadcaster.paused";
+
     string internal constant _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.minPayloadSize";
 
     string internal constant _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY =
         "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_PAYLOAD_BOOTSTRAPPER_KEY =
+        "xmtp.identityUpdateBroadcaster.payloadBootstrapper";
+
+    string internal constant _IDENTITY_UPDATE_BROADCASTER_PAUSED_KEY = "xmtp.identityUpdateBroadcaster.paused";
 
     Utils.DeploymentData internal _deploymentData;
 
@@ -132,11 +143,17 @@ contract AdministrationScripts is Script {
         if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
-        string[] memory keys_ = new string[](4);
+        string[] memory keys_ = new string[](8);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
-        keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
-        keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        keys_[2] = _GROUP_MESSAGE_BROADCASTER_PAYLOAD_BOOTSTRAPPER_KEY;
+        keys_[3] = _GROUP_MESSAGE_BROADCASTER_PAUSED_KEY;
+        keys_[4] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
+        keys_[5] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
+        keys_[6] = _IDENTITY_UPDATE_BROADCASTER_PAYLOAD_BOOTSTRAPPER_KEY;
+        keys_[7] = _IDENTITY_UPDATE_BROADCASTER_PAUSED_KEY;
+
+        console.log("App Chain Starting Parameter Count: %s", keys_.length);
 
         uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * keys_.length);
 
@@ -400,6 +417,8 @@ contract AdministrationScripts is Script {
         vm.startBroadcast(_privateKey);
         IGroupMessageBroadcaster(_deploymentData.groupMessageBroadcasterProxy).updateMaxPayloadSize();
         IGroupMessageBroadcaster(_deploymentData.groupMessageBroadcasterProxy).updateMinPayloadSize();
+        IGroupMessageBroadcaster(_deploymentData.groupMessageBroadcasterProxy).updatePayloadBootstrapper();
+        IGroupMessageBroadcaster(_deploymentData.groupMessageBroadcasterProxy).updatePauseStatus();
         vm.stopBroadcast();
     }
 
@@ -410,6 +429,8 @@ contract AdministrationScripts is Script {
         vm.startBroadcast(_privateKey);
         IIdentityUpdateBroadcaster(_deploymentData.identityUpdateBroadcasterProxy).updateMaxPayloadSize();
         IIdentityUpdateBroadcaster(_deploymentData.identityUpdateBroadcasterProxy).updateMinPayloadSize();
+        IIdentityUpdateBroadcaster(_deploymentData.identityUpdateBroadcasterProxy).updatePayloadBootstrapper();
+        IIdentityUpdateBroadcaster(_deploymentData.identityUpdateBroadcasterProxy).updatePauseStatus();
         vm.stopBroadcast();
     }
 
@@ -488,6 +509,8 @@ contract AdministrationScripts is Script {
         vm.assertEq(_getMigratorParameterKey(proxy_), key_, "UnexpectedMigration");
 
         vm.stopBroadcast();
+
+        console.log("Migrated: %s", proxy_);
     }
 
     function _isAppChainMigratorParameterKey(string memory key_) internal pure returns (bool) {

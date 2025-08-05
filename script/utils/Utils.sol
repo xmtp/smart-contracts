@@ -7,10 +7,12 @@ import { stdJson } from "../../lib/forge-std/src/StdJson.sol";
 library Utils {
     error ArrayLengthMismatch();
     error InvalidInputLength();
+    error InvalidParameterType();
 
     enum ParameterType {
         Address,
-        Uint
+        Uint,
+        Boolean
     }
 
     struct DeploymentData {
@@ -166,7 +168,7 @@ library Utils {
     ) internal view returns (string[] memory keys_, bytes32[] memory values_) {
         string memory json_ = VM.readFile(filePath_);
 
-        string[] memory startingKeys_ = new string[](16);
+        string[] memory startingKeys_ = new string[](20);
         startingKeys_[0] = "xmtp.nodeRegistry.admin";
         startingKeys_[1] = "xmtp.nodeRegistry.maxCanonicalNodes";
         startingKeys_[2] = "xmtp.payerRegistry.settler";
@@ -180,15 +182,19 @@ library Utils {
         startingKeys_[10] = "xmtp.rateRegistry.targetRatePerMinute";
         startingKeys_[11] = "xmtp.groupMessageBroadcaster.minPayloadSize";
         startingKeys_[12] = "xmtp.groupMessageBroadcaster.maxPayloadSize";
-        startingKeys_[13] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
-        startingKeys_[14] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+        startingKeys_[13] = "xmtp.groupMessageBroadcaster.payloadBootstrapper";
+        startingKeys_[14] = "xmtp.groupMessageBroadcaster.paused";
+        startingKeys_[15] = "xmtp.identityUpdateBroadcaster.minPayloadSize";
+        startingKeys_[16] = "xmtp.identityUpdateBroadcaster.maxPayloadSize";
+        startingKeys_[17] = "xmtp.identityUpdateBroadcaster.payloadBootstrapper";
+        startingKeys_[18] = "xmtp.identityUpdateBroadcaster.paused";
 
-        startingKeys_[15] = string.concat(
+        startingKeys_[19] = string.concat(
             "xmtp.settlementChainGateway.inbox.",
             VM.parseJsonKeys(json_, ".startingParameters.xmtp.settlementChainGateway.inbox")[0]
         );
 
-        ParameterType[] memory parameterTypes_ = new ParameterType[](16);
+        ParameterType[] memory parameterTypes_ = new ParameterType[](20);
         parameterTypes_[0] = ParameterType.Address;
         parameterTypes_[1] = ParameterType.Uint;
         parameterTypes_[2] = ParameterType.Address;
@@ -202,9 +208,13 @@ library Utils {
         parameterTypes_[10] = ParameterType.Uint;
         parameterTypes_[11] = ParameterType.Uint;
         parameterTypes_[12] = ParameterType.Uint;
-        parameterTypes_[13] = ParameterType.Uint;
-        parameterTypes_[14] = ParameterType.Uint;
-        parameterTypes_[15] = ParameterType.Address;
+        parameterTypes_[13] = ParameterType.Address;
+        parameterTypes_[14] = ParameterType.Boolean;
+        parameterTypes_[15] = ParameterType.Uint;
+        parameterTypes_[16] = ParameterType.Uint;
+        parameterTypes_[17] = ParameterType.Address;
+        parameterTypes_[18] = ParameterType.Boolean;
+        parameterTypes_[19] = ParameterType.Address;
 
         if (startingKeys_.length != parameterTypes_.length) revert ArrayLengthMismatch();
 
@@ -225,26 +235,46 @@ library Utils {
 
             keys_[outputIndex_] = startingKeys_[index_];
 
-            values_[outputIndex_] = parameterTypes_[index_] == ParameterType.Address
-                ? parseAndEncodeAddressParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]))
-                : parseAndEncodeUintParameter(json_, string.concat(".startingParameters.", startingKeys_[index_]));
+            values_[outputIndex_] = getParser(parameterTypes_[index_])(
+                json_,
+                string.concat(".startingParameters.", startingKeys_[index_])
+            );
 
             ++outputIndex_;
         }
+    }
+
+    function getParser(
+        ParameterType parameterType_
+    ) internal pure returns (function(string memory, string memory) pure returns (bytes32) parser_) {
+        if (parameterType_ == ParameterType.Address) return parseAndEncodeAddressParameter;
+
+        if (parameterType_ == ParameterType.Uint) return parseAndEncodeUintParameter;
+
+        if (parameterType_ == ParameterType.Boolean) return parseAndEncodeBooleanParameter;
+
+        revert InvalidParameterType();
     }
 
     function parseAndEncodeAddressParameter(
         string memory json_,
         string memory key_
     ) internal pure returns (bytes32 value_) {
-        value_ = bytes32(uint256(uint160(stdJson.readAddress(json_, key_))));
+        return bytes32(uint256(uint160(stdJson.readAddress(json_, key_))));
+    }
+
+    function parseAndEncodeBooleanParameter(
+        string memory json_,
+        string memory key_
+    ) internal pure returns (bytes32 value_) {
+        return stdJson.readBool(json_, key_) ? bytes32(uint256(1)) : bytes32(uint256(0));
     }
 
     function parseAndEncodeUintParameter(
         string memory json_,
         string memory key_
     ) internal pure returns (bytes32 value_) {
-        value_ = bytes32(stdJson.readUint(json_, key_));
+        return bytes32(stdJson.readUint(json_, key_));
     }
 
     function parseMigratorParameters(

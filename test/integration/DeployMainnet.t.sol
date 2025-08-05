@@ -6,6 +6,8 @@ import { console } from "../../lib/forge-std/src/Test.sol";
 import { FactoryDeployer } from "../../script/deployers/FactoryDeployer.sol";
 import { FeeTokenDeployer } from "../../script/deployers/FeeTokenDeployer.sol";
 
+import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
+
 import {
     SettlementChainParameterRegistryDeployer
 } from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
@@ -22,10 +24,7 @@ contract DeployMainnetTests is DeployTests {
     function setUp() public override {
         super.setUp();
 
-        _underlyingFeeToken = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on Base.
-
         _distributionManagerProxySalt = "DistributionManager_0";
-        _gatewayProxySalt = "Gateway_0";
         _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_0";
         _identityUpdateBroadcasterProxySalt = "IdentityUpdateBroadcaster_0";
         _nodeRegistryProxySalt = "NodeRegistry_0";
@@ -34,31 +33,16 @@ contract DeployMainnetTests is DeployTests {
         _rateRegistryProxySalt = "RateRegistry_0";
 
         _factory = 0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1;
-        _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
         _feeToken = 0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8;
+        _gateway = 0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3;
+        _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
+        _underlyingFeeToken = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC on Base Mainnet.
 
         _settlementChainForkId = vm.createSelectFork("base_mainnet");
         _settlementChainId = block.chainid;
     }
 
     function test_deployMainnetProtocol() external {
-        // Get the expected address of the Gateway on the app chain, since the Parameter Registry on the
-        // same chain will need it.
-        address expectedGatewayProxy_ = _expectedGatewayProxy();
-
-        // Deploy the Gateway on the settlement chain.
-        address settlementChainGatewayImplementation_ = _deploySettlementChainGatewayImplementation(
-            _parameterRegistry,
-            expectedGatewayProxy_,
-            _feeToken
-        );
-
-        console.log("settlementChainGatewayImplementation: %s", address(settlementChainGatewayImplementation_));
-
-        _settlementChainGateway = _deploySettlementChainGatewayProxy(settlementChainGatewayImplementation_);
-
-        console.log("settlementChainGatewayProxy: %s", address(_settlementChainGateway));
-
         // Deploy the Payer Registry on the settlement chain.
         address payerRegistryImplementation_ = _deployPayerRegistryImplementation(_parameterRegistry, _feeToken);
 
@@ -199,6 +183,27 @@ contract DeployMainnetTests is DeployTests {
         vm.stopPrank();
 
         console.log("Fee Token Proxy: %s", _feeToken);
+
+        vm.startPrank(_DEPLOYER);
+        (address settlementChainGatewayImplementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
+            _factory,
+            _parameterRegistry,
+            _gateway,
+            _feeToken
+        );
+        vm.stopPrank();
+
+        console.log("Settlement Chain Gateway Implementation: %s", settlementChainGatewayImplementation_);
+
+        vm.startPrank(_DEPLOYER);
+        (_gateway, , ) = SettlementChainGatewayDeployer.deployProxy(
+            _factory,
+            settlementChainGatewayImplementation_,
+            _GATEWAY_PROXY_SALT
+        );
+        vm.stopPrank();
+
+        console.log("Settlement Chain Gateway Proxy: %s", _gateway);
     }
 
     /* ============ Token Helpers ============ */
