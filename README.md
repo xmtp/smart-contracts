@@ -5,7 +5,7 @@
     - [Prerequisites](#prerequisites)
     - [Initialize project](#initialize-project)
   - [Developer tools](#developer-tools)
-  - [Forge scripts](#forge-scripts)
+  - [Scripts](#scripts)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
@@ -79,7 +79,7 @@ The project includes deploy and upgrade scripts.
 
 ### Deploying Base Contract
 
-The `FeeToken` is a singleton with respect to the app chain, regardless of environment, and the `FeeToken` relies ona a single `ParameterRegistry`. Further, the `Factory` is also a singleton on each chain as it enables deterministic and consistent addresses across all chains, and it also relies on a single `ParameterRegistry`. And lastly, the `Gateway` is also a singleton on each chain as it not only relies on a single `ParameterRegistry`, but also relays parameters between settlement chain and app chain parameter registries.
+The `FeeToken` is a singleton with respect to the app chain, regardless of environment, and the `FeeToken` relies on a single `ParameterRegistry`. Further, the `Factory` is also a singleton on each chain as it enables deterministic and consistent addresses across all chains, and it also relies on a single `ParameterRegistry`. And lastly, the `Gateway` is also a singleton on each chain as it not only relies on a single `ParameterRegistry`, but also relays parameters between settlement chain and app chain parameter registries.
 
 Because of this, for each settlement chain, regardless of environment, a set of base contracts must be deployed only once for each settlement chain. This deployment includes the `Factory`, `SettlementChaiParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the settlement chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the app chain.
 
