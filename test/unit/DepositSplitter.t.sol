@@ -87,7 +87,50 @@ contract DepositSplitterTests is Test {
         _splitter.deposit(address(0), 0, address(0), 0, 0, 0);
     }
 
-    function test_deposit() external {
+    function test_deposit_zeroTotalAmount() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 0),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(IDepositSplitter.ZeroTotalAmount.selector);
+
+        vm.prank(_alice);
+        _splitter.deposit(_bob, 0, _charlie, 0, 0, 0);
+    }
+
+    function test_deposit_onlyPayerRegistryDeposit() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 2),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("deposit(address,uint96)", _bob, 2), "");
+
+        vm.prank(_alice);
+        _splitter.deposit(_bob, 2, _charlie, 0, 0, 0);
+    }
+
+    function test_deposit_onlySettlementChainGatewayDeposit() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 1),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _settlementChainGateway,
+            abi.encodeWithSignature("deposit(uint256,address,uint256,uint256,uint256)", _appChainId, _charlie, 1, 0, 0),
+            ""
+        );
+
+        vm.prank(_alice);
+        _splitter.deposit(_bob, 0, _charlie, 1, 0, 0);
+    }
+
+    function test_deposit_bothDeposits() external {
         Utils.expectAndMockCall(
             _feeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 3),
@@ -121,7 +164,95 @@ contract DepositSplitterTests is Test {
         _splitter.depositWithPermit(address(0), 0, address(0), 0, 0, 0, 0, 0, 0, 0);
     }
 
-    function test_depositWithPermit() external {
+    function test_depositWithPermit_zeroTotalAmount() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 0),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(IDepositSplitter.ZeroTotalAmount.selector);
+
+        vm.prank(_alice);
+        _splitter.depositWithPermit(_bob, 0, _charlie, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_onlyPayerRegistryDeposit() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                2,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 2),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("deposit(address,uint96)", _bob, 2), "");
+
+        vm.prank(_alice);
+        _splitter.depositWithPermit(_bob, 2, _charlie, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_onlySettlementChainGatewayDeposit() external {
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                1,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 1),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(
+            _settlementChainGateway,
+            abi.encodeWithSignature("deposit(uint256,address,uint256,uint256,uint256)", _appChainId, _charlie, 1, 0, 0),
+            ""
+        );
+
+        vm.prank(_alice);
+        _splitter.depositWithPermit(_bob, 0, _charlie, 1, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositWithPermit_bothDeposits() external {
         Utils.expectAndMockCall(
             _feeToken,
             abi.encodeWithSignature(
@@ -198,7 +329,56 @@ contract DepositSplitterTests is Test {
         _splitter.depositFromUnderlying(address(0), 0, address(0), 0, 0, 0);
     }
 
-    function test_depositFromUnderlying() external {
+    function test_depositFromUnderlying_zeroTotalAmount() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 0),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(IDepositSplitter.ZeroTotalAmount.selector);
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlying(_bob, 0, _charlie, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlying_onlyPayerRegistryDeposit() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 2),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 2), "");
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("deposit(address,uint96)", _bob, 2), "");
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlying(_bob, 2, _charlie, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlying_onlySettlementChainGatewayDeposit() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 1),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 1), "");
+
+        Utils.expectAndMockCall(
+            _settlementChainGateway,
+            abi.encodeWithSignature("deposit(uint256,address,uint256,uint256,uint256)", _appChainId, _charlie, 1, 0, 0),
+            ""
+        );
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlying(_bob, 0, _charlie, 1, 0, 0);
+    }
+
+    function test_depositFromUnderlying_bothDeposits() external {
         Utils.expectAndMockCall(
             _underlyingFeeToken,
             abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 3),
@@ -262,7 +442,101 @@ contract DepositSplitterTests is Test {
         _splitter.depositFromUnderlyingWithPermit(address(0), 0, address(0), 0, 0, 0, 0, 0, 0, 0);
     }
 
-    function test_depositFromUnderlyingWithPermit() external {
+    function test_depositFromUnderlyingWithPermit_zeroTotalAmount() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                0,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 0),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 0), "");
+
+        vm.expectRevert(IDepositSplitter.ZeroTotalAmount.selector);
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlyingWithPermit(_bob, 0, _charlie, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_onlyPayerRegistryDeposit() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                2,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 2),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 2), "");
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("deposit(address,uint96)", _bob, 2), "");
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlyingWithPermit(_bob, 2, _charlie, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_onlySettlementChainGatewayDeposit() external {
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                1,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 1),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 1), "");
+
+        Utils.expectAndMockCall(
+            _settlementChainGateway,
+            abi.encodeWithSignature("deposit(uint256,address,uint256,uint256,uint256)", _appChainId, _charlie, 1, 0, 0),
+            ""
+        );
+
+        vm.prank(_alice);
+        _splitter.depositFromUnderlyingWithPermit(_bob, 0, _charlie, 1, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_bothDeposits() external {
         Utils.expectAndMockCall(
             _underlyingFeeToken,
             abi.encodeWithSignature(

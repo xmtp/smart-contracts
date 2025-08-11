@@ -212,15 +212,21 @@ contract DepositSplitter is IDepositSplitter {
         uint256 appChainGasLimit_,
         uint256 appChainGasPrice_
     ) internal {
-        IPayerRegistryLike(payerRegistry).deposit(payer_, payerRegistryAmount_);
+        if (payerRegistryAmount_ == 0 && appChainAmount_ == 0) revert ZeroTotalAmount();
 
-        ISettlementChainGatewayLike(settlementChainGateway).deposit(
-            appChainId,
-            appChainRecipient_,
-            appChainAmount_,
-            appChainGasLimit_,
-            appChainGasPrice_
-        );
+        if (payerRegistryAmount_ > 0) {
+            IPayerRegistryLike(payerRegistry).deposit(payer_, payerRegistryAmount_);
+        }
+
+        if (appChainAmount_ > 0) {
+            ISettlementChainGatewayLike(settlementChainGateway).deposit(
+                appChainId,
+                appChainRecipient_,
+                appChainAmount_,
+                appChainGasLimit_,
+                appChainGasPrice_
+            );
+        }
     }
 
     /**

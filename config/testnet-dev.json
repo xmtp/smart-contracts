@@ -3,7 +3,7 @@
   "appChainId": "351243127",
   "appChainParameterRegistryImplementation": "0x6AB96487c571F208B890F14AB16afE05732F4CDa",
   "deployer": "0xD940Dd30F750162c12086C6dc68507F7e8C480B4",
-  "depositSplitter": "0x93fa4EE6155e8013a6391d4C2E8Cd35bb5034DC0",
+  "depositSplitter": "0x931EdAA86bb8C0b9a162B4D4eBfbCE20534c1079",
   "distributionManagerImplementation": "0x8ebcA6491aF727ad0D24C0789DEA6C6C50875ED7",
   "distributionManagerProxy": "0xbA6bE286C79C4d08f789F5491C894FAd358A31F0",
   "distributionManagerProxySalt": "DistributionManager_0_0",

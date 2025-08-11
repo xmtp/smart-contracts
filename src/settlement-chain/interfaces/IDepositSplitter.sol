@@ -26,6 +26,9 @@ interface IDepositSplitter {
     /// @notice Thrown when the app chain ID is zero.
     error ZeroAppChainId();
 
+    /// @notice Thrown when the total amount is zero.
+    error ZeroTotalAmount();
+
     /* ============ Interactive Functions ============ */
 
     /**
