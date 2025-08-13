@@ -37,6 +37,12 @@ contract DepositSplitterTests is Test {
             abi.encode(true)
         );
 
+        Utils.expectAndMockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("approve(address,uint256)", _feeToken, type(uint256).max),
+            abi.encode(true)
+        );
+
         _splitter = new DepositSplitterHarness(_feeToken, _payerRegistry, _settlementChainGateway, _appChainId);
     }
 
