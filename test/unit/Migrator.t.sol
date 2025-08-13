@@ -17,7 +17,11 @@ contract MockProxy {
     function __callMigrator(address migrator_) external {
         (bool success_, bytes memory data_) = migrator_.delegatecall("");
 
-        if (!success_) revert(string(data_));
+        if (success_) return;
+
+        assembly {
+            revert(add(data_, 0x20), mload(data_))
+        }
     }
 }
 

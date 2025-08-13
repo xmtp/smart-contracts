@@ -53,6 +53,9 @@ contract DepositSplitter is IDepositSplitter {
 
         // slither-disable-next-line unused-return
         IERC20Like(feeToken_).approve(settlementChainGateway_, type(uint256).max);
+
+        // slither-disable-next-line unused-return
+        IERC20Like(_underlyingFeeToken).approve(feeToken_, type(uint256).max);
     }
 
     function deposit(
@@ -203,7 +206,7 @@ contract DepositSplitter is IDepositSplitter {
         );
     }
 
-    /// @dev Satisfies both deposits.
+    /// @dev Satisfies both deposits, if needed, and reverts if neither are needed.
     function _deposit(
         address payer_,
         uint96 payerRegistryAmount_,
