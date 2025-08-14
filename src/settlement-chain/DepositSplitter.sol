@@ -53,6 +53,9 @@ contract DepositSplitter is IDepositSplitter {
 
         // slither-disable-next-line unused-return
         IERC20Like(feeToken_).approve(settlementChainGateway_, type(uint256).max);
+
+        // slither-disable-next-line unused-return
+        IERC20Like(_underlyingFeeToken).approve(feeToken_, type(uint256).max);
     }
 
     function deposit(
@@ -203,7 +206,7 @@ contract DepositSplitter is IDepositSplitter {
         );
     }
 
-    /// @dev Satisfies both deposits.
+    /// @dev Satisfies both deposits, if needed, and reverts if neither are needed.
     function _deposit(
         address payer_,
         uint96 payerRegistryAmount_,
@@ -212,15 +215,21 @@ contract DepositSplitter is IDepositSplitter {
         uint256 appChainGasLimit_,
         uint256 appChainGasPrice_
     ) internal {
-        IPayerRegistryLike(payerRegistry).deposit(payer_, payerRegistryAmount_);
+        if (payerRegistryAmount_ == 0 && appChainAmount_ == 0) revert ZeroTotalAmount();
 
-        ISettlementChainGatewayLike(settlementChainGateway).deposit(
-            appChainId,
-            appChainRecipient_,
-            appChainAmount_,
-            appChainGasLimit_,
-            appChainGasPrice_
-        );
+        if (payerRegistryAmount_ > 0) {
+            IPayerRegistryLike(payerRegistry).deposit(payer_, payerRegistryAmount_);
+        }
+
+        if (appChainAmount_ > 0) {
+            ISettlementChainGatewayLike(settlementChainGateway).deposit(
+                appChainId,
+                appChainRecipient_,
+                appChainAmount_,
+                appChainGasLimit_,
+                appChainGasPrice_
+            );
+        }
     }
 
     /**

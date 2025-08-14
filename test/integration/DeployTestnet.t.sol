@@ -5,7 +5,6 @@ import { console } from "../../lib/forge-std/src/Test.sol";
 
 /* ============ Source Interface Imports ============ */
 
-import { IAppChainGateway } from "../../src/app-chain/interfaces/IAppChainGateway.sol";
 import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IGroupMessageBroadcaster } from "../../src/app-chain/interfaces/IGroupMessageBroadcaster.sol";
 import { IIdentityUpdateBroadcaster } from "../../src/app-chain/interfaces/IIdentityUpdateBroadcaster.sol";
@@ -13,7 +12,6 @@ import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegist
 import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRateRegistry } from "../../src/settlement-chain/interfaces/IRateRegistry.sol";
-import { ISettlementChainGateway } from "../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 
 import {
     ISettlementChainParameterRegistry
