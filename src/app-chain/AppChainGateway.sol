@@ -107,12 +107,12 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     }
 
     /// @inheritdoc IAppChainGateway
-    function receiveDeposit(address recipient_, uint256 amount_) external payable onlySettlementChainGateway {
-        emit DepositReceived(recipient_, amount_);
+    function receiveDeposit(address recipient_) external payable {
+        emit DepositReceived(recipient_, msg.value);
 
         // NOTE: `recipient_` and `amount_` are coming from the trusted settlement chain gateway.
         // slither-disable-next-line missing-zero-check
-        (bool success_, ) = recipient_.call{ value: amount_ }("");
+        (bool success_, ) = recipient_.call{ value: msg.value }("");
 
         if (!success_) revert TransferFailed();
     }
@@ -122,7 +122,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         uint256 nonce_,
         string[] calldata keys_,
         bytes32[] calldata values_
-    ) external payable onlySettlementChainGateway {
+    ) external onlySettlementChainGateway {
         AppChainGatewayStorage storage $ = _getAppChainGatewayStorage();
 
         emit ParametersReceived(nonce_, keys_);

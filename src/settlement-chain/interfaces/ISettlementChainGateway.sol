@@ -99,38 +99,38 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Deposits fee tokens as gas token to an app chain.
-     * @param  chainId_   The chain ID of the target app chain.
-     * @param  recipient_ The recipient of the tokens.
-     * @param  amount_    The amount of tokens to deposit.
-     * @param  gasLimit_  The gas limit for the transaction on the app chain.
-     * @param  gasPrice_  The gas price for the transaction on the app chain.
+     * @param  chainId_      The chain ID of the target app chain.
+     * @param  recipient_    The recipient of the tokens.
+     * @param  amount_       The amount of tokens to deposit.
+     * @param  gasLimit_     The gas limit for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
      */
     function deposit(
         uint256 chainId_,
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external;
 
     /**
      * @notice Deposits fee tokens as gas token to an app chain, given caller's signed approval.
-     * @param  chainId_   The chain ID of the target app chain.
-     * @param  recipient_ The recipient of the tokens.
+     * @param  chainId_      The chain ID of the target app chain.
+     * @param  recipient_    The recipient of the tokens.
      * @param  amount_    The amount of tokens to deposit.
-     * @param  gasLimit_  The gas limit for the transaction on the app chain.
-     * @param  gasPrice_  The gas price for the transaction on the app chain.
-     * @param  deadline_  The deadline of the permit (must be the current or future timestamp).
-     * @param  v_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  r_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  s_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  gasLimit_     The gas limit for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
+     * @param  deadline_     The deadline of the permit (must be the current or future timestamp).
+     * @param  v_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
     function depositWithPermit(
         uint256 chainId_,
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -139,39 +139,39 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Deposits fee tokens as gas token to an app chain, by wrapping underlying fee tokens.
-     * @param  chainId_   The chain ID of the target app chain.
-     * @param  recipient_ The recipient of the tokens.
-     * @param  amount_    The amount of underlying fee tokens to deposit.
-     * @param  gasLimit_  The gas limit for the transaction on the app chain.
-     * @param  gasPrice_  The gas price for the transaction on the app chain.
+     * @param  chainId_      The chain ID of the target app chain.
+     * @param  recipient_    The recipient of the tokens.
+     * @param  amount_       The amount of underlying fee tokens to deposit.
+     * @param  gasLimit_     The gas limit for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
      */
     function depositFromUnderlying(
         uint256 chainId_,
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external;
 
     /**
      * @notice Deposits fee tokens as gas token to an app chain, by wrapping underlying fee tokens, given caller's
      *         signed approval.
-     * @param  chainId_   The chain ID of the target app chain.
-     * @param  recipient_ The recipient of the tokens.
-     * @param  amount_    The amount of underlying fee tokens to deposit.
-     * @param  gasLimit_  The gas limit for the transaction on the app chain.
-     * @param  gasPrice_  The gas price for the transaction on the app chain.
-     * @param  deadline_  The deadline of the permit (must be the current or future timestamp).
-     * @param  v_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  r_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  s_         An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  chainId_      The chain ID of the target app chain.
+     * @param  recipient_    The recipient of the tokens.
+     * @param  amount_       The amount of underlying fee tokens to deposit.
+     * @param  gasLimit_     The gas limit for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
+     * @param  deadline_     The deadline of the permit (must be the current or future timestamp).
+     * @param  v_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
     function depositFromUnderlyingWithPermit(
         uint256 chainId_,
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -183,13 +183,14 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  chainIds_     The chain IDs of the target app chains.
      * @param  keys_         The keys of the parameters.
      * @param  gasLimit_     The gas limit for the transaction on the app chain.
-     * @param  gasPrice_     The gas price for the transaction on the app chain.
-     * @param  amountToSend_ The amount of fee tokens to send with the call to fund the alias on each app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
+     * @param  amountToSend_ The amount of fee tokens that will be pulled by each inbox.
      * @return totalSent_    The total amount of fee tokens sent to all app chains combined.
      * @dev    This will perform an L2->L3 message, where the settlement gateway alias must have enough balance to pay
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
-     * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
+     * @dev    `amountToSend_` (converted to wei) must be greater or equal to the sum of `gasLimit_` multiplied by
+     *         `maxFeePerGas_`, plus the submission fee for the retryable ticket.
      * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
@@ -197,7 +198,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) external returns (uint256 totalSent_);
 
@@ -207,8 +208,8 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  chainIds_     The chain IDs of the target app chains.
      * @param  keys_         The keys of the parameters.
      * @param  gasLimit_     The gas limit for the transaction on the app chain.
-     * @param  gasPrice_     The gas price for the transaction on the app chain.
-     * @param  amountToSend_ The amount of fee tokens to send with the call to fund the alias on each app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
+     * @param  amountToSend_ The amount of fee tokens that will be pulled by each inbox.
      * @param  deadline_     The deadline of the permit (must be the current or future timestamp).
      * @param  v_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_            An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -217,7 +218,8 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @dev    This will perform an L2->L3 message, where the settlement gateway alias must have enough balance to pay
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
-     * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
+     * @dev    `amountToSend_` (converted to wei) must be greater or equal to the sum of `gasLimit_` multiplied by
+     *         `maxFeePerGas_`, plus the submission fee for the retryable ticket.
      * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
@@ -225,7 +227,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -238,14 +240,15 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  chainIds_     The chain IDs of the target app chains.
      * @param  keys_         The keys of the parameters.
      * @param  gasLimit_     The gas limit for the transaction on the app chain.
-     * @param  gasPrice_     The gas price for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
      * @param  amountToSend_ The amount of fee tokens to send with the call to fund the alias on each app chain, which
      *                       will first be converted from underlying fee tokens.
      * @return totalSent_    The total amount of fee tokens sent to all app chains combined.
      * @dev    This will perform an L2->L3 message, where the settlement gateway alias must have enough balance to pay
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
-     * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
+     * @dev    `amountToSend_` (converted to wei) must be greater or equal to the sum of `gasLimit_` multiplied by
+     *         `maxFeePerGas_`, plus the submission fee for the retryable ticket.
      * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
@@ -253,7 +256,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) external returns (uint256 totalSent_);
 
@@ -263,7 +266,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  chainIds_     The chain IDs of the target app chains.
      * @param  keys_         The keys of the parameters.
      * @param  gasLimit_     The gas limit for the transaction on the app chain.
-     * @param  gasPrice_     The gas price for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
      * @param  amountToSend_ The amount of fee tokens to send with the call to fund the alias on each app chain, which
      *                       will first be converted from underlying fee tokens.
      * @param  deadline_     The deadline of the permit (must be the current or future timestamp).
@@ -274,7 +277,8 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @dev    This will perform an L2->L3 message, where the settlement gateway alias must have enough balance to pay
      *         for the function call (IAppChainGateway.receiveParameters), and the gas limit and price must suffice. If
      *         not, the message will remain as a retryable ticket on the app chain, that anyone can trigger and pay for.
-     * @dev    `amountToSend_` must be greater than or equal to the sum of `gasLimit_` multiplied by `gasPrice_`.
+     * @dev    `amountToSend_` (converted to wei) must be greater or equal to the sum of `gasLimit_` multiplied by
+     *         `maxFeePerGas_`, plus the submission fee for the retryable ticket.
      * @dev    The total amount of fee tokens that will be pulled from the caller is `chainIds_.length` multiplied by
      *         `amountToSend_` (which is returned as `totalSent_`).
      */
@@ -282,7 +286,7 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -341,6 +345,21 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
 
     /// @notice The pause status.
     function paused() external view returns (bool paused_);
+
+    /**
+     * @notice Calculates the maximum fees (in wei, 18 decimals) that will be consumed for a deposit to an app chain.
+     * @param  chainId_      The chain ID of the target app chain.
+     * @param  gasLimit_     The gas limit for the transaction on the app chain.
+     * @param  maxFeePerGas_ The maximum gas price for the transaction on the app chain.
+     * @param  maxBaseFee_   The maximum base fee of the settlement chain, in wei (18 decimals).
+     * @return fees_         The maximum fees (in wei, 18 decimals) that will be consumed for a deposit to an app chain.
+     */
+    function calculateMaxDepositFee(
+        uint256 chainId_,
+        uint256 gasLimit_,
+        uint256 maxFeePerGas_,
+        uint256 maxBaseFee_
+    ) external view returns (uint256 fees_);
 
     /// @notice The inbox address for a chain ID.
     function getInbox(uint256 chainId_) external view returns (address inbox_);

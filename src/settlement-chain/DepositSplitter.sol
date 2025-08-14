@@ -149,7 +149,7 @@ contract DepositSplitter is IDepositSplitter {
 
     /* ============ Internal Interactive Functions ============ */
 
-    /// @dev Transfers `amount_` of fee tokens from the caller to this contract, then performs both deposits.
+    /// @dev Transfers in the total fee tokens from the caller, then performs the required deposit(s).
     function _depositFeeToken(
         address payer_,
         uint96 payerRegistryAmount_,
@@ -174,7 +174,7 @@ contract DepositSplitter is IDepositSplitter {
         );
     }
 
-    /// @dev Transfers `amount_` of fee tokens from the caller to this contract, then performs both deposits.
+    /// @dev Transfers in the total underlying fee tokens from the caller, then performs the required deposit(s).
     function _depositFromUnderlying(
         address payer_,
         uint96 payerRegistryAmount_,

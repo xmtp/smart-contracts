@@ -1,6 +1,6 @@
 {
     "name": "@xmtp/smart-contracts",
-    "version": "0.5.4",
+    "version": "0.5.5",
     "description": "XMTP Smart Contracts",
     "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
     "repository": {
