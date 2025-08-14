@@ -64,7 +64,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) external {
         _depositFeeToken(
             payer_,
@@ -72,7 +72,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -82,7 +82,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_,
+        uint256 appChainMaxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -98,7 +98,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -108,7 +108,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) external {
         _depositFromUnderlying(
             payer_,
@@ -116,7 +116,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -126,7 +126,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_,
+        uint256 appChainMaxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -143,7 +143,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -156,7 +156,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) internal {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
@@ -170,7 +170,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -181,7 +181,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) internal {
         // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
         //       deposit flow will proceed normally after the reentrancy.
@@ -202,7 +202,7 @@ contract DepositSplitter is IDepositSplitter {
             appChainRecipient_,
             appChainAmount_,
             appChainGasLimit_,
-            appChainGasPrice_
+            appChainMaxFeePerGas_
         );
     }
 
@@ -213,7 +213,7 @@ contract DepositSplitter is IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) internal {
         if (payerRegistryAmount_ == 0 && appChainAmount_ == 0) revert ZeroTotalAmount();
 
@@ -227,7 +227,7 @@ contract DepositSplitter is IDepositSplitter {
                 appChainRecipient_,
                 appChainAmount_,
                 appChainGasLimit_,
-                appChainGasPrice_
+                appChainMaxFeePerGas_
             );
         }
     }

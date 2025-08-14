@@ -57,7 +57,7 @@ interface IERC20InboxLike {
      * @param  data_                   ABI encoded data of L2 message.
      * @return messageNumber_          The message number of the retryable transaction.
      * @dev    `tokenTotalFeeAmount_` (converted to 18 decimals on the L2) must be greater than or equal to the sum of
-     *         `gasLimit_` multiplied by `gasPrice_` and `maxSubmissionCost_`.
+     *         `gasLimit_` multiplied by `maxFeePerGas_` and `maxSubmissionCost_`.
      * @dev    Retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees (see
      *         https://github.com/OffchainLabs/nitro-contracts/blob/v3.1.0/src/bridge/ERC20Inbox.sol#L118).
      */
@@ -184,6 +184,6 @@ interface ISettlementChainGatewayLike {
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external;
 }
