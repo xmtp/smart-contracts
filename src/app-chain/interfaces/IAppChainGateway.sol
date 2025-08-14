@@ -90,6 +90,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Receives funds from the settlement chain.
      * @param  recipient_ The address to which the funds will be delivered to.
+     * @dev    The recipient will receive the forwarded amount attached as payable.
      */
     function receiveDeposit(address recipient_) external payable;
 

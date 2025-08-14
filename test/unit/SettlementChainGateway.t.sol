@@ -70,6 +70,12 @@ contract SettlementChainGatewayTests is Test {
         new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, address(0));
     }
 
+    function test_constructor_invalidFeeTokenDecimals() external {
+        vm.mockCall(_feeToken, abi.encodeWithSignature("decimals()"), abi.encode(19));
+        vm.expectRevert(ISettlementChainGateway.InvalidFeeTokenDecimals.selector);
+        new SettlementChainGatewayHarness(_parameterRegistry, _appChainGateway, _feeToken);
+    }
+
     /* ============ initialize ============ */
 
     function test_initialize_reinitialization() external {
@@ -162,6 +168,39 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.deposit(1111, _bob, 0, 0, 0);
+    }
+
+    function test_deposit_insufficientAmount() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "calculateRetryableSubmissionFee(uint256,uint256)",
+                _RECEIVE_DEPOSIT_DATA_LENGTH,
+                block.basefee
+            ),
+            abi.encode(uint256(100000000000001))
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISettlementChainGateway.InsufficientAmount.selector,
+                100000000000000,
+                100000000000001
+            )
+        );
+
+        vm.prank(_alice);
+        _gateway.deposit(1111, _bob, 100, 0, 0);
     }
 
     function test_deposit_feeTokenApproveFailed_reverts() external {
@@ -381,6 +420,54 @@ contract SettlementChainGatewayTests is Test {
         _gateway.depositWithPermit(1111, _bob, 0, 0, 0, 0, 0, 0, 0);
     }
 
+    function test_depositWithPermit_insufficientAmount() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "calculateRetryableSubmissionFee(uint256,uint256)",
+                _RECEIVE_DEPOSIT_DATA_LENGTH,
+                block.basefee
+            ),
+            abi.encode(uint256(100000000000001))
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISettlementChainGateway.InsufficientAmount.selector,
+                100000000000000,
+                100000000000001
+            )
+        );
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, _bob, 100, 0, 0, 0, 0, 0, 0);
+    }
+
     function test_depositWithPermit_feeTokenApproveFailed_reverts() external {
         address inbox_ = makeAddr("inbox");
 
@@ -422,7 +509,7 @@ contract SettlementChainGatewayTests is Test {
         vm.expectRevert();
 
         vm.prank(_alice);
-        _gateway.depositWithPermit(1111, address(0), 100, 0, 0, 0, 0, 0, 0);
+        _gateway.depositWithPermit(1111, _bob, 100, 0, 0, 0, 0, 0, 0);
     }
 
     function test_depositWithPermit() external {
@@ -600,6 +687,41 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositFromUnderlying(1111, _bob, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlying_insufficientAmount() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "calculateRetryableSubmissionFee(uint256,uint256)",
+                _RECEIVE_DEPOSIT_DATA_LENGTH,
+                block.basefee
+            ),
+            abi.encode(uint256(100000000000001))
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISettlementChainGateway.InsufficientAmount.selector,
+                100000000000000,
+                100000000000001
+            )
+        );
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlying(1111, _bob, 100, 0, 0);
     }
 
     function test_depositFromUnderlying_feeTokenApproveFailed_reverts() external {
@@ -885,6 +1007,56 @@ contract SettlementChainGatewayTests is Test {
 
         vm.prank(_alice);
         _gateway.depositFromUnderlyingWithPermit(1111, _bob, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    function test_depositFromUnderlyingWithPermit_insufficientAmount() external {
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                100,
+                0,
+                0,
+                0,
+                0
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            _underlyingFeeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), 100),
+            abi.encode(true)
+        );
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("deposit(uint256)", 100), "");
+
+        vm.mockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "calculateRetryableSubmissionFee(uint256,uint256)",
+                _RECEIVE_DEPOSIT_DATA_LENGTH,
+                block.basefee
+            ),
+            abi.encode(uint256(100000000000001))
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ISettlementChainGateway.InsufficientAmount.selector,
+                100000000000000,
+                100000000000001
+            )
+        );
+
+        vm.prank(_alice);
+        _gateway.depositFromUnderlyingWithPermit(1111, _bob, 100, 0, 0, 0, 0, 0, 0);
     }
 
     function test_depositFromUnderlyingWithPermit_feeTokenApproveFailed_reverts() external {

@@ -98,6 +98,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
         _feeTokenDecimals = IERC20Like(feeToken).decimals();
 
+        if (_feeTokenDecimals > 18) revert InvalidFeeTokenDecimals();
+
         _underlyingFeeToken = IFeeTokenLike(feeToken).underlying();
 
         _receiveDepositDataLength = abi.encodeCall(IAppChainGatewayLike.receiveDeposit, address(0)).length;
@@ -406,11 +408,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             block.basefee
         );
 
-        uint256 callValue_ = _convertToWei(amount_) - maxSubmissionCost_ - maxTransactionCost_;
+        uint256 appChainAmount_ = _convertToWei(amount_);
+        uint256 maxTotalCosts_ = maxSubmissionCost_ + maxTransactionCost_;
+
+        if (appChainAmount_ < maxTotalCosts_) revert InsufficientAmount(appChainAmount_, maxTotalCosts_);
 
         uint256 messageNumber_ = _createRetryableTicket({
             inbox_: inbox_,
-            callValue_: callValue_,
+            callValue_: appChainAmount_ - maxTotalCosts_,
             maxSubmissionCost_: maxSubmissionCost_,
             gasLimit_: gasLimit_,
             maxFeePerGas_: maxFeePerGas_,
@@ -519,7 +524,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      * @param  callValue_         The call value (18 decimals) to send with the call to the app chain gateway.
      * @param  maxSubmissionCost_ The maximum submission cost (18 decimals) for the retryable ticket.
      * @param  gasLimit_          The gas limit for the call to the app chain gateway.
-     * @param  maxFeePerGas_      The maximum fee per gas for the call to the app chain gateway.
+     * @param  maxFeePerGas_      The maximum fee per gas (EIP-1559) for the call to the app chain gateway.
      * @param  feeTokenAmount_    The total fee tokens (fee token decimals) that should be pulled by the inbox.
      * @param  data_              The data to call to call the app chain gateway with.
      * @return messageNumber_     The message number of the retryable ticket.
@@ -588,7 +593,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
      * @param  inbox_              The inbox to the app chain.
      * @param  dataLength_         The length of the call data to send to the app chain.
      * @param  gasLimit_           The gas limit for the call on the app chain.
-     * @param  maxFeePerGas_       The maximum fee per gas for the call on the app chain.
+     * @param  maxFeePerGas_       The maximum fee per gas (EIP-1559) for the call on the app chain.
      * @param  maxBaseFee_         The maximum base fee of the settlement chain, in wei (18 decimals).
      * @return maxSubmissionCost_  The maximum submission cost for the retryable ticket, in wei (18 decimals).
      * @return maxTransactionCost_ The maximum transaction cost for the call on the app chain, in wei (18 decimals).

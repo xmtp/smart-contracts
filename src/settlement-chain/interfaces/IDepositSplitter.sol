@@ -39,7 +39,7 @@ interface IDepositSplitter {
      * @param  appChainRecipient_    The address of the recipient on the AppChain.
      * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
      * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
-     * @param  appChainMaxFeePerGas_ The gas price for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      */
     function deposit(
         address payer_,
@@ -58,7 +58,7 @@ interface IDepositSplitter {
      * @param  appChainRecipient_    The address of the recipient on the AppChain.
      * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
      * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
-     * @param  appChainMaxFeePerGas_ The gas price for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      * @param  deadline_             The deadline of the permit (must be the current or future timestamp).
      * @param  v_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
@@ -85,7 +85,7 @@ interface IDepositSplitter {
      * @param  appChainRecipient_    The address of the recipient on the AppChain.
      * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
      * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
-     * @param  appChainMaxFeePerGas_ The gas price for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      */
     function depositFromUnderlying(
         address payer_,
@@ -104,7 +104,7 @@ interface IDepositSplitter {
      * @param  appChainRecipient_    The address of the recipient on the AppChain.
      * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
      * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
-     * @param  appChainMaxFeePerGas_ The gas price for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      * @param  deadline_             The deadline of the permit (must be the current or future timestamp).
      * @param  v_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      * @param  r_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).

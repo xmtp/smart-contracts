@@ -59,7 +59,7 @@ case "$CHAIN_NAME" in
         CHAIN_NAME="xmtp_ropsten"
         ;;
     *)
-        echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_mainnet, xmtp_ropsten_gateway_tests"
+        echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_ropsten_gateway_tests"
         exit 1
         ;;
 esac
@@ -241,7 +241,7 @@ else
 
     # Verifying the proxy for the factory should suffice for the explorer to pick up the other proxies.
     forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
+        --constructor-args $(cast abi-encode "constructor(address)" "$FACTORY_IMPLEMENTATION") \
         "$FACTORY" \
         src/any-chain/Proxy.sol:Proxy
 

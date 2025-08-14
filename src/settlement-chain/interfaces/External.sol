@@ -12,7 +12,7 @@ interface IERC20Like {
 
     function transferFrom(address sender_, address recipient_, uint256 amount_) external returns (bool success_);
 
-    function balanceOf(address account) external view returns (uint256 balance);
+    function balanceOf(address account_) external view returns (uint256 balance_);
 
     function decimals() external view returns (uint8 decimals_);
 }
@@ -88,7 +88,7 @@ interface IERC20InboxLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IAppChainGatewayLike {
-    function receiveDeposit(address recipient_) external;
+    function receiveDeposit(address recipient_) external payable;
 
     function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 }

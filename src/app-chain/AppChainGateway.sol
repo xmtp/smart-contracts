@@ -110,7 +110,8 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
     function receiveDeposit(address recipient_) external payable {
         emit DepositReceived(recipient_, msg.value);
 
-        // NOTE: `recipient_` and `amount_` are coming from the trusted settlement chain gateway.
+        // NOTE: When invoked via the settlement chain gateway retryable, `msg.value` is the bridged amount (less fees).
+        //       This function is intentionally open; it will forward any attached value to the recipient.
         // slither-disable-next-line missing-zero-check
         (bool success_, ) = recipient_.call{ value: msg.value }("");
 

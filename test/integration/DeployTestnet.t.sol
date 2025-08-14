@@ -37,7 +37,7 @@ contract DeployTestnetTests is DeployTests {
         _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
         _underlyingFeeToken = 0x2d7e0534183dAD09008C97f230d9F4f6425eE859; // Mock Underlying Fee Token on Base Ropsten.
 
-        _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
+        _appChainMaxFeePerGas = 2_000_000_000; // 2 gwei per gas.
 
         _distributionManagerProxySalt = "DistributionManager_2_0";
         _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_2_0";
@@ -162,7 +162,7 @@ contract DeployTestnetTests is DeployTests {
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
         _setBroadcasterStartingParameters();
-        _bridgeBroadcasterStartingParameters(_appChainId, _appChainGasPrice);
+        _bridgeBroadcasterStartingParameters(_appChainId, _appChainMaxFeePerGas);
         _handleQueuedBridgeEvents();
         _assertBroadcasterStartingParameters();
         _updateBroadcasterStartingParameters();

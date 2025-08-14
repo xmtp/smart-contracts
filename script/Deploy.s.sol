@@ -71,7 +71,7 @@ contract DeployScripts is Script {
 
     Utils.DeploymentData internal _deploymentData;
 
-    bool internal _isGatewayTesting;
+    bool internal _isInGatewayTestingMode;
 
     string internal _environment;
 
@@ -79,7 +79,7 @@ contract DeployScripts is Script {
     address internal _deployer;
 
     function setUp() external {
-        _isGatewayTesting = vm.envOr("IS_GATEWAY_TESTING", false);
+        _isInGatewayTestingMode = vm.envOr("IS_GATEWAY_TESTING", false);
 
         _environment = vm.envString("ENVIRONMENT");
 
@@ -363,6 +363,7 @@ contract DeployScripts is Script {
         if (_deploymentData.factoryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.initializableImplementation == address(0)) revert InitializableImplementationNotSet();
 
+        // If `initializableImplementation` is nonzero, the factory is already deployed it in a previous initialization.
         if (IFactory(_deploymentData.factory).initializableImplementation() == address(0)) {
             vm.startBroadcast(_privateKey);
 
@@ -453,7 +454,7 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenImplementation() public {
-        if (_isGatewayTesting) return;
+        if (_isInGatewayTestingMode) return;
 
         // Skip deployment if the mock underlying fee token implementation is not set.
         if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
@@ -484,7 +485,7 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenProxy() public {
-        if (_isGatewayTesting) return;
+        if (_isInGatewayTestingMode) return;
 
         // Skip deployment if the mock underlying fee token implementation is not set.
         if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
@@ -517,7 +518,7 @@ contract DeployScripts is Script {
     }
 
     function deployFeeTokenImplementation() public {
-        if (_isGatewayTesting) return;
+        if (_isInGatewayTestingMode) return;
 
         if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
@@ -552,7 +553,7 @@ contract DeployScripts is Script {
     }
 
     function deployFeeTokenProxy() public {
-        if (_isGatewayTesting) return;
+        if (_isInGatewayTestingMode) return;
 
         if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();

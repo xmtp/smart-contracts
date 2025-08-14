@@ -11,6 +11,7 @@ if [ $# -ne 1 ]; then
 fi
 
 CHAIN_NAME=$1
+IS_GATEWAY_TESTING=false
 
 case "$CHAIN_NAME" in
     "base_sepolia")

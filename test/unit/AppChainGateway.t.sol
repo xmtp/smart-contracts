@@ -209,18 +209,24 @@ contract AppChainGatewayTests is Test {
 
         vm.prank(_settlementChainGatewayAlias);
         _gateway.receiveDeposit{ value: 1 }(address(1));
+
+        assertEq(_settlementChainGatewayAlias.balance, 1);
+        assertEq(address(_gateway).balance, 0);
+        assertEq(address(1).balance, 0);
     }
 
     function test_receiveDeposit() external {
         deal(_settlementChainGatewayAlias, 1);
-
-        Utils.expectAndMockCall(address(1), "", "");
 
         vm.expectEmit(address(_gateway));
         emit IAppChainGateway.DepositReceived(address(1), 1);
 
         vm.prank(_settlementChainGatewayAlias);
         _gateway.receiveDeposit{ value: 1 }(address(1));
+
+        assertEq(_settlementChainGatewayAlias.balance, 0);
+        assertEq(address(_gateway).balance, 0);
+        assertEq(address(1).balance, 1);
     }
 
     /* ============ receiveParameters ============ */
