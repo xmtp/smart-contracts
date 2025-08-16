@@ -123,6 +123,72 @@ contract DeployMainnetTests is DeployTests {
         _setBroadcasterStartingParameters();
     }
 
+    function test_migrateMainnetProtocol() external {
+        // Deploy the Factory implementation on the settlement chain.
+        address settlementChainFactoryImplementation_ = _deploySettlementChainFactoryImplementation(_parameterRegistry);
+
+        console.log("settlementChainFactoryImplementation: %s", settlementChainFactoryImplementation_);
+
+        // Try to migrate the Factory on the settlement chain.
+        address settlementChainFactoryMigrator_ = _deploySettlementChainMigrator(
+            _factory,
+            settlementChainFactoryImplementation_
+        );
+
+        console.log("settlementChainFactoryMigrator: %s", settlementChainFactoryMigrator_);
+
+        _migrateOnSettlementChain(_factory, settlementChainFactoryMigrator_);
+
+        // Deploy the Parameter Registry implementation on the settlement chain.
+        address settlementChainParameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+
+        console.log(
+            "settlementChainParameterRegistryImplementation: %s",
+            address(settlementChainParameterRegistryImplementation_)
+        );
+
+        // Try to migrate the Parameter Registry on the settlement chain.
+        address settlementChainParameterRegistryMigrator_ = _deploySettlementChainMigrator(
+            _parameterRegistry,
+            settlementChainParameterRegistryImplementation_
+        );
+
+        console.log("settlementChainParameterRegistryMigrator: %s", settlementChainParameterRegistryMigrator_);
+
+        _migrateOnSettlementChain(_parameterRegistry, settlementChainParameterRegistryMigrator_);
+
+        // Deploy the Fee Token implementation on the settlement chain.
+        address feeTokenImplementation_ = _deployFeeTokenImplementation(_parameterRegistry, _underlyingFeeToken);
+
+        console.log("feeTokenImplementation: %s", feeTokenImplementation_);
+
+        // Try to migrate the Fee Token on the settlement chain.
+        address feeTokenMigrator_ = _deploySettlementChainMigrator(_feeToken, feeTokenImplementation_);
+
+        console.log("feeTokenMigrator: %s", feeTokenMigrator_);
+
+        _migrateOnSettlementChain(_feeToken, feeTokenMigrator_);
+
+        // Deploy the Gateway implementation on the settlement chain.
+        address settlementChainGatewayImplementation_ = _deploySettlementChainGatewayImplementation(
+            _parameterRegistry,
+            _expectedGatewayProxy(),
+            _feeToken
+        );
+
+        console.log("settlementChainGatewayImplementation: %s", settlementChainGatewayImplementation_);
+
+        // Try to migrate the Gateway on the settlement chain.
+        address settlementChainGatewayMigrator_ = _deploySettlementChainMigrator(
+            _gateway,
+            settlementChainGatewayImplementation_
+        );
+
+        console.log("settlementChainGatewayMigrator: %s", settlementChainGatewayMigrator_);
+
+        _migrateOnSettlementChain(_gateway, settlementChainGatewayMigrator_);
+    }
+
     function _deployBaseSettlementChainComponents() internal {
         vm.startPrank(_DEPLOYER);
         (_factory, , ) = FactoryDeployer.deployProxy(_getExpectedFactoryImplementation());

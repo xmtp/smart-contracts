@@ -37,7 +37,7 @@ contract DeployTestnetTests is DeployTests {
         _parameterRegistry = 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D;
         _underlyingFeeToken = 0x2d7e0534183dAD09008C97f230d9F4f6425eE859; // Mock Underlying Fee Token on Base Ropsten.
 
-        _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
+        _appChainMaxFeePerGas = 2_000_000_000; // 2 gwei per gas.
 
         _distributionManagerProxySalt = "DistributionManager_2_0";
         _groupMessageBroadcasterProxySalt = "GroupMessageBroadcaster_2_0";
@@ -162,20 +162,20 @@ contract DeployTestnetTests is DeployTests {
         // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
         // Broadcaster.
         _setBroadcasterStartingParameters();
-        _bridgeBroadcasterStartingParameters(_appChainId, _appChainGasPrice);
+        _bridgeBroadcasterStartingParameters(_appChainId, _appChainMaxFeePerGas);
         _handleQueuedBridgeEvents();
         _assertBroadcasterStartingParameters();
         _updateBroadcasterStartingParameters();
     }
 
     function test_migrateTestnetProtocol() external {
-        _distributionManager = IDistributionManager(0xbA6bE286C79C4d08f789F5491C894FAd358A31F0);
-        _groupMessageBroadcaster = IGroupMessageBroadcaster(0xbDF24fD4bBaE0E3CCd42Fb6C07EC6eA347A1Ef87);
-        _identityUpdateBroadcaster = IIdentityUpdateBroadcaster(0x559c8c08A251Cc917ccCde13Caf273156d0c8f35);
-        _nodeRegistry = INodeRegistry(0xBC7fc04570397c4170D2dCe4927aa6395f3dED4A);
-        _payerRegistry = IPayerRegistry(0x77a9129Cb584DF076a64A995dDEF9158d589D80c);
-        _payerReportManager = IPayerReportManager(0x4E514aBB2560CbF85C607f5FD0C51aE7cE2E5b9A);
-        _rateRegistry = IRateRegistry(0x89C6Aa3e03224F43290823471E8ed725C35bAcCE);
+        _distributionManager = IDistributionManager(0x92d8B3bF37cdD063b9617FbF8F7a4143aA47503f);
+        _groupMessageBroadcaster = IGroupMessageBroadcaster(0x6619B1c95eb10d339903E4AA9938314d6E711d17);
+        _identityUpdateBroadcaster = IIdentityUpdateBroadcaster(0xD49DCDd95Ce435eaB2E53DBfcBceF5cAAc78D95a);
+        _nodeRegistry = INodeRegistry(0xA37E3985aD817788aD2E287965041E9BcEd38F00);
+        _payerRegistry = IPayerRegistry(0xF0bd6Ac8AA00BA083cF95C5438B33488cbd2562B);
+        _payerReportManager = IPayerReportManager(0x9EC340209b54C661ceFF468B70fF8122ff9D009e);
+        _rateRegistry = IRateRegistry(0x3bBaf2a31D05c6715A147116c47B801E496ddacF);
 
         // Deploy the Factory implementation on the settlement chain.
         address settlementChainFactoryImplementation_ = _deploySettlementChainFactoryImplementation(_parameterRegistry);

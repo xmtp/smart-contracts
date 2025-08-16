@@ -90,9 +90,9 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
     /**
      * @notice Receives funds from the settlement chain.
      * @param  recipient_ The address to which the funds will be delivered to.
-     * @param  amount_    The amount of funds to receive.
+     * @dev    The recipient will receive the forwarded amount attached as payable.
      */
-    function receiveDeposit(address recipient_, uint256 amount_) external payable;
+    function receiveDeposit(address recipient_) external payable;
 
     /**
      * @notice Receives parameters from the settlement chain.
@@ -101,7 +101,7 @@ interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  values_ The values of each parameter.
      * @dev    The caller must be the settlement chain gateway's L3 alias address.
      */
-    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external payable;
+    function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 
     /**
      * @notice Updates the pause status.

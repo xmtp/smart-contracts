@@ -359,6 +359,14 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
     function __getUnderlyingFeeToken() external view returns (address underlyingFeeToken_) {
         return _underlyingFeeToken;
     }
+
+    function __getFeeTokenDecimals() external view returns (uint8 feeTokenDecimals_) {
+        return _feeTokenDecimals;
+    }
+
+    function __getReceiveDepositDataLength() external view returns (uint256 receiveDepositDataLength_) {
+        return _receiveDepositDataLength;
+    }
 }
 
 contract AppChainGatewayHarness is AppChainGateway {

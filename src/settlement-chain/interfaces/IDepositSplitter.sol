@@ -34,12 +34,12 @@ interface IDepositSplitter {
     /**
      * @notice Deposits `payerRegistryAmount_` fee tokens into the Payer Registry for `payer_`, and `appChainAmount_`
      *         fee tokens into the App Chain for `appChainRecipient_`.
-     * @param  payer_               The address of the payer.
-     * @param  payerRegistryAmount_ The amount of fee tokens to deposit into the Payer Registry.
-     * @param  appChainRecipient_   The address of the recipient on the AppChain.
-     * @param  appChainAmount_      The amount of fee tokens to deposit into the AppChain.
-     * @param  appChainGasLimit_    The gas limit for the AppChain deposit.
-     * @param  appChainGasPrice_    The gas price for the AppChain deposit.
+     * @param  payer_                The address of the payer.
+     * @param  payerRegistryAmount_  The amount of fee tokens to deposit into the Payer Registry.
+     * @param  appChainRecipient_    The address of the recipient on the AppChain.
+     * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
+     * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      */
     function deposit(
         address payer_,
@@ -47,22 +47,22 @@ interface IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) external;
 
     /**
      * @notice Deposits `payerRegistryAmount_` fee tokens into the Payer Registry for `payer_`, and `appChainAmount_`
      *         fee tokens into the App Chain for `appChainRecipient_`.
-     * @param  payer_               The address of the payer.
-     * @param  payerRegistryAmount_ The amount of fee tokens to deposit into the Payer Registry.
-     * @param  appChainRecipient_   The address of the recipient on the AppChain.
-     * @param  appChainAmount_      The amount of fee tokens to deposit into the AppChain.
-     * @param  appChainGasLimit_    The gas limit for the AppChain deposit.
-     * @param  appChainGasPrice_    The gas price for the AppChain deposit.
-     * @param  deadline_            The deadline of the permit (must be the current or future timestamp).
-     * @param  v_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  r_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  s_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  payer_                The address of the payer.
+     * @param  payerRegistryAmount_  The amount of fee tokens to deposit into the Payer Registry.
+     * @param  appChainRecipient_    The address of the recipient on the AppChain.
+     * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
+     * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
+     * @param  deadline_             The deadline of the permit (must be the current or future timestamp).
+     * @param  v_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
     function depositWithPermit(
         address payer_,
@@ -70,7 +70,7 @@ interface IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_,
+        uint256 appChainMaxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -80,12 +80,12 @@ interface IDepositSplitter {
     /**
      * @notice Deposits `payerRegistryAmount_` fee tokens into the Payer Registry for `payer_`, and `appChainAmount_`
      *         fee tokens into the App Chain for `appChainRecipient_`, wrapping them from underlying fee tokens.
-     * @param  payer_               The address of the payer.
-     * @param  payerRegistryAmount_ The amount of fee tokens to deposit into the Payer Registry.
-     * @param  appChainRecipient_   The address of the recipient on the AppChain.
-     * @param  appChainAmount_      The amount of fee tokens to deposit into the AppChain.
-     * @param  appChainGasLimit_    The gas limit for the AppChain deposit.
-     * @param  appChainGasPrice_    The gas price for the AppChain deposit.
+     * @param  payer_                The address of the payer.
+     * @param  payerRegistryAmount_  The amount of fee tokens to deposit into the Payer Registry.
+     * @param  appChainRecipient_    The address of the recipient on the AppChain.
+     * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
+     * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
      */
     function depositFromUnderlying(
         address payer_,
@@ -93,22 +93,22 @@ interface IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_
+        uint256 appChainMaxFeePerGas_
     ) external;
 
     /**
      * @notice Deposits `payerRegistryAmount_` fee tokens into the Payer Registry for `payer_`, and `appChainAmount_`
      *         fee tokens into the App Chain for `appChainRecipient_`, wrapping them from underlying fee tokens.
-     * @param  payer_               The address of the payer.
-     * @param  payerRegistryAmount_ The amount of fee tokens to deposit into the Payer Registry.
-     * @param  appChainRecipient_   The address of the recipient on the AppChain.
-     * @param  appChainAmount_      The amount of fee tokens to deposit into the AppChain.
-     * @param  appChainGasLimit_    The gas limit for the AppChain deposit.
-     * @param  appChainGasPrice_    The gas price for the AppChain deposit.
-     * @param  deadline_            The deadline of the permit (must be the current or future timestamp).
-     * @param  v_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  r_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
-     * @param  s_                   An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  payer_                The address of the payer.
+     * @param  payerRegistryAmount_  The amount of fee tokens to deposit into the Payer Registry.
+     * @param  appChainRecipient_    The address of the recipient on the AppChain.
+     * @param  appChainAmount_       The amount of fee tokens to deposit into the AppChain.
+     * @param  appChainGasLimit_     The gas limit for the AppChain deposit.
+     * @param  appChainMaxFeePerGas_ The maximum fee per gas (EIP-1559) for the AppChain deposit.
+     * @param  deadline_             The deadline of the permit (must be the current or future timestamp).
+     * @param  v_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  r_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
+     * @param  s_                    An ECDSA secp256k1 signature parameter (EIP-2612 via EIP-712).
      */
     function depositFromUnderlyingWithPermit(
         address payer_,
@@ -116,7 +116,7 @@ interface IDepositSplitter {
         address appChainRecipient_,
         uint96 appChainAmount_,
         uint256 appChainGasLimit_,
-        uint256 appChainGasPrice_,
+        uint256 appChainMaxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,

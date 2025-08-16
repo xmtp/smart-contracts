@@ -15,7 +15,7 @@ fi
 # Check if all arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
-    echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, xmtp_ropsten)"
+    echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_ropsten_gateway_tests)"
     echo "explorer: The explorer to use (e.g. basescan, blockscout, alchemy)"
     exit 1
 fi
@@ -24,8 +24,8 @@ CHAIN_NAME=$1
 EXPLORER=$2
 
 # Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_mainnet|base_sepolia|xmtp_ropsten)$ ]]; then
-    echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten"
+if [[ ! "$CHAIN_NAME" =~ ^(base_mainnet|base_sepolia|base_sepolia_gateway_tests|xmtp_ropsten|xmtp_ropsten_gateway_tests)$ ]]; then
+    echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_ropsten_gateway_tests"
     exit 1
 fi
 
@@ -41,10 +41,26 @@ case "$CHAIN_NAME" in
         CHAIN_ID="84532"
         CHAIN_TYPE="settlement-chain"
         ;;
+    "base_sepolia_gateway_tests")
+        ENVIRONMENT="testnet-gateways"
+        CHAIN_ID="84532"
+        CHAIN_TYPE="settlement-chain"
+        CHAIN_NAME="base_sepolia"
+        ;;
     "xmtp_ropsten")
         ENVIRONMENT="testnet-dev"
         CHAIN_ID="351243127"
         CHAIN_TYPE="app-chain"
+        ;;
+    "xmtp_ropsten_gateway_tests")
+        ENVIRONMENT="testnet-gateways"
+        CHAIN_ID="351243127"
+        CHAIN_TYPE="app-chain"
+        CHAIN_NAME="xmtp_ropsten"
+        ;;
+    *)
+        echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_ropsten_gateway_tests"
+        exit 1
         ;;
 esac
 
@@ -225,7 +241,7 @@ else
 
     # Verifying the proxy for the factory should suffice for the explorer to pick up the other proxies.
     forge verify-contract --verifier "$VERIFIER" --verifier-url "$EXPLORER_URL" --chain-id "$CHAIN_ID" --api-key "$API_KEY" \
-        --constructor-args $(cast abi-encode "constructor(address)" "$INITIALIZABLE_IMPLEMENTATION") \
+        --constructor-args $(cast abi-encode "constructor(address)" "$FACTORY_IMPLEMENTATION") \
         "$FACTORY" \
         src/any-chain/Proxy.sol:Proxy
 

@@ -8,8 +8,8 @@
   "distributionManagerProxy": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
   "distributionManagerProxySalt": "DistributionManager_0",
   "factory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
-  "factoryImplementation": "0x9Be474b7e2d875D10d335b8e48498Af8a0598868",
-  "feeTokenImplementation": "0x644f165B4232F9197b715d942653dEC8f1e1d854",
+  "factoryImplementation": "0xd3627Fc7fbfB252d063c3331489Fb41706624a65",
+  "feeTokenImplementation": "0x6317cAF4CAa91044FB638c8A97923D4924c4B77b",
   "feeTokenProxy": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
   "feeTokenProxySalt": "FeeToken_0",
   "gatewayProxy": "0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3",
@@ -35,12 +35,12 @@
   "rateRegistryImplementation": "0x3bC1645ACEFdC5e4205857FAf48f04138Ab9C7c9",
   "rateRegistryProxy": "0x8c1d9cE62c3fc3DB144c7E699Df53B95a1313858",
   "rateRegistryProxySalt": "RateRegistry_0",
-  "settlementChainGatewayImplementation": "0x49627E48726464EC50Ab321E168dd9Ec6133a229",
+  "settlementChainGatewayImplementation": "0xaf3c0F769c9Bc5BbDDb475a08a0a8b160519efdf",
   "settlementChainId": "8453",
   "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
   "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
   "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
-  "settlementChainParameterRegistryImplementation": "0x98073E1dC964a3DFB21d86e1934b543f3f9beaA8",
+  "settlementChainParameterRegistryImplementation": "0xBc4210f3295448569A8Fc242565608a1e637f539",
   "startingParameters": {
     "xmtp": {
       "settlementChainGateway": {
@@ -76,6 +76,22 @@
         "maxPayloadSize": "0"
       }
     }
+  },
+  "migrators": {
+    "factory": "0x057C1cf62D8dB8116BCD3D71FBd56d944AA584b4",
+    "appChainGateway": "0x0000000000000000000000000000000000000000",
+    "appChainParameterRegistry": "0x0000000000000000000000000000000000000000",
+    "groupMessageBroadcaster": "0x0000000000000000000000000000000000000000",
+    "identityUpdateBroadcaster": "0x0000000000000000000000000000000000000000",
+    "distributionManager": "0x0000000000000000000000000000000000000000",
+    "feeToken": "0x893AFdF86b240ecF8c40019b76cA575fFe9Cad40",
+    "mockUnderlyingFeeToken": "0x0000000000000000000000000000000000000000",
+    "nodeRegistry": "0x0000000000000000000000000000000000000000",
+    "payerRegistry": "0x0000000000000000000000000000000000000000",
+    "payerReportManager": "0x0000000000000000000000000000000000000000",
+    "rateRegistry": "0x0000000000000000000000000000000000000000",
+    "settlementChainGateway": "0x51af477Ee3821F1bc3d54E5abEbd28D1e44aefC1",
+    "settlementChainParameterRegistry": "0x2EfCb429a985c4c3eAb30185826983096fBa59C2"
   },
   "underlyingFeeToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 }

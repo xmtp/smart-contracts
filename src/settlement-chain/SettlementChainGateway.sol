@@ -42,6 +42,12 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev The address of the token underlying the fee token.
     address internal immutable _underlyingFeeToken;
 
+    /// @dev The number of decimals of the fee token.
+    uint8 internal immutable _feeTokenDecimals;
+
+    /// @dev The length of the submission data for the `receiveDeposit` call to the app chain gateway.
+    uint256 internal immutable _receiveDepositDataLength;
+
     /* ============ UUPS Storage ============ */
 
     /**
@@ -90,7 +96,13 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         if (_isZero(appChainGateway = appChainGateway_)) revert ZeroAppChainGateway();
         if (_isZero(feeToken = feeToken_)) revert ZeroFeeToken();
 
+        _feeTokenDecimals = IERC20Like(feeToken).decimals();
+
+        if (_feeTokenDecimals > 18) revert InvalidFeeTokenDecimals();
+
         _underlyingFeeToken = IFeeTokenLike(feeToken).underlying();
+
+        _receiveDepositDataLength = abi.encodeCall(IAppChainGatewayLike.receiveDeposit, address(0)).length;
 
         _disableInitializers();
     }
@@ -108,9 +120,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external whenNotPaused {
-        _depositFeeToken(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _depositFeeToken(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -119,14 +131,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
         bytes32 s_
     ) external whenNotPaused {
         _usePermit(feeToken, amount_, deadline_, v_, r_, s_);
-        _depositFeeToken(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _depositFeeToken(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -135,9 +147,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external whenNotPaused {
-        _depositFromUnderlying(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _depositFromUnderlying(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -146,7 +158,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
@@ -156,7 +168,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         //       deposit flow will proceed normally after the reentrancy. Further, the permit must be used before being
         //       able to pull any underlying fee tokens from the caller.
         _usePermit(_underlyingFeeToken, amount_, deadline_, v_, r_, s_);
-        _depositFromUnderlying(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _depositFromUnderlying(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -164,10 +176,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) external whenNotPaused returns (uint256 totalSent_) {
-        return _sendParametersFromFeeToken(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        return _sendParametersFromFeeToken(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -175,7 +187,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -184,7 +196,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     ) external whenNotPaused returns (uint256 totalSent_) {
         _usePermit(feeToken, amountToSend_ * chainIds_.length, deadline_, v_, r_, s_);
 
-        return _sendParametersFromFeeToken(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        return _sendParametersFromFeeToken(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -192,10 +204,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) external whenNotPaused returns (uint256 totalSent_) {
-        return _sendParametersFromUnderlying(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        return _sendParametersFromUnderlying(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -203,7 +215,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_,
         uint256 deadline_,
         uint8 v_,
@@ -215,7 +227,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         //       able to pull any underlying fee tokens from the caller.
         _usePermit(_underlyingFeeToken, amountToSend_ * chainIds_.length, deadline_, v_, r_, s_);
 
-        return _sendParametersFromUnderlying(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        return _sendParametersFromUnderlying(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @inheritdoc ISettlementChainGateway
@@ -313,6 +325,24 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /// @inheritdoc ISettlementChainGateway
+    function calculateMaxDepositFee(
+        uint256 chainId_,
+        uint256 gasLimit_,
+        uint256 maxFeePerGas_,
+        uint256 maxBaseFee_
+    ) external view returns (uint256 fees_) {
+        (uint256 maxSubmissionCost_, uint256 maxTransactionCost_) = _calculateMaxCosts(
+            _getInbox(chainId_),
+            _receiveDepositDataLength,
+            gasLimit_,
+            maxFeePerGas_,
+            maxBaseFee_
+        );
+
+        return maxSubmissionCost_ + maxTransactionCost_;
+    }
+
+    /// @inheritdoc ISettlementChainGateway
     function getInbox(uint256 chainId_) external view returns (address inbox_) {
         return _getInbox(chainId_);
     }
@@ -325,14 +355,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) internal {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
         //       neither `IERC20Like(feeToken).transferFrom` nor `_deposit` can result in a reentrancy.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), amount_);
-        _deposit(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _deposit(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /**
@@ -344,14 +374,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) internal {
         // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
         //       deposit flow will proceed normally after the reentrancy.
         // NOTE: Since the fee token is a first party contract with expected behavior, no need to adhere to CEI here as
         //       neither `IFeeTokenLike(feeToken).deposit` nor `_deposit` can result in a reentrancy.
         _pullAndConvertUnderlying(amount_);
-        _deposit(chainId_, recipient_, amount_, gasLimit_, gasPrice_);
+        _deposit(chainId_, recipient_, amount_, gasLimit_, maxFeePerGas_);
     }
 
     /// @dev Deposits fee tokens into an inbox, to be used as native gas token on the app chain.
@@ -360,19 +390,37 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) internal {
+        address inbox_ = _getInbox(chainId_);
+
         if (_isZero(recipient_)) revert ZeroRecipient();
 
         if (amount_ == 0) revert ZeroAmount();
 
+        bytes memory data_ = abi.encodeCall(IAppChainGatewayLike.receiveDeposit, (recipient_));
+
+        (uint256 maxSubmissionCost_, uint256 maxTransactionCost_) = _calculateMaxCosts(
+            inbox_,
+            data_.length,
+            gasLimit_,
+            maxFeePerGas_,
+            block.basefee
+        );
+
+        uint256 appChainAmount_ = _convertToWei(amount_);
+        uint256 maxTotalCosts_ = maxSubmissionCost_ + maxTransactionCost_;
+
+        if (appChainAmount_ < maxTotalCosts_) revert InsufficientAmount(appChainAmount_, maxTotalCosts_);
+
         uint256 messageNumber_ = _createRetryableTicket({
-            chainId_: chainId_,
+            inbox_: inbox_,
+            callValue_: appChainAmount_ - maxTotalCosts_,
+            maxSubmissionCost_: maxSubmissionCost_,
             gasLimit_: gasLimit_,
-            gasPrice_: gasPrice_,
-            feeTokensToSend_: amount_,
-            data_: abi.encodeCall(IAppChainGatewayLike.receiveDeposit, (recipient_, amount_)),
-            appChainAlias_: appChainAlias()
+            maxFeePerGas_: maxFeePerGas_,
+            feeTokenAmount_: amount_,
+            data_: data_
         });
 
         // slither-disable-next-line reentrancy-events
@@ -390,7 +438,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
@@ -400,7 +448,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transferFrom(msg.sender, address(this), totalSent_ = amountToSend_ * chainIds_.length);
 
-        _sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        _sendParameters(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @dev Sends parameters to the app chains via a retryable tickets, pulling underlying fee tokens from the caller.
@@ -408,7 +456,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) internal returns (uint256 totalSent_) {
         // NOTE: There is no issue if the underlying fee token transfer results in a reentrancy, as the rest of the
@@ -418,7 +466,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         //       reentrancy.
         _pullAndConvertUnderlying(totalSent_ = amountToSend_ * chainIds_.length);
 
-        _sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, amountToSend_);
+        _sendParameters(chainIds_, keys_, gasLimit_, maxFeePerGas_, amountToSend_);
     }
 
     /// @dev Sends parameters to the app chains via a retryable tickets.
@@ -426,7 +474,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         uint256[] calldata chainIds_,
         string[] calldata keys_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
+        uint256 maxFeePerGas_,
         uint256 amountToSend_
     ) internal {
         if (chainIds_.length == 0) revert NoChainIds();
@@ -444,16 +492,25 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             (nonce_, keys_, RegistryParameters.getRegistryParameters(parameterRegistry, keys_))
         );
 
-        address appChainAlias_ = appChainAlias();
-
         for (uint256 index_; index_ < chainIds_.length; ++index_) {
+            address inbox_ = _getInbox(chainIds_[index_]);
+
+            (uint256 maxSubmissionCost_, ) = _calculateMaxCosts(
+                inbox_,
+                data_.length,
+                gasLimit_,
+                maxFeePerGas_,
+                block.basefee
+            );
+
             uint256 messageNumber_ = _createRetryableTicket({
-                chainId_: chainIds_[index_],
+                inbox_: inbox_,
+                callValue_: 0,
+                maxSubmissionCost_: maxSubmissionCost_,
                 gasLimit_: gasLimit_,
-                gasPrice_: gasPrice_,
-                feeTokensToSend_: amountToSend_,
-                data_: data_,
-                appChainAlias_: appChainAlias_
+                maxFeePerGas_: maxFeePerGas_,
+                feeTokenAmount_: amountToSend_,
+                data_: data_
             });
 
             // slither-disable-next-line reentrancy-events
@@ -461,34 +518,47 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         }
     }
 
-    /// @dev Sends parameters to the app chain via a retryable ticket.
+    /**
+     * @dev    Creates a retryable ticket, via the inbox, to perform a call to the app chain gateway (on the app chain).
+     * @param  inbox_             The inbox via which to create a retryable ticket.
+     * @param  callValue_         The call value (18 decimals) to send with the call to the app chain gateway.
+     * @param  maxSubmissionCost_ The maximum submission cost (18 decimals) for the retryable ticket.
+     * @param  gasLimit_          The gas limit for the call to the app chain gateway.
+     * @param  maxFeePerGas_      The maximum fee per gas (EIP-1559) for the call to the app chain gateway.
+     * @param  feeTokenAmount_    The total fee tokens (fee token decimals) that should be pulled by the inbox.
+     * @param  data_              The data to call to call the app chain gateway with.
+     * @return messageNumber_     The message number of the retryable ticket.
+     * @dev    `feeTokenAmount_` (converted to 18 decimals) must be greater or equal to
+     *         `maxSubmissionCost_ + callValue_ + (gasLimit_ * maxFeePerGas_)`
+     */
     function _createRetryableTicket(
-        uint256 chainId_,
+        address inbox_,
+        uint256 callValue_,
+        uint256 maxSubmissionCost_,
         uint256 gasLimit_,
-        uint256 gasPrice_,
-        uint256 feeTokensToSend_,
-        bytes memory data_,
-        address appChainAlias_
+        uint256 maxFeePerGas_,
+        uint256 feeTokenAmount_,
+        bytes memory data_
     ) internal returns (uint256 messageNumber_) {
-        address inbox_ = _getInbox(chainId_);
-
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-start calls-loop
         // slither-disable-next-line unused-return
-        IERC20Like(feeToken).approve(inbox_, feeTokensToSend_);
+        IERC20Like(feeToken).approve(inbox_, feeTokenAmount_);
 
-        // NOTE: No need to validate `gasLimit_` and/or `gasPrice_` since the purpose of retryable tickets are to allow
-        //       the gas parameters to be modified and the ticket retried on the app chain later, if needed. Further,
-        //       `IERC20InboxLike.createRetryableTicket` already does some sanity checks on value and gas parameters.
+        address appChainAlias_ = appChainAlias();
+
+        // NOTE: No need to validate `gasLimit_` and/or `maxFeePerGas_` since the purpose of retryable tickets are to
+        //       allow the gas parameters to be modified and the ticket retried on the app chain later, if needed.
+        //       Further, `IERC20InboxLike.createRetryableTicket` already does some sanity checks.
         messageNumber_ = IERC20InboxLike(inbox_).createRetryableTicket({
             to_: appChainGateway,
-            l2CallValue_: 0,
-            maxSubmissionCost_: 0,
+            l2CallValue_: callValue_,
+            maxSubmissionCost_: maxSubmissionCost_,
             excessFeeRefundAddress_: appChainAlias_,
             callValueRefundAddress_: appChainAlias_,
             gasLimit_: gasLimit_,
-            maxFeePerGas_: gasPrice_,
-            tokenTotalFeeAmount_: feeTokensToSend_,
+            maxFeePerGas_: maxFeePerGas_,
+            tokenTotalFeeAmount_: feeTokenAmount_,
             data_: data_
         });
         // slither-disable-end calls-loop
@@ -517,6 +587,31 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     /* ============ Internal View/Pure Functions ============ */
+
+    /**
+     * @dev Calculates the total fees to submit a retryable ticket and call the app chain gateway on the app chain.
+     * @param  inbox_              The inbox to the app chain.
+     * @param  dataLength_         The length of the call data to send to the app chain.
+     * @param  gasLimit_           The gas limit for the call on the app chain.
+     * @param  maxFeePerGas_       The maximum fee per gas (EIP-1559) for the call on the app chain.
+     * @param  maxBaseFee_         The maximum base fee of the settlement chain, in wei (18 decimals).
+     * @return maxSubmissionCost_  The maximum submission cost for the retryable ticket, in wei (18 decimals).
+     * @return maxTransactionCost_ The maximum transaction cost for the call on the app chain, in wei (18 decimals).
+     */
+    function _calculateMaxCosts(
+        address inbox_,
+        uint256 dataLength_,
+        uint256 gasLimit_,
+        uint256 maxFeePerGas_,
+        uint256 maxBaseFee_
+    ) internal view returns (uint256 maxSubmissionCost_, uint256 maxTransactionCost_) {
+        maxSubmissionCost_ = IERC20InboxLike(inbox_).calculateRetryableSubmissionFee(dataLength_, maxBaseFee_);
+        maxTransactionCost_ = maxFeePerGas_ * gasLimit_;
+    }
+
+    function _convertToWei(uint256 value_) internal view returns (uint256 wei_) {
+        return (value_ * (10 ** 18)) / (10 ** _feeTokenDecimals);
+    }
 
     /**
      * @dev Returns the inbox-specific key used to query to parameter registry to determine the inbox for a chain ID.
