@@ -131,6 +131,7 @@ contract DeployScripts is Script {
         deploySettlementChainParameterRegistryImplementation();
         deployMockUnderlyingFeeTokenImplementation();
         deployFeeTokenImplementation();
+        deploySettlementChainGatewayImplementation();
 
         deploySettlementChainComponentImplementations();
     }
@@ -179,6 +180,7 @@ contract DeployScripts is Script {
     function deployAllAppChainComponentImplementations() external {
         deployFactoryImplementationViaFactory();
         deployAppChainParameterRegistryImplementation();
+        deployAppChainGatewayImplementation();
 
         deployAppChainComponentImplementations();
     }
