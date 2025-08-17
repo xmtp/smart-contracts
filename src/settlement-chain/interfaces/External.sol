@@ -12,7 +12,9 @@ interface IERC20Like {
 
     function transferFrom(address sender_, address recipient_, uint256 amount_) external returns (bool success_);
 
-    function balanceOf(address account) external view returns (uint256 balance);
+    function balanceOf(address account_) external view returns (uint256 balance_);
+
+    function decimals() external view returns (uint8 decimals_);
 }
 
 /**
@@ -55,7 +57,7 @@ interface IERC20InboxLike {
      * @param  data_                   ABI encoded data of L2 message.
      * @return messageNumber_          The message number of the retryable transaction.
      * @dev    `tokenTotalFeeAmount_` (converted to 18 decimals on the L2) must be greater than or equal to the sum of
-     *         `gasLimit_` multiplied by `gasPrice_` and `maxSubmissionCost_`.
+     *         `gasLimit_` multiplied by `maxFeePerGas_` and `maxSubmissionCost_`.
      * @dev    Retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees (see
      *         https://github.com/OffchainLabs/nitro-contracts/blob/v3.1.0/src/bridge/ERC20Inbox.sol#L118).
      */
@@ -73,6 +75,12 @@ interface IERC20InboxLike {
 
     /// @notice Deposits an ERC20 token into the L2 inbox, to be sent to the L3 where it is the gas token of that chain.
     function depositERC20(uint256 amount_) external returns (uint256 messageNumber_);
+
+    /// @notice Calculates the submission fee for a retryable ticket.
+    function calculateRetryableSubmissionFee(
+        uint256 dataLength_,
+        uint256 baseFee_
+    ) external view returns (uint256 submissionFee_);
 }
 
 /**
@@ -80,7 +88,7 @@ interface IERC20InboxLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IAppChainGatewayLike {
-    function receiveDeposit(address recipient_, uint256 amount_) external;
+    function receiveDeposit(address recipient_) external payable;
 
     function receiveParameters(uint256 nonce_, string[] calldata keys_, bytes32[] calldata values_) external;
 }
@@ -176,6 +184,6 @@ interface ISettlementChainGatewayLike {
         address recipient_,
         uint256 amount_,
         uint256 gasLimit_,
-        uint256 gasPrice_
+        uint256 maxFeePerGas_
     ) external;
 }

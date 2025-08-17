@@ -142,7 +142,7 @@ abstract contract DeployTests is Test {
     address internal _parameterRegistry;
     address internal _underlyingFeeToken;
 
-    uint256 internal _appChainGasPrice = 2_000_000_000; // 2 gwei per gas.
+    uint256 internal _appChainMaxFeePerGas = 2_000_000_000; // 2 gwei per gas.
 
     bytes32 internal _distributionManagerProxySalt;
     bytes32 internal _groupMessageBroadcasterProxySalt;
@@ -483,14 +483,14 @@ abstract contract DeployTests is Test {
         assertEq(ISettlementChainParameterRegistry(_parameterRegistry).get(keys_[3]), values_[3]);
     }
 
-    function _bridgeBroadcasterStartingParameters(uint256 chainId_, uint256 gasPrice_) internal {
+    function _bridgeBroadcasterStartingParameters(uint256 chainId_, uint256 maxFeePerGas_) internal {
         string[] memory keys_ = new string[](4);
         keys_[0] = _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[1] = _GROUP_MESSAGE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
         keys_[2] = _IDENTITY_UPDATE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY;
         keys_[3] = _IDENTITY_UPDATE_BROADCASTER_MAX_PAYLOAD_SIZE_KEY;
 
-        _sendParameters(_alice, chainId_, keys_, gasPrice_);
+        _sendParameters(_alice, chainId_, keys_, maxFeePerGas_);
     }
 
     function _assertBroadcasterStartingParameters() internal {
@@ -1025,7 +1025,7 @@ abstract contract DeployTests is Test {
         string[] memory keys_ = new string[](1);
         keys_[0] = key_;
 
-        _sendParameters(_ADMIN, _appChainId, keys_, _appChainGasPrice);
+        _sendParameters(_ADMIN, _appChainId, keys_, _appChainMaxFeePerGas);
         _handleQueuedBridgeEvents();
 
         vm.selectFork(_appChainForkId);
@@ -1065,9 +1065,14 @@ abstract contract DeployTests is Test {
 
     /* ============ Bridge Helpers ============ */
 
-    function _sendParameters(address account_, uint256 chainId_, string[] memory keys_, uint256 gasPrice_) internal {
+    function _sendParameters(
+        address account_,
+        uint256 chainId_,
+        string[] memory keys_,
+        uint256 maxFeePerGas_
+    ) internal {
         uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 4);
-        uint256 cost_ = (gasPrice_ * gasLimit_) / 1e12; // 1e6 / 1e18 = 1 / 1e12
+        uint256 cost_ = (maxFeePerGas_ * gasLimit_) / 1e12; // 1e6 / 1e18 = 1 / 1e12
 
         _giveUnderlyingFeeTokens(account_, cost_);
         _mintFeeTokens(account_, cost_);
@@ -1079,7 +1084,7 @@ abstract contract DeployTests is Test {
         chainIds_[0] = chainId_;
 
         vm.prank(account_);
-        ISettlementChainGateway(_gateway).sendParameters(chainIds_, keys_, gasLimit_, gasPrice_, cost_);
+        ISettlementChainGateway(_gateway).sendParameters(chainIds_, keys_, gasLimit_, maxFeePerGas_, cost_);
     }
 
     function _handleQueuedBridgeEvents() internal {
