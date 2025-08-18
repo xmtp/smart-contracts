@@ -424,7 +424,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         });
 
         // slither-disable-next-line reentrancy-events
-        emit Deposit(chainId_, messageNumber_, amount_);
+        emit Deposit(chainId_, messageNumber_, recipient_, amount_);
     }
 
     /// @dev Pull the underlying fee tokens from the caller, and convert them to fee tokens.

@@ -16,9 +16,10 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @notice Emitted when fee tokens have been sent to the app chain (becoming native gas token).
      * @param  chainId       The chain ID of the target app chain.
      * @param  messageNumber The message number, unique per inbox.
+     * @param  recipient     The recipient of the tokens on the app chain.
      * @param  amount        The amount of tokens sent.
      */
-    event Deposit(uint256 indexed chainId, uint256 indexed messageNumber, uint256 amount);
+    event Deposit(uint256 indexed chainId, uint256 indexed messageNumber, address indexed recipient, uint256 amount);
 
     /**
      * @notice Emitted when parameters have been sent to the app chain.

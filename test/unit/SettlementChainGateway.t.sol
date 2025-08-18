@@ -285,7 +285,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, amount_);
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_);
 
         vm.prank(_alice);
         _gateway.deposit(1111, _bob, amount_, gasLimit_, maxFeePerGas_);
@@ -580,7 +580,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, amount_);
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_);
 
         vm.prank(_alice);
         _gateway.depositWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
@@ -810,7 +810,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, amount_);
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_);
 
         vm.prank(_alice);
         _gateway.depositFromUnderlying(1111, _bob, amount_, gasLimit_, maxFeePerGas_);
@@ -1175,7 +1175,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, amount_);
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_);
 
         vm.prank(_alice);
         _gateway.depositFromUnderlyingWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
