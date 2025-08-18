@@ -18,6 +18,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @param  key   The key of the parameter (which is generally a human-readable string, for clarity).
      * @param  value The value of the parameter (which can represent any value type).
      * @dev    Values that are not value types (e.g. bytes, arrays, structs, etc.) must be the hash of their contents.
+     * @dev    The key is intentionally non-indexed so it remains visible/decodable in explorers and subgraphs.
      */
     event ParameterSet(string key, bytes32 value);
 
