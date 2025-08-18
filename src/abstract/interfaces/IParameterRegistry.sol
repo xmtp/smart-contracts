@@ -19,7 +19,7 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
      * @param  value The value of the parameter (which can represent any value type).
      * @dev    Values that are not value types (e.g. bytes, arrays, structs, etc.) must be the hash of their contents.
      */
-    event ParameterSet(string indexed key, bytes32 indexed value);
+    event ParameterSet(string key, bytes32 value);
 
     /* ============ Custom Errors ============ */
 
