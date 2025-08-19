@@ -128,7 +128,7 @@ contract AppChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
+        emit IAppChainGateway.Withdrawal(11, address(1), 1);
 
         vm.prank(_alice);
         _gateway.withdraw{ value: 1 }(address(1));
@@ -190,7 +190,7 @@ contract AppChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit IAppChainGateway.Withdrawal(_alice, 11, address(1), 1);
+        emit IAppChainGateway.Withdrawal(11, address(1), 1);
 
         vm.prank(_alice);
         _gateway.withdrawIntoUnderlying{ value: 1 }(address(1));

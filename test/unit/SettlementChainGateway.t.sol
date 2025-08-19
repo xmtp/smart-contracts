@@ -2095,14 +2095,6 @@ contract SettlementChainGatewayTests is Test {
 
     /* ============ receiveWithdrawal ============ */
 
-    function test_receiveWithdrawal_zeroBalance() external {
-        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(0));
-
-        vm.expectRevert(ISettlementChainGateway.ZeroBalance.selector);
-
-        _gateway.receiveWithdrawal(address(0));
-    }
-
     function test_receiveWithdrawal_feeTokenTransferFailed_reverts() external {
         vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));
 
@@ -2135,14 +2127,6 @@ contract SettlementChainGatewayTests is Test {
     }
 
     /* ============ receiveWithdrawalIntoUnderlying ============ */
-
-    function test_receiveWithdrawalIntoUnderlying_zeroBalance() external {
-        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(0));
-
-        vm.expectRevert(ISettlementChainGateway.ZeroBalance.selector);
-
-        _gateway.receiveWithdrawalIntoUnderlying(address(0));
-    }
 
     function test_receiveWithdrawalIntoUnderlying_feeTokenWithdrawToFailed_reverts() external {
         vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_gateway)), abi.encode(100));

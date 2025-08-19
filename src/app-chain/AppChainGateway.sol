@@ -189,7 +189,7 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         );
 
         // slither-disable-next-line reentrancy-events
-        emit Withdrawal(msg.sender, messageId_, recipient_, msg.value);
+        emit Withdrawal(messageId_, recipient_, msg.value);
     }
 
     /* ============ Internal View/Pure Functions ============ */

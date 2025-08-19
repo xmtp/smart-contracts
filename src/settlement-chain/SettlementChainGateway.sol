@@ -261,40 +261,16 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     /// @inheritdoc ISettlementChainGateway
     function receiveWithdrawal(address recipient_) external returns (uint256 amount_) {
-        // NOTE: It's safe to just send/withdraw the balance, without access controls or balance validation, since this
-        //       contract should only hold fee tokens if it was sent them right before this function is called. To be
-        //       more clear, a user has already instructed the ArbSys bridge on an app chain to `sendTxToL1` with the
-        //       call data of `withdraw(someAccount)`, so the Outbox will send the fee tokens to this contract and then
-        //       immediately execute that call data to withdraw the fee tokens to `someAccount`.
-        amount_ = IERC20Like(feeToken).balanceOf(address(this));
-
-        // slither-disable-next-line incorrect-equality
-        if (amount_ == 0) revert ZeroBalance();
-
-        emit WithdrawalReceived(recipient_, amount_);
-
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
-        IERC20Like(feeToken).transfer(recipient_, amount_);
+        IERC20Like(feeToken).transfer(recipient_, amount_ = _prepareWithdrawal(recipient_));
     }
 
     /// @inheritdoc ISettlementChainGateway
     function receiveWithdrawalIntoUnderlying(address recipient_) external returns (uint256 amount_) {
-        // NOTE: It's safe to just send/withdraw the balance, without access controls or balance validation, since this
-        //       contract should only hold fee tokens if it was sent them right before this function is called. To be
-        //       more clear, a user has already instructed the ArbSys bridge on an app chain to `sendTxToL1` with the
-        //       call data of `withdrawIntoUnderlying(someAccount)`, so the Outbox will send the fee tokens to this
-        //       contract and then immediately execute that call data to unwrap the fee tokens to `someAccount`.
-        amount_ = IERC20Like(feeToken).balanceOf(address(this));
-
-        // slither-disable-next-line incorrect-equality
-        if (amount_ == 0) revert ZeroBalance();
-
-        emit WithdrawalReceived(recipient_, amount_);
-
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unused-return
-        IFeeTokenLike(feeToken).withdrawTo(recipient_, amount_);
+        IFeeTokenLike(feeToken).withdrawTo(recipient_, amount_ = _prepareWithdrawal(recipient_));
     }
 
     /* ============ View/Pure Functions ============ */
@@ -584,6 +560,18 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
                 s_
             )
         );
+    }
+
+    /// @dev Prepares a withdrawal of fee tokens by querying the available balance and emitting an event.
+    function _prepareWithdrawal(address recipient_) internal returns (uint256 amount_) {
+        // NOTE: It's safe to just send/withdraw the balance, without access controls or balance validation, since this
+        //       contract should only hold fee tokens if it was sent them right before this function is called. To be
+        //       more clear, a user has already instructed the ArbSys bridge on an app chain to `sendTxToL1` with the
+        //       call data of `withdrawIntoUnderlying(someAccount)`, so the Outbox will send the fee tokens to this
+        //       contract and then immediately execute that call data to unwrap the fee tokens to `someAccount`.
+        amount_ = IERC20Like(feeToken).balanceOf(address(this));
+
+        emit WithdrawalReceived(recipient_, amount_);
     }
 
     /* ============ Internal View/Pure Functions ============ */
