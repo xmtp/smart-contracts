@@ -116,10 +116,10 @@ contract ParameterRegistryTests is Test {
         values_[1] = bytes32(uint256(2020202));
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet(keys_[0], values_[0]);
+        emit IParameterRegistry.ParameterSet(keys_[0], keys_[0], values_[0]);
 
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet(keys_[1], values_[1]);
+        emit IParameterRegistry.ParameterSet(keys_[1], keys_[1], values_[1]);
 
         vm.prank(_admin1);
         _registry.set(keys_, values_);
@@ -138,7 +138,7 @@ contract ParameterRegistryTests is Test {
 
     function test_set_one() external {
         vm.expectEmit(address(_registry));
-        emit IParameterRegistry.ParameterSet("this.is.a.parameter", bytes32(uint256(1010101)));
+        emit IParameterRegistry.ParameterSet("this.is.a.parameter", "this.is.a.parameter", bytes32(uint256(1010101)));
 
         vm.prank(_admin1);
         _registry.set("this.is.a.parameter", bytes32(uint256(1010101)));
