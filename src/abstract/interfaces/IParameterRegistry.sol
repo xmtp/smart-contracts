@@ -15,11 +15,14 @@ interface IParameterRegistry is IMigratable, IParameterKeysErrors, IRegistryPara
 
     /**
      * @notice Emitted when a parameter is set.
-     * @param  key   The key of the parameter (which is generally a human-readable string, for clarity).
-     * @param  value The value of the parameter (which can represent any value type).
+     * @param  keyHash The hash of the key of the parameter.
+     * @param  key     The key of the parameter (which is generally a human-readable string, for clarity).
+     * @param  value   The value of the parameter (which can represent any value type).
      * @dev    Values that are not value types (e.g. bytes, arrays, structs, etc.) must be the hash of their contents.
+     * @dev    When passing the key as the first argument when emitting this event, it is automatically hashed since
+     *         reference types are not indexable, and the hash is thus the indexable value.
      */
-    event ParameterSet(string indexed key, bytes32 indexed value);
+    event ParameterSet(string indexed keyHash, string key, bytes32 value);
 
     /* ============ Custom Errors ============ */
 

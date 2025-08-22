@@ -135,7 +135,7 @@ abstract contract ParameterRegistry is IParameterRegistry, Migratable, Initializ
     /* ============ Internal Interactive Functions ============ */
 
     function _setParameter(ParameterRegistryStorage storage $, string memory key_, bytes32 value_) internal {
-        emit ParameterSet(key_, $.parameters[key_] = value_);
+        emit ParameterSet(key_, key_, $.parameters[key_] = value_);
     }
 
     /* ============ Internal View/Pure Functions ============ */
