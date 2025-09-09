@@ -887,12 +887,6 @@ contract DeployLocalScripts is Script {
         if (IAppChainGateway(implementation_).settlementChainGateway() != settlementChainGateway_) {
             revert("App chain gateway counterpart mismatch");
         }
-
-        //            (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
-        //                _deploymentData.factory,
-        //                _deploymentData.parameterRegistryProxy,
-        //                _deploymentData.gatewayProxy
-        //            );
     }
 
     function _deployAppChainGatewayProxy(address implementation_) internal returns (IAppChainGateway registry_) {
