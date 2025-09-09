@@ -41,10 +41,10 @@ import { Proxy } from "../src/any-chain/Proxy.sol";
 /* ============ Mock Imports ============ */
 
 import { MockUnderlyingFeeToken } from "../test/utils/Mocks.sol";
-import {IAppChainGateway} from "../src/app-chain/interfaces/IAppChainGateway.sol";
-import {ISettlementChainGateway} from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
-import {AppChainGatewayDeployer} from "./deployers/AppChainGatewayDeployer.sol";
-import {SettlementChainGatewayDeployer} from "./deployers/SettlementChainGatewayDeployer.sol";
+import { IAppChainGateway } from "../src/app-chain/interfaces/IAppChainGateway.sol";
+import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
+import { AppChainGatewayDeployer } from "./deployers/AppChainGatewayDeployer.sol";
+import { SettlementChainGatewayDeployer } from "./deployers/SettlementChainGatewayDeployer.sol";
 
 contract DeployLocalScripts is Script {
     string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
@@ -103,7 +103,6 @@ contract DeployLocalScripts is Script {
     bytes32 internal constant _APP_CHAIN_GATEWAY_PROXY_SALT = "AppChainGateway_0";
     bytes32 internal constant _SETTLEMENT_CHAIN_GATEWAY_PROXY_SALT = "SettlementChainGateway_0";
 
-
     uint256 internal _privateKey;
 
     address internal _deployer;
@@ -143,7 +142,7 @@ contract DeployLocalScripts is Script {
     function deployLocal() external {
         // Compute expected addresses (short-lived)
         address expectedParameterRegistryProxy_ = _getExpectedProxy(_PARAMETER_REGISTRY_PROXY_SALT);
-        address expectedAppGwProxy_             = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
+        address expectedAppGwProxy_ = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
 
         // ---- Factory (scoped) ----
         {
@@ -166,13 +165,19 @@ contract DeployLocalScripts is Script {
 
         // ---- Fee Token ----
         {
-            address impl = _deployFeeTokenImplementation(address(_parameterRegistryProxy), address(_underlyingFeeTokenProxy));
+            address impl = _deployFeeTokenImplementation(
+                address(_parameterRegistryProxy),
+                address(_underlyingFeeTokenProxy)
+            );
             _feeTokenProxy = _deployFeeTokenProxy(impl);
         }
 
         // ---- Payer Registry ----
         {
-            address impl = _deployPayerRegistryImplementation(address(_parameterRegistryProxy), address(_feeTokenProxy));
+            address impl = _deployPayerRegistryImplementation(
+                address(_parameterRegistryProxy),
+                address(_feeTokenProxy)
+            );
             _payerRegistryProxy = _deployPayerRegistryProxy(impl);
         }
 
@@ -293,11 +298,12 @@ contract DeployLocalScripts is Script {
         vm.serializeAddress("root", "groupMessageBroadcaster", address(_groupMessageBroadcasterProxy));
 
         string memory json_ = vm.serializeAddress(
-            "root", "identityUpdateBroadcaster", address(_identityUpdateBroadcasterProxy)
+            "root",
+            "identityUpdateBroadcaster",
+            address(_identityUpdateBroadcasterProxy)
         );
         vm.writeJson(json_, DEPLOYMENT_FILE_PATH);
     }
-
 
     function checkLocalDeployment() external view {
         string memory json_ = vm.readFile(DEPLOYMENT_FILE_PATH);
@@ -862,14 +868,17 @@ contract DeployLocalScripts is Script {
         }
     }
 
-
     /* ============ App Chain Gateway ======= */
     function _deployAppChainGatewayImplementation(
         address parameterRegistry_,
         address settlementChainGateway_
     ) internal returns (address implementation_) {
         vm.startBroadcast(_privateKey);
-        (implementation_, ) = AppChainGatewayDeployer.deployImplementation(address(_factory), parameterRegistry_, settlementChainGateway_);
+        (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_,
+            settlementChainGateway_
+        );
         vm.stopBroadcast();
 
         if (IAppChainGateway(implementation_).parameterRegistry() != parameterRegistry_) {
@@ -879,12 +888,11 @@ contract DeployLocalScripts is Script {
             revert("App chain gateway counterpart mismatch");
         }
 
-
-//            (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
-//                _deploymentData.factory,
-//                _deploymentData.parameterRegistryProxy,
-//                _deploymentData.gatewayProxy
-//            );
+        //            (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
+        //                _deploymentData.factory,
+        //                _deploymentData.parameterRegistryProxy,
+        //                _deploymentData.gatewayProxy
+        //            );
     }
 
     function _deployAppChainGatewayProxy(address implementation_) internal returns (IAppChainGateway registry_) {
@@ -1032,18 +1040,27 @@ contract DeployLocalScripts is Script {
     ) internal returns (address implementation_) {
         vm.startBroadcast(_privateKey);
         (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
-            address(_factory), parameterRegistry_, appChainGateway_, feeToken_
+            address(_factory),
+            parameterRegistry_,
+            appChainGateway_,
+            feeToken_
         );
         vm.stopBroadcast();
-        if (ISettlementChainGateway(implementation_).parameterRegistry() != parameterRegistry_) revert("SC GW param reg mismatch");
-        if (ISettlementChainGateway(implementation_).appChainGateway() != appChainGateway_) revert("SC GW counterpart mismatch");
+        if (ISettlementChainGateway(implementation_).parameterRegistry() != parameterRegistry_)
+            revert("SC GW param reg mismatch");
+        if (ISettlementChainGateway(implementation_).appChainGateway() != appChainGateway_)
+            revert("SC GW counterpart mismatch");
         if (ISettlementChainGateway(implementation_).feeToken() != feeToken_) revert("SC GW fee token mismatch");
     }
 
-    function _deploySettlementChainGatewayProxy(address implementation_) internal returns (ISettlementChainGateway gw_) {
+    function _deploySettlementChainGatewayProxy(
+        address implementation_
+    ) internal returns (ISettlementChainGateway gw_) {
         vm.startBroadcast(_privateKey);
         (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
-            address(_factory), implementation_, _SETTLEMENT_CHAIN_GATEWAY_PROXY_SALT
+            address(_factory),
+            implementation_,
+            _SETTLEMENT_CHAIN_GATEWAY_PROXY_SALT
         );
         vm.stopBroadcast();
         gw_ = ISettlementChainGateway(proxy_);
@@ -1052,17 +1069,14 @@ contract DeployLocalScripts is Script {
 
     function _getExpectedProxy(bytes32 salt_) internal view returns (address expectedProxy_) {
         // Factory must be first two creations from _deployer on this chain
-        address expectedFactoryImpl_  = vm.computeCreateAddress(_deployer, 0);
+        address expectedFactoryImpl_ = vm.computeCreateAddress(_deployer, 0);
         address expectedFactoryProxy_ = vm.computeCreateAddress(_deployer, 1);
 
         // Factory’s Initializable impl is created by the factory implementation at nonce 1
         address expectedInitializableImpl_ = vm.computeCreateAddress(expectedFactoryImpl_, 1);
 
         // Proxy init code is Proxy(bytecode) + abi.encode(initializableImplementation)
-        bytes memory initCode_ = abi.encodePacked(
-            type(Proxy).creationCode,
-            abi.encode(expectedInitializableImpl_)
-        );
+        bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(expectedInitializableImpl_));
 
         // Factory proxy does the CREATE2 with salt keccak(deployer, salt_)
         expectedProxy_ = vm.computeCreate2Address(
@@ -1071,5 +1085,4 @@ contract DeployLocalScripts is Script {
             expectedFactoryProxy_
         );
     }
-
 }
