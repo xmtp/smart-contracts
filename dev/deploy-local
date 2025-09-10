@@ -3,7 +3,8 @@ set -euo pipefail
 
 echo "⧖ Deploying local contracts."
 
-forge script script/DeployLocal.s.sol:DeployLocalScripts --rpc-url anvil --broadcast --slow --sig 'deployLocal()'
+# make sure to create a reproducible build
+FOUNDRY_PROFILE=local forge script script/DeployLocal.s.sol:DeployLocalScripts --rpc-url anvil --broadcast --slow --sig 'deployLocal()'
 
 echo "✔ Done deploying local contracts."
 

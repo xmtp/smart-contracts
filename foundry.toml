@@ -1,6 +1,5 @@
 [profile.default]
-auto_detect_solc = false
-solc_version = "0.8.28"
+auto_detect_solc = true
 bytecode_hash = "none"
 src = "src"
 out = "out"
@@ -18,6 +17,9 @@ runs = 1_000
 
 [profile.ci.fuzz]
 runs = 10_000
+
+[profile.local]
+bytecode_hash = "none"
 
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
