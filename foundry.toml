@@ -1,6 +1,5 @@
 [profile.default]
 auto_detect_solc = true
-bytecode_hash = "none"
 src = "src"
 out = "out"
 libs = ["lib"]
