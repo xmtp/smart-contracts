@@ -140,7 +140,6 @@ contract DeployLocalScripts is Script {
         _deployer = vm.addr(_privateKey);
     }
     function deployLocal() external {
-
         address expectedParameterRegistryProxy_ = _getExpectedProxy(_PARAMETER_REGISTRY_PROXY_SALT);
         address expectedAppGwProxy_ = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
 
