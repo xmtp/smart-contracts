@@ -140,7 +140,7 @@ contract DeployLocalScripts is Script {
         _deployer = vm.addr(_privateKey);
     }
     function deployLocal() external {
-        // Compute expected addresses (short-lived)
+
         address expectedParameterRegistryProxy_ = _getExpectedProxy(_PARAMETER_REGISTRY_PROXY_SALT);
         address expectedAppGwProxy_ = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
 
@@ -225,7 +225,7 @@ contract DeployLocalScripts is Script {
             _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(impl);
         }
 
-        // ---- Gateways (use expected App GW address for SC GW) ----
+        // ---- Gateways ----
         {
             address impl = _deploySettlementChainGatewayImplementation(
                 address(_parameterRegistryProxy),
@@ -242,7 +242,7 @@ contract DeployLocalScripts is Script {
             _appChainGatewayProxy = _deployAppChainGatewayProxy(impl);
         }
 
-        // ---- Params & updates (scoped so no temps leak) ----
+        // ---- Params & updates ----
         {
             _setNodeRegistryStartingParameters();
             _updateNodeRegistryStartingParameters();
@@ -258,7 +258,6 @@ contract DeployLocalScripts is Script {
             _updateBroadcasterStartingParameters();
         }
 
-        // Minimal logs (don’t keep new locals)
         console.log("Factory deployed to:", address(_factory));
         console.log("Parameter Registry deployed to:", address(_parameterRegistryProxy));
         console.log("Payer Registry deployed to:", address(_payerRegistryProxy));
@@ -280,8 +279,8 @@ contract DeployLocalScripts is Script {
         vm.serializeAddress("root", "deployer", _deployer);
         vm.serializeUint("root", "settlementChainId", block.chainid);
         vm.serializeUint("root", "appChainId", block.chainid);
-        vm.serializeUint("root", "settlementChainDeploymentBlock", block.number);
-        vm.serializeUint("root", "appChainDeploymentBlock", block.number);
+        vm.serializeUint("root", "settlementChainDeploymentBlock", 0);
+        vm.serializeUint("root", "appChainDeploymentBlock", 0);
         vm.serializeAddress("root", "settlementChainFactory", address(_factory));
         vm.serializeAddress("root", "appChainFactory", address(_factory));
         vm.serializeAddress("root", "settlementChainParameterRegistry", address(_parameterRegistryProxy));
