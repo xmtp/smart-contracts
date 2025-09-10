@@ -41,6 +41,10 @@ import { Proxy } from "../src/any-chain/Proxy.sol";
 /* ============ Mock Imports ============ */
 
 import { MockUnderlyingFeeToken } from "../test/utils/Mocks.sol";
+import { IAppChainGateway } from "../src/app-chain/interfaces/IAppChainGateway.sol";
+import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
+import { AppChainGatewayDeployer } from "./deployers/AppChainGatewayDeployer.sol";
+import { SettlementChainGatewayDeployer } from "./deployers/SettlementChainGatewayDeployer.sol";
 
 contract DeployLocalScripts is Script {
     string constant DEPLOYMENT_FILE_PATH = "./environments/anvil.json";
@@ -96,6 +100,8 @@ contract DeployLocalScripts is Script {
     bytes32 internal constant _PAYER_REGISTRY_PROXY_SALT = "PayerRegistry_0";
     bytes32 internal constant _PAYER_REPORT_MANAGER_PROXY_SALT = "PayerReportManager_0";
     bytes32 internal constant _RATE_REGISTRY_PROXY_SALT = "RateRegistry_0";
+    bytes32 internal constant _APP_CHAIN_GATEWAY_PROXY_SALT = "AppChainGateway_0";
+    bytes32 internal constant _SETTLEMENT_CHAIN_GATEWAY_PROXY_SALT = "SettlementChainGateway_0";
 
     uint256 internal _privateKey;
 
@@ -122,6 +128,10 @@ contract DeployLocalScripts is Script {
 
     IFeeToken internal _feeTokenProxy;
 
+    IAppChainGateway internal _appChainGatewayProxy;
+
+    ISettlementChainGateway internal _settlementChainGatewayProxy;
+
     function setUp() public virtual {
         _privateKey = uint256(vm.envBytes32("LOCAL_DEPLOYER_PRIVATE_KEY"));
 
@@ -129,117 +139,124 @@ contract DeployLocalScripts is Script {
 
         _deployer = vm.addr(_privateKey);
     }
-
     function deployLocal() external {
-        uint256 blockNumber_ = block.number;
+        address expectedParameterRegistryProxy_ = _getExpectedProxy(_PARAMETER_REGISTRY_PROXY_SALT);
+        address expectedAppGwProxy_ = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
 
-        // Get the expected parameter registry proxy address.
-        address expectedParameterRegistryProxy_ = _getExpectedParameterRegistryProxy();
+        // ---- Factory (scoped) ----
+        {
+            address impl = _deployFactoryImplementation(expectedParameterRegistryProxy_);
+            _factory = _deployFactoryProxy(impl);
+            _initializeFactory();
+        }
 
-        // Deploy the Factory.
-        address factoryImplementation_ = _deployFactoryImplementation(expectedParameterRegistryProxy_);
+        // ---- Parameter Registry ----
+        {
+            address impl = _deploySettlementChainParameterRegistryImplementation();
+            _parameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(impl, _deployer);
+        }
 
-        _factory = _deployFactoryProxy(factoryImplementation_);
+        // ---- Underlying fee token ----
+        {
+            address impl = _deployMockUnderlyingFeeTokenImplementation(address(_parameterRegistryProxy));
+            _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(impl);
+        }
 
-        _initializeFactory();
+        // ---- Fee Token ----
+        {
+            address impl = _deployFeeTokenImplementation(
+                address(_parameterRegistryProxy),
+                address(_underlyingFeeTokenProxy)
+            );
+            _feeTokenProxy = _deployFeeTokenProxy(impl);
+        }
 
-        // Deploy the Parameter Registry.
-        address parameterRegistryImplementation_ = _deploySettlementChainParameterRegistryImplementation();
+        // ---- Payer Registry ----
+        {
+            address impl = _deployPayerRegistryImplementation(
+                address(_parameterRegistryProxy),
+                address(_feeTokenProxy)
+            );
+            _payerRegistryProxy = _deployPayerRegistryProxy(impl);
+        }
 
-        // The admin of the Parameter Registry is the global admin.
-        _parameterRegistryProxy = _deploySettlementChainParameterRegistryProxy(
-            parameterRegistryImplementation_,
-            _deployer
-        );
+        // ---- Rate Registry ----
+        {
+            address impl = _deployRateRegistryImplementation(address(_parameterRegistryProxy));
+            _rateRegistryProxy = _deployRateRegistryProxy(impl);
+        }
 
-        // Deploy the underlying fee token.
-        address underlyingFeeTokenImplementation_ = _deployMockUnderlyingFeeTokenImplementation(
-            address(_parameterRegistryProxy)
-        );
+        // ---- Node Registry ----
+        {
+            address impl = _deployNodeRegistryImplementation(address(_parameterRegistryProxy));
+            _nodeRegistryProxy = _deployNodeRegistryProxy(impl);
+        }
 
-        _underlyingFeeTokenProxy = _deployMockUnderlyingFeeTokenProxy(underlyingFeeTokenImplementation_);
+        // ---- Payer Report Manager ----
+        {
+            address impl = _deployPayerReportManagerImplementation(
+                address(_parameterRegistryProxy),
+                address(_nodeRegistryProxy),
+                address(_payerRegistryProxy)
+            );
+            _payerReportManagerProxy = _deployPayerReportManagerProxy(impl);
+        }
 
-        // Deploy the Fee Token.
-        address feeTokenImplementation_ = _deployFeeTokenImplementation(
-            address(_parameterRegistryProxy),
-            address(_underlyingFeeTokenProxy)
-        );
+        // ---- Distribution Manager ----
+        {
+            address impl = _deployDistributionManagerImplementation(
+                address(_parameterRegistryProxy),
+                address(_nodeRegistryProxy),
+                address(_payerReportManagerProxy),
+                address(_payerRegistryProxy),
+                address(_feeTokenProxy)
+            );
+            _distributionManagerProxy = _deployDistributionManagerProxy(impl);
+        }
 
-        _feeTokenProxy = _deployFeeTokenProxy(feeTokenImplementation_);
+        // ---- Broadcasters ----
+        {
+            address impl = _deployGroupMessageBroadcasterImplementation(address(_parameterRegistryProxy));
+            _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(impl);
+        }
+        {
+            address impl = _deployIdentityUpdateBroadcasterImplementation(address(_parameterRegistryProxy));
+            _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(impl);
+        }
 
-        // Deploy the Payer Registry.
-        address payerRegistryImplementation_ = _deployPayerRegistryImplementation(
-            address(_parameterRegistryProxy),
-            address(_feeTokenProxy)
-        );
+        // ---- Gateways ----
+        {
+            address impl = _deploySettlementChainGatewayImplementation(
+                address(_parameterRegistryProxy),
+                expectedAppGwProxy_,
+                address(_feeTokenProxy)
+            );
+            _settlementChainGatewayProxy = _deploySettlementChainGatewayProxy(impl);
+        }
+        {
+            address impl = _deployAppChainGatewayImplementation(
+                address(_parameterRegistryProxy),
+                address(_settlementChainGatewayProxy)
+            );
+            _appChainGatewayProxy = _deployAppChainGatewayProxy(impl);
+        }
 
-        _payerRegistryProxy = _deployPayerRegistryProxy(payerRegistryImplementation_);
+        // ---- Params & updates ----
+        {
+            _setNodeRegistryStartingParameters();
+            _updateNodeRegistryStartingParameters();
 
-        // Deploy the Rate Registry.
-        address rateRegistryImplementation_ = _deployRateRegistryImplementation(address(_parameterRegistryProxy));
+            _setPayerRegistryStartingParameters();
+            _updatePayerRegistryStartingParameters();
 
-        _rateRegistryProxy = _deployRateRegistryProxy(rateRegistryImplementation_);
+            _setRateRegistryStartingRates();
+            _updateRateRegistryRates();
 
-        // Deploy the Node Registry.
-        address nodeRegistryImplementation_ = _deployNodeRegistryImplementation(address(_parameterRegistryProxy));
+            _setBroadcasterStartingParameters();
+            _assertBroadcasterStartingParameters();
+            _updateBroadcasterStartingParameters();
+        }
 
-        _nodeRegistryProxy = _deployNodeRegistryProxy(nodeRegistryImplementation_);
-
-        // Deploy the Payer Report Manager.
-        address payerReportManagerImplementation_ = _deployPayerReportManagerImplementation(
-            address(_parameterRegistryProxy),
-            address(_nodeRegistryProxy),
-            address(_payerRegistryProxy)
-        );
-
-        _payerReportManagerProxy = _deployPayerReportManagerProxy(payerReportManagerImplementation_);
-
-        // Deploy the Distribution Manager.
-        address distributionManagerImplementation_ = _deployDistributionManagerImplementation(
-            address(_parameterRegistryProxy),
-            address(_nodeRegistryProxy),
-            address(_payerReportManagerProxy),
-            address(_payerRegistryProxy),
-            address(_feeTokenProxy)
-        );
-
-        _distributionManagerProxy = _deployDistributionManagerProxy(distributionManagerImplementation_);
-
-        // Deploy the Group Message Broadcaster.
-        address groupMessageBroadcasterImplementation_ = _deployGroupMessageBroadcasterImplementation(
-            address(_parameterRegistryProxy)
-        );
-
-        _groupMessageBroadcasterProxy = _deployGroupMessageBroadcasterProxy(groupMessageBroadcasterImplementation_);
-
-        // Deploy the Identity Update Broadcaster.
-        address identityUpdateBroadcasterImplementation_ = _deployIdentityUpdateBroadcasterImplementation(
-            address(_parameterRegistryProxy)
-        );
-
-        _identityUpdateBroadcasterProxy = _deployIdentityUpdateBroadcasterProxy(
-            identityUpdateBroadcasterImplementation_
-        );
-
-        // Set and update the parameters as needed for the Node Registry.
-        _setNodeRegistryStartingParameters();
-        _updateNodeRegistryStartingParameters();
-
-        // Set and update the parameters as needed for the Payer Registry.
-        _setPayerRegistryStartingParameters();
-        _updatePayerRegistryStartingParameters();
-
-        // Set and update the parameters as needed for the Rate Registry.
-        _setRateRegistryStartingRates();
-        _updateRateRegistryRates();
-
-        // Set, update, and assert the parameters as needed for the Group Message Broadcaster and Identity Update
-        // Broadcaster.
-        _setBroadcasterStartingParameters();
-        _assertBroadcasterStartingParameters();
-        _updateBroadcasterStartingParameters();
-
-        // Log Out Deployed Contracts
         console.log("Factory deployed to:", address(_factory));
         console.log("Parameter Registry deployed to:", address(_parameterRegistryProxy));
         console.log("Payer Registry deployed to:", address(_payerRegistryProxy));
@@ -249,21 +266,26 @@ contract DeployLocalScripts is Script {
         console.log("Distribution Manager deployed to:", address(_distributionManagerProxy));
         console.log("Group Message Broadcaster deployed to:", address(_groupMessageBroadcasterProxy));
         console.log("Identity Update Broadcaster deployed to:", address(_identityUpdateBroadcasterProxy));
+        console.log("Settlement Chain Gateway deployed to:", address(_settlementChainGatewayProxy));
+        console.log("App Chain Gateway deployed to:", address(_appChainGatewayProxy));
 
+        _writeLocalEnvJson();
+    }
+
+    function _writeLocalEnvJson() internal {
         vm.createDir("environments", true);
 
-        // Write the environment data to a JSON file.
         vm.serializeAddress("root", "deployer", _deployer);
         vm.serializeUint("root", "settlementChainId", block.chainid);
         vm.serializeUint("root", "appChainId", block.chainid);
-        vm.serializeUint("root", "settlementChainDeploymentBlock", blockNumber_);
-        vm.serializeUint("root", "appChainDeploymentBlock", blockNumber_);
+        vm.serializeUint("root", "settlementChainDeploymentBlock", 0);
+        vm.serializeUint("root", "appChainDeploymentBlock", 0);
         vm.serializeAddress("root", "settlementChainFactory", address(_factory));
         vm.serializeAddress("root", "appChainFactory", address(_factory));
         vm.serializeAddress("root", "settlementChainParameterRegistry", address(_parameterRegistryProxy));
         vm.serializeAddress("root", "appChainParameterRegistry", address(_parameterRegistryProxy));
-        vm.serializeAddress("root", "settlementChainGateway", address(0));
-        vm.serializeAddress("root", "appChainGateway", address(0));
+        vm.serializeAddress("root", "settlementChainGateway", address(_settlementChainGatewayProxy));
+        vm.serializeAddress("root", "appChainGateway", address(_appChainGatewayProxy));
         vm.serializeAddress("root", "underlyingFeeToken", address(_underlyingFeeTokenProxy));
         vm.serializeAddress("root", "feeToken", address(_feeTokenProxy));
         vm.serializeAddress("root", "payerRegistry", address(_payerRegistryProxy));
@@ -278,7 +300,6 @@ contract DeployLocalScripts is Script {
             "identityUpdateBroadcaster",
             address(_identityUpdateBroadcasterProxy)
         );
-
         vm.writeJson(json_, DEPLOYMENT_FILE_PATH);
     }
 
@@ -845,6 +866,41 @@ contract DeployLocalScripts is Script {
         }
     }
 
+    /* ============ App Chain Gateway ======= */
+    function _deployAppChainGatewayImplementation(
+        address parameterRegistry_,
+        address settlementChainGateway_
+    ) internal returns (address implementation_) {
+        vm.startBroadcast(_privateKey);
+        (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_,
+            settlementChainGateway_
+        );
+        vm.stopBroadcast();
+
+        if (IAppChainGateway(implementation_).parameterRegistry() != parameterRegistry_) {
+            revert("App chain gateway parameter registry mismatch");
+        }
+        if (IAppChainGateway(implementation_).settlementChainGateway() != settlementChainGateway_) {
+            revert("App chain gateway counterpart mismatch");
+        }
+    }
+
+    function _deployAppChainGatewayProxy(address implementation_) internal returns (IAppChainGateway registry_) {
+        vm.startBroadcast(_privateKey);
+        (address proxy_, , ) = AppChainGatewayDeployer.deployProxy(
+            address(_factory),
+            implementation_,
+            _APP_CHAIN_GATEWAY_PROXY_SALT
+        );
+        vm.stopBroadcast();
+
+        registry_ = IAppChainGateway(proxy_);
+
+        if (registry_.implementation() != implementation_) revert("App chain gateway implementation mismatch");
+    }
+
     /* ============ Payer Report Manager Helpers ============ */
 
     function _deployPayerReportManagerImplementation(
@@ -967,5 +1023,58 @@ contract DeployLocalScripts is Script {
                 keccak256(initCode_),
                 expectedFactoryProxyAddress_
             );
+    }
+
+    function _deploySettlementChainGatewayImplementation(
+        address parameterRegistry_,
+        address appChainGateway_,
+        address feeToken_
+    ) internal returns (address implementation_) {
+        vm.startBroadcast(_privateKey);
+        (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
+            address(_factory),
+            parameterRegistry_,
+            appChainGateway_,
+            feeToken_
+        );
+        vm.stopBroadcast();
+        if (ISettlementChainGateway(implementation_).parameterRegistry() != parameterRegistry_)
+            revert("SC GW param reg mismatch");
+        if (ISettlementChainGateway(implementation_).appChainGateway() != appChainGateway_)
+            revert("SC GW counterpart mismatch");
+        if (ISettlementChainGateway(implementation_).feeToken() != feeToken_) revert("SC GW fee token mismatch");
+    }
+
+    function _deploySettlementChainGatewayProxy(
+        address implementation_
+    ) internal returns (ISettlementChainGateway gw_) {
+        vm.startBroadcast(_privateKey);
+        (address proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
+            address(_factory),
+            implementation_,
+            _SETTLEMENT_CHAIN_GATEWAY_PROXY_SALT
+        );
+        vm.stopBroadcast();
+        gw_ = ISettlementChainGateway(proxy_);
+        if (gw_.implementation() != implementation_) revert("SC GW impl mismatch");
+    }
+
+    function _getExpectedProxy(bytes32 salt_) internal view returns (address expectedProxy_) {
+        // Factory must be first two creations from _deployer on this chain
+        address expectedFactoryImpl_ = vm.computeCreateAddress(_deployer, 0);
+        address expectedFactoryProxy_ = vm.computeCreateAddress(_deployer, 1);
+
+        // Factory’s Initializable impl is created by the factory implementation at nonce 1
+        address expectedInitializableImpl_ = vm.computeCreateAddress(expectedFactoryImpl_, 1);
+
+        // Proxy init code is Proxy(bytecode) + abi.encode(initializableImplementation)
+        bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(expectedInitializableImpl_));
+
+        // Factory proxy does the CREATE2 with salt keccak(deployer, salt_)
+        expectedProxy_ = vm.computeCreate2Address(
+            keccak256(abi.encode(_deployer, salt_)),
+            keccak256(initCode_),
+            expectedFactoryProxy_
+        );
     }
 }
