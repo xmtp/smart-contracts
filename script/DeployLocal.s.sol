@@ -1065,7 +1065,7 @@ contract DeployLocalScripts is Script {
         address expectedFactoryProxy_ = vm.computeCreateAddress(_deployer, 1);
 
         // Factory’s Initializable impl is created by the factory implementation at nonce 1
-        address expectedInitializableImpl_ = vm.computeCreateAddress(expectedFactoryImpl_, 1);
+        address expectedInitializableImpl_ = vm.computeCreateAddress(expectedFactoryProxy_, 1);
 
         // Proxy init code is Proxy(bytecode) + abi.encode(initializableImplementation)
         bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(expectedInitializableImpl_));
