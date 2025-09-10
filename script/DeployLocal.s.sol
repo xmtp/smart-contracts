@@ -1003,7 +1003,10 @@ contract DeployLocalScripts is Script {
         address parameterRegistry_,
         address feeToken_
     ) internal returns (address implementation_) {
-        address appChainGateway_ = IFactory(address(_factory)).computeProxyAddress(_deployer, _APP_CHAIN_GATEWAY_PROXY_SALT);
+        address appChainGateway_ = IFactory(address(_factory)).computeProxyAddress(
+            _deployer,
+            _APP_CHAIN_GATEWAY_PROXY_SALT
+        );
 
         vm.startBroadcast(_privateKey);
         (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
@@ -1045,8 +1048,6 @@ contract DeployLocalScripts is Script {
         // Proxy init code is Proxy(bytecode) + abi.encode(initializableImplementation)
         bytes memory initCode_ = abi.encodePacked(type(Proxy).creationCode, abi.encode(expectedInitializableImpl_));
 
-        console.log("Proxy.initCodeHash:", vm.toString(keccak256(initCode_)));
-
         // Factory proxy does the CREATE2 with salt keccak(deployer, salt_)
         expectedProxy_ = vm.computeCreate2Address(
             keccak256(abi.encode(_deployer, salt_)),
@@ -1054,11 +1055,11 @@ contract DeployLocalScripts is Script {
             expectedFactoryProxy_
         );
 
+        console.log("Expected init code hash:", vm.toString(keccak256(initCode_)));
         console.log("Expected factory impl:", expectedFactoryImpl_);
         console.log("Expected factory proxy:", expectedFactoryProxy_);
         console.log("Expected initializable impl:", expectedInitializableImpl_);
         console.log("Expected proxy (salt = %s):", vm.toString(salt_));
         console.log("Result:", vm.toString(expectedProxy_));
-
     }
 }
