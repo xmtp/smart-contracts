@@ -17,6 +17,9 @@ runs = 1_000
 [profile.ci.fuzz]
 runs = 10_000
 
+[profile.local]
+bytecode_hash = "none"
+
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 base_mainnet = "${BASE_MAINNET_RPC_URL}"

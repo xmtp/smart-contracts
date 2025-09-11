@@ -141,7 +141,6 @@ contract DeployLocalScripts is Script {
     }
     function deployLocal() external {
         address expectedParameterRegistryProxy_ = _getExpectedProxy(_PARAMETER_REGISTRY_PROXY_SALT);
-        address expectedAppGwProxy_ = _getExpectedProxy(_APP_CHAIN_GATEWAY_PROXY_SALT);
 
         // ---- Factory (scoped) ----
         {
@@ -228,7 +227,6 @@ contract DeployLocalScripts is Script {
         {
             address impl = _deploySettlementChainGatewayImplementation(
                 address(_parameterRegistryProxy),
-                expectedAppGwProxy_,
                 address(_feeTokenProxy)
             );
             _settlementChainGatewayProxy = _deploySettlementChainGatewayProxy(impl);
@@ -1001,35 +999,15 @@ contract DeployLocalScripts is Script {
         if (registry_.implementation() != implementation_) revert("Distribution manager implementation mismatch");
     }
 
-    /* ============ Expected Address Getters ============ */
-
-    function _getExpectedParameterRegistryProxy() internal view returns (address expectedParameterRegistryProxy_) {
-        address expectedFactoryImplementationAddress_ = vm.computeCreateAddress(_deployer, 0);
-        address expectedFactoryProxyAddress_ = vm.computeCreateAddress(_deployer, 1);
-
-        address expectedInitializableImplementation_ = vm.computeCreateAddress(
-            expectedFactoryImplementationAddress_,
-            1
-        );
-
-        bytes memory initCode_ = abi.encodePacked(
-            type(Proxy).creationCode,
-            abi.encode(expectedInitializableImplementation_)
-        );
-
-        return
-            vm.computeCreate2Address(
-                keccak256(abi.encode(_deployer, _PARAMETER_REGISTRY_PROXY_SALT)),
-                keccak256(initCode_),
-                expectedFactoryProxyAddress_
-            );
-    }
-
     function _deploySettlementChainGatewayImplementation(
         address parameterRegistry_,
-        address appChainGateway_,
         address feeToken_
     ) internal returns (address implementation_) {
+        address appChainGateway_ = IFactory(address(_factory)).computeProxyAddress(
+            _deployer,
+            _APP_CHAIN_GATEWAY_PROXY_SALT
+        );
+
         vm.startBroadcast(_privateKey);
         (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
             address(_factory),
@@ -1076,5 +1054,12 @@ contract DeployLocalScripts is Script {
             keccak256(initCode_),
             expectedFactoryProxy_
         );
+
+        console.log("Expected init code hash:", vm.toString(keccak256(initCode_)));
+        console.log("Expected factory impl:", expectedFactoryImpl_);
+        console.log("Expected factory proxy:", expectedFactoryProxy_);
+        console.log("Expected initializable impl:", expectedInitializableImpl_);
+        console.log("Expected proxy (salt = %s):", vm.toString(salt_));
+        console.log("Result:", vm.toString(expectedProxy_));
     }
 }
