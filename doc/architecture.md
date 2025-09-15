@@ -135,7 +135,7 @@ The settlement chain handles economic operations, governance, and system paramet
 - **Economic Functions**: Fee collection, node operator payments, payer account management
 - **Governance**: System parameter management, node registry, upgrade coordination
 - **Cross-Chain Coordination**: Parameter bridging to app chains via retryable tickets
-- **Key Contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, FeeToken
+- **Key Contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, PayerReportManager, FeeToken
 
 ### Application Chain (XMTP L3)
 
@@ -258,7 +258,98 @@ sequenceDiagram
 
 ## Cross-Chain Communication
 
+### Token Deposits
+
+A user can deposit tokens via the standard ERC20 L3 deposit mechanism supported by the native bridge, but they (or the front-end) would need to be aware of the native bridge details. This may be simple if there is just 1 app chain and if the user onyl wants to deposit to one app chain, but can become unnecessarily complicated and disjointed if there are multiple app chains and/or the user wants to deposit to multiple app chains.
+
+Instead, the `SettlementChainGateway` is a singleton contract on the settlement chain, and is configured with the routing information need to handle deposits to more than one app chain.
+
+```mermaid
+sequenceDiagram
+    participant SCU as Settlement Chain User
+    participant FT as FeeToken
+    participant SCG as Settlement Chain Gateway
+    participant I as Inbox for App Chain
+    participant S as App Chain Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACU as App Chain User
+
+    Note over SCU: Initiates token deposit
+    SCU->>SCG: `deposit`
+    SCG->>FT: Pulls token from user
+    SCG->>I: Creates retryable ticket<br>for `receiveDeposit` call<br>to App Chain Gateway
+    I->>FT: Pulls token from Settlement Chain Gateway
+    Note over S: Processes messages from Inbox
+    S->>P: Creates retryable ticket
+    Note over P: Anyone tries retryable ticket on behalf<br>of Settlement Chain Gateway.<br>First attempt made by sequencer
+    P->>ACG: Receive native token<br>and recipient address<br>via `receiveDeposit`
+    ACG->>ACU: Transfer native token<br>to recipient
+```
+
+### Token Withdrawals
+
+Smilarly, a user can withdraw tokens via the standard L3 withdraw mechanism supported by the native app chain precompiles. In this case, all withdrawals end up in the settlement chain anyway, so withdrawing with the help of the `AppChainGateway` is not really a UX improvement, but the flow was implemented for completeness.
+
+```mermaid
+sequenceDiagram
+    participant SCU as Settlement Chain User
+    participant FT as FeeToken
+    participant SCG as Settlement Chain ateway
+    participant O as Outbox for App Chain
+    participant S as App Chain Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACU as App Chain User
+
+    Note over ACU: Initiates withdrawal
+    ACU->>ACG: withdraw
+    ACG->>P: Sends token and call<br>to Settlement Chain Gateway<br>`receiveWithdrawal`
+    Note over S: Process messages from app chain
+    S->>O: Puts calldata and token amount
+    Note over SCU: Initiates withdrawal claim<br>(anyone can do this)
+    SCU->>O: Processes the withdrawal calldata
+    O->>FT: Sends token to Settlement Chain Gateway
+    O->>SCG: `receiveWithdrawal`
+    SCG->>FT: Sends token to user
+```
+
+### Parameter Synchronization
+
+In order for app chain contracts to have access to the latest parameters, parameters stored in the app chain parameter registry need to be synchronized from the settlement chain parameter registry.
+
 Parameter synchronization between settlement and app chains uses Arbitrum's retryable ticket mechanism.
+
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant SCPR as Settlement Chain Parameter Registry
+    participant SCG as Settlement Chain Gateway
+    participant I as Inbox for App Chain
+    participant S as Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACPR as App Chain Parameter Registry
+
+    Note over Admin: Initiates parameter update
+    Admin->>SCPR: `set`
+    Note over Admin: Initiates parameter bridge<br>(can be anyone)
+    Admin->>SCG: `sendParameters`
+    SCG->>SCPR: Fetch value foes each key
+    SCG->>I: Send key-value pairs as<br>retryable ticket to an<br>app-chain-specific inbox as<br>`receiveParameters` call<br>to App Chain Gateway
+    Note over S: Processes messages from Inbox
+    S->>P: Creates retryable ticket
+    Note over P: Anyone tries retryable ticket on behalf<br>of Settlement Chain Gateway.<br>First attempt made by sequencer
+    P->>ACG: Receive key-value pairs<br>via `receiveParameters`
+    ACG->>ACPR: `set`
+    Note over ACPR: Parameters available for app chain contracts
+```
+
+### Reliability Features
+
+- **Guaranteed Delivery**: Retryable tickets ensure parameter updates can reach app chains even if first attempt fails (i.e. due to insufficient gas or higher gas price)
+- **Nonce Tracking**: Prevents out-of-order parameter updates
+- **Failure Recovery**: Failed tickets can be retried, so no deposited tokens are lost
 
 ## Security Model
 
@@ -266,7 +357,7 @@ Parameter synchronization between settlement and app chains uses Arbitrum's retr
 
 - **Node Operators**: Trusted to process messages honestly and submit accurate reports
 - **Administrators**: Multi-sig controlled parameter updates and governance
-- **Cross-Chain Security**: Relies on Arbitrum's L2→L3 security guarantees
+- **Cross-Chain Security**: Relies on Arbitrum's L2→L3 and L3→L2 security guarantees
 
 ### Consensus Mechanism
 

@@ -121,6 +121,12 @@ The system is strategically split between an L2 settlement chain and L3 app chai
 - **Separation of Concerns**: Economic and administrative functions (node registration, payments) remain on the more secure and economically-interoperable L2, while high-volume messaging operations happen on specialized L3s.
 - **Cost Efficiency**: The significantly lower transaction costs on L3s make high-throughput messaging economically viable.
 
+### Fee Token
+
+In order for any L3 app chain to not be forever dependent and coupled to a specific third-party stablecoin, we instead chose to wrap a specific stablecoin into a "fee" token that can eventually be upgraded to support several stablecoins or just one other stablecoin. The migration for either of these scenarios is not yet designed, as it may not ever be needed, especially if the need for app chains at all goes away before the need to no longer rely on a originally chosen underlying stablecoin (USDC). Such a migration simply needs to be possible. However, in order to reduce user interactions/complexity, all contracts that handle Fee Token (either by pulling them in or transfer the out) should also be able to handle the underlying stablecoin (and the involved wrapping or unwrapping). Throughout the codebase, "underlying fee token" refers to the stablecoin that is wrapped into the Fee Token, thus allowing differentiation before the default functionality that handles Fee Token, and functionality that will handle the underlying stablecoin interactions for the use.
+
+Another benefit of the Fee Token being the first party token is that on testnets, we can deploy our own mintable mock underlying stablecoin that can be used to test many of the value-related functionality, without relying on a third-party stablecoin.
+
 ### Parameter Registry Architecture
 
 The parameter registry pattern was selected to achieve maximum flexibility with minimal coupling:
