@@ -28,13 +28,22 @@ jobs:
         with:
           version: v1.2.0
 
-      - name: Build docs
-        run: forge doc
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install mdBook
+        run: cargo install mdbook --locked
+
+      - name: Build docs (HTML)
+        run: forge doc --build
+
+      - name: Add .nojekyll
+        run: touch docs/book/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: docs/book
 
   deploy:
     needs: build
