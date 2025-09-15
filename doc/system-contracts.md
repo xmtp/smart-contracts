@@ -1,4 +1,4 @@
-# XMTP Smart Contracts Architecture Overview
+# XMTP Network Contracts
 
 ## System Design
 
@@ -10,6 +10,8 @@ XMTP is a cross-chain messaging protocol with two primary components:
 The system uses proxied upgradeable contracts with a cross-chain parameter bridging mechanism.
 
 ## Deployment Process
+
+Specific deployment instructions can be found in the [deployment document](./deployment.md).
 
 The deployment follows a precise order to handle contract interdependencies:
 
@@ -52,52 +54,52 @@ The parameter system uses a key-value storage mechanism:
 
 1. **Parameter Definition**:
 
-    - Keys are human-readable strings stored as bytes (e.g., "xmtp.nodeRegistry.admin")
-    - Values are stored as bytes32, supporting various data types (numbers, addresses, booleans)
+   - Keys are human-readable strings stored as bytes (e.g., "xmtp.nodeRegistry.admin")
+   - Values are stored as bytes32, supporting various data types (numbers, addresses, booleans)
 
 2. **Parameter Setting on Settlement Chain**:
 
-    - Admin calls `set()` on `SettlementChainParameterRegistry`
-    - Parameters are stored in a mapping and events are emitted
+   - Admin calls `set()` on `SettlementChainParameterRegistry`
+   - Parameters are stored in a mapping and events are emitted
 
 3. **Cross-Chain Parameter Bridging**:
 
-    - `SettlementChainGateway`'s `sendParametersAsRetryableTickets()` packages parameters upon user request
-    - The gateway fetches current values from the parameter registry and creates a retryable ticket
-    - Ticket targets `AppChainGateway`'s `receiveParameters()` function
-    - Nonce tracking ensures proper ordering of parameter updates on the app chain
+   - `SettlementChainGateway`'s `sendParametersAsRetryableTickets()` packages parameters upon user request
+   - The gateway fetches current values from the parameter registry and creates a retryable ticket
+   - Ticket targets `AppChainGateway`'s `receiveParameters()` function
+   - Nonce tracking ensures proper ordering of parameter updates on the app chain
 
 4. **Parameter Receipt on App Chain**:
 
-    - `AppChainGateway` receives parameters (only from `SettlementChainGateway`'s alias address)
-    - For each received parameter, `AppChainGateway` calls `set()` on `AppChainParameterRegistry` after nonce validation
-    - Parameters are now available for app chain contracts
+   - `AppChainGateway` receives parameters (only from `SettlementChainGateway`'s alias address)
+   - For each received parameter, `AppChainGateway` calls `set()` on `AppChainParameterRegistry` after nonce validation
+   - Parameters are now available for app chain contracts
 
 5. **Parameter Access by Contracts**:
-    - Contracts define parameter keys in their interfaces
-    - They store an immutable reference to their local (settlement chain or app chain) parameter registry
-    - When needed, contracts call `get()` on the parameter registry to retrieve current values
-    - Contracts include update functions to locally store some parameter copies for cheaper logic execution
+   - Contracts define parameter keys in their interfaces
+   - They store an immutable reference to their local (settlement chain or app chain) parameter registry
+   - When needed, contracts call `get()` on the parameter registry to retrieve current values
+   - Contracts include update functions to locally store some parameter copies for cheaper logic execution
 
 ## Data Flow
 
 1. **Node Management**:
 
-    - `NodeRegistry` mints NFTs for nodes and tracks canonical network membership
-    - Admin adds/removes nodes to/from canonical network
-    - Node operators provide messaging services and earn commission
+   - `NodeRegistry` mints NFTs for nodes and tracks canonical network membership
+   - Admin adds/removes nodes to/from canonical network
+   - Node operators provide messaging services and earn commission
 
 2. **Payment Flow**:
 
-    - Payers deposit tokens into `PayerRegistry` on settlement chain
-    - `RateRegistry` tracks historical and current fees for message services
-    - Settler role deducts fees from user balances
+   - Payers deposit tokens into `PayerRegistry` on settlement chain
+   - `RateRegistry` tracks historical and current fees for message services
+   - Settler role deducts fees from user balances
 
 3. **Messaging Flow**:
-    - Identity updates and force-inclusion messages are broadcasted via broadcasters on app chain
-    - Each broadcast increments a sequence ID for ordering
-    - Broadcasters enforce payload size limits from parameter registry
-    - Messages are only emitted as events for nodes to process (not stored)
+   - Identity updates and force-inclusion messages are broadcasted via broadcasters on app chain
+   - Each broadcast increments a sequence ID for ordering
+   - Broadcasters enforce payload size limits from parameter registry
+   - Messages are only emitted as events for nodes to process (not stored)
 
 The architecture creates a robust cross-chain messaging platform with centralized parameter management on the settlement chain while enabling efficient message broadcasting on the app chain.
 
@@ -159,9 +161,9 @@ The XMTP contracts implement a custom migration pattern that differs from standa
 - **External Migration Definition**: Unlike OpenZeppelin's `upgradeToAndCall` pattern, the XMTP approach allows the logic defining a proxy's migration process to be defined outside the implementation contract
 - **Implementation Simplicity**: New implementations can focus solely on their core functionality without embedding complex migration logic for all possible predecessor versions
 - **Flexible Migration Options**: The pattern enables specialized migration paths that can:
-    - Upgrade a proxy to a new implementation with appropriate state transformations
-    - Apply storage modifications without changing the implementation (for hotfixes)
-    - Handle migrations from multiple different predecessor versions
+  - Upgrade a proxy to a new implementation with appropriate state transformations
+  - Apply storage modifications without changing the implementation (for hotfixes)
+  - Handle migrations from multiple different predecessor versions
 - **Parameter-Controlled Upgrades**: The migrator address is itself a parameter in the registry, providing a clean mechanism for governance to control upgrade processes
 - **Migration Security**: The migration logic is contained in a dedicated contract that can undergo specific security analysis for the migration process
 
@@ -175,45 +177,45 @@ The XMTP architecture involves important tradeoffs and considerations in its des
 
 1. **Parameter Governance Evolution**:
 
-    - The initial centralization in the Parameter Registry (controlled by multi-sig) will transition to token-based governance
-    - This planned evolution balances immediate operational needs with long-term decentralization goals
+   - The initial centralization in the Parameter Registry (controlled by multi-sig) will transition to token-based governance
+   - This planned evolution balances immediate operational needs with long-term decentralization goals
 
 2. **Cross-Chain Security Model**:
 
-    - Retryable tickets provide recoverability for parameter bridging
-    - The system assumes incentive alignment between parameter initiators and those ensuring completion of cross-chain operations
-    - Cross-chain parameter synchronization delays are an accepted limitation, prioritizing eventual consistency over immediacy
+   - Retryable tickets provide recoverability for parameter bridging
+   - The system assumes incentive alignment between parameter initiators and those ensuring completion of cross-chain operations
+   - Cross-chain parameter synchronization delays are an accepted limitation, prioritizing eventual consistency over immediacy
 
 3. **Migration Security Approach**:
 
-    - The external migration pattern introduces additional flexibility at the cost of requiring careful scrutiny
-    - Migration contracts undergo the same authorization checks as direct implementation upgrades
+   - The external migration pattern introduces additional flexibility at the cost of requiring careful scrutiny
+   - Migration contracts undergo the same authorization checks as direct implementation upgrades
 
 4. **Parameter Encoding**:
 
-    - Parameters are expected to be correctly encoded as bytes32, and within valid ranges for consuming contracts
-    - Parameter validation can be implemented in consuming contracts to reject invalid values, providing an additional security layer
+   - Parameters are expected to be correctly encoded as bytes32, and within valid ranges for consuming contracts
+   - Parameter validation can be implemented in consuming contracts to reject invalid values, providing an additional security layer
 
 ### Developer and Operational Considerations
 
 1. **Deployment Complexity Management**:
 
-    - The interdependent deployment sequence can be simplified through address precomputation
-    - Making app chain contracts more tolerant during initialization reduces deployment coordination requirements
-    - Scripts and thorough testing are essential for managing the deployment process
+   - The interdependent deployment sequence can be simplified through address precomputation
+   - Making app chain contracts more tolerant during initialization reduces deployment coordination requirements
+   - Scripts and thorough testing are essential for managing the deployment process
 
 2. **Gas and Cross-Chain Operations**:
 
-    - Retryable tickets provide better recoverability compared to alternatives, despite gas estimation challenges
-    - The system accepts the potential need for retries as a reasonable tradeoff for guaranteed deliverability
+   - Retryable tickets provide better recoverability compared to alternatives, despite gas estimation challenges
+   - The system accepts the potential need for retries as a reasonable tradeoff for guaranteed deliverability
 
 3. **Upgrade Orchestration**:
 
-    - Coordinating upgrades across chains requires sophisticated operational procedures
-    - Well-written, decoupled contracts help make upgrades more manageable
-    - The flexible migration pattern provides tools for handling complex upgrade scenarios
+   - Coordinating upgrades across chains requires sophisticated operational procedures
+   - Well-written, decoupled contracts help make upgrades more manageable
+   - The flexible migration pattern provides tools for handling complex upgrade scenarios
 
 4. **Protocol Evolution**:
-    - The system is designed to accommodate future changes through parameter updates and contract upgrades
-    - The separation between economic operations (settlement chain) and messaging operations (app chain) allows each aspect to evolve at its own pace
-    - The architecture's flexibility supports progressive improvements without re-implementation or excess upgrades or migrations
+   - The system is designed to accommodate future changes through parameter updates and contract upgrades
+   - The separation between economic operations (settlement chain) and messaging operations (app chain) allows each aspect to evolve at its own pace
+   - The architecture's flexibility supports progressive improvements without re-implementation or excess upgrades or migrations
