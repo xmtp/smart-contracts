@@ -5,13 +5,11 @@
     - [Prerequisites](#prerequisites)
     - [Initialize project](#initialize-project)
   - [Developer tools](#developer-tools)
-  - [Scripts](#scripts)
+  - [Developer documentation](#developer-documentation)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
 This repository contains all the smart contracts that underpin the XMTP decentralized network.
-
-Contracts documentation can be found [here](https://ephemerahq.notion.site/XMTP-Contracts-directory-18530823ce928017996efaa52ac248cd).
 
 [![Solidity](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml/badge.svg)](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml)
 
@@ -73,65 +71,8 @@ prettier:       Runs prettier in write mode, potentially modifying files.
 prettier-check: Runs prettier in check mode.
 ```
 
-## Scripts
+## Developer documentation
 
-The project includes deploy and upgrade scripts.
+The Foundry book can be found hosted on the [contracts documentation page](https://xmtp.github.io/smart-contracts/).
 
-### Deploying Base Contract
-
-The `FeeToken` is a singleton with respect to the app chain, regardless of environment, and the `FeeToken` relies on a single `ParameterRegistry`. Further, the `Factory` is also a singleton on each chain as it enables deterministic and consistent addresses across all chains, and it also relies on a single `ParameterRegistry`. And lastly, the `Gateway` is also a singleton on each chain as it not only relies on a single `ParameterRegistry`, but also relays parameters between settlement chain and app chain parameter registries.
-
-Because of this, for each settlement chain, regardless of environment, a set of base contracts must be deployed only once for each settlement chain. This deployment includes the `Factory`, `SettlementChaiParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the settlement chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the app chain.
-
-These are deployed via:
-
-```shell
-./dev/deploy-base <CHAIN_NAME>
-```
-
-They are verified via:
-
-```shell
-./dev/verify-base <CHAIN_NAME> basescan
-./dev/verify-base <CHAIN_NAME> blockscout
-```
-
-<!-- TODO: Add script and documentation for setting the inbox address for the settlement chain gateway -->
-
-### Deploying Environment Contracts
-
-This deployment includes the `PayerRegistry`, `RateRegistry`, `NodeRegistry`, `PayerReportManager`, `DistributionManager`, and `DepositSplitter` for the settlement chain, and the `GroupMessageBroadcaster`, `IdentityUpdateBroadcaster` for the app chain.
-
-These are deployed via:
-
-```shell
-./dev/deploy <ENVIRONMENT> settlement-chain
-./dev/deploy <ENVIRONMENT> app-chain
-```
-
-They are verified via:
-
-```shell
-./dev/verify <ENVIRONMENT> settlement-chain basescan
-./dev/verify <ENVIRONMENT> settlement-chain blockscout
-./dev/verify <ENVIRONMENT> app-chain alchemy
-```
-
-The starting parameters are defined via:
-
-```shell
-./dev/set-starting-parameters <ENVIRONMENT>
-```
-
-They are bridged via:
-
-```shell
-./dev/bridge-starting-parameters <ENVIRONMENT>
-```
-
-The parameters are applied at each contract via:
-
-```shell
-./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
-./dev/update-starting-parameters <ENVIRONMENT> app-chain
-```
+To dive deeper into the protocol and its architecture, read the [architecture documentation](./doc/README.md).
