@@ -28,11 +28,8 @@ jobs:
         with:
           version: v1.2.0
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install mdBook
-        run: cargo install mdbook --locked
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
 
       - name: Build docs (HTML)
         run: forge doc --build
