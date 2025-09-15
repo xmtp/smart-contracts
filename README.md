@@ -5,6 +5,7 @@
     - [Prerequisites](#prerequisites)
     - [Initialize project](#initialize-project)
   - [Developer tools](#developer-tools)
+  - [Developer documentation](#developer-documentation)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
@@ -69,3 +70,9 @@ lint-staged:    Runs linters only on files that are staged in git.
 prettier:       Runs prettier in write mode, potentially modifying files.
 prettier-check: Runs prettier in check mode.
 ```
+
+## Developer documentation
+
+The Foundry book can be found hosted on the [contracts documentation page](https://xmtp.github.io/smart-contracts/).
+
+To dive deeper into the protocol and its architecture, read the [architecture documentation](./doc/README.md).
