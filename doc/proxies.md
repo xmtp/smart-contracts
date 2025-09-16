@@ -2,9 +2,9 @@
 
 ## Proxy Pattern
 
-All contract in the system are either implementations that are to be proxies, or are instances that are proxies to an implementation, except for the `DepositSplitter` (as it is stateless).
+All contracts in the system are either implementations that are to be proxied or proxies to an implementation, except for the `DepositSplitter` (as it is stateless).
 
-The `Proxy` contracts is a minimal transparent proxy with initial implementation and using the standard `ERC1967` storage slot. Since the constructor arguments are part of the bytecode that would affect the derived deployment address via `create2`, there needs to be some consistency in the constructor arguments to ensure proxy deployments are predictable regardless the implementation that would _inevitably_ be proxied.
+The `Proxy` contract is a minimal transparent proxy with an initial implementation and using the standard `ERC1967` storage slot. Since constructor arguments are part of the bytecode and affect the `create2` address, constructor arguments must be consistent to keep proxy deployments predictable regardless of the implementation that will _inevitably expected_ to be proxied.
 
 ## Factory Pattern
 
@@ -13,11 +13,11 @@ The `Factory` contract is a singleton per chain (not per environment, see [deplo
 1. Any implementation's address is _only_ defined by its bytecode
 2. The proxy's address is _only_ defined by the user-provided salt
 3. The proxy deployment and initialization are _atomic_
-4. The proxy ends up proxying the _intended_ implementation once the transactions is completed
+4. The proxy ends up proxying the _intended_ implementation once the transaction is completed
 
 In order to achieve property 1, via `deployImplementation`, the `Factory` contract uses the `create2` opcode to deploy the provided bytecode for an implementation, where the salt is the bytecode hash.
 
-In order to achieve property 2, via `deployProxy`, the `Factory` contract uses the `create2` opcode to deploy the constant `Proxy` creation code with a `initializableImplementation` as the constructor argument, where the salt is the hash of caller and the user-provided salt.
+In order to achieve property 2, via `deployProxy`, the `Factory` contract uses the `create2` opcode to deploy the constant `Proxy` creation code with an `initializableImplementation` as the constructor argument, where the salt is the hash of caller and the user-provided salt.
 
 The `initializableImplementation` is a contract that is deployed once by the `Factory` contract (during its own initialization) and is used as the first implementation that proxies will proxy. This ensures that all proxies are deployed deterministically, as their bytecode and constructor arguments are fixed, and only the caller and the salt provided are definable, which allows the caller complete control in planning ahead.
 
@@ -88,12 +88,12 @@ sequenceDiagram
 
 In order to have a clear support for decentralized governance, all stateful contracts are expected to be able to be upgradeable/migratable in an exacting way such that:
 
-- a proxy can have it's implementation changed, and/or
+- a proxy can have its implementation changed, and/or
 - a proxy's storage can be manipulated as needed to satisfy a change in the implementation, before or after this change, and/or
 - a proxy's storage can be manipulated as needed to correct for anything, without the need to change the implementation
 - migration details are defined at build/deploy time, and not at runtime (i.e. no arguments needed at runtime), so that migrations are deterministic and can be voted on by governance
 
-All current implementation contracts implement the `IMigratable` interface, which allows proxies a consistent way to be migrated (i.e. have their storage, including the implementation slot, manipulated). The `migrate()` function defined by the `IMigratable` interface does not take any parameters, and is expected to be called by anyone, at any time, and only succeed if a valid migration is defined and possible, as per the local `ParameterRegistry` contract. Further, all implementation contracts are define a `migratorParameterKey` and extend the `Migratable` abstract contract, which defines a `_migrate` function that accepts the address of a `Migrator` contract.
+All current implementation contracts implement the `IMigratable` interface, which allows proxies a consistent way to be migrated (i.e. have their storage, including the implementation slot, manipulated). The `migrate()` function defined by the `IMigratable` interface does not take any parameters, and is expected to be called by anyone, at any time, and only succeed if a valid migration is defined and possible, as per the local `ParameterRegistry` contract. Further, all implementation contracts define a `migratorParameterKey` and extend the `Migratable` abstract contract, which defines a `_migrate` function that accepts the address of a `Migrator` contract.
 
 1. The implementation fetches the address of the `Migrator` contract from the `ParameterRegistry` contract, using the unique `migratorParameterKey` for the implementation.
 2. It calls `_migrate` with the address of the `Migrator` contract as the only parameter.

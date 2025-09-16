@@ -123,7 +123,7 @@ The system is strategically split between an L2 settlement chain and L3 app chai
 
 ### Fee Token
 
-In order for any L3 app chain to not be forever dependent and coupled to a specific third-party stablecoin, we instead chose to wrap a specific stablecoin into a "fee" token that can eventually be upgraded to support several stablecoins or just one other stablecoin. The migration for either of these scenarios is not yet designed, as it may not ever be needed, especially if the need for app chains at all goes away before the need to no longer rely on a originally chosen underlying stablecoin (USDC). Such a migration simply needs to be possible. However, in order to reduce user interactions/complexity, all contracts that handle Fee Token (either by pulling them in or transfer the out) should also be able to handle the underlying stablecoin (and the involved wrapping or unwrapping). Throughout the codebase, "underlying fee token" refers to the stablecoin that is wrapped into the Fee Token, thus allowing differentiation before the default functionality that handles Fee Token, and functionality that will handle the underlying stablecoin interactions for the use.
+In order for any L3 app chain to not be forever dependent and coupled to a specific third-party stablecoin, we instead chose to wrap a specific stablecoin into a "fee" token that can eventually be upgraded to support several stablecoins or just one other stablecoin. The migration for either of these scenarios is not yet designed, as it may not ever be needed, especially if the need for app chains at all goes away before the need to no longer rely on a originally chosen underlying stablecoin (USDC). Such a migration simply needs to be possible. However, in order to reduce user interactions/complexity, all contracts that handle the Fee Token to or from a user (either by pulling tokens in or transferring them out) should also handle the underlying stablecoin (including wrapping/unwrapping) for convenience. Throughout the codebase, “underlying fee token” refers to the stablecoin wrapped into the Fee Token, so the "FromUnderlying"-suffixed or "IntoUnderlying"-suffixed functions distinguishing default Fee Token handling from explicit the underlying token interactions.
 
 Another benefit of the Fee Token being the first party token is that on testnets, we can deploy our own mintable mock underlying stablecoin that can be used to test many of the value-related functionality, without relying on a third-party stablecoin.
 
@@ -152,7 +152,7 @@ The ERC-7201 namespaced storage pattern with strategic use of immutables offers 
 
 - **Upgrade Efficiency**: Provides clean storage isolation when handling upgrades, migrations, and inheritance.
 - **Storage Lookup Reduction**: Using immutables for frequently accessed, yet unlikely to change, values (like parameter registry, gateway, or token addresses) eliminates expensive storage reads as they are inlined in the bytecode.
-- **Proxy Compatibility**: Despite using immutables in proxy-targeted implementations (somewhat unorthodox), the approach yields substantial gas savings at the cost of needing to upgraded if an immutable value needs to be changed.
+- **Proxy Compatibility**: Despite using immutables in proxy-targeted implementations (somewhat unorthodox), the approach yields substantial gas savings at the cost of needing to an upgrade (i.e. new implementation) if an immutable value must change.
 
 ### Updateable Parameters
 

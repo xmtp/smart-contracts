@@ -135,7 +135,7 @@ The settlement chain handles economic operations, governance, and system paramet
 - **Economic Functions**: Fee collection, node operator payments, payer account management
 - **Governance**: System parameter management, node registry, upgrade coordination
 - **Cross-Chain Coordination**: Parameter bridging to app chains via retryable tickets
-- **Key Contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, PayerReportManager, FeeToken
+- **Key Contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, PayerReportManager, FeeToken, DepositSplitter
 
 ### Application Chain (XMTP L3)
 
@@ -260,9 +260,9 @@ sequenceDiagram
 
 ### Token Deposits
 
-A user can deposit tokens via the standard ERC20 L3 deposit mechanism supported by the native bridge, but they (or the front-end) would need to be aware of the native bridge details. This may be simple if there is just 1 app chain and if the user onyl wants to deposit to one app chain, but can become unnecessarily complicated and disjointed if there are multiple app chains and/or the user wants to deposit to multiple app chains.
+A user can deposit tokens via the standard ERC20 L3 deposit mechanism supported by the native bridge, but they (or the front-end) would need to be aware of the native bridge details. This may be simple if there is just 1 app chain and if the user only wants to deposit to one app chain, but can become unnecessarily complicated and disjointed if there are multiple app chains and/or the user wants to deposit to multiple app chains.
 
-Instead, the `SettlementChainGateway` is a singleton contract on the settlement chain, and is configured with the routing information need to handle deposits to more than one app chain.
+Instead, the `SettlementChainGateway` is a singleton contract on the settlement chain, and is configured with the routing information needed to handle deposits to more than one app chain.
 
 ```mermaid
 sequenceDiagram
@@ -289,13 +289,13 @@ sequenceDiagram
 
 ### Token Withdrawals
 
-Smilarly, a user can withdraw tokens via the standard L3 withdraw mechanism supported by the native app chain precompiles. In this case, all withdrawals end up in the settlement chain anyway, so withdrawing with the help of the `AppChainGateway` is not really a UX improvement, but the flow was implemented for completeness.
+Similarly, a user can withdraw tokens via the standard L3 withdraw mechanism supported by the native app chain precompiles. In this case, all withdrawals end up in the settlement chain anyway, so withdrawing with the help of the `AppChainGateway` is not really a UX improvement, but the flow was implemented for completeness.
 
 ```mermaid
 sequenceDiagram
     participant SCU as Settlement Chain User
     participant FT as FeeToken
-    participant SCG as Settlement Chain ateway
+    participant SCG as Settlement Chain Gateway
     participant O as Outbox for App Chain
     participant S as App Chain Sequencer
     participant P as App Chain Precompiles
@@ -335,7 +335,7 @@ sequenceDiagram
     Admin->>SCPR: `set`
     Note over Admin: Initiates parameter bridge<br>(can be anyone)
     Admin->>SCG: `sendParameters`
-    SCG->>SCPR: Fetch value foes each key
+    SCG->>SCPR: Fetch value for each key
     SCG->>I: Send key-value pairs as<br>retryable ticket to an<br>app-chain-specific inbox as<br>`receiveParameters` call<br>to App Chain Gateway
     Note over S: Processes messages from Inbox
     S->>P: Creates retryable ticket

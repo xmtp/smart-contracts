@@ -2,7 +2,7 @@
 
 The project includes deploy and upgrade scripts.
 
-## Base Contract
+## Base Contracts
 
 ### Constraints
 
@@ -14,7 +14,7 @@ The project includes deploy and upgrade scripts.
 
 - The `ParameterRegistry` must be a singleton contract with respect to a set of contracts in an environment (i.e. for the `FeeToken`, `Factory`, and `Gateway`) in order to be a source of administrated parameter values.
 
-Because of the above, for each settlement chain, regardless of environment, a set of base contracts must be deployed only once. This deployment includes the `Factory`, `SettlementChaiParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the settlement chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the app chain. These are called the "base contracts" because they are the base contracts that are required before any environment-specific contracts are deployed.
+Because of the above, for each settlement chain, regardless of environment, a set of base contracts must be deployed only once. This deployment includes the `Factory`, `SettlementChainParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the settlement chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the app chain. These are called the "base contracts" because they are the base contracts that are required before any environment-specific contracts are deployed.
 
 ### Deployment
 
@@ -30,8 +30,6 @@ They are verified via:
 ./dev/verify-base <CHAIN_NAME> basescan
 ./dev/verify-base <CHAIN_NAME> blockscout
 ```
-
-<!-- TODO: Add script and documentation for setting the inbox address for the settlement chain gateway -->
 
 ## Environment Contracts
 
@@ -60,15 +58,20 @@ The starting parameters are defined via:
 ./dev/set-starting-parameters <ENVIRONMENT>
 ```
 
-They are bridged via:
+The parameters are applied at each settlement chain contract via:
+
+```shell
+./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
+```
+
+Some parameters are bridged to the app chainvia:
 
 ```shell
 ./dev/bridge-starting-parameters <ENVIRONMENT>
 ```
 
-The parameters are applied at each contract via:
+The parameters are applied at each app chain contract via:
 
 ```shell
-./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
 ./dev/update-starting-parameters <ENVIRONMENT> app-chain
 ```
