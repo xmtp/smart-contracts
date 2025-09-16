@@ -55,7 +55,7 @@ sequenceDiagram
     deactivate USDC
 
     Note over Payer, AC: Phase 2: Deposit Splitting
-    Payer->>DS: deposit(payer, payerRegistryAmount, appChainRecipient, appChainAmount, gasLimit, maxFeePerGas)
+    Payer->>DS: deposit(address payer_, uint96 payerRegistryAmount_, address appChainRecipient_, uint96 appChainAmount_, uint256 appChainGasLimit_, uint256 appChainMaxFeePerGas_) external
     activate DS
 
     Note over DS, FT: Step 1: Wrap USDC to xUSD

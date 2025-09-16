@@ -14,13 +14,12 @@
     - [Payers](#payers)
     - [Node Operators](#node-operators)
     - [Administrators](#administrators)
+      - [Parameter Flow](#parameter-flow)
   - [Economic Model](#economic-model)
     - [Fee Structure](#fee-structure)
     - [Settlement Process](#settlement-process)
     - [Token Economics](#token-economics)
   - [Cross-Chain Communication](#cross-chain-communication)
-    - [Parameter Flow](#parameter-flow)
-    - [Reliability Features](#reliability-features)
   - [Security Model](#security-model)
     - [Trust Assumptions](#trust-assumptions)
     - [Consensus Mechanism](#consensus-mechanism)
@@ -127,7 +126,7 @@ The remaining message types are published directly to `xmtpd` nodes for off-chai
 
 ## Chain Architecture
 
-The XMTP network employs a dual-chain architecture optimized for both economic security and messaging throughput. For detailed contract information, see the [system contracts document](./contracts.md).
+The XMTP network employs a dual-chain architecture optimized for both economic security and messaging throughput. For detailed contract information, read the [contracts documentation](./contracts.md).
 
 ### Settlement Chain (Base L2)
 
@@ -161,7 +160,7 @@ End users are the ultimate consumers of XMTP messaging services, typically acces
 
 ### Payers
 
-Payers are service providers (typically companies with messaging applications) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
+[Payers](./payers.md) are service providers (typically companies with messaging applications) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
 
 **Setup Requirements**:
 
@@ -176,7 +175,7 @@ Payers are service providers (typically companies with messaging applications) w
 
 ### Node Operators
 
-Node operators maintain the XMTP network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
+[Node operators](./node-operators.md) maintain the XMTP network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
 
 **xmtpd Service Components**:
 
@@ -195,12 +194,32 @@ Node operators maintain the XMTP network infrastructure by running [xmtpd](https
 
 Administrators manage system governance, parameters, and network operations through multi-signature wallets and eventual governance mechanisms.
 
+The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
+
 **Responsibilities**:
 
 - **Parameter Management**: Update system parameters via SettlementChainParameterRegistry
 - **Node Management**: Add/remove nodes from the canonical network
 - **Upgrade Coordination**: Manage contract upgrades and migrations
 - **Economic Policy**: Set fee rates, distribution parameters, and protocol policies
+
+#### Parameter Flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant SCPR as SettlementChainParameterRegistry
+    participant SCG as SettlementChainGateway
+    participant ACG as AppChainGateway
+    participant ACPR as AppChainParameterRegistry
+
+    Admin->>SCPR: Update parameter
+    Note over SCG: User initiates parameter bridge
+    SCG->>SCPR: Fetch current parameters
+    SCG->>ACG: Send retryable ticket
+    ACG->>ACPR: Update parameters
+    Note over ACPR: Parameters available for app chain contracts
+```
 
 ## Economic Model
 
@@ -209,7 +228,7 @@ The XMTP network operates on a fee-based economic model where payers fund operat
 ### Fee Structure
 
 - **On-chain Messages**: Direct gas costs paid upfront by payers on the app chain
-- **Off-chain Messages**: Usage-based fees settled periodically through PayerReports
+- **Off-chain Messages**: Usage-based fees settled periodically through [PayerReports](./payer-reports.md)
 - **Protocol Fees**: Percentage of total fees reserved for protocol treasury
 
 ### Settlement Process
@@ -240,30 +259,6 @@ sequenceDiagram
 ## Cross-Chain Communication
 
 Parameter synchronization between settlement and app chains uses Arbitrum's retryable ticket mechanism.
-
-### Parameter Flow
-
-```mermaid
-sequenceDiagram
-    participant Admin as Administrator
-    participant SCPR as SettlementChainParameterRegistry
-    participant SCG as SettlementChainGateway
-    participant ACG as AppChainGateway
-    participant ACPR as AppChainParameterRegistry
-
-    Admin->>SCPR: Update parameter
-    Note over SCG: User initiates parameter bridge
-    SCG->>SCPR: Fetch current parameters
-    SCG->>ACG: Send retryable ticket
-    ACG->>ACPR: Update parameters
-    Note over ACPR: Parameters available for app chain contracts
-```
-
-### Reliability Features
-
-- **Guaranteed Delivery**: Retryable tickets ensure parameter updates reach app chains
-- **Nonce Tracking**: Prevents out-of-order parameter updates
-- **Failure Recovery**: Failed tickets can be retried
 
 ## Security Model
 

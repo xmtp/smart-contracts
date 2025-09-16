@@ -13,6 +13,8 @@ The system uses proxied upgradeable contracts with a cross-chain parameter bridg
 
 Specific deployment instructions can be found in the [deployment document](./deployment.md).
 
+Dependencies and interactions between contracts are documented in the [dependencies document](./dependencies.md).
+
 The deployment follows a precise order to handle contract interdependencies:
 
 1. **Factory Deployment** on both chains to enable deterministic address creation.
