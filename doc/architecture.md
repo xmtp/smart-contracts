@@ -1,32 +1,37 @@
-# XMTP Network System Architecture
+# XMTP network system architecture
 
 > Last edited: 09/15/2025
 
-- [XMTP Network System Architecture](#xmtp-network-system-architecture)
-  - [System Overview](#system-overview)
-  - [Messaging Protocol](#messaging-protocol)
-  - [Chain Architecture](#chain-architecture)
-    - [Settlement Chain (Base L2)](#settlement-chain-base-l2)
-    - [Application Chain (XMTP L3)](#application-chain-xmtp-l3)
-    - [Design Rationale](#design-rationale)
+- [XMTP network system architecture](#xmtp-network-system-architecture)
+  - [System overview](#system-overview)
+  - [Messaging protocol](#messaging-protocol)
+  - [Chain architecture](#chain-architecture)
+    - [Settlement chain (Base L2)](#settlement-chain-base-l2)
+    - [App chain (XMTP L3)](#app-chain-xmtp-l3)
+    - [Design rationale](#design-rationale)
   - [Actors](#actors)
-    - [End Users](#end-users)
+    - [End users](#end-users)
     - [Payers](#payers)
-    - [Node Operators](#node-operators)
+      - [Setup requirements](#setup-requirements)
+      - [Message publishing](#message-publishing)
+    - [Node operators](#node-operators)
+      - [xmtpd service components](#xmtpd-service-components)
+      - [Onboarding process](#onboarding-process)
     - [Administrators](#administrators)
-  - [Economic Model](#economic-model)
-    - [Fee Structure](#fee-structure)
-    - [Settlement Process](#settlement-process)
-    - [Token Economics](#token-economics)
-  - [Cross-Chain Communication](#cross-chain-communication)
-    - [Parameter Flow](#parameter-flow)
-    - [Reliability Features](#reliability-features)
-  - [Security Model](#security-model)
-    - [Trust Assumptions](#trust-assumptions)
-    - [Consensus Mechanism](#consensus-mechanism)
-    - [Upgrade Security](#upgrade-security)
+      - [Responsibilities](#responsibilities)
+  - [Economic model](#economic-model)
+    - [Fee structure](#fee-structure)
+    - [Settlement process](#settlement-process)
+    - [Token economics](#token-economics)
+  - [Cross-chain communication](#cross-chain-communication)
+    - [Parameter flow](#parameter-flow)
+    - [Reliability features](#reliability-features)
+  - [Security model](#security-model)
+    - [Trust assumptions](#trust-assumptions)
+    - [Consensus mechanism](#consensus-mechanism)
+    - [Upgrade security](#upgrade-security)
 
-## System Overview
+## System overview
 
 XMTP is a decentralized messaging protocol that enables secure, scalable communication through a multi-chain architecture. The system combines the security and economic finality of Layer 2 chains with the high throughput and low cost of Layer 3 chains to create an efficient messaging infrastructure.
 
@@ -114,105 +119,105 @@ graph TB
     style IUB fill:#fff3e0
 ```
 
-## Messaging Protocol
+## Messaging protocol
 
-The XMTP Network enables secure messaging through the [MLS (Messaging Layer Security)](https://en.wikipedia.org/wiki/Messaging_Layer_Security) standard, providing end-to-end encryption and forward secrecy for instant messaging applications.
+The XMTP Broadcast Network enables secure messaging through the [Messaging Layer Security](https://messaginglayersecurity.rocks/) (MLS) standard, providing end-to-end encryption and forward secrecy for chat apps and agents.
 
-The MLS standard defines 5 types of messages, with 2 types stored on-chain through [Broadcaster contracts](../src/abstract/PayloadBroadcaster.sol):
+The MLS standard defines five types of messages, with two types stored onchain through [broadcaster contracts](../src/abstract/PayloadBroadcaster.sol):
 
-- **Group Messages**: Stored via GroupMessageBroadcaster for forced inclusion and censorship resistance
-- **Identity Updates**: Stored via IdentityUpdateBroadcaster for identity management and key rotation
+- **Group messages**: Stored via GroupMessageBroadcaster for forced inclusion and censorship resistance
+- **Identity updates**: Stored via IdentityUpdateBroadcaster for identity management and key rotation
 
-The remaining message types are published directly to `xmtpd` nodes for off-chain processing and delivery.
+The remaining message types are published directly to xmtpd nodes for offchain processing and delivery.
 
-## Chain Architecture
+## Chain architecture
 
 The XMTP network employs a dual-chain architecture optimized for both economic security and messaging throughput. For detailed contract information, see the [system contracts document](./contracts.md).
 
-### Settlement Chain (Base L2)
+### Settlement chain (Base L2)
 
-The settlement chain handles economic operations, governance, and system parameters:
+The XMTP Settlement Chain handles economic operations, governance, and system parameters:
 
-- **Economic Functions**: Fee collection, node operator payments, payer account management
+- **Economic functions**: Fee collection, node operator payments, payer account management
 - **Governance**: System parameter management, node registry, upgrade coordination
-- **Cross-Chain Coordination**: Parameter bridging to app chains via retryable tickets
-- **Key Contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, FeeToken
+- **Cross-chain coordination**: Parameter bridging to XMTP App Chains via retryable tickets
+- **Key contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, and FeeToken
 
-### Application Chain (XMTP L3)
+### App chain (XMTP L3)
 
-The application chain focuses on high-throughput message broadcasting:
+The XMTP App Chain focuses on high-throughput message broadcasting:
 
-- **Message Storage**: On-chain storage for group messages and identity updates
-- **Low-Cost Operations**: Optimized for high-frequency messaging operations
-- **Parameter Consumption**: Receives configuration from settlement chain
-- **Key Contracts**: GroupMessageBroadcaster, IdentityUpdateBroadcaster, AppChainParameterRegistry
+- **Message storage**: Onchain storage for group messages and identity updates
+- **Low-cost operations**: Optimized for high-frequency messaging operations
+- **Parameter consumption**: Receives configuration from XMTP Settlement Chain
+- **Key contracts**: GroupMessageBroadcaster, `IdentityUpdateBroadcaster, and AppChainParameterRegistry
 
-### Design Rationale
+### Design rationale
 
-- **Cost Optimization**: Expensive economic operations on L2, cheap messaging on L3
+- **Cost optimization**: Expensive economic operations on L2, cheap messaging on L3
 - **Scalability**: L3 chains can be horizontally scaled as needed
 - **Security**: Economic finality secured by L2, messaging availability on L3
 
 ## Actors
 
-### End Users
+### End users
 
-End users are the ultimate consumers of XMTP messaging services, typically accessing the network through mobile applications, web interfaces, or other client applications. They send and receive MLS-encrypted messages without directly interacting with the blockchain infrastructure.
+End users are the ultimate consumers of XMTP messaging services, typically accessing the network through mobile apps, web interfaces, or other client applications. They send and receive MLS-encrypted messages without directly interacting with the blockchain infrastructure.
 
 ### Payers
 
-Payers are service providers (typically companies with messaging applications) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
+Payers are service providers (typically companies with chat apps) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
 
-**Setup Requirements**:
+#### Setup requirements
 
-- Deploy a [Gateway service](https://github.com/xmtp/xmtpd/tree/main/pkg/api/payer) with their private key
-- Fund accounts in PayerRegistry for off-chain message costs
-- Maintain xUSD balances on app chains for on-chain message costs
+- Deploy a [gateway service](https://github.com/xmtp/xmtpd/tree/main/pkg/api/payer) with their private key
+- Fund accounts in PayerRegistry for offchain message costs
+- Maintain xUSD balances on XMTP App Chains for onchain message costs
 
-**Message Publishing**:
+#### Message publishing
 
-- **On-chain messages**: Published directly to broadcaster contracts (GroupMessageBroadcaster, IdentityUpdateBroadcaster)
-- **Off-chain messages**: Published through xmtpd nodes, costs settled through PayerReports
+- **Onchain messages**: Published directly to broadcaster contracts (GroupMessageBroadcaster and IdentityUpdateBroadcaster)
+- **Offchain messages**: Published through xmtpd nodes, costs settled through PayerReports
 
-### Node Operators
+### Node operators
 
-Node operators maintain the XMTP network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
+Node operators maintain the XMTP Broadcast Network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
 
-**xmtpd Service Components**:
+#### xmtpd service components
 
 - **Message APIs**: Interfaces for payers to publish and retrieve MLS messages
-- **Node Registry**: Maintains connections with other canonical network nodes
-- **Cross-Chain Indexer**: Monitors events on both settlement and application chains
+- **Node registry**: Maintains connections with other canonical network nodes
+- **Cross-chain indexer**: Monitors events on both XMTP Settlement and XMTP App Chains
 
-**Onboarding Process**:
+#### Onboarding process
 
-1. **NFT Minting**: Protocol administrator mints a NodeRegistry NFT
-2. **Canonical Network Addition**: Administrator enables the node for the canonical network
-3. **Service Configuration**: Node operator configures xmtpd with their private key
-4. **Network Synchronization**: Node connects to and synchronizes with other canonical nodes
+1. **NFT minting**: Protocol administrator mints a NodeRegistry NFT
+2. **Canonical network addition**: Administrator enables the node for the canonical network
+3. **Service configuration**: Node operator configures xmtpd with their private key
+4. **Network synchronization**: Node connects to and synchronizes with other canonical nodes
 
 ### Administrators
 
 Administrators manage system governance, parameters, and network operations through multi-signature wallets and eventual governance mechanisms.
 
-**Responsibilities**:
+#### Responsibilities
 
-- **Parameter Management**: Update system parameters via SettlementChainParameterRegistry
-- **Node Management**: Add/remove nodes from the canonical network
-- **Upgrade Coordination**: Manage contract upgrades and migrations
-- **Economic Policy**: Set fee rates, distribution parameters, and protocol policies
+- **Parameter management**: Update system parameters via SettlementChainParameterRegistry
+- **Node management**: Add/remove nodes from the canonical XMTP Broadcast Network
+- **Upgrade coordination**: Manage contract upgrades and migrations
+- **Economic policy**: Set fee rates, distribution parameters, and protocol policies
 
-## Economic Model
+## Economic model
 
 The XMTP network operates on a fee-based economic model where payers fund operations and node operators earn rewards for providing services.
 
-### Fee Structure
+### Fee structure
 
-- **On-chain Messages**: Direct gas costs paid upfront by payers on the app chain
-- **Off-chain Messages**: Usage-based fees settled periodically through PayerReports
-- **Protocol Fees**: Percentage of total fees reserved for protocol treasury
+- **Onchain messages**: Direct gas costs paid upfront by payers on the XMTP App Chain
+- **Offchain messages**: Usage-based fees settled periodically through PayerReports
+- **Protocol fees**: Percentage of total fees reserved for protocol treasury
 
-### Settlement Process
+### Settlement process
 
 ```mermaid
 sequenceDiagram
@@ -231,17 +236,17 @@ sequenceDiagram
     DM->>DM: Reserve protocol fees
 ```
 
-### Token Economics
+### Token economics
 
 - **FeeToken (xUSD)**: ERC20 token backed 1:1 by USDC for network fees
-- **Deposit Mechanisms**: Direct deposits or DepositSplitter for cross-chain funding
-- **Withdrawal Locks**: Time-delayed withdrawals for security
+- **Deposit mechanisms**: Direct deposits or DepositSplitter for cross-chain funding
+- **Withdrawal locks**: Time-delayed withdrawals for security
 
-## Cross-Chain Communication
+## Cross-chain communication
 
-Parameter synchronization between settlement and app chains uses Arbitrum's retryable ticket mechanism.
+Parameter synchronization between XMTP Settlement and App Chains uses Arbitrum's retryable ticket mechanism.
 
-### Parameter Flow
+### Parameter flow
 
 ```mermaid
 sequenceDiagram
@@ -259,27 +264,27 @@ sequenceDiagram
     Note over ACPR: Parameters available for app chain contracts
 ```
 
-### Reliability Features
+### Reliability features
 
-- **Guaranteed Delivery**: Retryable tickets ensure parameter updates reach app chains
-- **Nonce Tracking**: Prevents out-of-order parameter updates
-- **Failure Recovery**: Failed tickets can be retried
+- **Guaranteed delivery**: Retryable tickets ensure parameter updates reach XMTP App Chains
+- **Nonce tracking**: Prevents out-of-order parameter updates
+- **Failure recovery**: Failed tickets can be retried
 
-## Security Model
+## Security model
 
-### Trust Assumptions
+### Trust assumptions
 
-- **Node Operators**: Trusted to process messages honestly and submit accurate reports
+- **Node operators**: Trusted to process messages honestly and submit accurate reports
 - **Administrators**: Multi-sig controlled parameter updates and governance
-- **Cross-Chain Security**: Relies on Arbitrum's L2→L3 security guarantees
+- **Cross-chain security**: Relies on Arbitrum's L2→L3 security guarantees
 
-### Consensus Mechanism
+### Consensus mechanism
 
-- **Canonical Network**: Subset of registered nodes designated as canonical
-- **Message Consistency**: Nodes subscribe to each other for consistent message views
-- **Report Validation**: Multiple nodes must agree on PayerReports before settlement
+- **Canonical network**: Subset of registered nodes designated as canonical
+- **Message consistency**: Nodes subscribe to each other for consistent message views
+- **Report validation**: Multiple nodes must agree on PayerReports before settlement
 
-### Upgrade Security
+### Upgrade security
 
-- **Migratable Pattern**: External migratable contracts enable secure upgrades
-- **Access Control**: Admin-controlled upgrade authorization
+- **Migratable pattern**: External migratable contracts enable secure upgrades
+- **Access control**: Admin-controlled upgrade authorization

@@ -1,8 +1,8 @@
-# XMTP Smart Contracts - Communication Dependency Diagram
+# XMTP smart contracts - communication dependency diagram
 
 This diagram illustrates the communication dependencies between contracts in the XMTP smart contracts ecosystem, focusing exclusively on which contracts call functions on other contracts (not inheritance).
 
-## Contract Communication Diagram
+## Contract communication diagram
 
 ```mermaid
 flowchart TD
@@ -61,11 +61,11 @@ flowchart TD
     end
 ```
 
-## Key Communication Dependencies
+## Key communication dependencies
 
-### Settlement Chain Contracts
+### XMTP Settlement Chain contracts
 
-1. **Settlement Chain Gateway**:
+1. **Settlement chain gateway**:
 
     - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve a migrator address
     - Calls `get(bytes[])` on **Settlement Chain Parameter Registry** to retrieve parameter values for bridging
@@ -73,48 +73,48 @@ flowchart TD
     - Calls `transferFrom()`, and `approve()` on **IERC20 Token** for token operations
     - Prepares cross-chain calls to **App Chain Gateway**'s `receiveParameters()` function via retryable tickets
 
-2. **Node Registry**:
+2. **Node registry**:
 
     - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve admin, node manager, and migrator addresses
 
-3. **Payer Registry**:
+3. **Payer registry**:
 
     - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve settler, fee distributor, minimum deposit, withdraw lock period, and a migrator address
     - Calls `balanceOf()`, `transfer()`, and `transferFrom()` on **IERC20 Token** for token operations
 
-4. **Rate Registry**:
+4. **Rate registry**:
 
     - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve message fee, storage fee, congestion fee, target rate per minute, and a migrator address
 
-### App Chain Contracts
+### XMTP App Chain contracts
 
-1. **App Chain Gateway**:
+1. **App chain gateway**:
 
-    - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from settlement chain
+    - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from the XMTP Settlement Chain
     - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve a migrator address
 
-2. **Group Message Broadcaster**:
+2. **Group message broadcaster**:
 
     - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve min/max payload sizes, pause status, and a migrator address
 
-3. **Identity Update Broadcaster**:
+3. **Identity update broadcaster**:
 
     - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve min/max payload sizes, pause status, and a migrator address
 
-## Primary Communication Flows
+## Primary communication flows
 
-1. **Parameter Bridging Flow**:
+1. **Parameter bridging flow**:
 
-    - Settlement Chain Gateway reads parameters from Settlement Chain Parameter Registry
-    - Settlement Chain Gateway sends parameters to App Chain Gateway via retryable tickets
-    - App Chain Gateway receives parameters and updates App Chain Parameter Registry
-    - App chain contracts read parameters from App Chain Parameter Registry
+    - **Settlement Chain Gateway** reads parameters from **Settlement Chain Parameter Registry**
+    - **Settlement Chain Gateway** sends parameters to **App Chain Gateway** via retryable tickets
+    - **App Chain Gateway** receives parameters and updates **App Chain Parameter Registry**
+    - XMTP App Chain contracts read parameters from **App Chain Parameter Registry**
 
-2. **Token Operations Flow**:
+2. **Token operations flow**:
 
-    - Payer Registry interacts with IERC20 token for deposits and withdrawals
-    - Settlement Chain Gateway uses IERC20 Inbox for cross-chain messaging
+    - **Payer Registry** interacts with **IERC20 Token** for deposits and withdrawals
+    - **Settlement Chain Gateway** uses **IERC20 Inbox** for cross-chain messaging
 
-3. **Configuration Access Pattern**:
+3. **Configuration access pattern**:
     - All contracts retrieve their configuration from their respective chain's parameter registry
     - This creates a consistent pattern where contract behavior is determined by centrally managed parameters

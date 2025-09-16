@@ -1,8 +1,8 @@
-# XMTP Parameter Flow - Sequence Diagrams
+# XMTP parameter flow - sequence diagrams
 
-This document illustrates the complete process of setting a parameter in the Settlement Chain Parameter Registry and its journey to being fetched by a contract on an App Chain.
+This document illustrates the complete process of setting a parameter in the XMTP Settlement Chain parameter registry and its journey to being fetched by a contract on an XMTP App Chain.
 
-## PlantUML Version
+## PlantUML version
 
 ```plantuml
 @startuml
@@ -62,7 +62,7 @@ deactivate ACC
 @enduml
 ```
 
-## Mermaid Version
+## Mermaid version
 
 ```mermaid
 sequenceDiagram
@@ -128,9 +128,9 @@ sequenceDiagram
     end
 ```
 
-## Explanation of Parameter Flow Steps
+## Explanation of parameter flow steps
 
-1. **Admin sets parameter on Settlement Chain**:
+1. **Admin sets parameter on the XMTP Settlement Chain**:
 
     - Admin/governance calls `set(key, value)` on Settlement Parameter Registry
     - The registry stores the parameter and emits an event
@@ -160,4 +160,4 @@ sequenceDiagram
 - Contract converts the bytes32 value to the appropriate type
 - Contract executes logic using the parameter value
 
-This sequence demonstrates the complete lifecycle of a parameter from its initial setting on the Settlement Chain to its eventual use by a contract on the App Chain, highlighting the cross-chain bridging mechanism using retryable tickets.
+This sequence demonstrates the complete lifecycle of a parameter from its initial setting on the XMTP Settlement Chain to its eventual use by a contract on the XMTP App Chain, highlighting the cross-chain bridging mechanism using retryable tickets.

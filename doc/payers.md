@@ -1,37 +1,37 @@
 # Payers
 
-Payers are entities (typically app developers, agents, or service providers) who need to fund their accounts to pay for XMTP network services such as message broadcasting and identity updates. The XMTP protocol provides multiple funding mechanisms to accommodate different user preferences and technical capabilities.
+Payers are entities (typically app developers, agents, or service providers) who need to fund their accounts to pay for XMTP network services such as message broadcasting and identity updates. XMTP provides multiple funding mechanisms to accommodate different user preferences and technical capabilities.
 
-## Funding Methods
+## Funding methods
 
-### Manual Funding Process
+### Manual funding process
 
-The traditional manual funding process involves multiple steps across both settlement and application chains:
+The traditional manual funding process involves multiple steps across both XMTP Settlement and XMTP App Chains:
 
-1. **Wallet Setup**: Create wallets on both the settlement chain (Base L2) and application chain (XMTP L3)
-2. **Token Wrapping**: Deposit USDC into the `FeeToken` contract, receiving `xUSD` tokens in exchange at a 1:1 ratio
-3. **Settlement Chain Funding**: Deposit `xUSD` tokens into the `PayerRegistry` to cover costs for off-chain message processing and settlement operations
-4. **Application Chain Funding**: Transfer `xUSD` tokens to the application chain payer's wallet to cover gas costs for publishing blockchain messages and identity updates
+1. **Wallet setup**: Create wallets on both the XMTP Settlement Chain (Base L2) and XMTP App Chain (XMTP L3)
+2. **Token wrapping**: Deposit USDC into the `FeeToken` contract, receiving `xUSD` tokens in exchange at a 1:1 ratio
+3. **XMTP Settlement Chain funding**: Deposit `xUSD` tokens into the `PayerRegistry` to cover costs for offchain message processing and settlement operations
+4. **XMTP App Chain funding**: Transfer `xUSD` tokens to the app chain payer's wallet to cover gas costs for publishing blockchain messages and identity updates
 
-### Simplified Funding with DepositSplitter
+### Simplified funding with DepositSplitter
 
 For improved user experience, the `DepositSplitter` contract provides convenience functions that streamline the funding process:
 
-- **`deposit()`**: Allows payers to split deposits between the `PayerRegistry` and application chain in a single transaction
+- **`deposit()`**: Allows payers to split deposits between the `PayerRegistry` and XMTP App Chain in a single transaction
 - **`depositWithPermit()`**: Enables gasless transactions using EIP-2612 permit signatures, eliminating the need for separate approval transactions
 
 This approach reduces the complexity from multiple transactions across different contracts to a single, atomic operation.
 
-### Funding Portal Integration
+### XMTP Funding Portal integration
 
-The Funding Portal provides a user-friendly interface that:
+The XMTP Funding Portal provides a user-friendly interface that:
 
 - Simplifies the funding process through an intuitive web interface
 - Allows payers to connect their wallets directly using standard wallet connection protocols
 - Abstracts away the technical complexity of cross-chain operations
-- Provides real-time balance tracking across both settlement and application chains
+- Provides real-time balance tracking across both XMTP Settlement and App Chains
 
-## DepositSplitter Workflow
+## DepositSplitter workflow
 
 The following diagram illustrates the complete process of a payer using the DepositSplitter contract to fund their accounts across both chains:
 
