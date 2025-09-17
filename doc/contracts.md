@@ -69,7 +69,7 @@ The parameter system uses a key-value storage mechanism:
 
 3. **Cross-chain parameter bridging**:
 
-   - `SettlementChainGateway`'s `sendParametersAsRetryableTickets()` packages parameters upon user request.
+   - `SettlementChainGateway`'s `sendParameters()` packages parameters upon user request.
    - The gateway fetches current values from the parameter registry and creates a retryable ticket.
    - Ticket targets `AppChainGateway`'s `receiveParameters()` function.
    - Nonce tracking ensures proper ordering of parameter updates on the XMTP App Chain.
