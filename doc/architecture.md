@@ -152,7 +152,7 @@ The XMTP App Chain focuses on high-throughput message broadcasting:
 - **Message storage**: Onchain storage for group messages and identity updates
 - **Low-cost operations**: Optimized for high-frequency messaging operations
 - **Parameter consumption**: Receives configuration from XMTP Settlement Chain
-- **Key contracts**: GroupMessageBroadcaster, `IdentityUpdateBroadcaster, and AppChainParameterRegistry
+- **Key contracts**: GroupMessageBroadcaster, IdentityUpdateBroadcaster, and AppChainParameterRegistry
 
 ### Design rationale
 
