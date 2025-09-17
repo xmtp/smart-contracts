@@ -10,15 +10,18 @@ The traditional manual funding process involves multiple steps across both XMTP 
 
 1. **Wallet setup**: Create wallets on both the XMTP Settlement Chain (Base L2) and XMTP App Chain (XMTP L3)
 2. **Token wrapping**: Deposit USDC into the `FeeToken` contract, receiving `xUSD` tokens in exchange at a 1:1 ratio
+   - This can be skipped if the payer uses the `Underlying`-suffixed functions throughout the protocol.
 3. **XMTP Settlement Chain funding**: Deposit `xUSD` tokens into the `PayerRegistry` to cover costs for offchain message processing and settlement operations
-4. **XMTP App Chain funding**: Transfer `xUSD` tokens to the app chain payer's wallet to cover gas costs for publishing blockchain messages and identity updates
+4. **XMTP App Chain funding**: Transfer `xUSD` tokens to the XMTP App Chain payer's wallet to cover gas costs for publishing blockchain messages and identity updates
 
 ### Simplified funding with DepositSplitter
 
 For improved user experience, the `DepositSplitter` contract provides convenience functions that streamline the funding process:
 
-- **`deposit()`**: Allows payers to split deposits between the `PayerRegistry` and XMTP App Chain in a single transaction
-- **`depositWithPermit()`**: Enables gasless transactions using EIP-2612 permit signatures, eliminating the need for separate approval transactions
+- **`deposit()`**: Allows payers to split deposits of `xUSD` between the `PayerRegistry` and `SettlementChainGateway` (to be bridged to an XMTP App Chain) in a single transaction, assuming they have approved the `DepositSplitter` to spend their `xUSD` tokens.
+- **`depositWithPermit()`**: Allows payers to perform the above split `deposit()` without having to precede the transaction with an approval transaction.
+- **`depositFromUnderlying()`**: Allows payers to deposit underlying fee tokens (i.e., `USDC`) into the `PayerRegistry` and `SettlementChainGateway` (to be bridged to an XMTP App Chain) in a single transaction, assuming they have approved the `DepositSplitter` to spend their underlying fee tokens.
+- **`depositFromUnderlyingWithPermit()`**: Allows payers to perform the above split `depositFromUnderlying()` without having to precede the transaction with an approval transaction.
 
 This approach reduces the complexity from multiple transactions across different contracts to a single, atomic operation.
 
@@ -33,7 +36,7 @@ The XMTP Funding Portal provides a user-friendly interface that:
 
 ## DepositSplitter workflow
 
-The following diagram illustrates the complete process of a payer using the DepositSplitter contract to fund their accounts across both chains:
+The following diagram illustrates the complete process of a payer using the DepositSplitter contract to fund their accounts across both chains, sourced from `USDC`:
 
 ```mermaid
 sequenceDiagram
@@ -45,17 +48,16 @@ sequenceDiagram
     participant FT as FeeToken
     participant PR as PayerRegistry
     participant SCG as SettlementChainGateway
-    participant ACG as AppChainGateway
-    participant AC as App Chain
+    participant I as Inbox
 
-    Note over Payer, AC: Phase 1: Setup and Approval
+    Note over Payer: Phase 1: Setup and Approval
     Payer->>USDC: approve(DepositSplitter, totalAmount)
     activate USDC
     USDC-->>Payer: Approval confirmed
     deactivate USDC
 
-    Note over Payer, AC: Phase 2: Deposit Splitting
-    Payer->>DS: deposit(payer, payerRegistryAmount, appChainRecipient, appChainAmount, gasLimit, maxFeePerGas)
+    Note over Payer: Phase 2: Deposit Splitting
+    Payer->>DS: deposit(address payer_, uint96 payerRegistryAmount_, address appChainRecipient_, uint96 appChainAmount_, uint256 appChainGasLimit_, uint256 appChainMaxFeePerGas_)
     activate DS
 
     Note over DS, FT: Step 1: Wrap USDC to xUSD
@@ -74,32 +76,44 @@ sequenceDiagram
     alt payerRegistryAmount > 0
         DS->>PR: deposit(payer, payerRegistryAmount)
         activate PR
+
+        PR->>FT: transferFrom(DepositSplitter, PayerRegistry, payerRegistryAmount)
+        activate FT
+        FT-->>PR: Transfer successful
+        deactivate FT
+
         PR->>PR: Credit payer account
         PR-->>DS: Deposit successful
         deactivate PR
     end
 
-    Note over DS, AC: Step 3: Bridge to App Chain
+    Note over DS, I: Step 3: Bridge to App Chain
     alt appChainAmount > 0
         DS->>SCG: deposit(appChainId, appChainRecipient, appChainAmount, gasLimit, maxFeePerGas)
         activate SCG
-        SCG->>SCG: Create retryable ticket
-        SCG->>ACG: Cross-chain message (retryable ticket)
-        activate ACG
-        ACG->>AC: Mint xUSD for appChainRecipient
-        activate AC
-        AC-->>ACG: Tokens minted
-        deactivate AC
-        ACG-->>SCG: Bridge successful
-        deactivate ACG
-        SCG-->>DS: Cross-chain deposit initiated
-        deactivate SCG
+
+        SCG->>FT: transferFrom(DepositSplitter, SettlementChainGateway, appChainAmount)
+        activate FT
+        FT-->>SCG: Transfer successful
+        deactivate FT
+
+        SCG->>FT: approve(Inbox, appChainAmount)
+        activate FT
+        FT-->>SCG: Approval successful
+        deactivate FT
+
+        SCG->>I: Create retryable ticket (Cross-chain message)
+
+        I->>FT: transferFrom(SettlementChainGateway, Inbox, appChainAmount)
+        activate FT
+        FT-->>I: Transfer successful
+        deactivate FT
+
+        I->>SCG: Message Id
+
+        SCG->>DS: Deposit successful
     end
 
     DS-->>Payer: Deposit splitting completed
     deactivate DS
-
-    Note over Payer, AC: Result: Payer funded on both chains
-    Note over PR: Settlement Chain: Payer account credited
-    Note over AC: App Chain: Recipient wallet funded
 ```

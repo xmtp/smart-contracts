@@ -6,8 +6,8 @@
   - [System overview](#system-overview)
   - [Messaging protocol](#messaging-protocol)
   - [Chain architecture](#chain-architecture)
-    - [Settlement chain (Base L2)](#settlement-chain-base-l2)
-    - [App chain (XMTP L3)](#app-chain-xmtp-l3)
+    - [XMTP Settlement Chain (Base L2)](#xmtp-settlement-chain-base-l2)
+    - [XMTP App Chain (XMTP L3)](#xmtp-app-chain-xmtp-l3)
     - [Design rationale](#design-rationale)
   - [Actors](#actors)
     - [End users](#end-users)
@@ -18,13 +18,15 @@
       - [xmtpd service components](#xmtpd-service-components)
       - [Onboarding process](#onboarding-process)
     - [Administrators](#administrators)
-      - [Responsibilities](#responsibilities)
+      - [Parameter flow](#parameter-flow)
   - [Economic model](#economic-model)
     - [Fee structure](#fee-structure)
     - [Settlement process](#settlement-process)
     - [Token economics](#token-economics)
   - [Cross-chain communication](#cross-chain-communication)
-    - [Parameter flow](#parameter-flow)
+    - [Token deposits](#token-deposits)
+    - [Token withdrawals](#token-withdrawals)
+    - [Parameter synchronization](#parameter-synchronization)
     - [Reliability features](#reliability-features)
   - [Security model](#security-model)
     - [Trust assumptions](#trust-assumptions)
@@ -132,18 +134,18 @@ The remaining message types are published directly to xmtpd nodes for offchain p
 
 ## Chain architecture
 
-The XMTP network employs a dual-chain architecture optimized for both economic security and messaging throughput. For detailed contract information, see the [system contracts document](./contracts.md).
+The XMTP network employs a dual-chain architecture optimized for both economic security and messaging throughput. For detailed contract information, read the [contracts documentation](./contracts.md).
 
-### Settlement chain (Base L2)
+### XMTP Settlement Chain (Base L2)
 
 The XMTP Settlement Chain handles economic operations, governance, and system parameters:
 
 - **Economic functions**: Fee collection, node operator payments, payer account management
 - **Governance**: System parameter management, node registry, upgrade coordination
 - **Cross-chain coordination**: Parameter bridging to XMTP App Chains via retryable tickets
-- **Key contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, and FeeToken
+- **Key contracts**: NodeRegistry, PayerRegistry, RateRegistry, DistributionManager, PayerReportManager, FeeToken, and DepositSplitter
 
-### App chain (XMTP L3)
+### XMTP App Chain (XMTP L3)
 
 The XMTP App Chain focuses on high-throughput message broadcasting:
 
@@ -166,7 +168,7 @@ End users are the ultimate consumers of XMTP messaging services, typically acces
 
 ### Payers
 
-Payers are service providers (typically companies with chat apps) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
+[Payers](./payers.md) are service providers (typically companies with chat apps) who fund network operations to serve their end users. They operate gateway services and maintain funded accounts to pay for messaging costs.
 
 #### Setup requirements
 
@@ -181,7 +183,7 @@ Payers are service providers (typically companies with chat apps) who fund netwo
 
 ### Node operators
 
-Node operators maintain the XMTP Broadcast Network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
+[Node operators](./node-operators.md) maintain the XMTP Broadcast Network infrastructure by running [xmtpd](https://github.com/xmtp/xmtpd) services that process messages, maintain network consensus, and earn fees for their services.
 
 #### xmtpd service components
 
@@ -200,12 +202,32 @@ Node operators maintain the XMTP Broadcast Network infrastructure by running [xm
 
 Administrators manage system governance, parameters, and network operations through multi-signature wallets and eventual governance mechanisms.
 
-#### Responsibilities
+The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
+
+**Responsibilities**:
 
 - **Parameter management**: Update system parameters via SettlementChainParameterRegistry
 - **Node management**: Add/remove nodes from the canonical XMTP Broadcast Network
 - **Upgrade coordination**: Manage contract upgrades and migrations
 - **Economic policy**: Set fee rates, distribution parameters, and protocol policies
+
+#### Parameter flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant SCPR as SettlementChainParameterRegistry
+    participant SCG as SettlementChainGateway
+    participant ACG as AppChainGateway
+    participant ACPR as AppChainParameterRegistry
+
+    Admin->>SCPR: Update parameter
+    Note over SCG: User initiates parameter bridge
+    SCG->>SCPR: Fetch current parameters
+    SCG->>ACG: Send retryable ticket
+    ACG->>ACPR: Update parameters
+    Note over ACPR: Parameters available for app chain contracts
+```
 
 ## Economic model
 
@@ -214,7 +236,7 @@ The XMTP network operates on a fee-based economic model where payers fund operat
 ### Fee structure
 
 - **Onchain messages**: Direct gas costs paid upfront by payers on the XMTP App Chain
-- **Offchain messages**: Usage-based fees settled periodically through PayerReports
+- **Offchain messages**: Usage-based fees settled periodically through [PayerReports](./payer-reports.md)
 - **Protocol fees**: Percentage of total fees reserved for protocol treasury
 
 ### Settlement process
@@ -244,31 +266,98 @@ sequenceDiagram
 
 ## Cross-chain communication
 
-Parameter synchronization between XMTP Settlement and App Chains uses Arbitrum's retryable ticket mechanism.
+### Token deposits
 
-### Parameter flow
+A user can deposit tokens via the standard ERC20 L3 deposit mechanism supported by the native bridge, but they (or the front-end) would need to be aware of the native bridge details. This may be simple if there is just one XMTP App Chain and if the user only wants to deposit to one XMTP App Chain, but can become unnecessarily complicated and disjointed if there are multiple XMTP App Chains and/or the user wants to deposit to multiple XMTP App Chains.
+
+Instead, the `SettlementChainGateway` is a singleton contract on the XMTP Settlement Chain, and is configured with the routing information needed to handle deposits to more than one XMTP App Chain.
+
+```mermaid
+sequenceDiagram
+    participant SCU as Settlement Chain User
+    participant FT as FeeToken
+    participant SCG as Settlement Chain Gateway
+    participant I as Inbox for App Chain
+    participant S as App Chain Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACU as App Chain User
+
+    Note over SCU: Initiates token deposit
+    SCU->>SCG: `deposit`
+    SCG->>FT: Pulls token from user
+    SCG->>I: Creates retryable ticket<br>for `receiveDeposit` call<br>to App Chain Gateway
+    I->>FT: Pulls token from Settlement Chain Gateway
+    Note over S: Processes messages from Inbox
+    S->>P: Creates retryable ticket
+    Note over P: Anyone tries retryable ticket on behalf<br>of Settlement Chain Gateway.<br>First attempt made by sequencer
+    P->>ACG: Receive native token<br>and recipient address<br>via `receiveDeposit`
+    ACG->>ACU: Transfer native token<br>to recipient
+```
+
+### Token withdrawals
+
+Similarly, a user can withdraw tokens via the standard L3 withdraw mechanism supported by the native XMTP App Chain precompiles. In this case, all withdrawals end up in the XMTP Settlement Chain anyway, so withdrawing with the help of the `AppChainGateway` is not really a UX improvement, but the flow was implemented for completeness.
+
+```mermaid
+sequenceDiagram
+    participant SCU as Settlement Chain User
+    participant FT as FeeToken
+    participant SCG as Settlement Chain Gateway
+    participant O as Outbox for App Chain
+    participant S as App Chain Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACU as App Chain User
+
+    Note over ACU: Initiates withdrawal
+    ACU->>ACG: withdraw
+    ACG->>P: Sends token and call<br>to Settlement Chain Gateway<br>`receiveWithdrawal`
+    Note over S: Process messages from app chain
+    S->>O: Puts calldata and token amount
+    Note over SCU: Initiates withdrawal claim<br>(anyone can do this)
+    SCU->>O: Processes the withdrawal calldata
+    O->>FT: Sends token to Settlement Chain Gateway
+    O->>SCG: `receiveWithdrawal`
+    SCG->>FT: Sends token to user
+```
+
+### Parameter synchronization
+
+For XMTP App Chain contracts to have access to the latest parameters, parameters stored in the app chain parameter registry need to be synchronized from the settlement chain parameter registry.
+
+Parameter synchronization between XMTP Settlement and App Chains uses Arbitrum's retryable ticket mechanism.
 
 ```mermaid
 sequenceDiagram
     participant Admin as Administrator
-    participant SCPR as SettlementChainParameterRegistry
-    participant SCG as SettlementChainGateway
-    participant ACG as AppChainGateway
-    participant ACPR as AppChainParameterRegistry
+    participant SCPR as Settlement Chain Parameter Registry
+    participant SCG as Settlement Chain Gateway
+    participant I as Inbox for App Chain
+    participant S as Sequencer
+    participant P as App Chain Precompiles
+    participant ACG as App Chain Gateway
+    participant ACPR as App Chain Parameter Registry
 
-    Admin->>SCPR: Update parameter
-    Note over SCG: User initiates parameter bridge
-    SCG->>SCPR: Fetch current parameters
-    SCG->>ACG: Send retryable ticket
-    ACG->>ACPR: Update parameters
+    Note over Admin: Initiates parameter update
+    Admin->>SCPR: `set`
+    Note over Admin: Initiates parameter bridge<br>(can be anyone)
+    Admin->>SCG: `sendParameters`
+    SCG->>SCPR: Fetch value for each key
+    SCG->>I: Send key-value pairs as<br>retryable ticket to an<br>app-chain-specific inbox as<br>`receiveParameters` call<br>to App Chain Gateway
+    Note over S: Processes messages from Inbox
+    S->>P: Creates retryable ticket
+    Note over P: Anyone tries retryable ticket on behalf<br>of Settlement Chain Gateway.<br>First attempt made by sequencer
+    P->>ACG: Receive key-value pairs<br>via `receiveParameters`
+    ACG->>ACPR: `set`
     Note over ACPR: Parameters available for app chain contracts
 ```
 
 ### Reliability features
 
-- **Guaranteed delivery**: Retryable tickets ensure parameter updates reach XMTP App Chains
+- **Guaranteed delivery**: Retryable tickets ensure parameter updates can reach XMTP App Chains even if first attempt fails (i.e., due to insufficient gas or higher gas price)
 - **Nonce tracking**: Prevents out-of-order parameter updates
-- **Failure recovery**: Failed tickets can be retried
+- **Failure recovery**: Failed tickets can be retried, so no deposited tokens are lost
 
 ## Security model
 
@@ -276,7 +365,7 @@ sequenceDiagram
 
 - **Node operators**: Trusted to process messages honestly and submit accurate reports
 - **Administrators**: Multi-sig controlled parameter updates and governance
-- **Cross-chain security**: Relies on Arbitrum's L2→L3 security guarantees
+- **Cross-chain security**: Relies on Arbitrum's L2→L3 and L3→L2 security guarantees
 
 ### Consensus mechanism
 

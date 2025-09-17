@@ -6,6 +6,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IDistributionManager } from "./interfaces/IDistributionManager.sol";
+
 import {
     IERC20Like,
     IFeeTokenLike,
@@ -13,6 +14,7 @@ import {
     IPayerRegistryLike,
     IPayerReportManagerLike
 } from "./interfaces/External.sol";
+
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";

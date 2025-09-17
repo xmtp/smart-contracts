@@ -6,54 +6,79 @@ This diagram illustrates the communication dependencies between contracts in the
 
 ```mermaid
 flowchart TD
-    classDef appchain fill:#9ff,stroke:#333,stroke-width:1px
-    classDef settlementchain fill:#f96,stroke:#333,stroke-width:1px
+    classDef appChain fill:#9ff,stroke:#333,stroke-width:1px
+    classDef settlementChain fill:#f96,stroke:#333,stroke-width:1px
     classDef external fill:#ddd,stroke:#333,stroke-width:1px
 
     %% App-chain contracts
-    AppChainGateway[App Chain <br> Gateway]:::appchain
-    AppChainParameterRegistry[App Chain <br> Parameter Registry]:::appchain
-    GroupMessageBroadcaster[Group Message <br> Broadcaster]:::appchain
-    IdentityUpdateBroadcaster[Identity Update <br> Broadcaster]:::appchain
+    AppChainGateway[App Chain <br> Gateway]:::appChain
+    AppChainParameterRegistry[App Chain <br> Parameter Registry]:::appChain
+    GroupMessageBroadcaster[Group Message <br> Broadcaster]:::appChain
+    IdentityUpdateBroadcaster[Identity Update <br> Broadcaster]:::appChain
 
     %% Settlement-chain contracts
-    SettlementChainGateway[Settlement Chain <br> Gateway]:::settlementchain
-    SettlementChainParameterRegistry[Settlement Chain <br> Parameter Registry]:::settlementchain
-    NodeRegistry[Node <br> Registry]:::settlementchain
-    PayerRegistry[Payer <br> Registry]:::settlementchain
-    RateRegistry[Rate <br> Registry]:::settlementchain
+    SettlementChainGateway[Settlement Chain <br> Gateway]:::settlementChain
+    SettlementChainParameterRegistry[Settlement Chain <br> Parameter Registry]:::settlementChain
+    NodeRegistry[Node <br> Registry]:::settlementChain
+    PayerRegistry[Payer <br> Registry]:::settlementChain
+    PayerReportManager[Payer <br> Report <br> Manager]:::settlementChain
+    DistributionManager[Distribution <br> Manager]:::settlementChain
+    DepositSplitter[Deposit <br> Splitter]:::settlementChain
+    RateRegistry[Rate <br> Registry]:::settlementChain
+    FeeToken[Fee <br> Token]:::settlementChain
 
     %% External contracts
-    IERC20Token[IERC20 <br> Token]:::external
-    IERC20Inbox[IERC20 <br> Inbox]:::external
+    ERC20Inbox[ERC20 <br> Inbox]:::external
+    USDC[USDC]:::external
+    ArbSys[ArbSys]:::external
 
     %% Communication dependencies - Settlement Chain
     SettlementChainGateway -.->|"get(bytes) <br> get(bytes[])"|SettlementChainParameterRegistry
-    SettlementChainGateway -.->|"transferFrom() <br> approve()"|IERC20Token
-    SettlementChainGateway -.->|"depositERC20() <br> sendContractTransaction() <br> createRetryableTicket()"|IERC20Inbox
+    SettlementChainGateway -.->|"decimals() <br> underlying() <br> balanceOf() <br> transfer() <br> transferFrom() <br> approve() <br> withdrawTo() <br> deposit() <br> permit()"|FeeToken
+    SettlementChainGateway -.->|"transferFrom() <br> permit()"|USDC
+    SettlementChainGateway -.->|"calculateRetryableSubmissionFee() <br> createRetryableTicket()"|ERC20Inbox
 
     NodeRegistry -.->|"get(bytes)"|SettlementChainParameterRegistry
 
     PayerRegistry -.->|"get(bytes)"|SettlementChainParameterRegistry
-    PayerRegistry -.->|"balanceOf() <br> transfer() <br> transferFrom()"|IERC20Token
+    PayerRegistry -.->|"underlying() <br> balanceOf() <br> transfer() <br> transferFrom() <br> withdrawTo() <br> deposit() <br> permit()"|FeeToken
+    PayerRegistry -.->|"transferFrom() <br> permit()"|USDC
 
     RateRegistry -.->|"get(bytes)"|SettlementChainParameterRegistry
 
+    PayerReportManager -.->|"get(bytes)"|SettlementChainParameterRegistry
+    PayerReportManager -.->|"canonicalNodesCount() <br> getIsCanonicalNode() <br> getSigner()"|NodeRegistry
+    PayerReportManager -.->|"settleUsage()"|PayerRegistry
+
+    DistributionManager -.->|"get(bytes)"|SettlementChainParameterRegistry
+    DistributionManager -.->|"balanceOf() <br> transfer() <br> withdrawTo()"|FeeToken
+    DistributionManager -.->|"ownerOf()"|NodeRegistry
+    DistributionManager -.->|"sendExcessToFeeDistributor()"|PayerRegistry
+    DistributionManager -.->|"getPayerReports()"|PayerReportManager
+
+    DepositSplitter -.->|"underlying() <br> approve() <br> transferFrom() <br> deposit() <br> permit()"|FeeToken
+    DepositSplitter -.->|"approve() <br> transferFrom() <br> permit()"|USDC
+    DepositSplitter -.->|"deposit()"|PayerRegistry
+    DepositSplitter -.->|"deposit()"|SettlementChainGateway
+
+    FeeToken -.->|"get(bytes)"|SettlementChainParameterRegistry
+    FeeToken -.->|"transfer() <br> transferFrom() <br> permit()"|USDC
+
     %% Communication dependencies - App Chain
-    AppChainGateway -.->|"set(bytes, bytes32)"|AppChainParameterRegistry
-    AppChainGateway -.->|"get(bytes)"|AppChainParameterRegistry
+    AppChainGateway -.->|"get(bytes) <br> set(bytes, bytes32)"|AppChainParameterRegistry
+    AppChainGateway -.->|"sendTxToL1()"|ArbSys
 
     GroupMessageBroadcaster -.->|"get(bytes)"|AppChainParameterRegistry
 
     IdentityUpdateBroadcaster -.->|"get(bytes)"|AppChainParameterRegistry
 
     %% Cross-chain communication
-    SettlementChainGateway -..->|"Cross-chain call to <br> receiveParameters()"|AppChainGateway
+    SettlementChainGateway <-..->|"Cross-chain call to and from <br> receiveParameters() <br> receiveDeposit() <br> receiveWithdrawal() <br> receiveWithdrawalIntoUnderlying()"|AppChainGateway
 
     %% Legend
     subgraph Legend
-        AC[App <br> Chain <br> Contract]:::appchain
-        SC[Settlement <br> Chain <br> Contract]:::settlementchain
+        AC[App <br> Chain <br> Contract]:::appChain
+        SC[Settlement <br> Chain <br> Contract]:::settlementChain
         EX[External <br> Contract]:::external
         A[Contract A]
         B[Contract B]
@@ -65,56 +90,67 @@ flowchart TD
 
 ### XMTP Settlement Chain contracts
 
-1. **Settlement chain gateway**:
+All settlement chain contracts interact with the settlement chain parameter registry to retrieve their configuration parameters.
 
-    - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve a migrator address
-    - Calls `get(bytes[])` on **Settlement Chain Parameter Registry** to retrieve parameter values for bridging
-    - Calls `depositERC20()`, `sendContractTransaction()`, and `createRetryableTicket()` on **IERC20 Inbox** for cross-chain messaging
-    - Calls `transferFrom()`, and `approve()` on **IERC20 Token** for token operations
-    - Prepares cross-chain calls to **App Chain Gateway**'s `receiveParameters()` function via retryable tickets
+- **Settlement Chain Gateway**:
 
-2. **Node registry**:
+  - Calls `get(bytes[])` on **Settlement Chain Parameter Registry** to retrieve parameter values for bridging
+  - Calls `createRetryableTicket()` and `calculateRetryableSubmissionFee()` on **ERC20 Inbox** for cross-chain messaging
+  - Calls **FeeToken** and **USDC** for token operations
+  - Prepares cross-chain deposits to **App Chain Gateway**'s `receiveDeposit()` function via retryable tickets
+  - Prepares cross-chain calls to **App Chain Gateway**'s `receiveParameters()` function via retryable tickets
 
-    - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve admin, node manager, and migrator addresses
+- **Payer Registry**:
 
-3. **Payer registry**:
+  - Calls **FeeToken** and **USDC** for token operations
 
-    - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve settler, fee distributor, minimum deposit, withdraw lock period, and a migrator address
-    - Calls `balanceOf()`, `transfer()`, and `transferFrom()` on **IERC20 Token** for token operations
+- **PayerReportManager**:
 
-4. **Rate registry**:
+  - Calls `getIsCanonicalNode()`, `canonicalNodesCount()`, and `getSigner()` on **NodeRegistry** to retrieve canonical node information
+  - Calls `settleUsage()` on **PayerRegistry** to settle usage for batches of payer fees
 
-    - Calls `get(bytes)` on **Settlement Chain Parameter Registry** to retrieve message fee, storage fee, congestion fee, target rate per minute, and a migrator address
+- **DistributionManager**:
+
+  - Calls **FeeToken** for token operations
+  - Calls `ownerOf()` on **NodeRegistry** to verify node ownership
+  - Calls `sendExcessToFeeDistributor()` on **PayerRegistry** to trigger the **PayerRegistry** to send it its excess fee tokens
+  - Calls `getPayerReports()` on **PayerReportManager** to retrieve payer report state information
+
+- **DepositSplitter**:
+
+  - Calls **FeeToken** and **USDC** for token operations
+  - Calls `deposit()` on **PayerRegistry** to deposit fee tokens into the **PayerRegistry**
+  - Calls `deposit()` on **SettlementChainGateway** to deposit fee tokens into the **SettlementChainGateway**
+
+- **FeeToken**:
+
+  - Calls **USDC** for token wrapping operations
 
 ### XMTP App Chain contracts
 
-1. **App chain gateway**:
+All XMTP App Chain contracts interact with the app chain parameter registry to retrieve their configuration parameters.
 
-    - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from the XMTP Settlement Chain
-    - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve a migrator address
+- **App Chain Gateway**:
 
-2. **Group message broadcaster**:
-
-    - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve min/max payload sizes, pause status, and a migrator address
-
-3. **Identity update broadcaster**:
-
-    - Calls `get(bytes)` on **App Chain Parameter Registry** to retrieve min/max payload sizes, pause status, and a migrator address
+  - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from the XMTP Settlement Chain
 
 ## Primary communication flows
 
-1. **Parameter bridging flow**:
+- **Parameter bridging flow**:
 
-    - **Settlement Chain Gateway** reads parameters from **Settlement Chain Parameter Registry**
-    - **Settlement Chain Gateway** sends parameters to **App Chain Gateway** via retryable tickets
-    - **App Chain Gateway** receives parameters and updates **App Chain Parameter Registry**
-    - XMTP App Chain contracts read parameters from **App Chain Parameter Registry**
+  - **Settlement Chain Gateway** reads parameters from **Settlement Chain Parameter Registry**
+  - **Settlement Chain Gateway** sends parameters to **App Chain Gateway** via retryable tickets
+  - **App Chain Gateway** receives parameters and updates **App Chain Parameter Registry**
+  - App chain contracts read parameters from **App Chain Parameter Registry**
 
-2. **Token operations flow**:
+- **Token operations flow**:
 
-    - **Payer Registry** interacts with **IERC20 Token** for deposits and withdrawals
-    - **Settlement Chain Gateway** uses **IERC20 Inbox** for cross-chain messaging
+  - **Payer Registry** interacts with **FeeToken** and **USDC** for deposits and withdrawals
+  - **Settlement Chain Gateway** interacts with **FeeToken** and **USDC** for deposits and withdrawals
+  - **DepositSplitter** interacts with **FeeToken** and **USDC** to pull tokens from users, but only transfers **FeeToken** to the **PayerRegistry**
+  - **DistributionManager** interacts with **FeeToken** and **USDC** for withdrawals
+  - **PayerRegistry** interacts with **FeeToken** and **USDC** for deposits, withdrawals, but only transfers **FeeToken** to the **DistributionManager**
 
-3. **Configuration access pattern**:
-    - All contracts retrieve their configuration from their respective chain's parameter registry
-    - This creates a consistent pattern where contract behavior is determined by centrally managed parameters
+- **Configuration access pattern**:
+  - All contracts retrieve their configuration from their respective chain's parameter registry
+  - This creates a consistent pattern where contract behavior is determined by centrally managed parameters
