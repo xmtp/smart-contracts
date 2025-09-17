@@ -1,34 +1,35 @@
-# XMTP Network Documentation
+# XMTP network documentation
 
 Welcome to the XMTP Network smart contracts documentation. This collection provides comprehensive technical documentation for understanding and working with the XMTP decentralized messaging protocol.
 
-## Getting Started
+## Getting started
 
 For newcomers to XMTP, we recommend starting with the **[System Architecture](./architecture.md)** document, which provides a high-level overview of how the entire system works, including the dual-chain design, key actors, and economic model.
 
-## Documentation Guide
+## Documentation guide
 
-### Core System Understanding
+### Core system understanding
 
-- **[System Architecture](./architecture.md)** - _Start here_ - Complete system overview, chain architecture, and key concepts
-- **[Contracts](./contracts.md)** - Detailed smart contract specifications and interactions
-- **[Parameter Flow](./parameter-flow.md)** - Cross-chain parameter synchronization mechanism
+- **[System architecture](./architecture.md)**: _Start here_ - Complete system overview, chain architecture, and key concepts
+- **[Contracts](./contracts.md)**: Detailed smart contract specifications and interactions
+- **[Parameter flow](./parameter-flow.md)**: Cross-chain parameter synchronization mechanism
 
-### Actor-Specific Guides
+### Actor-specific guides
 
-- **[Payers](./payers.md)** - How service providers fund and use the network
-- **[Node Operators](./node-operators.md)** - Running and managing XMTP network nodes
-- **[Payer Reports](./payer-reports.md)** - Economic settlement and fee distribution system
+- **[Payers](./payers.md)**: How service providers fund and use the network
+- **[Node operators](./node-operators.md)**: Running and managing XMTP network nodes
+- **[Payer reports](./payer-reports.md)**: Economic settlement and fee distribution system
 
-### Implementation Details
+### Implementation details
 
-- **[Deployment](./deployment.md)** - Contract deployment procedures and configurations
-- **[Dependencies](./dependencies.md)** - External dependencies and integration requirements
+- **[Deployment](./deployment.md)**: Contract deployment procedures and configurations
+- **[Dependencies](./dependencies.md)**: External dependencies and integration requirements
+- **[Proxies](./proxies.md)**: Proxy, factory, and migration patterns for contract upgrades
 
-## Quick Navigation
+## Quick navigation
 
-**New to XMTP?** → Start with [System Architecture](./architecture.md)  
+**New to XMTP?** → Start with [System architecture](./architecture.md)  
 **Integrating as a service provider?** → See [Payers](./payers.md)  
-**Running network infrastructure?** → Check [Node Operators](./node-operators.md)  
+**Running network infrastructure?** → Check [Node operators](./node-operators.md)  
 **Deploying contracts?** → Follow [Deployment](./deployment.md)  
-**Understanding the economics?** → Read [Payer Reports](./payer-reports.md)
+**Understanding the economics?** → Read [Payer reports](./payer-reports.md)

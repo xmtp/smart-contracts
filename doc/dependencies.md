@@ -1,8 +1,8 @@
-# XMTP Smart Contracts - Communication Dependency Diagram
+# XMTP smart contracts - communication dependency diagram
 
 This diagram illustrates the communication dependencies between contracts in the XMTP smart contracts ecosystem, focusing exclusively on which contracts call functions on other contracts (not inheritance).
 
-## Contract Communication Diagram
+## Contract communication diagram
 
 ```mermaid
 flowchart TD
@@ -86,9 +86,9 @@ flowchart TD
     end
 ```
 
-## Key Communication Dependencies
+## Key communication dependencies
 
-### Settlement Chain Contracts
+### XMTP Settlement Chain contracts
 
 All settlement chain contracts interact with the settlement chain parameter registry to retrieve their configuration parameters.
 
@@ -126,31 +126,31 @@ All settlement chain contracts interact with the settlement chain parameter regi
 
   - Calls **USDC** for token wrapping operations
 
-### App Chain Contracts
+### XMTP App Chain contracts
 
-All app chain contracts interact with the app chain parameter registry to retrieve their configuration parameters.
+All XMTP App Chain contracts interact with the app chain parameter registry to retrieve their configuration parameters.
 
 - **App Chain Gateway**:
 
-  - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from settlement chain
+  - Calls `set(bytes, bytes32)` on **App Chain Parameter Registry** to store parameters received from the XMTP Settlement Chain
 
-## Primary Communication Flows
+## Primary communication flows
 
-- **Parameter Bridging Flow**:
+- **Parameter bridging flow**:
 
-  - Settlement Chain Gateway reads parameters from Settlement Chain Parameter Registry
-  - Settlement Chain Gateway sends parameters to App Chain Gateway via retryable tickets
-  - App Chain Gateway receives parameters and updates App Chain Parameter Registry
-  - App chain contracts read parameters from App Chain Parameter Registry
+  - **Settlement Chain Gateway** reads parameters from **Settlement Chain Parameter Registry**
+  - **Settlement Chain Gateway** sends parameters to **App Chain Gateway** via retryable tickets
+  - **App Chain Gateway** receives parameters and updates **App Chain Parameter Registry**
+  - App chain contracts read parameters from **App Chain Parameter Registry**
 
-- **Token Operations Flow**:
+- **Token operations flow**:
 
-  - Payer Registry interacts with FeeToken and USDC for deposits and withdrawals
-  - Settlement Chain Gateway interacts with FeeToken and USDC for deposits and withdrawals
-  - DepositSplitter interacts with FeeToken and USDC to pull tokens from users, but only transfers FeeToken to the PayerRegistry
-  - DistributionManager interacts with FeeToken and USDC for withdrawals
-  - PayerRegistry interacts with FeeToken and USDC for deposits, withdrawals, but only transfers FeeToken to the DistributionManager
+  - **Payer Registry** interacts with **FeeToken** and **USDC** for deposits and withdrawals
+  - **Settlement Chain Gateway** interacts with **FeeToken** and **USDC** for deposits and withdrawals
+  - **DepositSplitter** interacts with **FeeToken** and **USDC** to pull tokens from users, but only transfers **FeeToken** to the **PayerRegistry**
+  - **DistributionManager** interacts with **FeeToken** and **USDC** for withdrawals
+  - **PayerRegistry** interacts with **FeeToken** and **USDC** for deposits, withdrawals, but only transfers **FeeToken** to the **DistributionManager**
 
-- **Configuration Access Pattern**:
+- **Configuration access pattern**:
   - All contracts retrieve their configuration from their respective chain's parameter registry
   - This creates a consistent pattern where contract behavior is determined by centrally managed parameters

@@ -1,10 +1,10 @@
-# XMTP Node Operators
+# XMTP node operators
 
-Node Operators are managed through the [Node Registry](../src/settlement-chain/NodeRegistry.sol) contract, where they are registered as NFTs representing their node ownership and operational rights.
+Node operators are managed through the [Node Registry](../src/settlement-chain/NodeRegistry.sol) contract, where they are registered as NFTs representing their node ownership and operational rights.
 
-The Node Operator configures the `xmtpd` service to use the wallet private key holding the NFT, authenticating the node during startup and network operations.
+The node operator configures the `xmtpd` service to use the wallet private key holding the NFT, authenticating the node during startup and network operations.
 
-## Node Identification System
+## Node identification system
 
 The `NodeRegistry` mints NFTs starting at ID 100, increasing by 100 for each new NFT minted. This ID serves as the unique node identifier, and each message published to a specific node is identified with the tuple `[originator_id, sequence_id]`, where:
 
@@ -13,15 +13,15 @@ The `NodeRegistry` mints NFTs starting at ID 100, increasing by 100 for each new
 
 This system guarantees that any message published to the network is unique and easily traceable.
 
-## Canonical Network
+## Canonical network
 
-While there are no limitations on the total number of Node Operators that can exist, only a maximum of approximately 20-25 nodes participate in the `canonical network` at any given time for performance reasons. This limit is enforced by the protocol administrator through the `maxCanonicalNodes` parameter in the `NodeRegistry`.
+While there are no limitations on the total number of node operators that can exist, only a maximum of approximately 20-25 nodes participate in the `canonical network` at any given time for performance reasons. This limit is enforced by the protocol administrator through the `maxCanonicalNodes` parameter in the `NodeRegistry`.
 
 The protocol administrator can add or remove specific nodes from the canonical network using the `addToNetwork` and `removeFromNetwork` functions.
 
-## Node Onboarding Process
+## Node onboarding process
 
-The onboarding process involves minting a new node NFT and registering the node operator with the network:
+The onboarding process involves minting a new node NFT and registering the node operator with the XMTP Broadcast Network:
 
 ```mermaid
 sequenceDiagram
@@ -51,7 +51,7 @@ sequenceDiagram
     Note over NO: Node ready for canonical network addition
 ```
 
-## Canonical Network Management
+## Canonical network management
 
 Administrators manage which nodes participate in the canonical network through dedicated functions:
 
@@ -85,7 +85,7 @@ sequenceDiagram
     Note over Node: Node removed from canonical network
 ```
 
-## Node Synchronization Process
+## Node synchronization process
 
 When an `xmtpd` service starts up, it follows a systematic process to synchronize with the canonical network:
 
@@ -132,22 +132,22 @@ sequenceDiagram
     Note over XMTPD: Node fully synchronized and operational
 ```
 
-## Key Features
+## Key features
 
-### Node Authentication
+### Node authentication
 
-- **NFT-Based Identity**: Node operators authenticate using the private key associated with their NFT
-- **Public Key Registration**: Signing public keys are registered on-chain for message verification
-- **HTTP Endpoints**: Nodes maintain HTTP addresses for peer-to-peer communication
+- **NFT-based identity**: Node operators authenticate using the private key associated with their NFT
+- **Public key registration**: Signing public keys are registered onchain for message verification
+- **HTTP endpoints**: Nodes maintain HTTP addresses for peer-to-peer communication
 
-### Network Consensus
+### Network consensus
 
-- **Canonical Subset**: Only canonical nodes participate in core network consensus
-- **Message Consistency**: All canonical nodes maintain identical views of the message history
-- **Peer Synchronization**: Nodes subscribe to each other's message feeds for consistency
+- **Canonical subset**: Only canonical nodes participate in core network consensus
+- **Message consistency**: All canonical nodes maintain identical views of the message history
+- **Peer synchronization**: Nodes subscribe to each other's message feeds for consistency
 
-### Operational Management
+### Operational management
 
-- **Dynamic Network**: Nodes can be added or removed from the canonical network without service interruption
-- **Performance Optimization**: Limited canonical network size ensures optimal performance
+- **Dynamic network**: Nodes can be added or removed from the canonical network without service interruption
+- **Performance optimization**: Limited canonical network size ensures optimal performance
 - **Monitoring**: Node operators can update their HTTP addresses and service endpoints
