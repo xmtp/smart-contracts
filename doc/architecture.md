@@ -18,7 +18,7 @@
       - [xmtpd service components](#xmtpd-service-components)
       - [Onboarding process](#onboarding-process)
     - [Administrators](#administrators)
-      - [Parameter flow](#parameter-flow)
+      - [Parameter Registry](#parameter-registry)
   - [Economic model](#economic-model)
     - [Fee structure](#fee-structure)
     - [Settlement process](#settlement-process)
@@ -202,8 +202,6 @@ End users are the ultimate consumers of XMTP messaging services, typically acces
 
 Administrators manage system governance, parameters, and network operations through multi-signature wallets and eventual governance mechanisms.
 
-The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
-
 **Responsibilities**:
 
 - **Parameter management**: Update system parameters via SettlementChainParameterRegistry
@@ -211,7 +209,9 @@ The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
 - **Upgrade coordination**: Manage contract upgrades and migrations
 - **Economic policy**: Set fee rates, distribution parameters, and protocol policies
 
-#### Parameter flow
+#### Parameter Registry
+
+The [Parameter Registry](./parameter-registry.md) is the centralized on-chain configuration repository.
 
 ```mermaid
 sequenceDiagram
