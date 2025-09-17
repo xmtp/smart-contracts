@@ -1,5 +1,26 @@
 # XMTP network contracts
 
+- [XMTP network contracts](#xmtp-network-contracts)
+  - [System design](#system-design)
+  - [Deployment process](#deployment-process)
+  - [Key components](#key-components)
+    - [Settlement chain](#settlement-chain)
+    - [XMTP App Chain](#xmtp-app-chain)
+    - [Cross-chain infrastructure](#cross-chain-infrastructure)
+  - [Parameter Registry](#parameter-registry)
+  - [Data flow](#data-flow)
+  - [Design rationale](#design-rationale)
+    - [L2/L3 chain separation](#l2l3-chain-separation)
+    - [Fee token](#fee-token)
+    - [Parameter registry architecture](#parameter-registry-architecture)
+    - [Cross-chain communication](#cross-chain-communication)
+    - [Storage pattern implementation](#storage-pattern-implementation)
+    - [Updateable parameters](#updateable-parameters)
+    - [Migration/upgrade pattern](#migrationupgrade-pattern)
+  - [System considerations](#system-considerations)
+    - [Security considerations](#security-considerations)
+    - [Developer and operational considerations](#developer-and-operational-considerations)
+
 ## System design
 
 XMTP is a cross-chain messaging protocol with two primary components:
@@ -53,7 +74,7 @@ The deployment follows a precise order to handle contract interdependencies:
 - **Initializable**: First proxied implementation of all proxies, aiding in determinism and atomic initialization.
 - **Migratable**: Abstract contract for migration/upgrade functionality.
 
-## Parameter flow
+## Parameter Registry
 
 The parameter system uses a key-value storage mechanism:
 
@@ -69,7 +90,7 @@ The parameter system uses a key-value storage mechanism:
 
 3. **Cross-chain parameter bridging**:
 
-   - `SettlementChainGateway`'s `sendParametersAsRetryableTickets()` packages parameters upon user request.
+   - `SettlementChainGateway`'s `sendParameters(chainIds, keys, gasLimit, maxFeePerGas, amountToSend)` packages parameters upon user request.
    - The gateway fetches current values from the parameter registry and creates a retryable ticket.
    - Ticket targets `AppChainGateway`'s `receiveParameters()` function.
    - Nonce tracking ensures proper ordering of parameter updates on the XMTP App Chain.
@@ -123,11 +144,11 @@ The system is strategically split between an L2 XMTP Settlement Chain and L3 XMT
 
 ### Fee token
 
-For any L3 app chain to not be forever dependent and coupled to a specific third-party stablecoin, we instead chose to wrap a specific stablecoin into a "fee token" that can eventually be upgraded to support several stablecoins or just one other stablecoin. 
+For any L3 app chain to not be forever dependent and coupled to a specific third-party stablecoin, we instead chose to wrap a specific stablecoin into a "fee token" that can eventually be upgraded to support several stablecoins or just one other stablecoin.
 
-The migration for either of these scenarios is not yet designed, as it may not ever be needed, especially if the need for app chains at all goes away before the need to no longer rely on a originally chosen underlying stablecoin (USDC). 
+The migration for either of these scenarios is not yet designed, as it may not ever be needed, especially if the need for app chains at all goes away before the need to no longer rely on a originally chosen underlying stablecoin (USDC).
 
-Such a migration simply needs to be possible. However, to reduce user interactions/complexity, all contracts that handle the Fee Token to or from a user (either by pulling tokens in or transferring them out) should also handle the underlying stablecoin (including wrapping/unwrapping) for convenience. 
+Such a migration simply needs to be possible. However, to reduce user interactions/complexity, all contracts that handle the Fee Token to or from a user (either by pulling tokens in or transferring them out) should also handle the underlying stablecoin (including wrapping/unwrapping) for convenience.
 
 Throughout the codebase, “underlying fee token” refers to the stablecoin wrapped into the Fee Token, so the `FromUnderlying`-suffixed or `IntoUnderlying`-suffixed functions distinguish default Fee Token handling from the explicit underlying token interactions.
 

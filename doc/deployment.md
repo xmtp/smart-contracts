@@ -1,4 +1,11 @@
-# Deployment
+# XMTP network contracts - deployment
+
+- [XMTP network contracts - deployment](#xmtp-network-contracts---deployment)
+  - [Base contracts](#base-contracts)
+    - [Constraints](#constraints)
+    - [Deploy base contracts](#deploy-base-contracts)
+  - [Environment contracts](#environment-contracts)
+    - [Deploy environment contracts](#deploy-environment-contracts)
 
 The project includes deploy and upgrade scripts.
 
@@ -16,7 +23,7 @@ The project includes deploy and upgrade scripts.
 
 Because of the above, for each XMTP Settlement Chain, regardless of environment, a set of base contracts must be deployed only once. This deployment includes the `Factory`, `SettlementChainParameterRegistry`, `FeeToken` (and `MockUnderlyingFeeToken` if it is a testnet), and `SettlementChainGateway` for the XMTP Settlement Chain, and the `Factory`, `AppChainParameterRegistry`, and `AppChainGateway` for the XMTP App Chain. These are called the "base contracts" because they are the base contracts that are required before any environment-specific contracts are deployed.
 
-### Deployment
+### Deploy base contracts
 
 These base contracts are deployed via:
 
@@ -35,7 +42,7 @@ They are verified via:
 
 This deployment includes the `PayerRegistry`, `RateRegistry`, `NodeRegistry`, `PayerReportManager`, `DistributionManager`, and `DepositSplitter` for the XMTP Settlement Chain, and the `GroupMessageBroadcaster`, `IdentityUpdateBroadcaster` for the XMTP App Chain.
 
-### Deployment
+### Deploy environment contracts
 
 These are deployed via:
 
@@ -64,7 +71,7 @@ The parameters are applied at each settlement chain contract via:
 ./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
 ```
 
-Some parameters are bridged to the app chainvia:
+Some parameters are bridged to the app chain via:
 
 ```shell
 ./dev/bridge-starting-parameters <ENVIRONMENT>

@@ -1,6 +1,6 @@
 # XMTP network system architecture
 
-> Last edited: 09/15/2025
+> Last edited: 09/17/2025
 
 - [XMTP network system architecture](#xmtp-network-system-architecture)
   - [System overview](#system-overview)

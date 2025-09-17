@@ -1,4 +1,26 @@
-# XMTP Parameter Registry
+# XMTP network contracts - Parameter registry
+
+- [XMTP network contracts - Parameter registry](#xmtp-network-contracts---parameter-registry)
+  - [Available Configuration](#available-configuration)
+    - [Settlement Chain Parameters](#settlement-chain-parameters)
+      - [Settlement Chain Parameter Registry](#settlement-chain-parameter-registry)
+      - [Fee Token](#fee-token)
+      - [Node Registry](#node-registry)
+      - [Payer Registry](#payer-registry)
+      - [Payer Report Manager](#payer-report-manager)
+      - [Distribution Manager](#distribution-manager)
+      - [Rate Registry](#rate-registry)
+      - [Settlement Chain Gateway](#settlement-chain-gateway)
+      - [Factory (Any Chain)](#factory-any-chain)
+    - [App Chain Parameters](#app-chain-parameters)
+      - [App Chain Parameter Registry](#app-chain-parameter-registry)
+      - [App Chain Gateway](#app-chain-gateway)
+      - [Group Message Broadcaster](#group-message-broadcaster)
+      - [Identity Update Broadcaster](#identity-update-broadcaster)
+    - [Parameter Types and Validation](#parameter-types-and-validation)
+  - [PlantUML version](#plantuml-version)
+  - [Mermaid version](#mermaid-version)
+  - [Explanation of parameter flow steps](#explanation-of-parameter-flow-steps)
 
 This document illustrates the complete process of setting a parameter in the XMTP Settlement Chain parameter registry and its journey to being fetched by a contract on an XMTP App Chain.
 
@@ -121,7 +143,7 @@ SPR --> Admin: Emit ParameterSet event
 deactivate SPR
 
 == Cross-Chain Parameter Bridging ==
-User -> SCG: 2. call sendParametersAsRetryableTickets(keys)
+User -> SCG: 2. call sendParameters(chainIds, keys, gasLimit, maxFeePerGas, amountToSend)
 activate SCG
 SCG -> SPR: 3. get(key)
 activate SPR
@@ -184,7 +206,7 @@ sequenceDiagram
 
     rect rgb(240, 240, 240)
     Note over User, ACG: Cross-Chain Parameter Bridging
-    User->>SCG: 2. call sendParametersAsRetryableTickets(keys)
+    User->>SCG: 2. call sendParameters(chainIds, keys, gasLimit, maxFeePerGas, amountToSend)
     activate SCG
     SCG->>SPR: 3. get(key)
     activate SPR
@@ -233,7 +255,7 @@ sequenceDiagram
    - The registry stores the parameter and emits an event
 
 2. **User initiates parameter bridging**:
-   - User/system calls `sendParametersAsRetryableTickets(keys)` on Settlement Chain Gateway
+   - User/system calls `sendParameters(chainIds, keys, gasLimit, maxFeePerGas, amountToSend)` on Settlement Chain Gateway
    - This begins the cross-chain bridging process
 
 3-6. **Settlement Chain Gateway prepares and sends parameters**:
