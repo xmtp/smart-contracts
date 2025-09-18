@@ -8,55 +8,77 @@ This document illustrates the complete process of setting a parameter in the XMT
 @startuml
 title XMTP Cross-Chain Parameter Flow
 
+actor "User/System" as SCU
 actor "Admin/Governance" as Admin
 participant "Settlement\nParameter Registry" as SPR
-actor "User/System" as User
 participant "Settlement\nChain Gateway" as SCG
+participant "Sequencer\nInfrastructure" as SI
 participant "App Chain\nGateway" as ACG
 participant "App Chain\nParameter Registry" as APR
 participant "App Chain\nContract" as ACC
+actor "User/System" as ASU
 
-== Parameter Setting on Settlement Chain ==
-Admin -> SPR: 1. call set(key, value)
+== 1. Parameter Setting on Settlement Chain ==
+Admin -> SPR: set(key, value)
+
 activate SPR
 SPR -> SPR: Store parameter
-SPR --> Admin: Emit ParameterSet event
+SPR --> Admin: Emit `ParameterSet` event
 deactivate SPR
 
-== Cross-Chain Parameter Bridging ==
-User -> SCG: 2. call sendParametersAsRetryableTickets(keys)
+== 2. Cross-Chain Parameter Bridging ==
+SCU -> SCG: sendParameters(keys)
+
 activate SCG
-SCG -> SPR: 3. get(key)
+SCG -> SPR: get(keys)
+
 activate SPR
-SPR --> SCG: Return parameter value
+SPR --> SCG: values
 deactivate SPR
-SCG -> SCG: 4. Increment nonce
-SCG -> SCG: 5. Format payload with parameters and nonce
-SCG -> ACG: 6. Submit retryable ticket (receiveParameters)
-note right: L2 to L3 cross-chain message\nvia Arbitrum retryable ticket
+
+SCG -> SCG: Increment nonce
+SCG -> SCG: Format payload with\nparameters and nonce
+SCG -> SI: Submit retryable ticket to call\n`appChainGateway.receiveParameters`
+SI --> SI: Emit Messaging event
+SCG --> SCU: Emit `ParametersSent` event
 deactivate SCG
 
-== Parameter Receipt on App Chain ==
+== 3. Parameter Receipt on App Chain ==
+
+SI -> ACG: Try retryable ticket to calling\n`receiveParameters`
+
+activate SI
+
 activate ACG
-ACG -> ACG: 7. Verify sender is settlement chain alias
-ACG -> ACG: 8. Check nonce for each parameter
-ACG -> APR: 9. call set(key, value) for each parameter
+ACG -> ACG: Verify sender is settlement chain alias
+ACG -> ACG: Check nonce for each parameter
+ACG -> APR: set(key, value) for each parameter
+
 activate APR
 APR -> APR: Store parameter
 APR --> ACG: Emit ParameterSet event
 deactivate APR
-ACG -> ACG: 10. Update nonce for each parameter
+
+ACG -> ACG: Update nonce for each parameter
+ACG --> SI: Emit `ParametersReceived` event
 deactivate ACG
 
-== Parameter Access by App Chain Contract ==
-ACC -> ACC: 11. Contract operation requires parameter
+deactivate SI
+
+== 4. Parameter Access by App Chain Contract ==
+ACU -> ACC: some interaction
+
 activate ACC
-ACC -> APR: 12. call get(key)
+ACC -> ACC: Contract operation\nrequires parameter
+ACC -> APR: get(key)
+
 activate APR
-APR --> ACC: Return parameter value
+APR --> ACC: value
 deactivate APR
-ACC -> ACC: 13. Process value (type conversion, validation)
-ACC -> ACC: 14. Execute logic with parameter value
+
+ACC -> ACC: Process value\n(type conversion, validation)
+ACC -> ACC: Execute logic\nwith parameter value
+ACC --> ACU: Emit event
 deactivate ACC
 
 @enduml
@@ -68,96 +90,109 @@ deactivate ACC
 sequenceDiagram
     title XMTP Cross-Chain Parameter Flow
 
+    actor SCU as User/System
     actor Admin as Admin/Governance
     participant SPR as Settlement<br>Parameter Registry
-    actor User as User/System
     participant SCG as Settlement<br>Chain Gateway
+    participant SI as Sequencer<br>Infrastructure
     participant ACG as App Chain<br>Gateway
     participant APR as App Chain<br>Parameter Registry
     participant ACC as App Chain<br>Contract
+    participant ACU as App Chain<br>User
 
     rect rgb(240, 240, 240)
-    Note over Admin, SPR: Parameter Setting on Settlement Chain
-    Admin->>SPR: 1. call set(key, value)
+    Note over Admin, SPR: 1. Parameter Setting on Settlement Chain
+    Admin->>SPR: set(key, value)
+
     activate SPR
-    SPR->>SPR: Store parameter
-    SPR-->>Admin: Emit ParameterSet event
+    SPR ->> SPR: Store parameter
+    SPR -->> Admin: Emit `ParameterSet` event
     deactivate SPR
     end
 
     rect rgb(240, 240, 240)
-    Note over User, ACG: Cross-Chain Parameter Bridging
-    User->>SCG: 2. call sendParametersAsRetryableTickets(keys)
+    Note over SCU, SI: 2. Cross-Chain Parameter Bridging
+    SCU ->> SCG: sendParameters(keys)
+
     activate SCG
-    SCG->>SPR: 3. get(key)
+    SCG ->> SPR: get(keys)
+
     activate SPR
-    SPR-->>SCG: Return parameter value
+    SPR -->> SCG: values
     deactivate SPR
-    SCG->>SCG: 4. Increment nonce
-    SCG->>SCG: 5. Format payload with parameters and nonce
-    SCG->>ACG: 6. Submit retryable ticket (receiveParameters)
-    Note right of SCG: L2 to L3 cross-chain message<br>via Arbitrum retryable ticket
+
+    SCG ->> SCG: Increment nonce
+    SCG ->> SCG: Format payload with<br>parameters and nonce
+    SCG ->> SI: Submit retryable ticket to call<br>`appChainGateway.receiveParameters`
+    SI --> SI: Emit Messaging event
+    SCG -->> SCU: Emit `ParametersSent` event
     deactivate SCG
     end
 
     rect rgb(240, 240, 240)
-    Note over ACG, APR: Parameter Receipt on App Chain
+    Note over SI, APR: 3. Parameter Receipt on App Chain
+    SI ->> ACG: Try retryable ticket to calling<br>`receiveParameters`
+
     activate ACG
-    ACG->>ACG: 7. Verify sender is settlement chain alias
-    ACG->>ACG: 8. Check nonce for each parameter
-    ACG->>APR: 9. call set(key, value) for each parameter
+    ACG ->> ACG: Verify sender is settlement chain alias
+    ACG ->> ACG: Check nonce for each parameter
+    ACG ->> APR: set(key, value) for each parameter
+
     activate APR
-    APR->>APR: Store parameter
-    APR-->>ACG: Emit ParameterSet event
+    APR ->> APR: Store parameter
+    APR -->> ACG: Emit ParameterSet event
     deactivate APR
-    ACG->>ACG: 10. Update nonce for each parameter
+
+    ACG ->> ACG: Update nonce for each parameter
+    ACG -->> SI: Emit `ParametersReceived` event
     deactivate ACG
+
     end
 
     rect rgb(240, 240, 240)
-    Note over ACC, APR: Parameter Access by App Chain Contract
-    ACC->>ACC: 11. Contract operation requires parameter
+    Note over APR, ACU: 4. Parameter Access by App Chain Contract
+    ACU ->> ACC: some interaction
     activate ACC
-    ACC->>APR: 12. call get(key)
+    ACC ->> ACC: Contract operation requires parameter
+    ACC ->> APR: get(key)
     activate APR
-    APR-->>ACC: Return parameter value
+    APR -->> ACC: value
     deactivate APR
-    ACC->>ACC: 13. Process value (type conversion, validation)
-    ACC->>ACC: 14. Execute logic with parameter value
+    ACC ->> ACC: Process value (type conversion, validation)
+    ACC ->> ACC: Execute logic with parameter value
+    ACC -->> ACU: Emit event
     deactivate ACC
     end
 ```
 
 ## Explanation of parameter flow steps
 
-1. **Admin sets parameter on the XMTP Settlement Chain**:
+1. To set a parameter, on the Settlement Chain:
 
-    - Admin/governance calls `set(key, value)` on Settlement Parameter Registry
-    - The registry stores the parameter and emits an event
+   - Admin/governance calls `set(key, value)` on Parameter Registry
+   - The registry stores the parameter and emits an event
 
-2. **User initiates parameter bridging**:
-    - User/system calls `sendParametersAsRetryableTickets(keys)` on Settlement Chain Gateway
-    - This begins the cross-chain bridging process
+2. To bridge parameters to the app chain, on the Settlement Chain:
 
-3-6. **Settlement Chain Gateway prepares and sends parameters**:
+   - any User/system calls `sendParameters(keys)` on the Gateway
+   - This begins the cross-chain bridging process
+   - Gateway retrieves current parameter values from Parameter Registry
+   - Gateway tracks nonce to ensure ordered parameter updates
+   - Gateway formats payload containing parameters and nonce
+   - Gateway submits a retryable ticket to the "Sequencer Infrastructure" (inbox, then bridge)
 
-- Gateway retrieves current parameter values from Settlement Parameter Registry
-- Gateway tracks nonce to ensure ordered parameter updates
-- Gateway formats payload containing parameters and nonce
-- Gateway submits a retryable ticket to the App Chain Gateway
+3. To receive parameters on the App Chain, on the App Chain:
 
-7-10. **App Chain Gateway receives and processes parameters**:
+   - Sequencer Infrastructure submit the retryable ticket and tries the call and calldata once
+   - Gateway verifies sender is the Settlement Chain Gateway alias
+   - Gateway checks nonce for each parameter to prevent replay/out-of-order updates
+   - Gateway sets parameters in Parameter Registry
+   - Gateway updates nonce tracking for each parameter
 
-- App Chain Gateway verifies sender is the Settlement Chain Gateway alias
-- Gateway checks nonce for each parameter to prevent replay/out-of-order updates
-- Gateway sets parameters in App Chain Parameter Registry
-- Gateway updates nonce tracking for each parameter
-
-11-14. **App Chain Contract accesses parameter**:
-
-- During operation, contract needs to access a parameter
-- Contract calls `get(key)` on App Chain Parameter Registry
-- Contract converts the bytes32 value to the appropriate type
-- Contract executes logic using the parameter value
+4. To access a parameter, on the App Chain:
+   - Some call is made to an app chain contract
+   - During operation, if the contract needs to access a parameter, it calls `get(key)` on Parameter Registry
+   - Contract converts and validates the bytes32 value to the appropriate type
+   - Contract executes logic using the parameter value
 
 This sequence demonstrates the complete lifecycle of a parameter from its initial setting on the XMTP Settlement Chain to its eventual use by a contract on the XMTP App Chain, highlighting the cross-chain bridging mechanism using retryable tickets.
