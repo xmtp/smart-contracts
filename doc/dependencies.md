@@ -1,4 +1,11 @@
-# XMTP smart contracts - communication dependency diagram
+# XMTP network contracts - communication dependency diagram
+
+- [XMTP network contracts - communication dependency diagram](#xmtp-network-contracts---communication-dependency-diagram)
+  - [Contract communication diagram](#contract-communication-diagram)
+  - [Key communication dependencies](#key-communication-dependencies)
+    - [XMTP Settlement Chain contracts](#xmtp-settlement-chain-contracts)
+    - [XMTP App Chain contracts](#xmtp-app-chain-contracts)
+  - [Primary communication flows](#primary-communication-flows)
 
 This diagram illustrates the communication dependencies between contracts in the XMTP smart contracts ecosystem, focusing exclusively on which contracts call functions on other contracts (not inheritance).
 

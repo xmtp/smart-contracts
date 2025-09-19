@@ -12,7 +12,7 @@ For newcomers to XMTP, we recommend starting with the **[System Architecture](./
 
 - **[System architecture](./architecture.md)**: _Start here_ - Complete system overview, chain architecture, and key concepts
 - **[Contracts](./contracts.md)**: Detailed smart contract specifications and interactions
-- **[Parameter flow](./parameter-flow.md)**: Cross-chain parameter synchronization mechanism
+- **[Parameter Registry](./parameter-registry.md)**: Cross-chain parameter synchronization mechanism
 
 ### Actor-specific guides
 

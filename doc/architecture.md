@@ -1,6 +1,6 @@
 # XMTP network system architecture
 
-> Last edited: 09/15/2025
+> Last edited: 09/19/2025
 
 - [XMTP network system architecture](#xmtp-network-system-architecture)
   - [System overview](#system-overview)
@@ -18,7 +18,7 @@
       - [xmtpd service components](#xmtpd-service-components)
       - [Onboarding process](#onboarding-process)
     - [Administrators](#administrators)
-      - [Parameter flow](#parameter-flow)
+      - [Parameter registry](#parameter-registry)
   - [Economic model](#economic-model)
     - [Fee structure](#fee-structure)
     - [Settlement process](#settlement-process)
@@ -211,7 +211,9 @@ The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
 - **Upgrade coordination**: Manage contract upgrades and migrations
 - **Economic policy**: Set fee rates, distribution parameters, and protocol policies
 
-#### Parameter flow
+#### Parameter registry
+
+The [Parameter registry](./parameter-registry.md) is the centralized on-chain configuration repository.
 
 ```mermaid
 sequenceDiagram
