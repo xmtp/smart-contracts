@@ -1,4 +1,11 @@
-# Payers
+# XMTP network economic model - Payers
+
+- [XMTP network economic model - Payers](#xmtp-network-economic-model---payers)
+  - [Funding methods](#funding-methods)
+    - [Manual funding process](#manual-funding-process)
+    - [Simplified funding with DepositSplitter](#simplified-funding-with-depositsplitter)
+    - [XMTP Funding Portal integration](#xmtp-funding-portal-integration)
+  - [DepositSplitter workflow](#depositsplitter-workflow)
 
 Payers are entities (typically app developers, agents, or service providers) who need to fund their accounts to pay for XMTP network services such as message broadcasting and identity updates. XMTP provides multiple funding mechanisms to accommodate different user preferences and technical capabilities.
 

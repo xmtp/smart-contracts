@@ -1,4 +1,21 @@
-# Payer reports
+# XMTP network economic model - Payer reports
+
+- [XMTP network economic model - Payer reports](#xmtp-network-economic-model---payer-reports)
+  - [PayerReport structure](#payerreport-structure)
+    - [Field descriptions](#field-descriptions)
+  - [EIP-712 signature hash](#eip-712-signature-hash)
+  - [Merkle tree structure](#merkle-tree-structure)
+  - [Report lifecycle](#report-lifecycle)
+    - [1. Report generation (offchain)](#1-report-generation-offchain)
+    - [2. Attestation and signing](#2-attestation-and-signing)
+    - [3. Report submission](#3-report-submission)
+    - [4. Settlement process](#4-settlement-process)
+  - [Key features](#key-features)
+    - [Sequential processing](#sequential-processing)
+    - [Consensus mechanism](#consensus-mechanism)
+    - [Economic integration](#economic-integration)
+    - [Partial settlement support](#partial-settlement-support)
+  - [Error handling](#error-handling)
 
 As described in the [architecture](./architecture.md) document, the MLS standard defines multiple message types. In the XMTP network, two of those types are directly published to the blockchain, and payers through the `Gateway` service pay directly for the gas used to publish them.
 
