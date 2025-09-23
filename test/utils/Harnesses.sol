@@ -367,6 +367,10 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
     function __getReceiveDepositDataLength() external view returns (uint256 receiveDepositDataLength_) {
         return _receiveDepositDataLength;
     }
+
+    function __convertToWei(uint256 v) external view returns (uint256) {
+        return _convertToWei(v);
+    }
 }
 
 contract AppChainGatewayHarness is AppChainGateway {

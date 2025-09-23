@@ -2334,4 +2334,15 @@ contract SettlementChainGatewayTests is Test {
     function test_appChainAlias() external view {
         assertEq(_gateway.appChainAlias(), AddressAliasHelper.toAlias(address(_gateway)));
     }
+
+    function test_convertToWei_largeValue_succeeds() external {
+        // This value would have overflowed under (value * 1e18) / 1e6,
+        // but should now succeed with value * 1e12.
+        uint256 unsafeValue = (type(uint256).max / 1e18) + 1;
+
+        uint256 expected = unsafeValue * 1e12; // exact 18->6 scaling (no rounding)
+
+        uint256 got = _gateway.__convertToWei(unsafeValue);
+        assertEq(got, expected);
+    }
 }
