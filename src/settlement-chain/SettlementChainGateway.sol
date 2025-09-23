@@ -48,6 +48,9 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     /// @dev The length of the submission data for the `receiveDeposit` call to the app chain gateway.
     uint256 internal immutable _receiveDepositDataLength;
 
+    /// @dev The precomputed scaling factor between the fee token's decimals and 18 decimals (wei).
+    uint256 internal immutable _scale;
+
     /* ============ UUPS Storage ============ */
 
     /**
@@ -99,6 +102,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         _feeTokenDecimals = IERC20Like(feeToken).decimals();
 
         if (_feeTokenDecimals > 18) revert InvalidFeeTokenDecimals();
+
+        _scale = 10 ** (18 - _feeTokenDecimals);
 
         _underlyingFeeToken = IFeeTokenLike(feeToken).underlying();
 
@@ -598,7 +603,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     function _convertToWei(uint256 value_) internal view returns (uint256 wei_) {
-        return (value_ * ((10 ** 18) / (10 ** _feeTokenDecimals)));
+        return value_ * _scale;
     }
 
     /**
