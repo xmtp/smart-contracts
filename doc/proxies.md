@@ -1,4 +1,9 @@
-# Proxy, factory, and migration patterns
+# XMTP network contracts - Proxy, factory, and migration patterns
+
+- [XMTP network contracts - Proxy, factory, and migration patterns](#xmtp-network-contracts---proxy-factory-and-migration-patterns)
+  - [Proxy pattern](#proxy-pattern)
+  - [Factory pattern](#factory-pattern)
+  - [Migration pattern](#migration-pattern)
 
 ## Proxy pattern
 
@@ -106,7 +111,7 @@ Note that it is possible for the new implementation to define entirely new migra
 
 The additional benefits of this mechanism are that individual proxies or implementations are not burdened (in both code size and complexity) by having to define the specific migration logic based on the version of the implementation that is being migrated from. The specific migration code is completely decoupled and compartmentalized in a deployed `Migrator` contract (which can be voted on by governance), which can perform additional checks (i.e., starting implementation slot value) and validations.
 
-A sample `Migrator` contract is provided in the [Migrator.sol](../src/any-chain/Migrator.sol) file, which is deployed by the `Factory` contract via the `deployImplementation` function, where the bytecode is the creation code of the `Migrator` contract with the `fromImplementation` and `toImplementation` as the constructor arguments. 
+A sample `Migrator` contract is provided in the [Migrator.sol](../src/any-chain/Migrator.sol) file, which is deployed by the `Factory` contract via the `deployImplementation` function, where the bytecode is the creation code of the `Migrator` contract with the `fromImplementation` and `toImplementation` as the constructor arguments.
 
 This `Migrator` contract is then used to migrate a proxy whose value at the implementation slot equals `fromImplementation`, and sets the value at the implementation slot to `toImplementation`.
 
