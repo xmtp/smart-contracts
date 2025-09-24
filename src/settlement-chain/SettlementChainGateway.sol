@@ -405,7 +405,7 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         });
 
         // slither-disable-next-line reentrancy-events
-        emit Deposit(chainId_, messageNumber_, recipient_, amount_);
+        emit Deposit(chainId_, messageNumber_, recipient_, _convertFromWei(appChainAmount_ - maxTotalCosts_));
     }
 
     /// @dev Pull the underlying fee tokens from the caller, and convert them to fee tokens.
@@ -604,6 +604,10 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
 
     function _convertToWei(uint256 value_) internal view returns (uint256 wei_) {
         return value_ * _scale;
+    }
+
+    function _convertFromWei(uint256 value_) internal view returns (uint256 newValue_) {
+        return value_ / _scale;
     }
 
     /**
