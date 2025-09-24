@@ -65,19 +65,19 @@ The starting parameters are defined via:
 ./dev/set-starting-parameters <ENVIRONMENT>
 ```
 
-The parameters are applied at each settlement chain contract via:
+The parameters are applied at each XMTP Settlement Chain contract via:
 
 ```shell
 ./dev/update-starting-parameters <ENVIRONMENT> settlement-chain
 ```
 
-Some parameters are bridged to the app chain via:
+Some parameters are bridged to the XMTP App Chain via:
 
 ```shell
 ./dev/bridge-starting-parameters <ENVIRONMENT>
 ```
 
-The parameters are applied at each app chain contract via:
+The parameters are applied at each XMTP App Chain contract via:
 
 ```shell
 ./dev/update-starting-parameters <ENVIRONMENT> app-chain

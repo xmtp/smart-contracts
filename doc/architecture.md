@@ -213,7 +213,7 @@ The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
 
 #### Parameter registry
 
-The [Parameter registry](./parameter-registry.md) is the centralized on-chain configuration repository.
+The [Parameter registry](./parameter-registry.md) is the centralized onchain configuration repository.
 
 ```mermaid
 sequenceDiagram

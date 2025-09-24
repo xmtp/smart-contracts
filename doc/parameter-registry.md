@@ -24,28 +24,28 @@
 
 This document illustrates the complete process of setting a parameter in the XMTP Settlement Chain parameter registry and its journey to being fetched by a contract on an XMTP App Chain.
 
-## Available Configuration
+## Available configuration
 
-The XMTP protocol uses a comprehensive parameter system to manage configuration across all contracts. Parameters are organized by contract and functionality, using a hierarchical key structure. All parameter keys follow the pattern `xmtp.{contract}.{parameter}`.
+XMTP uses a comprehensive parameter system to manage configuration across all contracts. Parameters are organized by contract and functionality, using a hierarchical key structure. All parameter keys follow the pattern `xmtp.{contract}.{parameter}`.
 
-### Settlement Chain Parameters
+### XMTP Settlement Chain parameters
 
-#### Settlement Chain Parameter Registry
+#### XMTP Settlement Chain parameter registry
 
 - **`xmtp.settlementChainParameterRegistry.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.settlementChainParameterRegistry.isAdmin.{address}`**: Admin status for specific addresses. Note: addresses are always lowercase.
 
-#### Fee Token
+#### Fee token
 
 - **`xmtp.feeToken.migrator`**: Address of the migrator contract for upgrades
 
-#### Node Registry
+#### Node registry
 
 - **`xmtp.nodeRegistry.admin`**: Administrator address for node management
 - **`xmtp.nodeRegistry.maxCanonicalNodes`**: Maximum number of canonical nodes allowed
 - **`xmtp.nodeRegistry.migrator`**: Address of the migrator contract for upgrades
 
-#### Payer Registry
+#### Payer registry
 
 - **`xmtp.payerRegistry.settler`**: Address authorized to settle usage fees
 - **`xmtp.payerRegistry.feeDistributor`**: Address of the fee distribution contract
@@ -54,18 +54,18 @@ The XMTP protocol uses a comprehensive parameter system to manage configuration 
 - **`xmtp.payerRegistry.paused`**: Pause status for payer operations
 - **`xmtp.payerRegistry.migrator`**: Address of the migrator contract for upgrades
 
-#### Payer Report Manager
+#### Payer report manager
 
 - **`xmtp.payerReportManager.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.payerReportManager.protocolFeeRate`**: Protocol fee rate in basis points (0-10000)
 
-#### Distribution Manager
+#### Distribution manager
 
 - **`xmtp.distributionManager.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.distributionManager.paused`**: Pause status for distribution operations
 - **`xmtp.distributionManager.protocolFeesRecipient`**: Address receiving protocol fees
 
-#### Rate Registry
+#### Rate registry
 
 - **`xmtp.rateRegistry.messageFee`**: Fee per message in protocol units
 - **`xmtp.rateRegistry.storageFee`**: Fee per storage unit in protocol units
@@ -73,30 +73,30 @@ The XMTP protocol uses a comprehensive parameter system to manage configuration 
 - **`xmtp.rateRegistry.targetRatePerMinute`**: Target processing rate per minute
 - **`xmtp.rateRegistry.migrator`**: Address of the migrator contract for upgrades
 
-#### Settlement Chain Gateway
+#### XMTP Settlement Chain gateway
 
 - **`xmtp.settlementChainGateway.inbox.{chainId}`**: Inbox address for specific chain ID
 - **`xmtp.settlementChainGateway.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.settlementChainGateway.paused`**: Pause status for gateway operations
 
-#### Factory (Any Chain)
+#### Factory (any chain)
 
 - **`xmtp.factory.paused`**: Pause status for contract deployment
 - **`xmtp.factory.migrator`**: Address of the migrator contract for upgrades
 
-### App Chain Parameters
+### XMTP App Chain parameters
 
-#### App Chain Parameter Registry
+#### XMTP App Chain parameter registry
 
 - **`xmtp.appChainParameterRegistry.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.appChainParameterRegistry.isAdmin.{address}`**: Admin status for specific addresses
 
-#### App Chain Gateway
+#### XMTP App Chain gateway
 
 - **`xmtp.appChainGateway.migrator`**: Address of the migrator contract for upgrades
 - **`xmtp.appChainGateway.paused`**: Pause status for gateway operations
 
-#### Group Message Broadcaster
+#### Group message broadcaster
 
 - **`xmtp.groupMessageBroadcaster.minPayloadSize`**: Minimum allowed message payload size
 - **`xmtp.groupMessageBroadcaster.maxPayloadSize`**: Maximum allowed message payload size
@@ -104,7 +104,7 @@ The XMTP protocol uses a comprehensive parameter system to manage configuration 
 - **`xmtp.groupMessageBroadcaster.paused`**: Pause status for message broadcasting
 - **`xmtp.groupMessageBroadcaster.payloadBootstrapper`**: Address authorized to bootstrap messages
 
-#### Identity Update Broadcaster
+#### Identity update broadcaster
 
 - **`xmtp.identityUpdateBroadcaster.minPayloadSize`**: Minimum allowed identity update payload size
 - **`xmtp.identityUpdateBroadcaster.maxPayloadSize`**: Maximum allowed identity update payload size
@@ -112,7 +112,7 @@ The XMTP protocol uses a comprehensive parameter system to manage configuration 
 - **`xmtp.identityUpdateBroadcaster.paused`**: Pause status for identity update broadcasting
 - **`xmtp.identityUpdateBroadcaster.payloadBootstrapper`**: Address authorized to bootstrap identity updates
 
-### Parameter Types and Validation
+### Parameter types and validation
 
 Parameters are stored as `bytes32` values but represent different data types:
 
