@@ -188,12 +188,12 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         payerReport_.isSettled = leafCount_ == payerReport_.offset;
 
         bytes32 digest_ = _getPayerReportDigest(
-                originatorNodeId_,
-                payerReport_.startSequenceId,
-                payerReport_.endSequenceId,
-                payerReport_.endMinuteSinceEpoch,
-                payerReport_.payersMerkleRoot,
-                payerReport_.nodeIds
+            originatorNodeId_,
+            payerReport_.startSequenceId,
+            payerReport_.endSequenceId,
+            payerReport_.endMinuteSinceEpoch,
+            payerReport_.payersMerkleRoot,
+            payerReport_.nodeIds
         );
 
         // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically

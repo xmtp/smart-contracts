@@ -545,7 +545,15 @@ contract PayerReportManagerHarness is PayerReportManager {
         bytes32 payersMerkleRoot_,
         uint32[] memory nodeIds_
     ) external view returns (bytes32 digest_) {
-        return _getPayerReportDigest(originatorNodeId_, startSequenceId_, endSequenceId_, endMinuteSinceEpoch_, payersMerkleRoot_, nodeIds_);
+        return
+            _getPayerReportDigest(
+                originatorNodeId_,
+                startSequenceId_,
+                endSequenceId_,
+                endMinuteSinceEpoch_,
+                payersMerkleRoot_,
+                nodeIds_
+            );
     }
 }
 
