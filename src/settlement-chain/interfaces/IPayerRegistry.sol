@@ -92,10 +92,11 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Emitted when a payer's usage is settled.
+     * @param  payerReportId The ID of the payer report triggering the settlement.
      * @param  payer  The address of the payer.
      * @param  amount The amount of fee tokens settled (the fee deducted from their balance).
      */
-    event UsageSettled(address indexed payer, uint96 amount);
+    event UsageSettled(bytes32 indexed payerReportId, address indexed payer, uint96 amount);
 
     /**
      * @notice Emitted when excess fee tokens are transferred to the fee distributor.
@@ -266,10 +267,11 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
 
     /**
      * @notice Settles the usage fees for a list of payers.
+     * @param  payerReportId_ The ID of the payer report triggering the settlement.
      * @param  payerFees_   An array of structs containing the payer and the fee to settle.
      * @return feesSettled_ The total amount of fees settled.
      */
-    function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
+    function settleUsage(bytes32 payerReportId_, PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
 
     /**
      * @notice Sends the excess tokens in the contract to the fee distributor.

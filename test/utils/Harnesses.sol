@@ -536,6 +536,17 @@ contract PayerReportManagerHarness is PayerReportManager {
     ) external view returns (bool isValid_) {
         return _verifySignature(digest_, nodeId_, signature_);
     }
+
+    function __getPayerReportDigest(
+        uint32 originatorNodeId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
+        bytes32 payersMerkleRoot_,
+        uint32[] memory nodeIds_
+    ) external view returns (bytes32 digest_) {
+        return _getPayerReportDigest(originatorNodeId_, startSequenceId_, endSequenceId_, endMinuteSinceEpoch_, payersMerkleRoot_, nodeIds_);
+    }
 }
 
 contract DistributionManagerHarness is DistributionManager {

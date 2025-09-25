@@ -865,7 +865,7 @@ contract PayerRegistryTests is Test {
 
         vm.expectRevert(IPayerRegistry.NotSettler.selector);
         vm.prank(_unauthorized);
-        _registry.settleUsage(new IPayerRegistry.PayerFee[](0));
+        _registry.settleUsage(bytes32(0), new IPayerRegistry.PayerFee[](0));
     }
 
     function test_settleUsage_paused() external {
@@ -875,7 +875,7 @@ contract PayerRegistryTests is Test {
         vm.expectRevert(IPayerRegistry.Paused.selector);
 
         vm.prank(_settler);
-        _registry.settleUsage(new IPayerRegistry.PayerFee[](0));
+        _registry.settleUsage(bytes32(0), new IPayerRegistry.PayerFee[](0));
     }
 
     function test_settleUsage() external {
@@ -883,6 +883,8 @@ contract PayerRegistryTests is Test {
         payerFees_[0] = IPayerRegistry.PayerFee({ payer: _alice, fee: 10e6 });
         payerFees_[1] = IPayerRegistry.PayerFee({ payer: _bob, fee: 20e6 });
         payerFees_[2] = IPayerRegistry.PayerFee({ payer: _charlie, fee: 30e6 });
+
+        bytes32 payerReportId_ = keccak256("payerReportId");
 
         _registry.__setSettler(_settler);
 
@@ -894,16 +896,16 @@ contract PayerRegistryTests is Test {
         _registry.__setTotalDebt(10e6); // Charlie's debt.
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.UsageSettled(_alice, 10e6);
+        emit IPayerRegistry.UsageSettled(payerReportId_, _alice, 10e6);
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.UsageSettled(_bob, 20e6);
+        emit IPayerRegistry.UsageSettled(payerReportId_, _bob, 20e6);
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.UsageSettled(_charlie, 30e6);
+        emit IPayerRegistry.UsageSettled(payerReportId_, _charlie, 30e6);
 
         vm.prank(_settler);
-        uint96 feesSettled_ = _registry.settleUsage(payerFees_);
+        uint96 feesSettled_ = _registry.settleUsage(payerReportId_, payerFees_);
 
         assertEq(feesSettled_, 10e6 + 20e6 + 30e6);
 
