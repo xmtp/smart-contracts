@@ -607,7 +607,11 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
     }
 
     function _convertFromWei(uint256 value_) internal view returns (uint256 newValue_) {
-        return value_ / _scale;
+        if (_scale == 1 || value_ == 0) return value_;
+
+        unchecked {
+            return ((value_ - 1) / _scale) + 1;
+        }
     }
 
     /**
