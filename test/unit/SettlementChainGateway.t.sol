@@ -266,6 +266,7 @@ contract SettlementChainGatewayTests is Test {
 
         address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
         uint256 expectedCallValue_ = (amount_ * 10 ** 12) - submissionCost_ - (maxFeePerGas_ * gasLimit_);
+        uint256 expectedMaxFees_ = _gateway.__convertFromWei(submissionCost_ + (maxFeePerGas_ * gasLimit_));
 
         Utils.expectAndMockCall(
             inbox_,
@@ -285,7 +286,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, _bob, _gateway.__convertFromWei(expectedCallValue_));
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_, expectedMaxFees_);
 
         vm.prank(_alice);
         _gateway.deposit(1111, _bob, amount_, gasLimit_, maxFeePerGas_);
@@ -561,6 +562,7 @@ contract SettlementChainGatewayTests is Test {
 
         address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
         uint256 expectedCallValue_ = (amount_ * 10 ** 12) - submissionCost_ - (maxFeePerGas_ * gasLimit_);
+        uint256 expectedMaxFees_ = _gateway.__convertFromWei(submissionCost_ + (maxFeePerGas_ * gasLimit_));
 
         Utils.expectAndMockCall(
             inbox_,
@@ -580,7 +582,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, _bob, _gateway.__convertFromWei(expectedCallValue_));
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_, expectedMaxFees_);
 
         vm.prank(_alice);
         _gateway.depositWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
@@ -791,6 +793,7 @@ contract SettlementChainGatewayTests is Test {
 
         address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
         uint256 expectedCallValue_ = (amount_ * 10 ** 12) - submissionCost_ - (maxFeePerGas_ * gasLimit_);
+        uint256 expectedMaxFees_ = _gateway.__convertFromWei(submissionCost_ + (maxFeePerGas_ * gasLimit_));
 
         Utils.expectAndMockCall(
             inbox_,
@@ -810,7 +813,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, _bob, _gateway.__convertFromWei(expectedCallValue_));
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_, expectedMaxFees_);
 
         vm.prank(_alice);
         _gateway.depositFromUnderlying(1111, _bob, amount_, gasLimit_, maxFeePerGas_);
@@ -1156,6 +1159,7 @@ contract SettlementChainGatewayTests is Test {
 
         address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
         uint256 expectedCallValue_ = (amount_ * 10 ** 12) - submissionCost_ - (maxFeePerGas_ * gasLimit_);
+        uint256 expectedMaxFees_ = _gateway.__convertFromWei(submissionCost_ + (maxFeePerGas_ * gasLimit_));
 
         Utils.expectAndMockCall(
             inbox_,
@@ -1175,7 +1179,7 @@ contract SettlementChainGatewayTests is Test {
         );
 
         vm.expectEmit(address(_gateway));
-        emit ISettlementChainGateway.Deposit(1111, 11, _bob, _gateway.__convertFromWei(expectedCallValue_));
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_, expectedMaxFees_);
 
         vm.prank(_alice);
         _gateway.depositFromUnderlyingWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
