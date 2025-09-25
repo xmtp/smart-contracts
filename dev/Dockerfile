@@ -1,5 +1,5 @@
 # Start from a base image with Foundry installed
-ARG FOUNDRY_VERSION=1.2.0
+ARG FOUNDRY_VERSION=1.3.5
 
 FROM ghcr.io/foundry-rs/foundry:v${FOUNDRY_VERSION} AS builder
 
