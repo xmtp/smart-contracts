@@ -701,7 +701,11 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.__getWithdrawalNonce(_alice), 0);
     }
 
-    function testFuzz_cancelWithdrawal(int104 startingBalance_, uint96 pendingWithdrawal_, uint24 withdrawalNonce_) external {
+    function testFuzz_cancelWithdrawal(
+        int104 startingBalance_,
+        uint96 pendingWithdrawal_,
+        uint24 withdrawalNonce_
+    ) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(pendingWithdrawal_)));
@@ -1288,7 +1292,9 @@ contract PayerRegistryTests is Test {
         _registry.__setPendingWithdrawableTimestamp(_alice, 200);
         _registry.__setWithdrawalNonce(_alice, 0);
 
-        (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_) = _registry.getPendingWithdrawal(_alice);
+        (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_) = _registry.getPendingWithdrawal(
+            _alice
+        );
 
         assertEq(pendingWithdrawal_, 100);
         assertEq(withdrawableTimestamp_, 200);
