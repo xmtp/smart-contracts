@@ -160,8 +160,9 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         payer_.pendingWithdrawal = amount_;
         payer_.withdrawableTimestamp = uint32(block.timestamp) + $.withdrawLockPeriod;
+        payer_.withdrawalNonce = uint24(payer_.withdrawalNonce + 1);
 
-        emit WithdrawalRequested(msg.sender, amount_, payer_.withdrawableTimestamp);
+        emit WithdrawalRequested(msg.sender, amount_, payer_.withdrawableTimestamp, payer_.withdrawalNonce);
 
         uint96 debtIncurred_ = _decreaseBalance(msg.sender, amount_);
 
@@ -177,7 +178,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         if (pendingWithdrawal_ == 0) revert NoPendingWithdrawal();
 
-        emit WithdrawalCancelled(msg.sender);
+        emit WithdrawalCancelled(msg.sender, payerInfo_.withdrawalNonce);
 
         uint96 debtRepaid_ = _increaseBalance(msg.sender, pendingWithdrawal_);
 
@@ -417,10 +418,14 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /// @inheritdoc IPayerRegistry
     function getPendingWithdrawal(
         address payer_
-    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_) {
+    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_) {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 
-        return ($.payers[payer_].pendingWithdrawal, $.payers[payer_].withdrawableTimestamp);
+        return (
+            $.payers[payer_].pendingWithdrawal,
+            $.payers[payer_].withdrawableTimestamp,
+            $.payers[payer_].withdrawalNonce
+        );
     }
 
     /* ============ Internal Interactive Functions ============ */
@@ -513,7 +518,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         // slither-disable-next-line timestamp
         if (block.timestamp < payer_.withdrawableTimestamp) {
-            revert WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp);
+            revert WithdrawalNotReady(uint32(block.timestamp), payer_.withdrawableTimestamp, payer_.withdrawalNonce);
         }
 
         delete payer_.pendingWithdrawal;
@@ -521,7 +526,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
         $.totalDeposits -= _toInt104(pendingWithdrawal_);
 
-        emit WithdrawalFinalized(msg.sender);
+        emit WithdrawalFinalized(msg.sender, payer_.withdrawalNonce);
     }
 
     /**
