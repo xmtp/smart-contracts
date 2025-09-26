@@ -184,7 +184,7 @@ sequenceDiagram
     PRM->>PRM: Update offset for next settlement batch
 
     Note over PRM: Fee Settlement
-    PRM->>PR: settleUsage(payerFees)
+    PRM->>PR: settleUsage(payerReportId, payerFees)
     activate PR
     PR->>PR: Deduct fees from payer balances
     PR->>DM: Transfer fees to DistributionManager

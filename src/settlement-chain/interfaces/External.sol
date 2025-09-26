@@ -119,7 +119,7 @@ interface IPayerRegistryLike {
 
     function deposit(address payer_, uint96 amount_) external;
 
-    function settleUsage(PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
+    function settleUsage(bytes32 payerReportId_, PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
 
     function sendExcessToFeeDistributor() external returns (uint96 excess_);
 }

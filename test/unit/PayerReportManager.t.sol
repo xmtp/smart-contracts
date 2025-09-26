@@ -483,9 +483,11 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0)
         });
 
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
         vm.mockCallRevert(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
+            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
             "Test Failure"
         );
 
@@ -520,9 +522,11 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0)
         });
 
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
+            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
             abi.encode(uint96(600))
         );
 
@@ -562,9 +566,11 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0)
         });
 
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
+            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
             abi.encode(uint96(1_500))
         );
 
@@ -606,9 +612,11 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0)
         });
 
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage((address,uint96)[])", payerFees_),
+            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
             abi.encode(uint96(2_100))
         );
 
