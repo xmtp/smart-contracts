@@ -19,12 +19,13 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      * @param  balance               The signed balance of the payer (negative if debt).
      * @param  pendingWithdrawal     The amount of a pending withdrawal, if any.
      * @param  withdrawableTimestamp The timestamp when the pending withdrawal can be finalized.
+     * @param  withdrawalNonce       The nonce associated with the pending withdrawal. Used for offchain tracking.
      */
     struct Payer {
         int104 balance;
         uint96 pendingWithdrawal;
         uint32 withdrawableTimestamp;
-        // 24 bits remaining in first slot
+        uint24 withdrawalNonce;
     }
 
     /**
@@ -75,20 +76,23 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      * @param  payer                 The address of the payer.
      * @param  amount                The amount of fee tokens requested for withdrawal.
      * @param  withdrawableTimestamp The timestamp when the withdrawal can be finalized.
+     * @param  nonce                 The nonce associated with the requested withdrawal.
      */
-    event WithdrawalRequested(address indexed payer, uint96 amount, uint32 withdrawableTimestamp);
+    event WithdrawalRequested(address indexed payer, uint96 amount, uint32 withdrawableTimestamp, uint24 nonce);
 
     /**
      * @notice Emitted when a payer's pending withdrawal is cancelled.
      * @param  payer The address of the payer.
+     * @param  nonce The nonce associated with the cancelled withdrawal.
      */
-    event WithdrawalCancelled(address indexed payer);
+    event WithdrawalCancelled(address indexed payer, uint24 nonce);
 
     /**
      * @notice Emitted when a payer's pending withdrawal is finalized.
      * @param  payer The address of the payer.
+     * @param  nonce The nonce associated with the finalized withdrawal.
      */
-    event WithdrawalFinalized(address indexed payer);
+    event WithdrawalFinalized(address indexed payer, uint24 nonce);
 
     /**
      * @notice Emitted when a payer's usage is settled.
@@ -158,8 +162,9 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      * @notice Thrown when trying to finalize a withdrawal before the withdraw lock period has passed.
      * @param  timestamp             The current timestamp.
      * @param  withdrawableTimestamp The timestamp when the withdrawal can be finalized.
+     * @param  nonce                 The nonce associated with the pending withdrawal.
      */
-    error WithdrawalNotReady(uint32 timestamp, uint32 withdrawableTimestamp);
+    error WithdrawalNotReady(uint32 timestamp, uint32 withdrawableTimestamp, uint24 nonce);
 
     /// @notice Thrown when trying to finalize a withdrawal while in debt.
     error PayerInDebt();
@@ -374,8 +379,9 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      * @param  payer_                 The address of the payer.
      * @return pendingWithdrawal_     The amount of a pending withdrawal, if any.
      * @return withdrawableTimestamp_ The timestamp when the pending withdrawal can be finalized.
+     * @return nonce_                 The nonce associated with the pending withdrawal.
      */
     function getPendingWithdrawal(
         address payer_
-    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_);
+    ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_);
 }

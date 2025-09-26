@@ -618,11 +618,12 @@ contract PayerRegistryTests is Test {
     function test_requestWithdrawal() external {
         _registry.__setBalance(_alice, 10e6);
         _registry.__setWithdrawLockPeriod(2 days);
+        _registry.__setWithdrawalNonce(_alice, 0);
 
         uint32 expectedPendingWithdrawableTimestamp_ = uint32(vm.getBlockTimestamp()) + 2 days;
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawalRequested(_alice, 10e6, expectedPendingWithdrawableTimestamp_);
+        emit IPayerRegistry.WithdrawalRequested(_alice, 10e6, expectedPendingWithdrawableTimestamp_, 1);
 
         vm.prank(_alice);
         _registry.requestWithdrawal(10e6);
@@ -630,6 +631,7 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.getBalance(_alice), 0);
         assertEq(_registry.__getPendingWithdrawal(_alice), 10e6);
         assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), expectedPendingWithdrawableTimestamp_);
+        assertEq(_registry.__getWithdrawalNonce(_alice), 1);
     }
 
     function testFuzz_requestWithdrawal(int104 startingBalance_, uint96 amount_, uint32 withdrawLockPeriod_) external {
@@ -654,7 +656,7 @@ contract PayerRegistryTests is Test {
             vm.expectRevert();
         } else {
             vm.expectEmit(address(_registry));
-            emit IPayerRegistry.WithdrawalRequested(_alice, amount_, expectedPendingWithdrawableTimestamp_);
+            emit IPayerRegistry.WithdrawalRequested(_alice, amount_, expectedPendingWithdrawableTimestamp_, 1);
         }
 
         vm.prank(_alice);
@@ -687,17 +689,19 @@ contract PayerRegistryTests is Test {
 
     function test_cancelWithdrawal() external {
         _registry.__setPendingWithdrawal(_alice, 10e6);
+        _registry.__setWithdrawalNonce(_alice, 0);
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawalCancelled(_alice);
+        emit IPayerRegistry.WithdrawalCancelled(_alice, 0);
 
         vm.prank(_alice);
         _registry.cancelWithdrawal();
 
         assertEq(_registry.__getPendingWithdrawal(_alice), 0);
+        assertEq(_registry.__getWithdrawalNonce(_alice), 0);
     }
 
-    function testFuzz_cancelWithdrawal(int104 startingBalance_, uint96 pendingWithdrawal_) external {
+    function testFuzz_cancelWithdrawal(int104 startingBalance_, uint96 pendingWithdrawal_, uint24 withdrawalNonce_) external {
         int104 limit_ = int104(uint104(type(uint96).max));
 
         startingBalance_ = int104(_bound(startingBalance_, -limit_, limit_ - _toInt104(pendingWithdrawal_)));
@@ -705,6 +709,7 @@ contract PayerRegistryTests is Test {
         _registry.__setBalance(_alice, startingBalance_);
         _registry.__setPendingWithdrawal(_alice, pendingWithdrawal_);
         _registry.__setPendingWithdrawableTimestamp(_alice, 1);
+        _registry.__setWithdrawalNonce(_alice, withdrawalNonce_);
         _registry.__setTotalDeposits(startingBalance_ + _toInt104(pendingWithdrawal_));
 
         if (startingBalance_ < 0) {
@@ -718,7 +723,7 @@ contract PayerRegistryTests is Test {
             vm.expectRevert(IPayerRegistry.NoPendingWithdrawal.selector);
         } else {
             vm.expectEmit(address(_registry));
-            emit IPayerRegistry.WithdrawalCancelled(_alice);
+            emit IPayerRegistry.WithdrawalCancelled(_alice, withdrawalNonce_);
         }
 
         vm.prank(_alice);
@@ -731,6 +736,7 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.getBalance(_alice), expectedBalance_);
         assertEq(_registry.totalDeposits(), expectedBalance_);
         assertEq(_registry.totalDebt(), expectedTotalDebt_);
+        assertEq(_registry.__getWithdrawalNonce(_alice), withdrawalNonce_);
     }
 
     /* ============ _finalizeWithdrawal ============ */
@@ -757,6 +763,7 @@ contract PayerRegistryTests is Test {
     function test_internal_finalizeWithdrawal_payerInDebt() external {
         _registry.__setBalance(_alice, -1);
         _registry.__setPendingWithdrawal(_alice, 1);
+        _registry.__setWithdrawalNonce(_alice, 0);
 
         vm.expectRevert(IPayerRegistry.PayerInDebt.selector);
 
@@ -767,12 +774,14 @@ contract PayerRegistryTests is Test {
     function test_internal_finalizeWithdrawal_withdrawalNotReady() external {
         _registry.__setPendingWithdrawal(_alice, 1);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()) + 1);
+        _registry.__setWithdrawalNonce(_alice, 0);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IPayerRegistry.WithdrawalNotReady.selector,
                 uint32(vm.getBlockTimestamp()),
-                uint32(vm.getBlockTimestamp()) + 1
+                uint32(vm.getBlockTimestamp()) + 1,
+                0
             )
         );
 
@@ -802,6 +811,7 @@ contract PayerRegistryTests is Test {
     function test_finalizeWithdrawal() external {
         _registry.__setPendingWithdrawal(_alice, 10e6);
         _registry.__setWithdrawableTimestamp(_alice, uint32(vm.getBlockTimestamp()));
+        _registry.__setWithdrawalNonce(_alice, 0);
 
         Utils.expectAndMockCall(
             _feeToken,
@@ -810,13 +820,14 @@ contract PayerRegistryTests is Test {
         );
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawalFinalized(_alice);
+        emit IPayerRegistry.WithdrawalFinalized(_alice, 0);
 
         vm.prank(_alice);
         _registry.finalizeWithdrawal(_bob);
 
         assertEq(_registry.__getPendingWithdrawal(_alice), 0);
         assertEq(_registry.__getPendingWithdrawableTimestamp(_alice), 0);
+        assertEq(_registry.__getWithdrawalNonce(_alice), 0);
     }
 
     /* ============ finalizeWithdrawalIntoUnderlying ============ */
@@ -849,7 +860,7 @@ contract PayerRegistryTests is Test {
         );
 
         vm.expectEmit(address(_registry));
-        emit IPayerRegistry.WithdrawalFinalized(_alice);
+        emit IPayerRegistry.WithdrawalFinalized(_alice, 0);
 
         vm.prank(_alice);
         _registry.finalizeWithdrawalIntoUnderlying(_bob);
@@ -1275,11 +1286,13 @@ contract PayerRegistryTests is Test {
     function test_getPendingWithdrawal() external {
         _registry.__setPendingWithdrawal(_alice, 100);
         _registry.__setPendingWithdrawableTimestamp(_alice, 200);
+        _registry.__setWithdrawalNonce(_alice, 0);
 
-        (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_) = _registry.getPendingWithdrawal(_alice);
+        (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_) = _registry.getPendingWithdrawal(_alice);
 
         assertEq(pendingWithdrawal_, 100);
         assertEq(withdrawableTimestamp_, 200);
+        assertEq(nonce_, 0);
     }
 
     /* ============ excess ============ */
