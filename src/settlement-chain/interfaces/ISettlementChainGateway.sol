@@ -18,8 +18,15 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
      * @param  messageNumber The message number, unique per inbox.
      * @param  recipient     The recipient of the tokens on the app chain.
      * @param  amount        The amount of tokens sent.
+     * @param  maxFees       The maximum fees that will be consumed for the deposit.
      */
-    event Deposit(uint256 indexed chainId, uint256 indexed messageNumber, address indexed recipient, uint256 amount);
+    event Deposit(
+        uint256 indexed chainId,
+        uint256 indexed messageNumber,
+        address indexed recipient,
+        uint256 amount,
+        uint256 maxFees
+    );
 
     /**
      * @notice Emitted when parameters have been sent to the app chain.
