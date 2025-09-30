@@ -379,6 +379,10 @@ contract SettlementChainGatewayHarness is SettlementChainGateway {
     function __convertToWei(uint256 v) external view returns (uint256) {
         return _convertToWei(v);
     }
+
+    function __convertFromWei(uint256 value_) external view returns (uint256) {
+        return _convertFromWei(value_);
+    }
 }
 
 contract AppChainGatewayHarness is AppChainGateway {
