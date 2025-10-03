@@ -45,7 +45,7 @@ contract Factory is IFactory, Migratable, OZInitializable {
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.Factory")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 internal constant _FACTORY_STORAGE_LOCATION =
-        0x98606aa366980dbfce6aa523610c4eabfe62443511d67e10c2c7afde009fbf00; // TODO: Update this.
+        0x651b031aaeb8a5a65735ac2bad4001a08e08ce7e1a4736b27ec7d04baeb8f600;
 
     function _getFactoryStorage() internal pure returns (FactoryStorage storage $) {
         // slither-disable-next-line assembly
