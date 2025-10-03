@@ -108,7 +108,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         payerReportIndex_ = payerReports_.length;
 
-        uint64 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
+        uint64 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 1;
 
         // Enforces that the start sequence ID is the last end sequence ID.
         if (startSequenceId_ != lastSequenceId_) {

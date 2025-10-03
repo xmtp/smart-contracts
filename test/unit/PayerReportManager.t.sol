@@ -160,7 +160,7 @@ contract PayerReportManagerTests is Test {
 
         _manager.submit({
             originatorNodeId_: 0,
-            startSequenceId_: 0,
+            startSequenceId_: 1,
             endSequenceId_: 1,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
@@ -174,7 +174,7 @@ contract PayerReportManagerTests is Test {
             1
         );
 
-        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk);
+        bytes memory signature_ = _getPayerReportSignature(0, 1, 1, 0, 0, new uint32[](0), _signer1Pk);
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: signature_ });
 
@@ -186,8 +186,8 @@ contract PayerReportManagerTests is Test {
 
         _manager.submit({
             originatorNodeId_: 0,
-            startSequenceId_: 0,
-            endSequenceId_: 0,
+            startSequenceId_: 1,
+            endSequenceId_: 1,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
             nodeIds_: new uint32[](0),
