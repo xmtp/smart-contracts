@@ -204,6 +204,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
 
     /// @inheritdoc IPayerRegistry
     function settleUsage(
+        bytes32 payerReportId_,
         PayerFee[] calldata payerFees_
     ) external onlySettler whenNotPaused returns (uint96 feesSettled_) {
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
@@ -214,7 +215,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
             address payer_ = payerFees_[index_].payer;
             uint96 fee_ = payerFees_[index_].fee;
 
-            emit UsageSettled(payer_, fee_);
+            emit UsageSettled(payerReportId_, payer_, fee_);
 
             feesSettled_ += fee_;
             totalDeposits_ -= _toInt104(fee_);

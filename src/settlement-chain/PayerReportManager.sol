@@ -187,10 +187,19 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         payerReport_.isSettled = leafCount_ == payerReport_.offset;
 
+        bytes32 digest_ = _getPayerReportDigest(
+            originatorNodeId_,
+            payerReport_.startSequenceId,
+            payerReport_.endSequenceId,
+            payerReport_.endMinuteSinceEpoch,
+            payerReport_.payersMerkleRoot,
+            payerReport_.nodeIds
+        );
+
         // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically
         // decoded as the required structs by the payer registry's `settleUsage` function.
         (bool success_, bytes memory returnData_) = payerRegistry.call(
-            abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, payerFees_)
+            abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, digest_, payerFees_)
         );
 
         if (!success_) revert SettleUsageFailed(returnData_);
@@ -321,7 +330,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint64 endSequenceId_,
         uint32 endMinuteSinceEpoch_,
         bytes32 payersMerkleRoot_,
-        uint32[] calldata nodeIds_
+        uint32[] memory nodeIds_
     ) internal view returns (bytes32 digest_) {
         return
             _getDigest(
