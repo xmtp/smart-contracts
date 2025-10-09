@@ -137,6 +137,10 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
+    /// @notice Thrown when there are no payer reports found for the given originator node ID.
+    /// @param  originatorNodeId The ID of the originator node for which no reports exist.
+    error NoReportsForOriginator(uint32 originatorNodeId);
+
     /* ============ Initialization ============ */
 
     /**
