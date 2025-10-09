@@ -110,7 +110,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         uint64 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
 
-        if (lastSequenceId_ > 0) {
+        if (payerReportIndex_ > 0) {
             bool isUnique_ = _verifyPayerReportIsUnique(
                 payerReportIndex_,
                 originatorNodeId_,
