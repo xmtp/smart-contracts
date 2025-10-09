@@ -887,13 +887,17 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
+        uint32[] memory nodeIds_ = new uint32[](2);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+
         uint32[] memory validSigningNodeIds_ = _manager.__verifySignatures({
             originatorNodeId_: 0,
             startSequenceId_: 0,
             endSequenceId_: 0,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
+            nodeIds_: nodeIds_,
             signatures_: signatures_
         });
 

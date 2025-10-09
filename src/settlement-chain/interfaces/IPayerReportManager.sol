@@ -144,6 +144,9 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @param  originatorNodeId The ID of the originator node for which no reports exist.
     error NoReportsForOriginator(uint32 originatorNodeId);
 
+    /// @notice Thrown when the provided node IDs do not exactly match the registry set.
+    error NodeIdsDoNotMatchRegistry(uint32 expectedCount, uint32 providedCount);
+
     /* ============ Initialization ============ */
 
     /**
