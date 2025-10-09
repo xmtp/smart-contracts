@@ -310,7 +310,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     function getPayerReport(
         uint32 originatorNodeId_,
         uint256 payerReportIndex_
-    ) external view returns (PayerReport memory) {
+    ) external view returns (PayerReport memory payerReport_) {
         PayerReport[] storage arr = _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_];
 
         uint256 length = arr.length;
@@ -318,6 +318,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         if (payerReportIndex_ >= length) revert PayerReportIndexOutOfBounds();
 
         return arr[payerReportIndex_];
+        payerReport_ = arr[payerReportIndex_];
     }
 
     /* ============ Internal View/Pure Functions ============ */
