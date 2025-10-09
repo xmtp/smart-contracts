@@ -367,15 +367,15 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     }
 
     /**
-     * @dev Verifies that the new report is unique.
+     * @dev Verifies that a payer report is unique, compared to a payer report at a given index.
      * @param  lastPayerReportIndex_ The index of the last payer report.
-     * @param  originatorNodeId_     The new report's originator node ID.
-     * @param  startSequenceId_      The new report's start sequence ID.
-     * @param  endSequenceId_        The new report's end sequence ID.
-     * @param  endMinuteSinceEpoch_  The new report's timestamp of the message at `endSequenceId`.
-     * @param  payersMerkleRoot_     The new report's payers Merkle root.
-     * @param  nodeIds_              The new report's active node IDs during the reporting period.
-     * @return isUnique_             Whether the new report is unique.
+     * @param  originatorNodeId_     The originator node ID.
+     * @param  startSequenceId_      The start sequence ID.
+     * @param  endSequenceId_        The end sequence ID.
+     * @param  endMinuteSinceEpoch_  The timestamp of the message at `endSequenceId`.
+     * @param  payersMerkleRoot_     The payers Merkle root.
+     * @param  nodeIds_              The active node IDs during the reporting period.
+     * @return isUnique_             Whether the report is unique.
      */
     function _verifyPayerReportIsUnique(
         uint256 lastPayerReportIndex_,
