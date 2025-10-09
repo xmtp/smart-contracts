@@ -318,7 +318,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         if (payerReportIndex_ >= length) revert PayerReportIndexOutOfBounds();
 
         return arr[payerReportIndex_];
-        payerReport_ = arr[payerReportIndex_];
     }
 
     /* ============ Internal View/Pure Functions ============ */
