@@ -110,6 +110,20 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         uint64 lastSequenceId_ = payerReportIndex_ > 0 ? payerReports_[payerReportIndex_ - 1].endSequenceId : 0;
 
+        if (lastSequenceId_ > 0) {
+            bool isUnique_ = _verifyPayerReportIsUnique(
+                payerReportIndex_,
+                originatorNodeId_,
+                startSequenceId_,
+                endSequenceId_,
+                endMinuteSinceEpoch_,
+                payersMerkleRoot_,
+                nodeIds_
+            );
+
+            if (!isUnique_) revert PayerReportAlreadySubmitted(originatorNodeId_, startSequenceId_, endSequenceId_);
+        }
+
         // Enforces that the start sequence ID is the last end sequence ID.
         if (startSequenceId_ != lastSequenceId_) {
             revert InvalidStartSequenceId(startSequenceId_, lastSequenceId_);
@@ -350,6 +364,51 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     function _isZero(address input_) internal pure returns (bool isZero_) {
         return input_ == address(0);
+    }
+
+    /**
+     * @dev Verifies that the new report is unique.
+     * @param  lastPayerReportIndex_ The index of the last payer report.
+     * @param  originatorNodeId_     The new report's originator node ID.
+     * @param  startSequenceId_      The new report's start sequence ID.
+     * @param  endSequenceId_        The new report's end sequence ID.
+     * @param  endMinuteSinceEpoch_  The new report's timestamp of the message at `endSequenceId`.
+     * @param  payersMerkleRoot_     The new report's payers Merkle root.
+     * @param  nodeIds_              The new report's active node IDs during the reporting period.
+     * @return isUnique_             Whether the new report is unique.
+     */
+    function _verifyPayerReportIsUnique(
+        uint256 lastPayerReportIndex_,
+        uint32 originatorNodeId_,
+        uint64 startSequenceId_,
+        uint64 endSequenceId_,
+        uint32 endMinuteSinceEpoch_,
+        bytes32 payersMerkleRoot_,
+        uint32[] calldata nodeIds_
+    ) internal view returns (bool isUnique_) {
+        PayerReport storage lastPayerReport_ = _getPayerReportManagerStorage().payerReportsByOriginator[
+            originatorNodeId_
+        ][lastPayerReportIndex_ - 1];
+
+        bytes32 lastDigest_ = _getPayerReportDigest(
+            originatorNodeId_,
+            lastPayerReport_.startSequenceId,
+            lastPayerReport_.endSequenceId,
+            lastPayerReport_.endMinuteSinceEpoch,
+            lastPayerReport_.payersMerkleRoot,
+            lastPayerReport_.nodeIds
+        );
+
+        bytes32 newDigest_ = _getPayerReportDigest(
+            originatorNodeId_,
+            startSequenceId_,
+            endSequenceId_,
+            endMinuteSinceEpoch_,
+            payersMerkleRoot_,
+            nodeIds_
+        );
+
+        return lastDigest_ != newDigest_;
     }
 
     /**

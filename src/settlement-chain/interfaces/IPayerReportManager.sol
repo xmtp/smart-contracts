@@ -116,6 +116,9 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Thrown when the number of valid signatures is insufficient.
     error InsufficientSignatures(uint8 validSignatureCount, uint8 requiredSignatureCount);
 
+    /// @notice Thrown when the payer report has already been submitted.
+    error PayerReportAlreadySubmitted(uint32 originatorNodeId, uint64 startSequenceId, uint64 endSequenceId);
+
     /// @notice Thrown when the payer report index is out of bounds.
     error PayerReportIndexOutOfBounds();
 
