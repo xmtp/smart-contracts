@@ -92,6 +92,33 @@ contract PayerReportManagerTests is Test {
 
     /* ============ submit ============ */
 
+    function test_submit_payerReportAlreadySubmitted() external {
+        _manager.__pushPayerReport({
+            originatorNodeId_: 0,
+            startSequenceId_: 0,
+            endSequenceId_: 1,
+            endMinuteSinceEpoch_: 0,
+            feesSettled_: 0,
+            offset_: 0,
+            isSettled_: false,
+            protocolFeeRate_: 0,
+            payersMerkleRoot_: bytes32(uint256(1)),
+            nodeIds_: new uint32[](0)
+        });
+
+        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.PayerReportAlreadySubmitted.selector, 0, 0, 1));
+
+        uint256 payerReportIndex_ = _manager.submit({
+            originatorNodeId_: 0,
+            startSequenceId_: 0,
+            endSequenceId_: 1,
+            endMinuteSinceEpoch_: 0,
+            payersMerkleRoot_: bytes32(uint256(1)),
+            nodeIds_: new uint32[](0),
+            signatures_: new IPayerReportManager.PayerReportSignature[](0)
+        });
+    }
+
     function test_submit_invalidStartSequenceId() external {
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
