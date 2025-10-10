@@ -286,14 +286,23 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
 
         payerReports_ = new PayerReport[](originatorNodeIds_.length);
-
         PayerReportManagerStorage storage $ = _getPayerReportManagerStorage();
 
-        for (uint256 i; i < originatorNodeIds_.length; ++i) {
+        for (uint256 i; i < originatorNodeIds_.length; ) {
             uint32 originatorNodeId_ = originatorNodeIds_[i];
             uint256 payerReportIndex_ = payerReportIndices_[i];
 
-            payerReports_[i] = $.payerReportsByOriginator[originatorNodeId_][payerReportIndex_];
+            PayerReport[] storage arr = $.payerReportsByOriginator[originatorNodeId_];
+            uint256 len = arr.length;
+
+            if (len == 0) revert NoReportsForOriginator(originatorNodeId_);
+            if (payerReportIndex_ >= len) revert PayerReportIndexOutOfBounds();
+
+            payerReports_[i] = arr[payerReportIndex_];
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -302,7 +311,13 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint32 originatorNodeId_,
         uint256 payerReportIndex_
     ) external view returns (PayerReport memory payerReport_) {
-        return _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_][payerReportIndex_];
+        PayerReport[] storage arr = _getPayerReportManagerStorage().payerReportsByOriginator[originatorNodeId_];
+
+        uint256 length = arr.length;
+        if (length == 0) revert NoReportsForOriginator(originatorNodeId_);
+        if (payerReportIndex_ >= length) revert PayerReportIndexOutOfBounds();
+
+        return arr[payerReportIndex_];
     }
 
     /* ============ Internal View/Pure Functions ============ */

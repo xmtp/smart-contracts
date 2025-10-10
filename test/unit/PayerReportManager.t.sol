@@ -1132,6 +1132,73 @@ contract PayerReportManagerTests is Test {
             assertEq(payerReports_[1].nodeIds[index_], 10 + index_);
         }
     }
+    function test_getPayerReports_noReportsForOriginator() external {
+        uint32[] memory nodeIds_ = new uint32[](8);
+
+        for (uint32 index_; index_ < nodeIds_.length; ++index_) {
+            nodeIds_[index_] = 10 + index_;
+        }
+
+        // Only originator 1 has a report; originator 2 has none -> should revert on i=1.
+        _manager.__pushPayerReport({
+            originatorNodeId_: 1,
+            startSequenceId_: 0,
+            endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
+            feesSettled_: 0,
+            offset_: 0,
+            isSettled_: false,
+            protocolFeeRate_: 0,
+            payersMerkleRoot_: 0,
+            nodeIds_: nodeIds_
+        });
+
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 1;
+        originatorNodeIds_[1] = 2;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 0;
+        payerReportIndices_[1] = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.NoReportsForOriginator.selector, uint32(2)));
+        _manager.getPayerReports(originatorNodeIds_, payerReportIndices_);
+    }
+
+    function test_getPayerReports_indexOutOfBounds() external {
+        uint32[] memory nodeIds_ = new uint32[](8);
+
+        for (uint32 index_; index_ < nodeIds_.length; ++index_) {
+            nodeIds_[index_] = 10 + index_;
+        }
+
+        // Both originators have exactly one report.
+        for (uint32 oid = 1; oid <= 2; oid++) {
+            _manager.__pushPayerReport({
+                originatorNodeId_: oid,
+                startSequenceId_: 0,
+                endSequenceId_: 0,
+                endMinuteSinceEpoch_: 0,
+                feesSettled_: 0,
+                offset_: 0,
+                isSettled_: false,
+                protocolFeeRate_: 0,
+                payersMerkleRoot_: 0,
+                nodeIds_: nodeIds_
+            });
+        }
+
+        uint32[] memory originatorNodeIds_ = new uint32[](2);
+        originatorNodeIds_[0] = 1;
+        originatorNodeIds_[1] = 2;
+
+        uint256[] memory payerReportIndices_ = new uint256[](2);
+        payerReportIndices_[0] = 1; // OOB for originator 1
+        payerReportIndices_[1] = 0; // OK for originator 2
+
+        vm.expectRevert(IPayerReportManager.PayerReportIndexOutOfBounds.selector);
+        _manager.getPayerReports(originatorNodeIds_, payerReportIndices_);
+    }
 
     /* ============ getPayerReport ============ */
 
@@ -1169,6 +1236,37 @@ contract PayerReportManagerTests is Test {
         for (uint32 index_; index_ < nodeIds_.length; ++index_) {
             assertEq(payerReport_.nodeIds[index_], 10 + index_);
         }
+    }
+
+    function test_getPayerReport_noReportsForOriginator() external {
+        // originator 123 has no reports at all
+        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.NoReportsForOriginator.selector, uint32(123)));
+        _manager.getPayerReport(123, 0);
+    }
+
+    function test_getPayerReport_indexOutOfBounds() external {
+        uint32[] memory nodeIds_ = new uint32[](8);
+
+        for (uint32 index_; index_ < nodeIds_.length; ++index_) {
+            nodeIds_[index_] = 10 + index_;
+        }
+
+        // push exactly one report for originator 1 (index 0 valid, index 1 OOB)
+        _manager.__pushPayerReport({
+            originatorNodeId_: 1,
+            startSequenceId_: 0,
+            endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
+            feesSettled_: 0,
+            offset_: 0,
+            isSettled_: false,
+            protocolFeeRate_: 0,
+            payersMerkleRoot_: 0,
+            nodeIds_: nodeIds_
+        });
+
+        vm.expectRevert(IPayerReportManager.PayerReportIndexOutOfBounds.selector);
+        _manager.getPayerReport(1, 1);
     }
 
     /* ============ DOMAIN_SEPARATOR ============ */
