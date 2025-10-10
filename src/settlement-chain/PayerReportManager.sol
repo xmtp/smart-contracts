@@ -13,7 +13,7 @@ import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
 import { ERC5267 } from "../abstract/ERC5267.sol";
 import { Migratable } from "../abstract/Migratable.sol";
-import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
+import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
 
 // TODO: If a node signer can sign for more than one node, their signature for a payer report will be identical, and
 //       therefore replayable across their nodes. This may not be ideal, so it might be necessary to include the node ID
@@ -513,22 +513,25 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
         uint8 canonicalCount = INodeRegistry(nodeRegistry).canonicalNodesCount();
 
+        // it is assumed that getAllNodes returns all nodes in sorted order
         uint32[] memory expected = new uint32[](canonicalCount);
         uint256 k;
         for (uint256 i; i < all.length; ) {
             if (all[i].node.isCanonical) {
                 expected[k++] = all[i].nodeId;
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
-        require(k == canonicalCount, "inconsistent canonical count");
+        if (k != canonicalCount) {
+            revert InternalStateCorrupted();
+        }
 
         if (nodeIds_.length != canonicalCount) {
             revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(nodeIds_.length));
         }
-
-        _sortUint32(expected);
 
         // Require submitted nodeIds_ to be strictly increasing (unique & ordered)
         // and to match the expected set element-by-element.
@@ -538,22 +541,9 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             if (i > 0 && id <= prev) revert UnorderedNodeIds();
             if (id != expected[i]) revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(canonicalCount));
             prev = id;
-            unchecked { ++i; }
-        }
-    }
-
-    function _sortUint32(uint32[] memory a) internal pure {
-        uint256 len = a.length;
-        for (uint256 i = 1; i < len; ) {
-            uint32 key = a[i];
-            uint256 j = i;
-            while (j > 0 && a[j - 1] > key) {
-                a[j] = a[j - 1];
-                unchecked { --j; }
+            unchecked {
+                ++i;
             }
-            a[j] = key;
-            unchecked { ++i; }
         }
     }
-
 }

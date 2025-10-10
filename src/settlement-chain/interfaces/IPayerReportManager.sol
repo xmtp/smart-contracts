@@ -147,6 +147,9 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Thrown when the provided node IDs do not exactly match the registry set.
     error NodeIdsDoNotMatchRegistry(uint32 expectedCount, uint32 providedCount);
 
+    /// @notice Thrown when the internal state is corrupted
+    error InternalStateCorrupted();
+
     /* ============ Initialization ============ */
 
     /**
