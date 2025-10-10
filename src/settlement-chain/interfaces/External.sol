@@ -174,6 +174,7 @@ interface IFeeTokenLike {
     function underlying() external view returns (address underlying_);
 }
 
+// slither-disable-next-line name-reused
 /**
  * @title  Subset interface for a SettlementChainGateway.
  * @notice This is the minimal interface needed by contracts within this subdirectory.

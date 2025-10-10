@@ -148,8 +148,10 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
             $.areProtocolFeesClaimed[originatorNodeId_][payerReportIndex_] = true;
 
             unchecked {
-                uint96 protocolFees_ = uint96(
-                    (uint256(payerReport_.feesSettled) * payerReport_.protocolFeeRate) / _ONE_HUNDRED_PERCENT
+                uint96 protocolFees_ = _getProtocolFees(
+                    payerReport_.feesSettled,
+                    payerReport_.protocolFeeRate,
+                    payerReport_.nodeIds.length
                 );
 
                 claimed_ += protocolFees_;
@@ -199,10 +201,12 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
             $.areFeesClaimed[nodeId_][originatorNodeId_][payerReportIndex_] = true;
 
             unchecked {
-                uint96 netFees_ = uint96(
-                    (uint256(payerReport_.feesSettled) * (_ONE_HUNDRED_PERCENT - payerReport_.protocolFeeRate)) /
-                        _ONE_HUNDRED_PERCENT
-                );
+                uint96 netFees_ = payerReport_.feesSettled -
+                    _getProtocolFees(
+                        payerReport_.feesSettled,
+                        payerReport_.protocolFeeRate,
+                        payerReport_.nodeIds.length
+                    );
 
                 // `payerReport_.nodeIds.length` must be at least 1 for `_isInNodeIds` to have returned `true`.
                 uint96 feePortion_ = netFees_ / uint96(payerReport_.nodeIds.length);
@@ -421,6 +425,23 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
 
         return IPayerReportManagerLike(payerReportManager).getPayerReports(originatorNodeIds_, payerReportIndices_);
+    }
+
+    /// @dev Returns the protocol fees such that there will not be any token lost due to rounding errors.
+    function _getProtocolFees(
+        uint96 feesSettled_,
+        uint16 protocolFeeRate_,
+        uint256 nodeCount_
+    ) internal pure returns (uint96 protocolFees_) {
+        if (nodeCount_ == 0) return feesSettled_;
+
+        uint256 nodeFees_ = uint96(
+            (uint256(feesSettled_) * (_ONE_HUNDRED_PERCENT - protocolFeeRate_)) / _ONE_HUNDRED_PERCENT
+        );
+
+        nodeFees_ = (nodeFees_ / nodeCount_) * nodeCount_;
+
+        return uint96(feesSettled_ - nodeFees_);
     }
 
     /// @dev Returns true if the node ID is in the list of node IDs.
