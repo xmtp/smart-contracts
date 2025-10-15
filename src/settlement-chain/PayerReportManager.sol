@@ -517,8 +517,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(nodeIds_.length));
         }
 
-        uint256 j = 0;        // index into nodeIds_ (submitted)
-        uint32 prev = 0;      // for strictly-increasing check on submitted ids
+        uint256 j = 0; // index into nodeIds_ (submitted)
+        uint32 prev = 0; // for strictly-increasing check on submitted ids
 
         for (uint256 i = 0; i < all.length; ) {
             if (all[i].node.isCanonical) {
@@ -536,9 +536,13 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                 }
 
                 prev = actualId;
-                unchecked { ++j; }
+                unchecked {
+                    ++j;
+                }
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         if (j != canonicalCount) {
