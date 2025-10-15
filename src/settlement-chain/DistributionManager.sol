@@ -427,7 +427,13 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         return IPayerReportManagerLike(payerReportManager).getPayerReports(originatorNodeIds_, payerReportIndices_);
     }
 
-    /// @dev Returns the protocol fees such that there will not be any token lost due to rounding errors.
+    /// @dev    Returns the protocol fees ensuring no rounding dust when distributing node fees.
+    /// @param  feesSettled_     Total fees collected.
+    /// @param  protocolFeeRate_ Protocol fee rate in basis points.
+    /// @param  nodeCount_       Number of nodes sharing the remaining fees.
+    /// @return protocolFees_    Protocol fees (may be slightly higher than nominal rate due to rounding).
+    /// @dev    If nodeCount_ is 0, all fees are returned as protocol fees since there are no nodes to distribute to.
+    /// @dev    Node fees are rounded down to a multiple of nodeCount_ to ensure equal distribution without dust.
     function _getProtocolFees(
         uint96 feesSettled_,
         uint16 protocolFeeRate_,
@@ -435,9 +441,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     ) internal pure returns (uint96 protocolFees_) {
         if (nodeCount_ == 0) return feesSettled_;
 
-        uint256 nodeFees_ = uint96(
-            (uint256(feesSettled_) * (_ONE_HUNDRED_PERCENT - protocolFeeRate_)) / _ONE_HUNDRED_PERCENT
-        );
+        uint256 nodeFees_ = (uint256(feesSettled_) * (_ONE_HUNDRED_PERCENT - protocolFeeRate_)) / _ONE_HUNDRED_PERCENT;
 
         nodeFees_ = (nodeFees_ / nodeCount_) * nodeCount_;
 
