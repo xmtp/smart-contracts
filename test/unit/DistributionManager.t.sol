@@ -234,7 +234,7 @@ contract DistributionManagerTests is Test {
             isSettled: true,
             protocolFeeRate: 1_000, // 10%
             payersMerkleRoot: 0,
-            nodeIds: new uint32[](0)
+            nodeIds: new uint32[](3)
         });
 
         payerReports_[1] = IPayerReportManagerLike.PayerReport({
@@ -245,7 +245,7 @@ contract DistributionManagerTests is Test {
             isSettled: true,
             protocolFeeRate: 750, // 7.5%
             payersMerkleRoot: 0,
-            nodeIds: new uint32[](0)
+            nodeIds: new uint32[](3)
         });
 
         Utils.expectAndMockCall(
@@ -256,11 +256,11 @@ contract DistributionManagerTests is Test {
 
         vm.expectEmit(address(_manager));
         emit IDistributionManager.ProtocolFeesClaim(2, 0, 10); // 10% of 100.
-        emit IDistributionManager.ProtocolFeesClaim(3, 1, 15); // 7.5% of 200.
+        emit IDistributionManager.ProtocolFeesClaim(3, 1, 17); // 7.5% of 200, plus 2 due to node rounding.
 
         uint96 claimed_ = _manager.claimProtocolFees(originatorNodeIds_, payerReportIndices_);
 
-        assertEq(claimed_, 10 + 15);
+        assertEq(claimed_, 10 + 17);
         assertEq(_manager.owedProtocolFees(), 300 + claimed_);
         assertEq(_manager.areProtocolFeesClaimed(2, 0), true);
         assertEq(_manager.areProtocolFeesClaimed(3, 1), true);
