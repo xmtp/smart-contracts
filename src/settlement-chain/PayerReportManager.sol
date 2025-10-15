@@ -513,37 +513,36 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
         uint8 canonicalCount = INodeRegistry(nodeRegistry).canonicalNodesCount();
 
-        // it is assumed that getAllNodes returns all nodes in sorted order
-        uint32[] memory expected = new uint32[](canonicalCount);
-        uint8 k = 0;
-        for (uint8 i; i < all.length; ) {
-            if (all[i].node.isCanonical) {
-                expected[k++] = all[i].nodeId;
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        if (k != canonicalCount) {
-            revert InternalStateCorrupted();
-        }
-
         if (nodeIds_.length != canonicalCount) {
             revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(nodeIds_.length));
         }
 
-        // Require submitted nodeIds_ to be strictly increasing (unique & ordered)
-        // and to match the expected set element-by-element.
-        uint32 prev = 0;
-        for (uint256 i; i < nodeIds_.length; ) {
-            uint32 id = nodeIds_[i];
-            if (i > 0 && id <= prev) revert UnorderedNodeIds();
-            if (id != expected[i]) revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(canonicalCount));
-            prev = id;
-            unchecked {
-                ++i;
+        uint256 j = 0;        // index into nodeIds_ (submitted)
+        uint32 prev = 0;      // for strictly-increasing check on submitted ids
+
+        for (uint256 i = 0; i < all.length; ) {
+            if (all[i].node.isCanonical) {
+                // Bounds guaranteed because nodeIds_.length == canonicalCount
+                uint32 expectedId = all[i].nodeId;
+                uint32 actualId = nodeIds_[j];
+
+                if (j > 0) {
+                    // strictly increasing check on submitted array
+                    if (actualId <= prev) revert UnorderedNodeIds();
+                }
+
+                if (actualId != expectedId) {
+                    revert NodeIdsDoNotMatchRegistry(expectedId, actualId);
+                }
+
+                prev = actualId;
+                unchecked { ++j; }
             }
+            unchecked { ++i; }
+        }
+
+        if (j != canonicalCount) {
+            revert InternalStateCorrupted();
         }
     }
 }
