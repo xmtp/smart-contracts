@@ -514,7 +514,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint8 canonicalCount = INodeRegistry(nodeRegistry).canonicalNodesCount();
 
         if (nodeIds_.length != canonicalCount) {
-            revert NodeIdsDoNotMatchRegistry(uint32(canonicalCount), uint32(nodeIds_.length));
+            revert NodeIdsLengthMismatch(uint32(canonicalCount), uint32(nodeIds_.length));
         }
 
         uint256 j = 0; // index into nodeIds_ (submitted)
@@ -532,7 +532,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                 }
 
                 if (actualId != expectedId) {
-                    revert NodeIdsDoNotMatchRegistry(expectedId, actualId);
+                    revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
                 }
 
                 prev = actualId;

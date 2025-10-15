@@ -606,7 +606,7 @@ contract PayerReportManagerTests is Test {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(IPayerReportManager.NodeIdsDoNotMatchRegistry.selector, uint32(3), uint32(2))
+            abi.encodeWithSelector(IPayerReportManager.NodeIdsLengthMismatch.selector, uint32(3), uint32(2))
         );
 
         _manager.submit({
