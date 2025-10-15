@@ -515,8 +515,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         // it is assumed that getAllNodes returns all nodes in sorted order
         uint32[] memory expected = new uint32[](canonicalCount);
-        uint256 k;
-        for (uint256 i; i < all.length; ) {
+        uint8 k = 0;
+        for (uint8 i; i < all.length; ) {
             if (all[i].node.isCanonical) {
                 expected[k++] = all[i].nodeId;
             }
@@ -535,7 +535,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         // Require submitted nodeIds_ to be strictly increasing (unique & ordered)
         // and to match the expected set element-by-element.
-        uint32 prev;
+        uint32 prev = 0;
         for (uint256 i; i < nodeIds_.length; ) {
             uint32 id = nodeIds_[i];
             if (i > 0 && id <= prev) revert UnorderedNodeIds();
