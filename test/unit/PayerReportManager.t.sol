@@ -210,7 +210,6 @@ contract PayerReportManagerTests is Test {
         nodeIds_[2] = 3;
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             2
@@ -265,7 +264,6 @@ contract PayerReportManagerTests is Test {
         });
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         Utils.expectAndMockCall(
             _nodeRegistry,
@@ -331,7 +329,6 @@ contract PayerReportManagerTests is Test {
         });
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         uint32[] memory nodeIds_ = new uint32[](3);
         nodeIds_[0] = 1;
@@ -458,7 +455,6 @@ contract PayerReportManagerTests is Test {
         });
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         uint32[] memory nodeIds_ = new uint32[](3);
         nodeIds_[0] = 1;
@@ -593,7 +589,6 @@ contract PayerReportManagerTests is Test {
         });
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         // Submit an incorrect canonical list (length mismatch here)
         uint32[] memory nodeIds_ = new uint32[](2);
@@ -653,7 +648,6 @@ contract PayerReportManagerTests is Test {
 
         // Mock registry calls used by _enforceNodeIdsMatchCanonicalRegistry
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(uint8(3)));
 
         // The submitted set must be exactly the canonical set (sorted strictly increasing)
         uint32[] memory nodeIds_ = new uint32[](3);

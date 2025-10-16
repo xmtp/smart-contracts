@@ -511,42 +511,49 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     function _enforceNodeIdsMatchRegistry(uint32[] calldata nodeIds_) internal view {
         INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
-        uint8 canonicalCount = INodeRegistry(nodeRegistry).canonicalNodesCount();
 
-        if (nodeIds_.length != canonicalCount) {
-            revert NodeIdsLengthMismatch(uint32(canonicalCount), uint32(nodeIds_.length));
-        }
+        uint256 nodeIdsLen = nodeIds_.length;
+        uint256 len = all.length;
 
-        uint256 j = 0; // index into nodeIds_ (submitted)
-        uint32 prev = 0; // for strictly-increasing check on submitted ids
+        uint256 j = 0; // index into submitted nodeIds_
+        uint256 canon = 0; // count of canonical nodes discovered in registry
+        uint32 prev = 0; // for strictly-increasing check on submitted IDs
 
-        for (uint256 i = 0; i < all.length; ) {
-            if (all[i].node.isCanonical) {
-                // Bounds guaranteed because nodeIds_.length == canonicalCount
-                uint32 expectedId = all[i].nodeId;
-                uint32 actualId = nodeIds_[j];
+        for (uint256 i = 0; i < len; ) {
+            INodeRegistry.NodeWithId memory it = all[i];
 
-                if (j > 0) {
-                    // strictly increasing check on submitted array
-                    if (actualId <= prev) revert UnorderedNodeIds();
-                }
-
-                if (actualId != expectedId) {
-                    revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
-                }
-
-                prev = actualId;
+            if (it.node.isCanonical) {
                 unchecked {
-                    ++j;
+                    ++canon;
+                }
+
+                // If the submitted list is shorter than the canonical set, skip comparisons
+                // but keep counting canonicals so we can return the exact expected count.
+                if (j < nodeIdsLen) {
+                    uint32 actualId = nodeIds_[j];
+
+                    // strictly increasing constraint on the submitted list
+                    if (j != 0 && actualId <= prev) revert UnorderedNodeIds();
+
+                    uint32 expectedId = it.nodeId;
+                    if (actualId != expectedId) {
+                        revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
+                    }
+
+                    prev = actualId;
+                    unchecked {
+                        ++j;
+                    }
                 }
             }
+
             unchecked {
                 ++i;
             }
         }
 
-        if (j != canonicalCount) {
-            revert InternalStateCorrupted();
+        if (canon != nodeIdsLen) {
+            revert NodeIdsLengthMismatch(uint32(canon), uint32(nodeIdsLen));
         }
     }
 }

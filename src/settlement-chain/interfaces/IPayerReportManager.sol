@@ -150,9 +150,6 @@ interface IPayerReportManager is IMigratable, IERC5267, IRegistryParametersError
     /// @notice Element at `index` does not match the canonical node id at that position.
     error NodeIdAtIndexMismatch(uint32 expectedId, uint32 actualId, uint32 index);
 
-    /// @notice Thrown when the internal state is corrupted
-    error InternalStateCorrupted();
-
     /* ============ Initialization ============ */
 
     /**
