@@ -13,6 +13,7 @@ import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
 import { ERC5267 } from "../abstract/ERC5267.sol";
 import { Migratable } from "../abstract/Migratable.sol";
+import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
 
 // TODO: If a node signer can sign for more than one node, their signature for a payer report will be identical, and
 //       therefore replayable across their nodes. This may not be ideal, so it might be necessary to include the node ID
@@ -131,6 +132,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         // Enforces that the end sequence ID is greater than or equal to the start sequence ID.
         if (endSequenceId_ < startSequenceId_) revert InvalidSequenceIds();
+
+        _enforceNodeIdsMatchRegistry(nodeIds_);
 
         // Verifies the signatures and gets the array of valid signing node IDs.
         uint32[] memory validSigningNodeIds_ = _verifySignatures({
@@ -467,7 +470,8 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             ++validSignatureCount_;
         }
 
-        uint8 requiredSignatureCount_ = (INodeRegistryLike(nodeRegistry).canonicalNodesCount() / 2) + 1;
+        // the submitted nodeIds must match the current set of canonical NodeIds
+        uint8 requiredSignatureCount_ = uint8((nodeIds_.length / 2) + 1);
 
         // Enforces that the number of valid signatures is greater than one more than half of the canonical node count.
         if (validSignatureCount_ < requiredSignatureCount_) {
@@ -503,5 +507,53 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         // The signature is valid if the recovered signer is not `address(0)` and is the signer of the node.
         return !_isZero(signer_) && (signer_ == INodeRegistryLike(nodeRegistry).getSigner(nodeId_));
+    }
+
+    function _enforceNodeIdsMatchRegistry(uint32[] calldata nodeIds_) internal view {
+        INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
+
+        uint256 nodeIdsLen = nodeIds_.length;
+        uint256 len = all.length;
+
+        uint256 j = 0; // index into submitted nodeIds_
+        uint256 canon = 0; // count of canonical nodes discovered in registry
+        uint32 prev = 0; // for strictly-increasing check on submitted IDs
+
+        for (uint256 i = 0; i < len; ) {
+            INodeRegistry.NodeWithId memory it = all[i];
+
+            if (it.node.isCanonical) {
+                unchecked {
+                    ++canon;
+                }
+
+                // If the submitted list is shorter than the canonical set, skip comparisons
+                // but keep counting canonicals so we can return the exact expected count.
+                if (j < nodeIdsLen) {
+                    uint32 actualId = nodeIds_[j];
+
+                    // strictly increasing constraint on the submitted list
+                    if (j != 0 && actualId <= prev) revert UnorderedNodeIds();
+
+                    uint32 expectedId = it.nodeId;
+                    if (actualId != expectedId) {
+                        revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
+                    }
+
+                    prev = actualId;
+                    unchecked {
+                        ++j;
+                    }
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (canon != nodeIdsLen) {
+            revert NodeIdsLengthMismatch(uint32(canon), uint32(nodeIdsLen));
+        }
     }
 }

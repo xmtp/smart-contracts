@@ -10,6 +10,7 @@ import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 import { ISequentialMerkleProofsErrors } from "../../src/libraries/interfaces/ISequentialMerkleProofsErrors.sol";
+import { INodeRegistry } from "../../src/settlement-chain/interfaces/INodeRegistry.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
 
@@ -174,6 +175,42 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_submit_unorderedNodeIds() external {
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](3);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({
+                signer: address(0xA1),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({
+                signer: address(0xA2),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        uint32[] memory nodeIds_ = new uint32[](3);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+        nodeIds_[2] = 3;
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             2
         );
@@ -191,23 +228,62 @@ contract PayerReportManagerTests is Test {
             endSequenceId_: 1,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
+            nodeIds_: nodeIds_,
             signatures_: signatures_
         });
     }
 
     function test_submit_insufficientSignatures() external {
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](3);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({
+                signer: address(0xA1),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({
+                signer: address(0xA2),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+
+        uint32[] memory nodeIds_ = new uint32[](3);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+        nodeIds_[2] = 3;
+
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             1
         );
 
-        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk);
+        bytes memory signature_ = _getPayerReportSignature(0, 0, 0, 0, 0, nodeIds_, _signer1Pk);
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: signature_ });
-
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1), abi.encode(true));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
-        vm.mockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
 
         vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.InsufficientSignatures.selector, 1, 2));
 
@@ -217,12 +293,48 @@ contract PayerReportManagerTests is Test {
             endSequenceId_: 0,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
+            nodeIds_: nodeIds_,
             signatures_: signatures_
         });
     }
 
     function test_submit_zeroPayersMerkleRoot() external {
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](3);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({
+                signer: address(0xA1),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({
+                signer: address(0xA2),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
+        uint32[] memory nodeIds_ = new uint32[](3);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+        nodeIds_[2] = 3;
+
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -233,28 +345,23 @@ contract PayerReportManagerTests is Test {
             isSettled_: false,
             protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0)
+            nodeIds_: nodeIds_
         });
 
         _manager.__setProtocolFeeRate(100);
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
-            3
+            2
         );
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, 0, nodeIds_, _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer2Pk)
-        });
-
-        signatures_[2] = IPayerReportManager.PayerReportSignature({
-            nodeId: 3,
-            signature: _getPayerReportSignature(0, 1, 2, 0, 0, new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, 0, nodeIds_, _signer2Pk)
         });
 
         uint32[] memory validSigningNodeIds_ = new uint32[](2);
@@ -278,14 +385,6 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
 
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
-            abi.encode(false)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
-
         vm.expectEmit(address(_manager));
         emit IPayerReportManager.PayerReportSubmitted({
             originatorNodeId: 0,
@@ -294,7 +393,7 @@ contract PayerReportManagerTests is Test {
             endSequenceId: 2,
             endMinuteSinceEpoch: 0,
             payersMerkleRoot: 0,
-            nodeIds: new uint32[](0),
+            nodeIds: nodeIds_,
             signingNodeIds: validSigningNodeIds_
         });
 
@@ -307,7 +406,7 @@ contract PayerReportManagerTests is Test {
             endSequenceId_: 2,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
+            nodeIds_: nodeIds_,
             signatures_: signatures_
         });
 
@@ -322,10 +421,46 @@ contract PayerReportManagerTests is Test {
         assertTrue(payerReport_.isSettled);
         assertEq(payerReport_.protocolFeeRate, 100);
         assertEq(payerReport_.payersMerkleRoot, 0);
-        assertEq(payerReport_.nodeIds.length, 0);
+        assertEq(payerReport_.nodeIds.length, 3);
     }
 
-    function test_submit() external {
+    function test_submit_complete() external {
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](3);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({
+                signer: address(0xA1),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({
+                signer: address(0xA2),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
+        uint32[] memory nodeIds_ = new uint32[](3);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+        nodeIds_[2] = 3;
+
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
             startSequenceId_: 0,
@@ -336,28 +471,23 @@ contract PayerReportManagerTests is Test {
             isSettled_: false,
             protocolFeeRate_: 0,
             payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0)
+            nodeIds_: nodeIds_
         });
 
         _manager.__setProtocolFeeRate(100);
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
-            3
+            2
         );
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({
             nodeId: 1,
-            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer1Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), nodeIds_, _signer1Pk)
         });
 
         signatures_[1] = IPayerReportManager.PayerReportSignature({
             nodeId: 2,
-            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer2Pk)
-        });
-
-        signatures_[2] = IPayerReportManager.PayerReportSignature({
-            nodeId: 3,
-            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), new uint32[](0), _signer3Pk)
+            signature: _getPayerReportSignature(0, 1, 2, 0, bytes32(uint256(1)), nodeIds_, _signer2Pk)
         });
 
         uint32[] memory validSigningNodeIds_ = new uint32[](2);
@@ -381,14 +511,6 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
 
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
-            abi.encode(false)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
-
         vm.expectEmit(address(_manager));
         emit IPayerReportManager.PayerReportSubmitted({
             originatorNodeId: 0,
@@ -397,7 +519,7 @@ contract PayerReportManagerTests is Test {
             endSequenceId: 2,
             endMinuteSinceEpoch: 0,
             payersMerkleRoot: bytes32(uint256(1)),
-            nodeIds: new uint32[](0),
+            nodeIds: nodeIds_,
             signingNodeIds: validSigningNodeIds_
         });
 
@@ -407,7 +529,7 @@ contract PayerReportManagerTests is Test {
             endSequenceId_: 2,
             endMinuteSinceEpoch_: 0,
             payersMerkleRoot_: bytes32(uint256(1)),
-            nodeIds_: new uint32[](0),
+            nodeIds_: nodeIds_,
             signatures_: signatures_
         });
 
@@ -422,7 +544,163 @@ contract PayerReportManagerTests is Test {
         assertFalse(payerReport_.isSettled);
         assertEq(payerReport_.protocolFeeRate, 100);
         assertEq(payerReport_.payersMerkleRoot, bytes32(uint256(1)));
-        assertEq(payerReport_.nodeIds.length, 0);
+        assertEq(payerReport_.nodeIds.length, 3);
+    }
+
+    function test_submit_reverts_when_nodeIds_do_not_match_canonical_set() external {
+        // Registry snapshot:
+        //  id=1 (canonical), id=2 (canonical), id=3 (non-canonical), id=4 (canonical)
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](4);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({
+                signer: address(0xA1),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({
+                signer: address(0xA2),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: false,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[3] = INodeRegistry.NodeWithId({
+            nodeId: 4,
+            node: INodeRegistry.Node({
+                signer: address(0xA4),
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
+        // Submit an incorrect canonical list (length mismatch here)
+        uint32[] memory nodeIds_ = new uint32[](2);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+
+        // Signatures won’t be reached because we expect an early revert
+        IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
+            0
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IPayerReportManager.NodeIdsLengthMismatch.selector, uint32(3), uint32(2))
+        );
+
+        _manager.submit({
+            originatorNodeId_: 0,
+            startSequenceId_: 0, // ok for first report
+            endSequenceId_: 10,
+            endMinuteSinceEpoch_: 0,
+            payersMerkleRoot_: bytes32(uint256(1)),
+            nodeIds_: nodeIds_,
+            signatures_: signatures_
+        });
+    }
+
+    function test_submit_accepts_when_nodeIds_equal_canonical_set_even_with_noncano_present() external {
+        // Registry snapshot:
+        //  id=1 (canonical), id=2 (canonical), id=3 (non-canonical), id=4 (canonical)
+        INodeRegistry.NodeWithId[] memory all_ = new INodeRegistry.NodeWithId[](4);
+        all_[0] = INodeRegistry.NodeWithId({
+            nodeId: 1,
+            node: INodeRegistry.Node({ signer: _signer1, isCanonical: true, signingPublicKey: "", httpAddress: "" })
+        });
+        all_[1] = INodeRegistry.NodeWithId({
+            nodeId: 2,
+            node: INodeRegistry.Node({ signer: _signer2, isCanonical: true, signingPublicKey: "", httpAddress: "" })
+        });
+        all_[2] = INodeRegistry.NodeWithId({
+            nodeId: 3,
+            node: INodeRegistry.Node({
+                signer: address(0xA3),
+                isCanonical: false,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+        all_[3] = INodeRegistry.NodeWithId({
+            nodeId: 4,
+            node: INodeRegistry.Node({
+                signer: _signer3, // canonical signer for id=4
+                isCanonical: true,
+                signingPublicKey: "",
+                httpAddress: ""
+            })
+        });
+
+        // Mock registry calls used by _enforceNodeIdsMatchCanonicalRegistry
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+
+        // The submitted set must be exactly the canonical set (sorted strictly increasing)
+        uint32[] memory nodeIds_ = new uint32[](3);
+        nodeIds_[0] = 1;
+        nodeIds_[1] = 2;
+        nodeIds_[2] = 4;
+
+        // Two valid signatures (quorum for 3 canonicals is (3/2)+1 = 2)
+        IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
+            2
+        );
+
+        bytes memory sig1_ = _getPayerReportSignature(0, 0, 10, 0, bytes32(uint256(1)), nodeIds_, _signer1Pk);
+        bytes memory sig2_ = _getPayerReportSignature(0, 0, 10, 0, bytes32(uint256(1)), nodeIds_, _signer2Pk);
+
+        signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: sig1_ });
+        signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 2, signature: sig2_ });
+
+        // Mocks used by __verifySignature for signers 1 and 2
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
+            abi.encode(true)
+        );
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
+
+        Utils.expectAndMockCall(
+            _nodeRegistry,
+            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
+            abi.encode(true)
+        );
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
+
+        // Submit succeeds; returns index 0 (first report for originator 0)
+        uint256 idx = _manager.submit({
+            originatorNodeId_: 0,
+            startSequenceId_: 0,
+            endSequenceId_: 10,
+            endMinuteSinceEpoch_: 0,
+            payersMerkleRoot_: bytes32(uint256(1)),
+            nodeIds_: nodeIds_,
+            signatures_: signatures_
+        });
+
+        assertEq(idx, 0);
+
+        IPayerReportManager.PayerReport memory pr = _manager.getPayerReport(0, 0);
+        assertEq(pr.startSequenceId, 0);
+        assertEq(pr.endSequenceId, 10);
+        assertEq(pr.nodeIds.length, 3);
+        assertEq(pr.nodeIds[0], 1);
+        assertEq(pr.nodeIds[1], 2);
+        assertEq(pr.nodeIds[2], 4);
     }
 
     /* ============ settle ============ */
@@ -836,136 +1114,6 @@ contract PayerReportManagerTests is Test {
             nodeIds_: new uint32[](0),
             signatures_: new IPayerReportManager.PayerReportSignature[](0)
         });
-    }
-
-    function test_internal_verifySignatures_lastInvalid() external {
-        IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
-            3
-        );
-
-        signatures_[0] = IPayerReportManager.PayerReportSignature({
-            nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk)
-        });
-
-        signatures_[1] = IPayerReportManager.PayerReportSignature({
-            nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer2Pk)
-        });
-
-        signatures_[2] = IPayerReportManager.PayerReportSignature({
-            nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer3Pk)
-        });
-
-        uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
-
-        expectedValidSigningNodeIds_[0] = 1;
-        expectedValidSigningNodeIds_[1] = 2;
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 2), abi.encode(_signer2));
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
-            abi.encode(false)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
-
-        uint32[] memory validSigningNodeIds_ = _manager.__verifySignatures({
-            originatorNodeId_: 0,
-            startSequenceId_: 0,
-            endSequenceId_: 0,
-            endMinuteSinceEpoch_: 0,
-            payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
-            signatures_: signatures_
-        });
-
-        assertEq(validSigningNodeIds_.length, 2);
-
-        assertEq(validSigningNodeIds_[0], 1);
-        assertEq(validSigningNodeIds_[1], 2);
-    }
-
-    function test_internal_verifySignatures_middleInvalid() external {
-        IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
-            3
-        );
-
-        signatures_[0] = IPayerReportManager.PayerReportSignature({
-            nodeId: 1,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer1Pk)
-        });
-
-        signatures_[1] = IPayerReportManager.PayerReportSignature({
-            nodeId: 2,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer2Pk)
-        });
-
-        signatures_[2] = IPayerReportManager.PayerReportSignature({
-            nodeId: 3,
-            signature: _getPayerReportSignature(0, 0, 0, 0, 0, new uint32[](0), _signer3Pk)
-        });
-
-        uint32[] memory expectedValidSigningNodeIds_ = new uint32[](2);
-
-        expectedValidSigningNodeIds_[0] = 1;
-        expectedValidSigningNodeIds_[1] = 3;
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 1), abi.encode(_signer1));
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 2),
-            abi.encode(false)
-        );
-
-        Utils.expectAndMockCall(
-            _nodeRegistry,
-            abi.encodeWithSignature("getIsCanonicalNode(uint32)", 3),
-            abi.encode(true)
-        );
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getSigner(uint32)", 3), abi.encode(_signer3));
-
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("canonicalNodesCount()"), abi.encode(3));
-
-        uint32[] memory validSigningNodeIds_ = _manager.__verifySignatures({
-            originatorNodeId_: 0,
-            startSequenceId_: 0,
-            endSequenceId_: 0,
-            endMinuteSinceEpoch_: 0,
-            payersMerkleRoot_: 0,
-            nodeIds_: new uint32[](0),
-            signatures_: signatures_
-        });
-
-        assertEq(validSigningNodeIds_.length, 2);
-
-        assertEq(validSigningNodeIds_[0], 1);
-        assertEq(validSigningNodeIds_[1], 3);
     }
 
     /* ============ _verifySignature ============ */
