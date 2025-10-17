@@ -3,15 +3,15 @@ pragma solidity 0.8.28;
 
 import { Create2 } from "../../lib/oz/contracts/utils/Create2.sol";
 
-import { Initializable as OZInitializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IFactory } from "./interfaces/IFactory.sol";
-import { IInitializable } from "./interfaces/IInitializable.sol";
+import { IFirstTimeInitializable } from "./interfaces/IFirstTimeInitializable.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 
-import { Initializable } from "./Initializable.sol";
+import { FirstTimeInitializable } from "./FirstTimeInitializable.sol";
 import { Migratable } from "../abstract/Migratable.sol";
 import { Proxy } from "./Proxy.sol";
 
@@ -25,7 +25,7 @@ import { Proxy } from "./Proxy.sol";
  *         of freedom. This is helpful for ensuring the address of a future/planned contract is constant, while the
  *         implementation is not yet finalized or deployed.
  */
-contract Factory is IFactory, Migratable, OZInitializable {
+contract Factory is IFactory, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc IFactory
@@ -79,7 +79,7 @@ contract Factory is IFactory, Migratable, OZInitializable {
     /// @inheritdoc IFactory
     function initialize() external initializer {
         emit InitializableImplementationDeployed(
-            _getFactoryStorage().initializableImplementation = address(new Initializable())
+            _getFactoryStorage().initializableImplementation = address(new FirstTimeInitializable())
         );
     }
 
@@ -115,7 +115,7 @@ contract Factory is IFactory, Migratable, OZInitializable {
         emit ProxyDeployed(proxy_, implementation_, msg.sender, salt_, initializeCallData_);
 
         // Initialize the proxy, which will set its intended implementation slot and initialize it.
-        IInitializable(proxy_).initialize(implementation_, initializeCallData_);
+        IFirstTimeInitializable(proxy_).initialize(implementation_, initializeCallData_);
     }
 
     /// @inheritdoc IMigratable

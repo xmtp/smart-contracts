@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { IInitializable } from "./interfaces/IInitializable.sol";
+import { IFirstTimeInitializable } from "./interfaces/IFirstTimeInitializable.sol";
 
-// TODO: Consider renaming this contract to `AtomicInitializable` and having it inherit from OZ's `Initializable` so it
-//       can check and guarantee the initialization status of the proxy contract itself.
+// TODO: Consider inheriting from OZ's `Initializable` so it can check and guarantee the initialization status of the
+//       proxy contract itself.
 
 /**
  * @title Implementation for first-time atomic initializing of a proxy to an implementation with initialization
@@ -14,7 +14,7 @@ import { IInitializable } from "./interfaces/IInitializable.sol";
  *        very helpful to allow consistency in address determinism regardless the final intended proxied implementation
  *        address. Thus, no Proxy should be left in a state of proxying this contract.
  */
-contract Initializable is IInitializable {
+contract FirstTimeInitializable is IFirstTimeInitializable {
     /**
      * @dev Storage slot with the address of the current implementation.
      *      `keccak256('eip1967.proxy.implementation') - 1`.
@@ -23,7 +23,7 @@ contract Initializable is IInitializable {
 
     /* ============ Interactive Functions ============ */
 
-    /// @inheritdoc IInitializable
+    /// @inheritdoc IFirstTimeInitializable
     function initialize(address implementation_, bytes calldata initializeCallData_) external {
         if (implementation_ == address(0)) revert ZeroImplementation();
 

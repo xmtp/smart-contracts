@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
 
-import { IInitializable } from "../../src/any-chain/interfaces/IInitializable.sol";
+import { IFirstTimeInitializable } from "../../src/any-chain/interfaces/IFirstTimeInitializable.sol";
 
-import { Initializable } from "../../src/any-chain/Initializable.sol";
+import { FirstTimeInitializable } from "../../src/any-chain/FirstTimeInitializable.sol";
 
 import { Utils } from "../utils/Utils.sol";
 
@@ -19,20 +19,20 @@ contract Foo {
     }
 }
 
-contract InitializableTests is Test {
-    Initializable internal _initializable;
+contract FirstTimeInitializableTests is Test {
+    FirstTimeInitializable internal _initializable;
 
     address internal _implementation;
 
     function setUp() external {
-        _initializable = new Initializable();
+        _initializable = new FirstTimeInitializable();
         _implementation = address(new Foo());
     }
 
     /* ============ initialize ============ */
 
     function test_initialize_zeroImplementation() external {
-        vm.expectRevert(IInitializable.ZeroImplementation.selector);
+        vm.expectRevert(IFirstTimeInitializable.ZeroImplementation.selector);
         _initializable.initialize(address(0), "");
     }
 
@@ -50,7 +50,7 @@ contract InitializableTests is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IInitializable.InitializationFailed.selector,
+                IFirstTimeInitializable.InitializationFailed.selector,
                 abi.encodeWithSelector(Foo.Reverting.selector)
             )
         );
@@ -62,7 +62,7 @@ contract InitializableTests is Test {
     }
 
     function test_initialize_emptyCode() external {
-        vm.expectRevert(abi.encodeWithSelector(IInitializable.EmptyCode.selector, address(1)));
+        vm.expectRevert(abi.encodeWithSelector(IFirstTimeInitializable.EmptyCode.selector, address(1)));
         _initializable.initialize(address(1), abi.encodeWithSelector(Foo.initialize.selector, uint256(1)));
     }
 }

@@ -7,7 +7,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IFactory } from "../../src/any-chain/interfaces/IFactory.sol";
-import { IInitializable } from "../../src/any-chain/interfaces/IInitializable.sol";
+import { IFirstTimeInitializable } from "../../src/any-chain/interfaces/IFirstTimeInitializable.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
@@ -151,7 +151,11 @@ contract FactoryTests is Test {
         address foo_ = address(new Foo(uint256(456), uint256(789)));
         address expectedProxy_ = _getExpectedProxy(_alice, 0);
 
-        vm.mockCallRevert(expectedProxy_, abi.encodeWithSelector(IInitializable.initialize.selector, foo_, ""), "");
+        vm.mockCallRevert(
+            expectedProxy_,
+            abi.encodeWithSelector(IFirstTimeInitializable.initialize.selector, foo_, ""),
+            ""
+        );
 
         vm.expectRevert();
 

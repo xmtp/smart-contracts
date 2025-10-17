@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 /**
  * @title Interface for first-time initializing of a proxy to an implementation with initialization arguments.
  */
-interface IInitializable {
+interface IFirstTimeInitializable {
     /// @notice Thrown when the implementation address is zero (i.e. address(0)).
     error ZeroImplementation();
 
