@@ -21,7 +21,7 @@ import { Migratable } from "../abstract/Migratable.sol";
 
 // TODO: While there is no real need to put `withdrawProtocolFees` and/or `withdrawProtocolFeesIntoUnderlying` behind
 //       ACL, it does currently mean that anyone can cause the `protocolFeesRecipient` to receive fee tokens or
-//       underlying tokens, at the caller's will, which is not ideal.
+//       underlying tokens, at the caller's will, which may not be ideal.
 
 /**
  * @title  Implementation of the Distribution Manager.

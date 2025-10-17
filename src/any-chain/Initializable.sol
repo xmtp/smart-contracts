@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import { IInitializable } from "./interfaces/IInitializable.sol";
 
-// TODO: Consider renaming this contract to `AtomicInitializable` and having it inherit from OZ's `Initializable` so it
-//       can check and guarantee the initialization status of the proxy contract itself.
+// TODO: Consider inheriting from OZ's `Initializable` so it can check and guarantee the initialization status of the
+//       proxy contract itself.
 
 /**
  * @title Implementation for first-time atomic initializing of a proxy to an implementation with initialization
