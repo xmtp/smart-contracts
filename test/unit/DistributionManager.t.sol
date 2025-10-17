@@ -576,6 +576,13 @@ contract DistributionManagerTests is Test {
         _manager.withdrawProtocolFees();
     }
 
+    function test_withdrawProtocolFees_zeroProtocolFeeRecipient() external {
+        _manager.__setProtocolFeesRecipient(address(0));
+
+        vm.expectRevert(IDistributionManager.ZeroProtocolFeeRecipient.selector);
+        _manager.withdrawProtocolFees();
+    }
+
     function test_withdrawProtocolFees_partial_noPayerRegistryExcess() external {
         _manager.__setProtocolFeesRecipient(address(1));
         _manager.__setOwedProtocolFees(10);
@@ -744,6 +751,13 @@ contract DistributionManagerTests is Test {
         _manager.__setPauseStatus(true);
 
         vm.expectRevert(IDistributionManager.Paused.selector);
+        _manager.withdrawProtocolFeesIntoUnderlying();
+    }
+
+    function test_withdrawProtocolFeesIntoUnderlying_zeroProtocolFeeRecipient() external {
+        _manager.__setProtocolFeesRecipient(address(0));
+
+        vm.expectRevert(IDistributionManager.ZeroProtocolFeeRecipient.selector);
         _manager.withdrawProtocolFeesIntoUnderlying();
     }
 
