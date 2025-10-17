@@ -227,6 +227,8 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     function withdrawProtocolFees() external whenNotPaused returns (uint96 withdrawn_) {
         address recipient_ = _getDistributionManagerStorage().protocolFeesRecipient;
 
+        if (_isZero(recipient_)) revert ZeroProtocolFeeRecipient();
+
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unchecked-transfer
         IERC20Like(feeToken).transfer(recipient_, withdrawn_ = _prepareProtocolFeesWithdrawal(recipient_));
@@ -235,6 +237,8 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     /// @inheritdoc IDistributionManager
     function withdrawProtocolFeesIntoUnderlying() external whenNotPaused returns (uint96 withdrawn_) {
         address recipient_ = _getDistributionManagerStorage().protocolFeesRecipient;
+
+        if (_isZero(recipient_)) revert ZeroProtocolFeeRecipient();
 
         // NOTE: No need for safe library here as the fee token is a first party contract with expected behavior.
         // slither-disable-next-line unused-return
