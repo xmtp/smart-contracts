@@ -374,7 +374,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
                         endSequenceId_,
                         endMinuteSinceEpoch_,
                         payersMerkleRoot_,
-                        keccak256(abi.encodePacked(nodeIds_))
+                        keccak256(abi.encode(nodeIds_))
                     )
                 )
             );
