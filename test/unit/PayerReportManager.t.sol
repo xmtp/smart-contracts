@@ -1186,7 +1186,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(5)),
                 nodeIds_: new uint32[](6)
             }),
-            0xe95b9352b7afb9da83952cce75aba1d466ed7daeafc009c1964b85b8fe08bc09
+            0xdde54243da83f4b7c3fa535080f6cd0441fda0649edb15d95551f895a3529dfc
         );
 
         assertEq(
@@ -1198,7 +1198,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: bytes32(uint256(50)),
                 nodeIds_: new uint32[](60)
             }),
-            0x1dcb9deef4cebf9e13169296e27dee6166ed09af01b62f5c65dff9b3a9afb82d
+            0xb70f0c64254571c8cc5f6a84339bae9a135744d1f8059a3908121c95b40529f7
         );
     }
 
@@ -1222,7 +1222,7 @@ contract PayerReportManagerTests is Test {
                 payersMerkleRoot_: payersMerkleRoot_,
                 nodeIds_: nodeIds_
             }),
-            0x79f316f2836745161f3020e431db382ce57aab339df1429de068a62bf940295b
+            0x68e2a926d1e4309c70d546f976fc17eacc87d245862ad8a5d9c80b86e1dd4d61
         );
     }
 
