@@ -3,13 +3,13 @@ pragma solidity 0.8.28;
 
 import "forge-std/Test.sol";
 
-import {IERC1967} from "../../src/abstract/interfaces/IERC1967.sol";
-import {IParameterRegistry} from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import {SettlementChainGateway} from "../../src/settlement-chain/SettlementChainGateway.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
+import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 
-import {SettlementChainGatewayDeployer} from "../../script/deployers/SettlementChainGatewayDeployer.sol";
-import {GenericEIP1967Migrator} from "../../script/upgrades/GenericEIP1967Migrator.sol";
-import {Utils} from "../../script/utils/Utils.sol";
+import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
+import { GenericEIP1967Migrator } from "../../script/upgrades/GenericEIP1967Migrator.sol";
+import { Utils } from "../../script/utils/Utils.sol";
 
 interface ISettlementChainGateway {
     function parameterRegistry() external view returns (address);
@@ -30,15 +30,13 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
         vm.createSelectFork(rpc);
 
         string memory environment = "testnet-staging";
-        deployment = Utils.parseDeploymentData(
-            string.concat("config/", environment, ".json")
-        );
+        deployment = Utils.parseDeploymentData(string.concat("config/", environment, ".json"));
     }
 
     function test_upgrade_settlement_gateway() external {
         address factory = deployment.factory;
         address paramRegistry = deployment.parameterRegistryProxy;
-        address appChainGateway = deployment.gatewayProxy;
+        address settlementChainGateway = deployment.gatewayProxy;
         address feeToken = deployment.feeTokenProxy;
         address proxy = deployment.gatewayProxy;
 
@@ -47,21 +45,17 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
         (address newImpl, ) = SettlementChainGatewayDeployer.deployImplementation(
             factory,
             paramRegistry,
-            appChainGateway,
+            settlementChainGateway,
             feeToken
         );
 
         // Deploy migrator
-        GenericEIP1967Migrator migrator =
-                    new GenericEIP1967Migrator(newImpl);
+        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
 
         // Set the migrator in ParameterRegistry (impersonate admin)
         vm.startPrank(admin);
         string memory key = ISettlementChainGateway(proxy).migratorParameterKey();
-        IParameterRegistry(paramRegistry).set(
-            key,
-            bytes32(uint256(uint160(address(migrator))))
-        );
+        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         vm.stopPrank();
 
         // Execute migration

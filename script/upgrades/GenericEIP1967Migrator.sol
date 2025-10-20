@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IERC1967} from "../../src/abstract/interfaces/IERC1967.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 
 /**
  * @title GenericEIP1967Migrator
@@ -37,8 +37,7 @@ contract GenericEIP1967Migrator {
     address public immutable NEW_IMPL;
 
     /// @dev bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
-    bytes32 private constant _IMPLEMENTATION_SLOT =
-    0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 private constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /**
      * @param newImpl_ The address of the new implementation (must be non-zero).
