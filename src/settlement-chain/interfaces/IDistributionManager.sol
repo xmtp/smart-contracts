@@ -105,6 +105,9 @@ interface IDistributionManager is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
+    /// @notice Thrown when the protocol fees recipient address is zero (i.e. address(0)).
+    error ZeroProtocolFeeRecipient();
+
     /* ============ Initialization ============ */
 
     /**
