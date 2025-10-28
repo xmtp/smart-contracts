@@ -8,7 +8,7 @@ import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegi
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 
 import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
-import { GenericEIP1967Migrator } from "../../script/upgrades/GenericEIP1967Migrator.sol";
+import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 
 interface ISettlementChainGateway {
