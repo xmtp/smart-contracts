@@ -179,6 +179,9 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     function updateAdmin() external {
         // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address admin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
+
+        if (_isZero(admin_)) revert ZeroAdmin();
+
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
         if (admin_ == $.admin) revert NoChange();
