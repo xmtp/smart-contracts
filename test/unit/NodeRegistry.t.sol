@@ -461,6 +461,14 @@ contract NodeRegistryTests is Test {
         _registry.updateAdmin();
     }
 
+    function test_updateAdmin_zeroAdmin() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(0)));
+
+        vm.expectRevert(INodeRegistry.ZeroAdmin.selector);
+
+        _registry.updateAdmin();
+    }
+
     function test_updateAdmin_noChange() external {
         _registry.__setAdmin(_admin);
 

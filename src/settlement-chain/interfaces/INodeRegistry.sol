@@ -138,6 +138,9 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
     /// @notice Thrown when the caller is not the node owner.
     error NotNodeOwner();
 
+    /// @notice Thrown when the admin is the zero address.
+    error ZeroAdmin();
+
     /* ============ Initialization ============ */
 
     /**
