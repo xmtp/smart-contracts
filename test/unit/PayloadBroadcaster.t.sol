@@ -91,6 +91,16 @@ contract PayloadBroadcasterTests is Test {
         _broadcaster.updateMinPayloadSize();
     }
 
+    function test_updateMinPayloadSize_lessThanAbsoluteMin() external {
+        _broadcaster.__setMaxPayloadSize(100);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MIN_PAYLOAD_SIZE_KEY, 0);
+
+        vm.expectRevert(IPayloadBroadcaster.InvalidMinPayloadSize.selector);
+
+        _broadcaster.updateMinPayloadSize();
+    }
+
     function test_updateMinPayloadSize_noChange() external {
         _broadcaster.__setMaxPayloadSize(100);
         _broadcaster.__setMinPayloadSize(100);
@@ -134,6 +144,20 @@ contract PayloadBroadcasterTests is Test {
         _broadcaster.__setMinPayloadSize(100);
 
         Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_PAYLOAD_SIZE_KEY, bytes32(uint256(99)));
+
+        vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
+
+        _broadcaster.updateMaxPayloadSize();
+    }
+
+    function test_updateMaxPayloadSize_greaterThanAbsoluteMax() external {
+        _broadcaster.__setMinPayloadSize(1);
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _MAX_PAYLOAD_SIZE_KEY,
+            bytes32(uint256(256 * 1024 + 1))
+        );
 
         vm.expectRevert(IPayloadBroadcaster.InvalidMaxPayloadSize.selector);
 
