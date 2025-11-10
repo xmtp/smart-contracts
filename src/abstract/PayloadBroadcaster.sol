@@ -18,9 +18,9 @@ import { Migratable } from "./Migratable.sol";
 abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initializable {
     /* ============ Constants/Immutables ============ */
 
-    uint32 internal constant MIN_PAYLOAD_SIZE = 1;
+    uint32 internal constant _MIN_PAYLOAD_SIZE = 1;
 
-    uint32 internal constant MAX_PAYLOAD_SIZE = 256 * 1024;
+    uint32 internal constant _MAX_PAYLOAD_SIZE = 256 * 1024;
 
     /// @inheritdoc IPayloadBroadcaster
     address public immutable parameterRegistry;
@@ -81,7 +81,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint32 minPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, minPayloadSizeParameterKey());
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        if (minPayloadSize_ < MIN_PAYLOAD_SIZE || minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
+        if (minPayloadSize_ < _MIN_PAYLOAD_SIZE || minPayloadSize_ > $.maxPayloadSize) revert InvalidMinPayloadSize();
         if (minPayloadSize_ == $.minPayloadSize) revert NoChange();
 
         emit MinPayloadSizeUpdated($.minPayloadSize = minPayloadSize_);
@@ -93,7 +93,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
         uint32 maxPayloadSize_ = RegistryParameters.getUint32Parameter(parameterRegistry, maxPayloadSizeParameterKey());
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
-        if (maxPayloadSize_ > MAX_PAYLOAD_SIZE || maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
+        if (maxPayloadSize_ > _MAX_PAYLOAD_SIZE || maxPayloadSize_ < $.minPayloadSize) revert InvalidMaxPayloadSize();
         if (maxPayloadSize_ == $.maxPayloadSize) revert NoChange();
 
         emit MaxPayloadSizeUpdated($.maxPayloadSize = maxPayloadSize_);
