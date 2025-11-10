@@ -1165,7 +1165,7 @@ contract PayerRegistryTests is Test {
     }
 
     function test_updateWithdrawLockPeriod_exceedsMax() external {
-        uint32 maxWithdrawLockPeriod_ = 14 days;
+        uint32 maxWithdrawLockPeriod_ = 7 days;
 
         Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
