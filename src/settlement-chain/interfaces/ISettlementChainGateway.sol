@@ -95,6 +95,9 @@ interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the amount is zero.
     error ZeroAmount();
 
+    /// @notice Thrown when the inbox is zero (i.e. address(0)).
+    error ZeroInbox();
+
     /// @notice Thrown when the recipient is zero (i.e. address(0)).
     error ZeroRecipient();
 
