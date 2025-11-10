@@ -2082,10 +2082,6 @@ contract SettlementChainGatewayTests is Test {
         _gateway.updateInbox(1111);
 
         assertEq(_gateway.__getInbox(1111), inbox_);
-    }
-
-    function test_updateInbox_zeroInbox() external {
-        _gateway.__setInbox(1111, makeAddr("existingInbox"));
 
         vm.mockCall(
             _parameterRegistry,
@@ -2093,11 +2089,12 @@ contract SettlementChainGatewayTests is Test {
             abi.encode(0)
         );
 
-        vm.expectRevert(ISettlementChainGateway.ZeroInbox.selector);
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.InboxUpdated(1111, address(0));
 
         _gateway.updateInbox(1111);
 
-        assertEq(_gateway.__getInbox(1111), makeAddr("existingInbox"));
+        assertEq(_gateway.__getInbox(1111), address(0));
     }
 
     /* ============ receiveWithdrawal ============ */

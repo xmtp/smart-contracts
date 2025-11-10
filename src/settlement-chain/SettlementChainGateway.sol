@@ -243,11 +243,8 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
             _getInboxKey(inboxParameterKey(), chainId_)
         );
 
-        if (_isZero(inbox_)) revert ZeroInbox();
-
-        SettlementChainGatewayStorage storage $ = _getSettlementChainGatewayStorage();
-
-        emit InboxUpdated(chainId_, $.inboxes[chainId_] = inbox_);
+        // NOTE: `address(0)` is valid, as it disables the inbox for a chain ID.
+        emit InboxUpdated(chainId_, _getSettlementChainGatewayStorage().inboxes[chainId_] = inbox_);
     }
 
     /// @inheritdoc ISettlementChainGateway
