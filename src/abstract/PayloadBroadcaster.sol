@@ -120,6 +120,7 @@ abstract contract PayloadBroadcaster is IPayloadBroadcaster, Migratable, Initial
 
         PayloadBroadcasterStorage storage $ = _getPayloadBroadcasterStorage();
 
+        if (_isZero(payloadBootstrapper_)) revert ZeroPayloadBootstrapper();
         if (payloadBootstrapper_ == $.payloadBootstrapper) revert NoChange();
 
         emit PayloadBootstrapperUpdated($.payloadBootstrapper = payloadBootstrapper_);

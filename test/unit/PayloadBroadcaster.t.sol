@@ -247,6 +247,16 @@ contract PayloadBroadcasterTests is Test {
         _broadcaster.updatePayloadBootstrapper();
     }
 
+    function test_updatePayloadBootstrapper_zeroPayloadBootstrapper() external {
+        _broadcaster.__setPayloadBootstrapper(address(1));
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _PAYLOAD_BOOTSTRAPPER_KEY, 0);
+
+        vm.expectRevert(IPayloadBroadcaster.ZeroPayloadBootstrapper.selector);
+
+        _broadcaster.updatePayloadBootstrapper();
+    }
+
     function test_updatePayloadBootstrapper_noChange() external {
         _broadcaster.__setPayloadBootstrapper(address(1));
 
