@@ -167,6 +167,9 @@ interface IPayerRegistry is IMigratable, IRegistryParametersErrors {
      */
     error WithdrawalNotReady(uint32 timestamp, uint32 withdrawableTimestamp, uint24 nonce);
 
+    /// @notice Thrown when the withdraw lock period exceeds the maximum allowed value.
+    error WithdrawLockPeriodTooHigh(uint32 withdrawLockPeriod, uint32 maxWithdrawLockPeriod);
+
     /// @notice Thrown when trying to finalize a withdrawal while in debt.
     error PayerInDebt();
 
