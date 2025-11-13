@@ -32,6 +32,9 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
     /// @dev The address of the token underlying the fee token.
     address internal immutable _underlyingFeeToken;
 
+    /// @dev The maximum withdraw lock period that can be configured.
+    uint32 internal constant _MAX_WITHDRAW_LOCK_PERIOD = 7 days;
+
     /* ============ UUPS Storage ============ */
 
     /**
@@ -294,6 +297,10 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
             parameterRegistry,
             withdrawLockPeriodParameterKey()
         );
+
+        if (withdrawLockPeriod_ > _MAX_WITHDRAW_LOCK_PERIOD) {
+            revert WithdrawLockPeriodTooHigh(withdrawLockPeriod_, _MAX_WITHDRAW_LOCK_PERIOD);
+        }
 
         PayerRegistryStorage storage $ = _getPayerRegistryStorage();
 

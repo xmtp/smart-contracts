@@ -1164,6 +1164,26 @@ contract PayerRegistryTests is Test {
         _registry.updateWithdrawLockPeriod();
     }
 
+    function test_updateWithdrawLockPeriod_exceedsMax() external {
+        uint32 maxWithdrawLockPeriod_ = 7 days;
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _WITHDRAW_LOCK_PERIOD_KEY,
+            bytes32(uint256(maxWithdrawLockPeriod_) + 1)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IPayerRegistry.WithdrawLockPeriodTooHigh.selector,
+                maxWithdrawLockPeriod_ + 1,
+                maxWithdrawLockPeriod_
+            )
+        );
+
+        _registry.updateWithdrawLockPeriod();
+    }
+
     function test_updateWithdrawLockPeriod_noChange() external {
         _registry.__setWithdrawLockPeriod(1);
 
