@@ -334,7 +334,6 @@ contract NodeRegistryTests is Test {
         _registry.__setMaxCanonicalNodes(1);
         _addNode(1, _alice, address(0), false, "", "");
 
-
         vm.expectEmit(address(_registry));
         emit INodeRegistry.NodeAddedToCanonicalNetwork(1);
 

@@ -138,7 +138,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         $.nodes[nodeId_].isCanonical = true;
 
         if (!$.canonicalNodes.contains(nodeId_)) {
-            require($.canonicalNodes.add(nodeId_));
+            if (!$.canonicalNodes.add(nodeId_)) revert FailedToAddNodeToCanonicalNetwork();
         }
 
         emit NodeAddedToCanonicalNetwork(nodeId_);
@@ -155,7 +155,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         delete $.nodes[nodeId_].isCanonical;
 
         if ($.canonicalNodes.contains(nodeId_)) {
-            require($.canonicalNodes.remove(nodeId_));
+            if (!$.canonicalNodes.remove(nodeId_)) revert FailedToRemoveNodeFromCanonicalNetwork();
         }
 
         --$.canonicalNodesCount;
