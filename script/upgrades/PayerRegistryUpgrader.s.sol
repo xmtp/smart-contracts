@@ -9,8 +9,7 @@ import { PayerRegistry } from "../../../src/settlement-chain/PayerRegistry.sol";
 
 import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {PayerRegistryDeployer} from "../deployers/PayerRegistryDeployer.sol";
-
+import { PayerRegistryDeployer } from "../deployers/PayerRegistryDeployer.sol";
 
 contract PayerRegistryUpgrader is Script {
     error PrivateKeyNotSet();
@@ -43,20 +42,16 @@ contract PayerRegistryUpgrader is Script {
 
     function UpgradePayerRegistry() external {
         address factory = deployment.factory;
-        console.log("factory" , factory);
+        console.log("factory", factory);
         address paramRegistry = deployment.parameterRegistryProxy;
-        console.log("paramRegistry" , paramRegistry);
+        console.log("paramRegistry", paramRegistry);
         address feeToken = deployment.feeTokenProxy;
-        console.log("feeToken" , feeToken);
+        console.log("feeToken", feeToken);
         address proxy = deployment.payerRegistryProxy;
-        console.log("proxy" , proxy);
+        console.log("proxy", proxy);
 
         vm.startBroadcast(_privateKey);
-        (address newImpl, ) = PayerRegistryDeployer.deployImplementation(
-            factory,
-            paramRegistry,
-            feeToken
-        );
+        (address newImpl, ) = PayerRegistryDeployer.deployImplementation(factory, paramRegistry, feeToken);
         console.log("newImpl", newImpl);
 
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);

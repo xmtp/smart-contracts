@@ -8,8 +8,9 @@ import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegi
 
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {SettlementChainParameterRegistryDeployer} from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
-
+import {
+    SettlementChainParameterRegistryDeployer
+} from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
 
 contract SettlementChainParameterRegistryUpgradeForkTest is Test {
     address constant admin = 0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7;
@@ -30,9 +31,7 @@ contract SettlementChainParameterRegistryUpgradeForkTest is Test {
         address paramRegistry = deployment.parameterRegistryProxy;
         address oldImpl = IERC1967(paramRegistry).implementation();
 
-        (address newImpl, ) = SettlementChainParameterRegistryDeployer.deployImplementation(
-            factory
-        );
+        (address newImpl, ) = SettlementChainParameterRegistryDeployer.deployImplementation(factory);
 
         // Deploy migrator
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);

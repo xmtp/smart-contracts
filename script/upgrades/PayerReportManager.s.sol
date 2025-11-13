@@ -8,9 +8,8 @@ import { IERC1967 } from "../../../src/abstract/interfaces/IERC1967.sol";
 
 import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {PayerReportManager} from "../../src/settlement-chain/PayerReportManager.sol";
-import {PayerReportManagerDeployer} from "../deployers/PayerReportManagerDeployer.sol";
-
+import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
+import { PayerReportManagerDeployer } from "../deployers/PayerReportManagerDeployer.sol";
 
 contract PayerReportManagerUpgrader is Script {
     error PrivateKeyNotSet();
@@ -43,22 +42,22 @@ contract PayerReportManagerUpgrader is Script {
 
     function UpgradePayerReportManager() external {
         address factory = deployment.factory;
-        console.log("factory" , factory);
+        console.log("factory", factory);
         address paramRegistry = deployment.parameterRegistryProxy;
-        console.log("paramRegistry" , paramRegistry);
+        console.log("paramRegistry", paramRegistry);
         address proxy = deployment.payerReportManagerProxy;
-        console.log("proxy" , proxy);
+        console.log("proxy", proxy);
         address nodeRegistry = deployment.nodeRegistryProxy;
-        console.log("nodeRegistry" , nodeRegistry);
+        console.log("nodeRegistry", nodeRegistry);
         address payerRegistry = deployment.payerRegistryProxy;
-        console.log("payerRegistry" , payerRegistry);
+        console.log("payerRegistry", payerRegistry);
 
         vm.startBroadcast(_privateKey);
         (address newImpl, ) = PayerReportManagerDeployer.deployImplementation(
             factory,
             paramRegistry,
             nodeRegistry,
-    payerRegistry
+            payerRegistry
         );
         console.log("newImpl", newImpl);
 

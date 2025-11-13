@@ -9,8 +9,8 @@ import { PayerReportManager } from "../../src/settlement-chain/PayerReportManage
 
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {PayerRegistryDeployer} from "../../script/deployers/PayerRegistryDeployer.sol";
-import {PayerReportManagerDeployer} from "../../script/deployers/PayerReportManagerDeployer.sol";
+import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
+import { PayerReportManagerDeployer } from "../../script/deployers/PayerReportManagerDeployer.sol";
 
 contract PayerReportManagerUpgradeForkTest is Test {
     address constant admin = 0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7;
@@ -39,7 +39,7 @@ contract PayerReportManagerUpgradeForkTest is Test {
             factory,
             paramRegistry,
             nodeRegistry,
-    payerRegistry
+            payerRegistry
         );
 
         // Deploy migrator

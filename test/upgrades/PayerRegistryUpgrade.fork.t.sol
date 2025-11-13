@@ -9,7 +9,7 @@ import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {PayerRegistryDeployer} from "../../script/deployers/PayerRegistryDeployer.sol";
+import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 
 contract PayerRegistryUpgradeForkTest is Test {
     address constant admin = 0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7;
@@ -34,11 +34,7 @@ contract PayerRegistryUpgradeForkTest is Test {
 
         address oldImpl = IERC1967(proxy).implementation();
 
-        (address newImpl, ) = PayerRegistryDeployer.deployImplementation(
-            factory,
-            paramRegistry,
-            feeToken
-        );
+        (address newImpl, ) = PayerRegistryDeployer.deployImplementation(factory, paramRegistry, feeToken);
 
         // Deploy migrator
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);

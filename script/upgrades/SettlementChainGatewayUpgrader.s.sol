@@ -50,15 +50,15 @@ contract SettlementChainGatewayUpgrader is Script {
 
     function UpgradeSettlementChainGateway() external {
         address factory = deployment.factory;
-        console.log("factory" , factory);
+        console.log("factory", factory);
         address paramRegistry = deployment.parameterRegistryProxy;
-        console.log("paramRegistry" , paramRegistry);
+        console.log("paramRegistry", paramRegistry);
         address settlementChainGateway = deployment.gatewayProxy;
-        console.log("settlementChainGateway" , settlementChainGateway);
+        console.log("settlementChainGateway", settlementChainGateway);
         address feeToken = deployment.feeTokenProxy;
-        console.log("feeToken" , feeToken);
+        console.log("feeToken", feeToken);
         address proxy = deployment.gatewayProxy;
-        console.log("proxy" , proxy);
+        console.log("proxy", proxy);
 
         vm.startBroadcast(_privateKey);
         (address newImpl, ) = SettlementChainGatewayDeployer.deployImplementation(

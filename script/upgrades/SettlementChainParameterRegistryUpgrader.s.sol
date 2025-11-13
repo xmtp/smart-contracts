@@ -8,7 +8,7 @@ import { IERC1967 } from "../../../src/abstract/interfaces/IERC1967.sol";
 
 import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import {SettlementChainParameterRegistryDeployer} from "../deployers/SettlementChainParameterRegistryDeployer.sol";
+import { SettlementChainParameterRegistryDeployer } from "../deployers/SettlementChainParameterRegistryDeployer.sol";
 
 contract SettlementChainParameterRegistryUpgrader is Script {
     error PrivateKeyNotSet();
@@ -41,14 +41,12 @@ contract SettlementChainParameterRegistryUpgrader is Script {
 
     function UpgradeSettlementParameterRegistry() external {
         address factory = deployment.factory;
-        console.log("factory" , factory);
+        console.log("factory", factory);
         address paramRegistry = deployment.parameterRegistryProxy;
-        console.log("paramRegistry" , paramRegistry);
+        console.log("paramRegistry", paramRegistry);
 
         vm.startBroadcast(_privateKey);
-        (address newImpl, ) = SettlementChainParameterRegistryDeployer.deployImplementation(
-            factory
-        );
+        (address newImpl, ) = SettlementChainParameterRegistryDeployer.deployImplementation(factory);
         console.log("newImpl", newImpl);
 
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
