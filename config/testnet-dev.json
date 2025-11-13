@@ -71,13 +71,13 @@
       },
       "groupMessageBroadcaster": {
         "minPayloadSize": "78",
-        "maxPayloadSize": "4194304",
+        "maxPayloadSize": "262144",
         "payloadBootstrapper": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
         "paused": true
       },
       "identityUpdateBroadcaster": {
         "minPayloadSize": "78",
-        "maxPayloadSize": "4194304",
+        "maxPayloadSize": "262144",
         "payloadBootstrapper": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
         "paused": true
       }
