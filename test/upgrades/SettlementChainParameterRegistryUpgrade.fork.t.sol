@@ -43,11 +43,11 @@ contract SettlementChainParameterRegistryUpgradeForkTest is Test {
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         vm.stopPrank();
 
-        // Execute migration
-        IParameterRegistry(paramRegistry).migrate();
-
         vm.expectEmit(true, true, true, true);
         emit IMigratable.Migrated(address(migrator));
+
+        // Execute migration
+        IParameterRegistry(paramRegistry).migrate();
 
         // Confirm the implementation changed
         address afterImpl = IERC1967(paramRegistry).implementation();

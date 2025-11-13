@@ -3,12 +3,12 @@ pragma solidity 0.8.28;
 
 import { Script, console } from "../../lib/forge-std/src/Script.sol";
 
-import { GenericEIP1967Migrator } from "../../../src/any-chain/GenericEIP1967Migrator.sol";
-import { IERC1967 } from "../../../src/abstract/interfaces/IERC1967.sol";
-import { PayerRegistry } from "../../../src/settlement-chain/PayerRegistry.sol";
+import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
+import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
+import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 
-import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
-import { Utils } from "../../script/utils/Utils.sol";
+import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
+import { Utils } from "../utils/Utils.sol";
 import { PayerRegistryDeployer } from "../deployers/PayerRegistryDeployer.sol";
 
 contract PayerRegistryUpgrader is Script {

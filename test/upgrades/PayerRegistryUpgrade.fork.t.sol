@@ -46,11 +46,11 @@ contract PayerRegistryUpgradeForkTest is Test {
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         vm.stopPrank();
 
-        // Execute migration
-        PayerRegistry(proxy).migrate();
-
         vm.expectEmit(true, true, true, true);
         emit IMigratable.Migrated(address(migrator));
+
+        // Execute migration
+        PayerRegistry(proxy).migrate();
 
         // Confirm the implementation changed
         address afterImpl = IERC1967(proxy).implementation();
