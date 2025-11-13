@@ -27,24 +27,24 @@ import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
  *
  * SAFETY NOTES
  * - This migrator is intentionally tiny: fewer moving parts, easier to audit.
- * - Make sure `NEW_IMPL` preserves storage layout and initializer semantics.
+ * - Make sure `newImpl` preserves storage layout and initializer semantics.
  * - Only allow `migrate()` to be reachable via your governed parameter (`migrator` key).
  */
 contract GenericEIP1967Migrator {
-    error InvalidImplementation();
-
-    /// @notice The implementation that the proxy will be upgraded to.
-    address public immutable NEW_IMPL;
-
     /// @dev bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
     bytes32 private constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
+    /// @notice The implementation that the proxy will be upgraded to.
+    address public immutable newImpl;
+
+    error InvalidImplementation();
 
     /**
      * @param newImpl_ The address of the new implementation (must be non-zero).
      */
     constructor(address newImpl_) {
         if (newImpl_ == address(0)) revert InvalidImplementation();
-        NEW_IMPL = newImpl_;
+        newImpl = newImpl_;
     }
 
     /**
@@ -53,7 +53,7 @@ contract GenericEIP1967Migrator {
      *      Emits the standard ERC-1967 `Upgraded` event via the imported interface.
      */
     fallback() external payable {
-        address impl = NEW_IMPL;
+        address impl = newImpl;
 
         assembly {
             sstore(_IMPLEMENTATION_SLOT, impl)
