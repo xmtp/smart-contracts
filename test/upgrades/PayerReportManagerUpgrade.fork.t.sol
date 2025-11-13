@@ -11,6 +11,7 @@ import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrat
 import { Utils } from "../../script/utils/Utils.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
 import { PayerReportManagerDeployer } from "../../script/deployers/PayerReportManagerDeployer.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract PayerReportManagerUpgradeForkTest is Test {
     address constant admin = 0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7;
@@ -53,6 +54,9 @@ contract PayerReportManagerUpgradeForkTest is Test {
 
         // Execute migration
         PayerReportManager(proxy).migrate();
+
+        vm.expectEmit(true, true, true, true);
+        emit IMigratable.Migrated(address(migrator));
 
         // Confirm the implementation changed
         address afterImpl = IERC1967(proxy).implementation();

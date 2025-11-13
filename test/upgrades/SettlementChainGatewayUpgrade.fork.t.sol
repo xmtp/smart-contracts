@@ -10,6 +10,7 @@ import { SettlementChainGateway } from "../../src/settlement-chain/SettlementCha
 import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 interface ISettlementChainGateway {
     function parameterRegistry() external view returns (address);
@@ -38,9 +39,8 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
         address paramRegistry = deployment.parameterRegistryProxy;
         address settlementChainGateway = deployment.gatewayProxy;
         address feeToken = deployment.feeTokenProxy;
-        address proxy = deployment.gatewayProxy;
 
-        address oldImpl = IERC1967(proxy).implementation();
+        address oldImpl = IERC1967(settlementChainGateway).implementation();
 
         (address newImpl, ) = SettlementChainGatewayDeployer.deployImplementation(
             factory,
@@ -54,15 +54,18 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
 
         // Set the migrator in ParameterRegistry (impersonate admin)
         vm.startPrank(admin);
-        string memory key = ISettlementChainGateway(proxy).migratorParameterKey();
+        string memory key = ISettlementChainGateway(settlementChainGateway).migratorParameterKey();
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         vm.stopPrank();
 
         // Execute migration
-        ISettlementChainGateway(proxy).migrate();
+        ISettlementChainGateway(settlementChainGateway).migrate();
+
+        vm.expectEmit(true, true, true, true);
+        emit IMigratable.Migrated(address(migrator));
 
         // Confirm the implementation changed
-        address afterImpl = IERC1967(proxy).implementation();
+        address afterImpl = IERC1967(settlementChainGateway).implementation();
         assertEq(afterImpl, newImpl, "Implementation did not update");
     }
 }

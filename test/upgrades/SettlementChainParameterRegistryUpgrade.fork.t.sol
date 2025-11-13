@@ -8,6 +8,7 @@ import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegi
 
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
+import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 import {
     SettlementChainParameterRegistryDeployer
 } from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
@@ -44,6 +45,9 @@ contract SettlementChainParameterRegistryUpgradeForkTest is Test {
 
         // Execute migration
         IParameterRegistry(paramRegistry).migrate();
+
+        vm.expectEmit(true, true, true, true);
+        emit IMigratable.Migrated(address(migrator));
 
         // Confirm the implementation changed
         address afterImpl = IERC1967(paramRegistry).implementation();
