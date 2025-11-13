@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import { ERC721Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 
+import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
+
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
@@ -21,6 +23,8 @@ import { Migratable } from "../abstract/Migratable.sol";
  * @dev    All nodes on the network periodically check this contract to determine which nodes they should connect to.
  */
 contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc INodeRegistry
@@ -50,6 +54,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
         string baseURI;
+        EnumerableSet.UintSet canonicalNodes;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -132,6 +137,10 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         $.nodes[nodeId_].isCanonical = true;
 
+        if (!$.canonicalNodes.contains(nodeId_)) {
+            require($.canonicalNodes.add(nodeId_));
+        }
+
         emit NodeAddedToCanonicalNetwork(nodeId_);
     }
 
@@ -144,6 +153,11 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         if (!$.nodes[nodeId_].isCanonical) return;
 
         delete $.nodes[nodeId_].isCanonical;
+
+        if ($.canonicalNodes.contains(nodeId_)) {
+            require($.canonicalNodes.remove(nodeId_));
+        }
+
         --$.canonicalNodesCount;
 
         emit NodeRemovedFromCanonicalNetwork(nodeId_);
@@ -258,6 +272,21 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function getAllNodesCount() external view returns (uint32 nodeCount_) {
         return _getNodeRegistryStorage().nodeCount;
+    }
+
+    /// @inheritdoc INodeRegistry
+    function getCanonicalNodes() external view returns (uint32[] memory canonicalNodes_) {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        canonicalNodes_ = new uint32[]($.canonicalNodes.length());
+
+        for (uint256 i = 0; i < $.canonicalNodes.length(); i++) {
+            // Casting to uint32 is safe because the set only contains uint32 values.
+            // forge-lint: disable-next-line(unsafe-typecast)
+            canonicalNodes_[i] = uint32($.canonicalNodes.at(i));
+        }
+
+        return canonicalNodes_;
     }
 
     /// @inheritdoc INodeRegistry
