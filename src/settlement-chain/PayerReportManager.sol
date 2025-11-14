@@ -510,50 +510,35 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     }
 
     function _enforceNodeIdsMatchRegistry(uint32[] calldata nodeIds_) internal view {
-        INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
+        uint32[] memory canonicalNodes_ = INodeRegistry(nodeRegistry).getCanonicalNodes();
 
+        uint256 canonicalLen = canonicalNodes_.length;
         uint256 nodeIdsLen = nodeIds_.length;
-        uint256 len = all.length;
 
-        uint256 j = 0; // index into submitted nodeIds_
-        uint256 canon = 0; // count of canonical nodes discovered in registry
-        uint32 prev = 0; // for strictly-increasing check on submitted IDs
+        if (canonicalLen != nodeIdsLen) {
+            revert NodeIdsLengthMismatch(uint32(canonicalLen), uint32(nodeIdsLen));
+        }
 
-        for (uint256 i = 0; i < len; ) {
-            INodeRegistry.NodeWithId memory it = all[i];
+        for (uint256 i = 0; i < canonicalLen; ) {
+            uint32 nodeId_ = canonicalNodes_[i];
+            bool found_ = false;
 
-            if (it.node.isCanonical) {
-                unchecked {
-                    ++canon;
+            for (uint256 j = 0; j < nodeIdsLen; ) {
+                if (nodeIds_[j] == nodeId_) {
+                    found_ = true;
+                    break;
                 }
 
-                // If the submitted list is shorter than the canonical set, skip comparisons
-                // but keep counting canonicals so we can return the exact expected count.
-                if (j < nodeIdsLen) {
-                    uint32 actualId = nodeIds_[j];
-
-                    // strictly increasing constraint on the submitted list
-                    if (j != 0 && actualId <= prev) revert UnorderedNodeIds();
-
-                    uint32 expectedId = it.nodeId;
-                    if (actualId != expectedId) {
-                        revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
-                    }
-
-                    prev = actualId;
-                    unchecked {
-                        ++j;
-                    }
+                unchecked {
+                    ++j;
                 }
             }
+
+            if (!found_) revert NodeIdAtIndexMismatch(nodeId_, 0, uint32(i));
 
             unchecked {
                 ++i;
             }
-        }
-
-        if (canon != nodeIdsLen) {
-            revert NodeIdsLengthMismatch(uint32(canon), uint32(nodeIdsLen));
         }
     }
 }
