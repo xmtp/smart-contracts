@@ -245,6 +245,12 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
     function getAllNodesCount() external view returns (uint32 nodeCount_);
 
     /**
+     * @notice Gets all canonical nodes IDs.
+     * @return canonicalNodes_ An array of all canonical nodes.
+     */
+    function getCanonicalNodes() external view returns (uint32[] memory canonicalNodes_);
+
+    /**
      * @notice Retrieves the details of a given node.
      * @param  nodeId_ The unique identifier of the node.
      * @return node_   The Node struct containing the node's details.
