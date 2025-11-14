@@ -520,10 +520,10 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
         _sortUint32Array(canonicalNodes_);
 
-        // Single-pass comparison: verify nodeIds_ matches sorted canonicalNodes_ and is strictly increasing
+        // Single-pass comparison: verify nodeIds_ matches sorted canonicalNodes_ and is strictly increasing.
         uint32 prev = 0;
 
-        for (uint256 i = 0; i < len; ) {
+        for (uint256 i = 0; i < len; ++i) {
             uint32 actualId = nodeIds_[i];
             uint32 expectedId = canonicalNodes_[i];
 
@@ -534,10 +534,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             }
 
             prev = actualId;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -545,7 +541,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         uint256 len = array_.length;
 
         // Insertion sort - O(n²) worst case but O(n) best case, efficient for small/nearly-sorted arrays.
-        for (uint256 i = 1; i < len; ) {
+        for (uint256 i = 1; i < len; ++i) {
             uint32 key = array_[i];
             uint256 j = i;
 
@@ -558,10 +554,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             }
 
             array_[j] = key;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 }
