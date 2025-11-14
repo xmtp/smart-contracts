@@ -46,6 +46,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
      * @param  baseURI             The base component of the token URI.
+     * @param  canonicalNodes      A set of the canonical node IDs.
      */
     struct NodeRegistryStorage {
         address admin;
@@ -131,13 +132,13 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if ($.nodes[nodeId_].isCanonical) return;
+        if ($.canonicalNodes.contains(nodeId_)) return;
 
         if (++$.canonicalNodesCount > $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
 
         $.nodes[nodeId_].isCanonical = true;
 
-        $.canonicalNodes.add(nodeId_);
+        if (!$.canonicalNodes.add(nodeId_)) revert FailedToAddNodeToCanonicalNetwork();
 
         emit NodeAddedToCanonicalNetwork(nodeId_);
     }
@@ -148,11 +149,11 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if (!$.nodes[nodeId_].isCanonical) return;
+        if (!$.canonicalNodes.contains(nodeId_)) return;
 
         delete $.nodes[nodeId_].isCanonical;
 
-        $.canonicalNodes.remove(nodeId_);
+        if (!$.canonicalNodes.remove(nodeId_)) revert FailedToRemoveNodeFromCanonicalNetwork();
 
         --$.canonicalNodesCount;
 

@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import { Test } from "../../lib/forge-std/src/Test.sol";
-import { console } from "../../lib/forge-std/src/console.sol";
 
 import { IERC721Errors } from "../../lib/oz/contracts/interfaces/draft-IERC6093.sol";
 
@@ -295,8 +294,14 @@ contract NodeRegistryTests is Test {
 
     function test_addToNetwork_alreadyInCanonicalNetwork() external {
         _registry.__setAdmin(_admin);
-        _registry.__setCanonicalNodesCount(1);
-        _addNode(1, _alice, address(0), true, "", "");
+        _registry.__setMaxCanonicalNodes(1);
+        _addNode(1, _alice, address(0), false, "", "");
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
+
+        assertTrue(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 1);
 
         vm.recordLogs();
 
@@ -304,9 +309,6 @@ contract NodeRegistryTests is Test {
         _registry.addToNetwork(1);
 
         assertEq(vm.getRecordedLogs().length, 0);
-
-        assertTrue(_registry.__getNode(1).isCanonical);
-        assertEq(_registry.canonicalNodesCount(), 1);
     }
 
     /* ============ removeFromNetwork ============ */
