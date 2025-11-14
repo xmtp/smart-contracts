@@ -209,7 +209,7 @@ contract PayerReportManagerTests is Test {
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
 
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(nodeIds_));
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             2
@@ -263,8 +263,6 @@ contract PayerReportManagerTests is Test {
             })
         });
 
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-
         Utils.expectAndMockCall(
             _nodeRegistry,
             abi.encodeWithSignature("getIsCanonicalNode(uint32)", 1),
@@ -276,6 +274,8 @@ contract PayerReportManagerTests is Test {
         nodeIds_[0] = 1;
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(nodeIds_));
 
         IPayerReportManager.PayerReportSignature[] memory signatures_ = new IPayerReportManager.PayerReportSignature[](
             1
@@ -328,12 +328,12 @@ contract PayerReportManagerTests is Test {
             })
         });
 
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-
         uint32[] memory nodeIds_ = new uint32[](3);
         nodeIds_[0] = 1;
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(nodeIds_));
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -454,12 +454,13 @@ contract PayerReportManagerTests is Test {
             })
         });
 
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
 
         uint32[] memory nodeIds_ = new uint32[](3);
         nodeIds_[0] = 1;
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(nodeIds_));
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -588,7 +589,12 @@ contract PayerReportManagerTests is Test {
             })
         });
 
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
+        uint32[] memory canonicalNodes_ = new uint32[](3);
+        canonicalNodes_[0] = 1;
+        canonicalNodes_[1] = 2;
+        canonicalNodes_[2] = 4;
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(canonicalNodes_));
 
         // Submit an incorrect canonical list (length mismatch here)
         uint32[] memory nodeIds_ = new uint32[](2);
@@ -646,9 +652,6 @@ contract PayerReportManagerTests is Test {
             })
         });
 
-        // Mock registry calls used by _enforceNodeIdsMatchCanonicalRegistry
-        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getAllNodes()"), abi.encode(all_));
-
         // The submitted set must be exactly the canonical set (sorted strictly increasing)
         uint32[] memory nodeIds_ = new uint32[](3);
         nodeIds_[0] = 1;
@@ -665,6 +668,8 @@ contract PayerReportManagerTests is Test {
 
         signatures_[0] = IPayerReportManager.PayerReportSignature({ nodeId: 1, signature: sig1_ });
         signatures_[1] = IPayerReportManager.PayerReportSignature({ nodeId: 2, signature: sig2_ });
+
+        Utils.expectAndMockCall(_nodeRegistry, abi.encodeWithSignature("getCanonicalNodes()"), abi.encode(nodeIds_));
 
         // Mocks used by __verifySignature for signers 1 and 2
         Utils.expectAndMockCall(
