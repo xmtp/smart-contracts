@@ -544,7 +544,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     function _sortUint32Array(uint32[] memory array_) internal pure {
         uint256 len = array_.length;
 
-        // Insertion sort - O(n²) worst case but O(n) best case, efficient for small/nearly-sorted arrays
+        // Insertion sort - O(n²) worst case but O(n) best case, efficient for small/nearly-sorted arrays.
         for (uint256 i = 1; i < len; ) {
             uint32 key = array_[i];
             uint256 j = i;
