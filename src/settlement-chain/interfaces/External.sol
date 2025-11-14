@@ -100,6 +100,8 @@ interface IAppChainGatewayLike {
 interface INodeRegistryLike {
     function canonicalNodesCount() external view returns (uint8 canonicalNodesCount_);
 
+    function getCanonicalNodes() external view returns (uint32[] memory canonicalNodes_);
+
     function getIsCanonicalNode(uint32 nodeId_) external view returns (bool isCanonicalNode_);
 
     function getSigner(uint32 nodeId_) external view returns (address signer_);
