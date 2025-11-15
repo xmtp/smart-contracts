@@ -512,33 +512,48 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     function _enforceNodeIdsMatchRegistry(uint32[] calldata nodeIds_) internal view {
         uint32[] memory canonicalNodes_ = INodeRegistry(nodeRegistry).getCanonicalNodes();
 
-        uint256 canonicalLen = canonicalNodes_.length;
-        uint256 nodeIdsLen = nodeIds_.length;
+        uint256 len = canonicalNodes_.length;
 
-        if (canonicalLen != nodeIdsLen) {
-            revert NodeIdsLengthMismatch(uint32(canonicalLen), uint32(nodeIdsLen));
+        if (len != nodeIds_.length) {
+            revert NodeIdsLengthMismatch(uint32(len), uint32(nodeIds_.length));
         }
 
-        for (uint256 i = 0; i < canonicalLen; ) {
-            uint32 nodeId_ = canonicalNodes_[i];
-            bool found_ = false;
+        _sortUint32Array(canonicalNodes_);
 
-            for (uint256 j = 0; j < nodeIdsLen; ) {
-                if (nodeIds_[j] == nodeId_) {
-                    found_ = true;
-                    break;
-                }
+        // Single-pass comparison: verify nodeIds_ matches sorted canonicalNodes_ and is strictly increasing.
+        uint32 prev = 0;
+
+        for (uint256 i = 0; i < len; ++i) {
+            uint32 actualId = nodeIds_[i];
+            uint32 expectedId = canonicalNodes_[i];
+
+            if (i != 0 && actualId <= prev) revert UnorderedNodeIds();
+
+            if (actualId != expectedId) {
+                revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(i));
+            }
+
+            prev = actualId;
+        }
+    }
+
+    function _sortUint32Array(uint32[] memory array_) internal pure {
+        uint256 len = array_.length;
+
+        // Insertion sort - O(n²) worst case but O(n) best case, efficient for small/nearly-sorted arrays.
+        for (uint256 i = 1; i < len; ++i) {
+            uint32 key = array_[i];
+            uint256 j = i;
+
+            while (j > 0 && array_[j - 1] > key) {
+                array_[j] = array_[j - 1];
 
                 unchecked {
-                    ++j;
+                    --j;
                 }
             }
 
-            if (!found_) revert NodeIdAtIndexMismatch(nodeId_, 0, uint32(i));
-
-            unchecked {
-                ++i;
-            }
+            array_[j] = key;
         }
     }
 }
