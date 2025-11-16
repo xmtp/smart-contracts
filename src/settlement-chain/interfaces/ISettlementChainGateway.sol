@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
@@ -9,7 +10,7 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
  * @notice A SettlementChainGateway exposes the ability to send parameters to any app chain gateways, via their
  *         respective inboxes on the settlement chain.
  */
-interface ISettlementChainGateway is IMigratable, IRegistryParametersErrors {
+interface ISettlementChainGateway is IMigratable, IVersioned, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**

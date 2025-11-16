@@ -2,13 +2,14 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Rate Registry.
  * @notice This interface exposes functionality for updating the rates, tracking them historically.
  */
-interface IRateRegistry is IMigratable, IRegistryParametersErrors {
+interface IRateRegistry is IMigratable, IVersioned, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**

@@ -6,6 +6,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
 import { IRateRegistry } from "./interfaces/IRateRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -140,6 +141,11 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /// @inheritdoc IRateRegistry
     function getRatesCount() external view returns (uint256 count_) {
         return _getRateRegistryStorage().allRates.length;
+    }
+
+    /// @inheritdoc IVersioned
+    function version() external pure returns (string memory version_) {
+        return "0.1.0";
     }
 
     /* ============ Internal View/Pure Functions ============ */

@@ -16,6 +16,7 @@ import {
 } from "./interfaces/External.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
@@ -351,6 +352,11 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint256 payerReportIndex_
     ) external view returns (bool hasClaimed_) {
         return _getDistributionManagerStorage().areFeesClaimed[nodeId_][originatorNodeId_][payerReportIndex_];
+    }
+
+    /// @inheritdoc IVersioned
+    function version() external pure returns (string memory version_) {
+        return "0.1.0";
     }
 
     /* ============ Internal Interactive Functions ============ */

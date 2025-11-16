@@ -8,6 +8,7 @@ import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 import { SequentialMerkleProofs } from "../libraries/SequentialMerkleProofs.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
 import { INodeRegistryLike, IPayerRegistryLike } from "./interfaces/External.sol";
 import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
@@ -335,6 +336,11 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         if (payerReportIndex_ >= length) revert PayerReportIndexOutOfBounds();
 
         return arr[payerReportIndex_];
+    }
+
+    /// @inheritdoc IVersioned
+    function version() external pure returns (string memory version_) {
+        return "0.1.0";
     }
 
     /* ============ Internal View/Pure Functions ============ */

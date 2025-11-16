@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "./IMigratable.sol";
+import { IVersioned } from "./IVersioned.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
@@ -9,7 +10,7 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
  * @notice A payload broadcaster is a contract that broadcasts payloads as events, where payloads have a min and max
  *         size, both of which can be updated from a parameter registry.
  */
-interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
+interface IPayloadBroadcaster is IMigratable, IVersioned, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**

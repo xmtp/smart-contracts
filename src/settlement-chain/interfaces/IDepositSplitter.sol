@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
+
 /**
  * @title  Interface for the Deposit Splitter.
  * @notice This interface exposes functionality for splitting deposits between the Payer Registry and App Chain.
  */
-interface IDepositSplitter {
+interface IDepositSplitter is IVersioned {
     /* ============ Custom Errors ============ */
 
     /**
