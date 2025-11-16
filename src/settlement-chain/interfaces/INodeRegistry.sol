@@ -6,6 +6,7 @@ import { IERC721Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC60
 import { IERC721Metadata } from "../../../lib/oz/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
@@ -15,7 +16,7 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
  *         In addition to the standard ERC721 functionality, the contract supports node-specific features, including
  *         node property updates.
  */
-interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable, IRegistryParametersErrors {
+interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable, IVersioned, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**
@@ -210,6 +211,9 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
     /// @notice The increment for node IDs, which allows for 100 shard node IDs per node in the future (modulus 100).
     // slither-disable-next-line naming-convention
     function NODE_INCREMENT() external pure returns (uint32 nodeIncrement_);
+
+    /// @notice Returns semver version string.
+    function version() external pure returns (string memory version_);
 
     /// @notice The address of the admin.
     function admin() external view returns (address admin_);
