@@ -80,6 +80,12 @@ contract FactoryTests is Test {
         assertEq(_factory.initializableImplementation(), vm.computeCreateAddress(address(_factory), 1));
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_factory.version(), "0.1.0");
+    }
+
     /* ============ initializer ============ */
 
     function test_initialize_reinitialization() external {

@@ -68,6 +68,12 @@ contract IdentityUpdateBroadcasterTests is Test {
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_broadcaster.version(), "0.1.0");
+    }
+
     /* ============ addIdentityUpdate ============ */
 
     function test_addIdentityUpdate_whenPaused() external {

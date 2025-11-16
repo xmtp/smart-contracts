@@ -85,6 +85,12 @@ contract ParameterRegistryTests is Test {
         );
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "0.1.0");
+    }
+
     /* ============ set several ============ */
 
     function test_set_several_notAdmin() external {

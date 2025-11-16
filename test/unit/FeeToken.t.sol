@@ -80,6 +80,12 @@ contract FeeTokenTests is Test {
         assertEq(_token.decimals(), 6);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_token.version(), "0.1.0");
+    }
+
     /* ============ initializer ============ */
 
     function test_initialize_reinitialization() external {

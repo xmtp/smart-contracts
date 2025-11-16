@@ -21,6 +21,7 @@ import { ParameterRegistry } from "../../src/abstract/ParameterRegistry.sol";
 import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
 import { PayloadBroadcaster } from "../../src/abstract/PayloadBroadcaster.sol";
+import { IVersioned } from "../../src/abstract/interfaces/IVersioned.sol";
 import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
@@ -46,6 +47,10 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
 
     function payloadBootstrapperParameterKey() public pure override returns (string memory key_) {
         return "xmtp.payloadBroadcaster.payloadBootstrapper";
+    }
+
+    function version() external pure returns (string memory version_) {
+        return "0.1.0";
     }
 
     function __setPauseStatus(bool paused_) external {
@@ -302,6 +307,10 @@ contract ParameterRegistryHarness is ParameterRegistry {
 
     function adminParameterKey() public pure override returns (string memory key_) {
         return "xmtp.parameterRegistry.isAdmin";
+    }
+
+    function version() external pure returns (string memory version_) {
+        return "0.1.0";
     }
 
     function __getRegistryParameter(string calldata key_) external view returns (bytes32 value_) {

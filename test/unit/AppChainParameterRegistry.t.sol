@@ -63,4 +63,10 @@ contract AppChainParameterRegistryTests is Test {
             bytes32(uint256(1))
         );
     }
+
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "0.1.0");
+    }
 }
