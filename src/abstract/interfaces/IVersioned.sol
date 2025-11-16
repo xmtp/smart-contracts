@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 interface IVersioned {
     /**
      * @notice Returns semver version string
+     * @return version_ The semver version string
      */
-    function version() external pure returns (string memory);
+    function version() external pure returns (string memory version_);
 }
