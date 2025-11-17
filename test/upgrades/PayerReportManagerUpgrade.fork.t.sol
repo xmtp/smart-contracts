@@ -20,7 +20,7 @@ contract PayerReportManagerUpgradeForkTest is Test {
 
     function setUp() external {
         // Hardcoded environment and RPC
-        string memory rpc = "https://sepolia.base.org";
+        string memory rpc = vm.rpcUrl("base_sepolia");
         vm.createSelectFork(rpc);
 
         string memory environment = "testnet-staging";

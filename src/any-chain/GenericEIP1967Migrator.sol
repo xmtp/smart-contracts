@@ -52,7 +52,7 @@ contract GenericEIP1967Migrator {
      * @dev Runs in the *proxy’s* context (storage is the proxy’s), so we can sstore the slot.
      *      Emits the standard ERC-1967 `Upgraded` event via the imported interface.
      */
-    fallback() external payable {
+    fallback() external {
         address impl = newImpl;
 
         assembly {
