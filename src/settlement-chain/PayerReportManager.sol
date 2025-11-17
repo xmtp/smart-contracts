@@ -510,50 +510,50 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     }
 
     function _enforceNodeIdsMatchRegistry(uint32[] calldata nodeIds_) internal view {
-        INodeRegistry.NodeWithId[] memory all = INodeRegistry(nodeRegistry).getAllNodes();
+        uint32[] memory canonicalNodes_ = INodeRegistry(nodeRegistry).getCanonicalNodes();
 
-        uint256 nodeIdsLen = nodeIds_.length;
-        uint256 len = all.length;
+        uint256 len = canonicalNodes_.length;
 
-        uint256 j = 0; // index into submitted nodeIds_
-        uint256 canon = 0; // count of canonical nodes discovered in registry
-        uint32 prev = 0; // for strictly-increasing check on submitted IDs
-
-        for (uint256 i = 0; i < len; ) {
-            INodeRegistry.NodeWithId memory it = all[i];
-
-            if (it.node.isCanonical) {
-                unchecked {
-                    ++canon;
-                }
-
-                // If the submitted list is shorter than the canonical set, skip comparisons
-                // but keep counting canonicals so we can return the exact expected count.
-                if (j < nodeIdsLen) {
-                    uint32 actualId = nodeIds_[j];
-
-                    // strictly increasing constraint on the submitted list
-                    if (j != 0 && actualId <= prev) revert UnorderedNodeIds();
-
-                    uint32 expectedId = it.nodeId;
-                    if (actualId != expectedId) {
-                        revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(j));
-                    }
-
-                    prev = actualId;
-                    unchecked {
-                        ++j;
-                    }
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
+        if (len != nodeIds_.length) {
+            revert NodeIdsLengthMismatch(uint32(len), uint32(nodeIds_.length));
         }
 
-        if (canon != nodeIdsLen) {
-            revert NodeIdsLengthMismatch(uint32(canon), uint32(nodeIdsLen));
+        _sortUint32Array(canonicalNodes_);
+
+        // Single-pass comparison: verify nodeIds_ matches sorted canonicalNodes_ and is strictly increasing.
+        uint32 prev = 0;
+
+        for (uint256 i = 0; i < len; ++i) {
+            uint32 actualId = nodeIds_[i];
+            uint32 expectedId = canonicalNodes_[i];
+
+            if (i != 0 && actualId <= prev) revert UnorderedNodeIds();
+
+            if (actualId != expectedId) {
+                revert NodeIdAtIndexMismatch(expectedId, actualId, uint32(i));
+            }
+
+            prev = actualId;
+        }
+    }
+
+    function _sortUint32Array(uint32[] memory array_) internal pure {
+        uint256 len = array_.length;
+
+        // Insertion sort - O(n²) worst case but O(n) best case, efficient for small/nearly-sorted arrays.
+        for (uint256 i = 1; i < len; ++i) {
+            uint32 key = array_[i];
+            uint256 j = i;
+
+            while (j > 0 && array_[j - 1] > key) {
+                array_[j] = array_[j - 1];
+
+                unchecked {
+                    --j;
+                }
+            }
+
+            array_[j] = key;
         }
     }
 }

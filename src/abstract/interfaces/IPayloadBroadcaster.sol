@@ -43,6 +43,9 @@ interface IPayloadBroadcaster is IMigratable, IRegistryParametersErrors {
     /// @notice Thrown when the parameter registry address is zero (i.e. address(0)).
     error ZeroParameterRegistry();
 
+    /// @notice Thrown when the payload bootstrapper address is zero (i.e. address(0)).
+    error ZeroPayloadBootstrapper();
+
     /// @notice Thrown when the payload size is invalid.
     error InvalidPayloadSize(uint256 actualSize_, uint256 minSize_, uint256 maxSize_);
 

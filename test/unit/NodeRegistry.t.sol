@@ -72,6 +72,7 @@ contract NodeRegistryTests is Test {
         assertEq(_registry.symbol(), "nXMTP");
         assertEq(_registry.parameterRegistry(), _parameterRegistry);
         assertEq(_registry.maxCanonicalNodes(), 0);
+        assertEq(_registry.canonicalNodesCount(), 0);
     }
 
     /* ============ initializer ============ */
@@ -285,12 +286,22 @@ contract NodeRegistryTests is Test {
 
         assertTrue(_registry.__getNode(1).isCanonical);
         assertEq(_registry.canonicalNodesCount(), 1);
+
+        uint32[] memory canonicalNodes_ = _registry.getCanonicalNodes();
+        assertEq(canonicalNodes_.length, 1);
+        assertEq(canonicalNodes_[0], 1);
     }
 
     function test_addToNetwork_alreadyInCanonicalNetwork() external {
         _registry.__setAdmin(_admin);
-        _registry.__setCanonicalNodesCount(1);
-        _addNode(1, _alice, address(0), true, "", "");
+        _registry.__setMaxCanonicalNodes(1);
+        _addNode(1, _alice, address(0), false, "", "");
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
+
+        assertTrue(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 1);
 
         vm.recordLogs();
 
@@ -298,9 +309,6 @@ contract NodeRegistryTests is Test {
         _registry.addToNetwork(1);
 
         assertEq(vm.getRecordedLogs().length, 0);
-
-        assertTrue(_registry.__getNode(1).isCanonical);
-        assertEq(_registry.canonicalNodesCount(), 1);
     }
 
     /* ============ removeFromNetwork ============ */
@@ -325,10 +333,17 @@ contract NodeRegistryTests is Test {
 
     function test_removeFromNetwork() external {
         _registry.__setAdmin(_admin);
-        _addNode(1, _alice, address(0), true, "", "");
+        _registry.__setMaxCanonicalNodes(1);
+        _addNode(1, _alice, address(0), false, "", "");
 
-        _registry.__addNodeToCanonicalNetwork(1);
-        _registry.__setCanonicalNodesCount(1);
+        vm.expectEmit(address(_registry));
+        emit INodeRegistry.NodeAddedToCanonicalNetwork(1);
+
+        vm.prank(_admin);
+        _registry.addToNetwork(1);
+
+        assertTrue(_registry.__getNode(1).isCanonical);
+        assertEq(_registry.canonicalNodesCount(), 1);
 
         vm.expectEmit(address(_registry));
         emit INodeRegistry.NodeRemovedFromCanonicalNetwork(1);
@@ -338,6 +353,9 @@ contract NodeRegistryTests is Test {
 
         assertFalse(_registry.__getNode(1).isCanonical);
         assertEq(_registry.canonicalNodesCount(), 0);
+
+        uint32[] memory canonicalNodes_ = _registry.getCanonicalNodes();
+        assertEq(canonicalNodes_.length, 0);
     }
 
     function test_removeFromNetwork_notInCanonicalNetwork() external {
@@ -457,6 +475,14 @@ contract NodeRegistryTests is Test {
         );
 
         vm.expectRevert(IRegistryParametersErrors.ParameterOutOfTypeBounds.selector);
+
+        _registry.updateAdmin();
+    }
+
+    function test_updateAdmin_zeroAdmin() external {
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _ADMIN_KEY, bytes32(uint256(0)));
+
+        vm.expectRevert(INodeRegistry.ZeroAdmin.selector);
 
         _registry.updateAdmin();
     }

@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import { ERC721Upgradeable } from "../../lib/oz-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 
+import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSet.sol";
+
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
@@ -21,6 +23,8 @@ import { Migratable } from "../abstract/Migratable.sol";
  * @dev    All nodes on the network periodically check this contract to determine which nodes they should connect to.
  */
 contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /* ============ Constants/Immutables ============ */
 
     /// @inheritdoc INodeRegistry
@@ -42,6 +46,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
      * @param  baseURI             The base component of the token URI.
+     * @param  canonicalNodes      A set of the canonical node IDs.
      */
     struct NodeRegistryStorage {
         address admin;
@@ -50,6 +55,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
         string baseURI;
+        EnumerableSet.UintSet canonicalNodes;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.NodeRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -126,11 +132,13 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if ($.nodes[nodeId_].isCanonical) return;
+        if ($.canonicalNodes.contains(nodeId_)) return;
 
         if (++$.canonicalNodesCount > $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
 
         $.nodes[nodeId_].isCanonical = true;
+
+        if (!$.canonicalNodes.add(nodeId_)) revert FailedToAddNodeToCanonicalNetwork();
 
         emit NodeAddedToCanonicalNetwork(nodeId_);
     }
@@ -141,9 +149,12 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
-        if (!$.nodes[nodeId_].isCanonical) return;
+        if (!$.canonicalNodes.contains(nodeId_)) return;
 
         delete $.nodes[nodeId_].isCanonical;
+
+        if (!$.canonicalNodes.remove(nodeId_)) revert FailedToRemoveNodeFromCanonicalNetwork();
+
         --$.canonicalNodesCount;
 
         emit NodeRemovedFromCanonicalNetwork(nodeId_);
@@ -179,6 +190,9 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     function updateAdmin() external {
         // NOTE: No access control logic is enforced here, since the value is defined by some administered parameter.
         address admin_ = RegistryParameters.getAddressParameter(parameterRegistry, adminParameterKey());
+
+        if (_isZero(admin_)) revert ZeroAdmin();
+
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
         if (admin_ == $.admin) revert NoChange();
@@ -255,6 +269,21 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     /// @inheritdoc INodeRegistry
     function getAllNodesCount() external view returns (uint32 nodeCount_) {
         return _getNodeRegistryStorage().nodeCount;
+    }
+
+    /// @inheritdoc INodeRegistry
+    function getCanonicalNodes() external view returns (uint32[] memory canonicalNodes_) {
+        NodeRegistryStorage storage $ = _getNodeRegistryStorage();
+
+        canonicalNodes_ = new uint32[]($.canonicalNodes.length());
+
+        for (uint256 i = 0; i < $.canonicalNodes.length(); i++) {
+            // Casting to uint32 is safe because the set only contains uint32 values.
+            // forge-lint: disable-next-line(unsafe-typecast)
+            canonicalNodes_[i] = uint32($.canonicalNodes.at(i));
+        }
+
+        return canonicalNodes_;
     }
 
     /// @inheritdoc INodeRegistry
