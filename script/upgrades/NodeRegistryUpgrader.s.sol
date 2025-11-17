@@ -2,10 +2,8 @@
 pragma solidity 0.8.28;
 
 import { Script, console } from "../../lib/forge-std/src/Script.sol";
-
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
-
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../utils/Utils.sol";
 import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
@@ -16,7 +14,7 @@ contract NodeRegistryUpgrader is Script {
     error StateMismatch();
 
     struct ContractState {
-        address admin;
+        address parameterRegistry;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
     }
@@ -42,7 +40,7 @@ contract NodeRegistryUpgrader is Script {
 
         // Contract state before upgrade
         address proxy = deployment.nodeRegistryProxy;
-        contractStateBefore = GetContractState(proxy);
+        contractStateBefore = getContractState(proxy);
     }
 
     function UpgradeNodeRegistry() external {
@@ -74,34 +72,43 @@ contract NodeRegistryUpgrader is Script {
         vm.stopBroadcast();
 
         // Compare state before and after upgrade
-        ContractState memory contractStateAfter = GetContractState(proxy);
-        if (!IsContractStateEqual(contractStateBefore, contractStateAfter)) revert StateMismatch();
+        ContractState memory contractStateAfter = getContractState(proxy);
+        _logContractState("State before upgrade:", contractStateBefore);
+        _logContractState("State after upgrade:", contractStateAfter);
+        if (!isContractStateEqual(contractStateBefore, contractStateAfter)) revert StateMismatch();
+
+        // Update environment file
+        _writeNodeRegistryImplementation(newImpl);
     }
 
-    function GetContractState(address proxy_) internal view returns (ContractState memory state_) {
+    function getContractState(address proxy_) public view returns (ContractState memory state_) {
         NodeRegistry nodeRegistry = NodeRegistry(proxy_);
-        state_.admin = nodeRegistry.admin();
+        state_.parameterRegistry = nodeRegistry.parameterRegistry();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
     }
 
-    function IsContractStateEqual(
+    function isContractStateEqual(
         ContractState memory before_,
         ContractState memory after_
-    ) internal returns (bool isEqual_) {
-        console.log("State before upgrade:");
-        console.log("  Admin: %s", before_.admin);
-        console.log("  Canonical nodes count: %u", uint256(before_.canonicalNodesCount));
-        console.log("  Node count: %u", uint256(before_.nodeCount));
-
-        console.log("State after upgrade:");
-        console.log("  Admin: %s", after_.admin);
-        console.log("  Canonical nodes count: %u", uint256(after_.canonicalNodesCount));
-        console.log("  Node count: %u", uint256(after_.nodeCount));
-
+    ) public pure returns (bool isEqual_) {
         isEqual_ =
-            before_.admin == after_.admin &&
+            before_.parameterRegistry == after_.parameterRegistry &&
             before_.canonicalNodesCount == after_.canonicalNodesCount &&
             before_.nodeCount == after_.nodeCount;
+    }
+
+    function _logContractState(string memory title_, ContractState memory state_) internal view {
+        console.log(title_);
+        console.log("  Parameter registry: %s", state_.parameterRegistry);
+        console.log("  Canonical nodes count: %u", uint256(state_.canonicalNodesCount));
+        console.log("  Node count: %u", uint256(state_.nodeCount));
+    }
+
+    function _writeNodeRegistryImplementation(address newImpl_) internal {
+        string memory filePath_ = string.concat("environments/", _environment, ".json");
+        vm.serializeJson("root", vm.readFile(filePath_));
+        string memory json_ = vm.serializeAddress("root", "nodeRegistryImplementation", newImpl_);
+        vm.writeJson(json_, filePath_);
     }
 }
