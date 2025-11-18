@@ -66,11 +66,11 @@ contract NodeRegistryUpgrader is Script {
 
     function UpgradeNodeRegistry() external {
         address factory = _deployment.factory;
-        console.log("factory", factory);
+        console.log("factory %s", factory);
         address paramRegistry = _deployment.parameterRegistryProxy;
-        console.log("paramRegistry", paramRegistry);
+        console.log("paramRegistry %s", paramRegistry);
         address proxy = _deployment.nodeRegistryProxy;
-        console.log("proxy", proxy);
+        console.log("proxy %s", proxy);
 
         vm.startBroadcast(_privateKey);
 
@@ -86,16 +86,16 @@ contract NodeRegistryUpgrader is Script {
             // Deploy new implementation, can be called by ANY address
             (newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
         }
-        console.log("newImpl", newImpl);
+        console.log("newImpl %s", newImpl);
 
         // Deploy generic migrator, can be called by ANY address
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
-        console.log("migrator (also param reg migrator value)", address(migrator));
+        console.log("migrator (also param reg migrator value) %s", address(migrator));
 
         // Parameter registry stores the migrator address, must be called by a param registry admin address
         string memory key = NodeRegistry(proxy).migratorParameterKey();
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
-        console.log("param reg migrator key", key);
+        console.log("param reg migrator key %s", key);
 
         // Perform migration, can be called by any address
         NodeRegistry(proxy).migrate();
@@ -130,11 +130,11 @@ contract NodeRegistryUpgrader is Script {
             before_.nodeCount == after_.nodeCount;
     }
 
-    function _logContractState(string memory title_, ContractState memory state_) internal pure {
-        console.log(title_);
-        console.log("  Parameter registry:", state_.parameterRegistry);
-        console.log("  Canonical nodes count:", uint256(state_.canonicalNodesCount));
-        console.log("  Node count:", uint256(state_.nodeCount));
+    function _logContractState(string memory title_, ContractState memory state_) internal view {
+        console.log("%s", title_);
+        console.log("  Parameter registry: %s", state_.parameterRegistry);
+        console.log("  Canonical nodes count: %u", uint256(state_.canonicalNodesCount));
+        console.log("  Node count: %u", uint256(state_.nodeCount));
     }
 
     function _writeNodeRegistryImplementation(address newImpl_) internal {
