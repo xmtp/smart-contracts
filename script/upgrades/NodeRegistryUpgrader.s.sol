@@ -2,12 +2,33 @@
 pragma solidity 0.8.28;
 
 import { Script, console } from "../../lib/forge-std/src/Script.sol";
+import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../utils/Utils.sol";
 import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
 
+/**
+ * @notice Upgrades the NodeRegistry proxy to a new implementation
+ * @dev This script:
+ *      - Reads addresses for: factory, parameter registry and node registry proxy from config JSON file
+ *      - Deploys a new NodeRegistry implementation via the Factory
+ *      - Creates a GenericEIP1967Migrator with the new implementation
+ *      - Sets the migrator address in the Parameter Registry
+ *      - Executes the migration on the proxy
+ *      - Updates the environment JSON file with the new implementation address
+ *      - Compares the state before and after upgrade
+ * Usage:
+ *   ENVIRONMENT=testnet-dev \
+ *   ADMIN_PRIVATE_KEY=0x... \
+ *   forge script script/upgrades/NodeRegistryUpgrader.s.sol:NodeRegistryUpgrader \
+ *     --sig "UpgradeNodeRegistry()" \
+ *     --rpc-url base_sepolia  \
+ *     --broadcast \
+ *     --slow \
+ *     -vvv
+ */
 contract NodeRegistryUpgrader is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
@@ -22,8 +43,8 @@ contract NodeRegistryUpgrader is Script {
     string internal _environment;
     uint256 internal _privateKey;
     address internal _admin;
-    Utils.DeploymentData internal deployment;
-    ContractState internal contractStateBefore;
+    Utils.DeploymentData internal _deployment;
+    ContractState internal _contractStateBefore;
 
     function setUp() external {
         // Environment
@@ -32,25 +53,23 @@ contract NodeRegistryUpgrader is Script {
         console.log("Environment: %s", _environment);
 
         // Admin private key
-        deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
+        _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
         _privateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
         if (_privateKey == 0) revert PrivateKeyNotSet();
         _admin = vm.addr(_privateKey);
         console.log("Admin: %s", _admin);
 
         // Contract state before upgrade
-        address proxy = deployment.nodeRegistryProxy;
-        contractStateBefore = getContractState(proxy);
+        address proxy = _deployment.nodeRegistryProxy;
+        _contractStateBefore = getContractState(proxy);
     }
 
     function UpgradeNodeRegistry() external {
-        address factory = deployment.factory;
+        address factory = _deployment.factory;
         console.log("factory", factory);
-        address paramRegistry = deployment.parameterRegistryProxy;
+        address paramRegistry = _deployment.parameterRegistryProxy;
         console.log("paramRegistry", paramRegistry);
-        address feeToken = deployment.feeTokenProxy;
-        console.log("feeToken", feeToken);
-        address proxy = deployment.nodeRegistryProxy;
+        address proxy = _deployment.nodeRegistryProxy;
         console.log("proxy", proxy);
 
         vm.startBroadcast(_privateKey);
@@ -73,12 +92,14 @@ contract NodeRegistryUpgrader is Script {
 
         // Compare state before and after upgrade
         ContractState memory contractStateAfter = getContractState(proxy);
-        _logContractState("State before upgrade:", contractStateBefore);
+        _logContractState("State before upgrade:", _contractStateBefore);
         _logContractState("State after upgrade:", contractStateAfter);
-        if (!isContractStateEqual(contractStateBefore, contractStateAfter)) revert StateMismatch();
+        if (!isContractStateEqual(_contractStateBefore, contractStateAfter)) revert StateMismatch();
 
-        // Update environment file
-        _writeNodeRegistryImplementation(newImpl);
+        // Update environment file only if broadcasting
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+            _writeNodeRegistryImplementation(newImpl);
+        }
     }
 
     function getContractState(address proxy_) public view returns (ContractState memory state_) {
@@ -98,11 +119,11 @@ contract NodeRegistryUpgrader is Script {
             before_.nodeCount == after_.nodeCount;
     }
 
-    function _logContractState(string memory title_, ContractState memory state_) internal view {
+    function _logContractState(string memory title_, ContractState memory state_) internal pure {
         console.log(title_);
-        console.log("  Parameter registry: %s", state_.parameterRegistry);
-        console.log("  Canonical nodes count: %u", uint256(state_.canonicalNodesCount));
-        console.log("  Node count: %u", uint256(state_.nodeCount));
+        console.log("  Parameter registry:", state_.parameterRegistry);
+        console.log("  Canonical nodes count:", uint256(state_.canonicalNodesCount));
+        console.log("  Node count:", uint256(state_.nodeCount));
     }
 
     function _writeNodeRegistryImplementation(address newImpl_) internal {
