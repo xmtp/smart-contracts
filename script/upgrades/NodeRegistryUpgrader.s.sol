@@ -73,8 +73,19 @@ contract NodeRegistryUpgrader is Script {
         console.log("proxy", proxy);
 
         vm.startBroadcast(_privateKey);
-        // Deploy new implementation, can be called by ANY address
-        (address newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
+
+        // Compute implementation address
+        address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
+        address newImpl;
+
+        // Skip deploymwnt if implementation already exists
+        if (computedImpl.code.length > 0) {
+            console.log("Implementation already exists at computed address, skipping deployment");
+            newImpl = computedImpl;
+        } else {
+            // Deploy new implementation, can be called by ANY address
+            (newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
+        }
         console.log("newImpl", newImpl);
 
         // Deploy generic migrator, can be called by ANY address

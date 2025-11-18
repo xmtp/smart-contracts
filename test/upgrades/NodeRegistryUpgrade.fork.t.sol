@@ -35,12 +35,20 @@ contract NodeRegistryUpgradeForkTest is Test {
         address paramRegistry = deployment.parameterRegistryProxy;
         address proxy = deployment.nodeRegistryProxy;
 
-        address oldImpl = IERC1967(proxy).implementation();
-
         // Get state before upgrade using script's getContractState
         NodeRegistryUpgrader.ContractState memory stateBefore = upgrader.getContractState(proxy);
 
-        (address newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
+        // Compute the implementation address
+        address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
+
+        address newImpl;
+        if (computedImpl.code.length > 0) {
+            // Implementation already exists, use it directly
+            newImpl = computedImpl;
+        } else {
+            // Deploy new implementation
+            (newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
+        }
 
         // Deploy migrator
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
