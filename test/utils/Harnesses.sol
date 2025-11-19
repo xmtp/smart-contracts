@@ -21,7 +21,7 @@ import { ParameterRegistry } from "../../src/abstract/ParameterRegistry.sol";
 import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
 import { PayloadBroadcaster } from "../../src/abstract/PayloadBroadcaster.sol";
-import { IVersioned } from "../../src/abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../../src/abstract/interfaces/IIdentified.sol";
 import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
 import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
@@ -49,8 +49,14 @@ contract PayloadBroadcasterHarness is PayloadBroadcaster {
         return "xmtp.payloadBroadcaster.payloadBootstrapper";
     }
 
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "PayloadBroadcasterHarness";
     }
 
     function __setPauseStatus(bool paused_) external {
@@ -309,8 +315,14 @@ contract ParameterRegistryHarness is ParameterRegistry {
         return "xmtp.parameterRegistry.isAdmin";
     }
 
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "ParameterRegistryHarness";
     }
 
     function __getRegistryParameter(string calldata key_) external view returns (bytes32 value_) {

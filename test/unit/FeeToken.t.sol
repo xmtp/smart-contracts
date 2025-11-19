@@ -83,7 +83,13 @@ contract FeeTokenTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_token.version(), "0.1.0");
+        assertEq(_token.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_token.contractName(), "FeeToken");
     }
 
     /* ============ initializer ============ */

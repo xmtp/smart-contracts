@@ -87,7 +87,13 @@ contract PayerReportManagerTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_manager.version(), "0.1.0");
+        assertEq(_manager.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_manager.contractName(), "PayerReportManager");
     }
 
     /* ============ initializer ============ */

@@ -9,7 +9,7 @@ import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IERC20Like, IFeeTokenLike, IPermitErc20Like } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -437,9 +437,14 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         );
     }
 
-    /// @inheritdoc IVersioned
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "PayerRegistry";
     }
 
     /* ============ Internal Interactive Functions ============ */

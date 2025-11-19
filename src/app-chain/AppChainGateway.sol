@@ -9,7 +9,7 @@ import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 import { IAppChainGateway } from "./interfaces/IAppChainGateway.sol";
 import { IArbSysLike, ISettlementChainGatewayLike } from "./interfaces/External.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
@@ -178,9 +178,14 @@ contract AppChainGateway is IAppChainGateway, Migratable, Initializable {
         return _getAppChainGatewayStorage().paused;
     }
 
-    /// @inheritdoc IVersioned
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "AppChainGateway";
     }
 
     /* ============ Internal Interactive Functions ============ */

@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
@@ -12,7 +12,7 @@ import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryP
  *           - for some settler contract to settle usage fees for payers,
  *           - for anyone to send excess fee tokens in the contract to the fee distributor.
  */
-interface IPayerRegistry is IMigratable, IVersioned, IRegistryParametersErrors {
+interface IPayerRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
     /* ============ Structs ============ */
 
     /**

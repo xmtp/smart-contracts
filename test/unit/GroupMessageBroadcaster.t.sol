@@ -71,7 +71,13 @@ contract GroupMessageBroadcasterTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_broadcaster.version(), "0.1.0");
+        assertEq(_broadcaster.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_broadcaster.contractName(), "GroupMessageBroadcaster");
     }
 
     /* ============ addMessage ============ */

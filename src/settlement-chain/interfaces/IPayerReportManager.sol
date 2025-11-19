@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import { IERC5267 } from "../../abstract/interfaces/IERC5267.sol";
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 import { ISequentialMerkleProofsErrors } from "../../libraries/interfaces/ISequentialMerkleProofsErrors.sol";
 
@@ -13,7 +13,7 @@ import { ISequentialMerkleProofsErrors } from "../../libraries/interfaces/ISeque
  */
 interface IPayerReportManager is
     IMigratable,
-    IVersioned,
+    IIdentified,
     IERC5267,
     IRegistryParametersErrors,
     ISequentialMerkleProofsErrors

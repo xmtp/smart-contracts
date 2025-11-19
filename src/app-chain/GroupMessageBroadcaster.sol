@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import { IGroupMessageBroadcaster } from "./interfaces/IGroupMessageBroadcaster.sol";
 import { IPayloadBroadcaster } from "../abstract/interfaces/IPayloadBroadcaster.sol";
-import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
 
@@ -114,8 +114,13 @@ contract GroupMessageBroadcaster is IGroupMessageBroadcaster, PayloadBroadcaster
         return "xmtp.groupMessageBroadcaster.payloadBootstrapper";
     }
 
-    /// @inheritdoc IVersioned
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "GroupMessageBroadcaster";
     }
 }

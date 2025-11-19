@@ -18,7 +18,7 @@ import {
 } from "./interfaces/External.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 import { ISettlementChainGateway } from "./interfaces/ISettlementChainGateway.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -329,9 +329,14 @@ contract SettlementChainGateway is ISettlementChainGateway, Migratable, Initiali
         return _getInbox(chainId_);
     }
 
-    /// @inheritdoc IVersioned
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "SettlementChainGateway";
     }
 
     /* ============ Internal Interactive Functions ============ */

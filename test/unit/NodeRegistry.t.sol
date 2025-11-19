@@ -684,7 +684,13 @@ contract NodeRegistryTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_registry.version(), "0.1.0");
+        assertEq(_registry.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_registry.contractName(), "NodeRegistry");
     }
 
     /* ============ migrate ============ */

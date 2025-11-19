@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import { SafeTransferLib } from "../../lib/solady/src/utils/SafeTransferLib.sol";
 
 import { IDepositSplitter } from "./interfaces/IDepositSplitter.sol";
-import { IVersioned } from "../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import {
     IERC20Like,
@@ -257,9 +257,14 @@ contract DepositSplitter is IDepositSplitter {
 
     /* ============ View/Pure Functions ============ */
 
-    /// @inheritdoc IVersioned
+    /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "0.1.0";
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "DepositSplitter";
     }
 
     /* ============ Internal View/Pure Functions ============ */

@@ -6,14 +6,14 @@ import { IERC20Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC609
 import { IERC20Metadata } from "../../../lib/oz/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
-import { IVersioned } from "../../abstract/interfaces/IVersioned.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Fee Token.
  * @notice This interface exposes functionality for wrapping and unwrapping tokens for use as fees in the protocol.
  */
-interface IFeeToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable, IVersioned, IRegistryParametersErrors {
+interface IFeeToken is IERC20, IERC20Metadata, IERC20Errors, IMigratable, IIdentified, IRegistryParametersErrors {
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when the parameter registry address is being set to zero (i.e. address(0)).
