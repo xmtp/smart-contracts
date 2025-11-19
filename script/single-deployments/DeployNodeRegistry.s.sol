@@ -4,14 +4,19 @@ pragma solidity 0.8.28;
 import { Script, console } from "../../lib/forge-std/src/Script.sol";
 import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 import { DeployScripts } from "../Deploy.s.sol";
+import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
 
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
+    error ImplementationAddressMismatch(address expected, address computed);
 
     function deployNodeRegistry() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
         console.log("Deploying NodeRegistry");
+
+        // Validate config address matches deterministic address before attempting deployment
+        _validateImplementationAddress();
 
         // Deploy implementation first
         deployNodeRegistryImplementation();
@@ -23,6 +28,23 @@ contract DeployNodeRegistryScript is DeployScripts {
         _writeNodeRegistryToEnvironment();
 
         console.log("NodeRegistry deployment complete");
+    }
+
+    function _validateImplementationAddress() internal view {
+        if (_deploymentData.nodeRegistryImplementation == address(0)) revert ImplementationNotSet();
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+
+        // Compute the deterministic address that will be deployed
+        address computedImplementation_ = NodeRegistryDeployer.getImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy
+        );
+
+        // Validate config address matches deterministic address before attempting deployment
+        if (_deploymentData.nodeRegistryImplementation != computedImplementation_) {
+            revert ImplementationAddressMismatch(_deploymentData.nodeRegistryImplementation, computedImplementation_);
+        }
     }
 
     function _writeNodeRegistryToEnvironment() internal {
@@ -44,10 +66,27 @@ contract DeployNodeRegistryScript is DeployScripts {
     }
 
     function _ensureNoNodeRegistry(string memory json_) internal view {
-        // Copying intent from mass deploy Deploy.s.sol, is that the environment JSON must
-        // have the node registry value manaully removed before starting.
+        // Copying the intent from Deploy.s.sol. Environment JSON must have any existing node registry value
+        // manually removed before starting.
         if (vm.keyExists(json_, ".nodeRegistry")) {
             revert EnvironmentContainsNodeRegistry();
         }
+    }
+
+    function predictAddresses() external view {
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+
+        address computedImplementation_ = NodeRegistryDeployer.getImplementation(
+            _deploymentData.factory,
+            _deploymentData.parameterRegistryProxy
+        );
+
+        console.log("=== NodeRegistry Predicted Addresses ===");
+        console.log("Implementation:", computedImplementation_);
+        if (_deploymentData.nodeRegistryProxy != address(0)) {
+            console.log("Proxy:", _deploymentData.nodeRegistryProxy);
+        }
+        console.log("========================================");
     }
 }
