@@ -76,7 +76,7 @@ contract NodeRegistryUpgrader is Script {
         address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
         address newImpl;
 
-        // Skip deploymwnt if implementation already exists
+        // Skip deployment if implementation already exists
         if (computedImpl.code.length > 0) {
             console.log("Implementation already exists at computed address, skipping deployment");
             newImpl = computedImpl;
