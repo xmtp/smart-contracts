@@ -68,6 +68,18 @@ contract GroupMessageBroadcasterTests is Test {
         assertEq(_broadcaster.__getSequenceId(), 0);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_broadcaster.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_broadcaster.contractName(), "GroupMessageBroadcaster");
+    }
+
     /* ============ addMessage ============ */
 
     function test_addMessage_whenPaused() external {

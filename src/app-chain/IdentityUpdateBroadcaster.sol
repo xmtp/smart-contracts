@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import { IIdentityUpdateBroadcaster } from "./interfaces/IIdentityUpdateBroadcaster.sol";
 import { IPayloadBroadcaster } from "../abstract/interfaces/IPayloadBroadcaster.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { PayloadBroadcaster } from "../abstract/PayloadBroadcaster.sol";
 
@@ -111,5 +112,15 @@ contract IdentityUpdateBroadcaster is IIdentityUpdateBroadcaster, PayloadBroadca
         returns (string memory key_)
     {
         return "xmtp.identityUpdateBroadcaster.payloadBootstrapper";
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "IdentityUpdateBroadcaster";
     }
 }

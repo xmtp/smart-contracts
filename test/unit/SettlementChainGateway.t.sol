@@ -101,6 +101,18 @@ contract SettlementChainGatewayTests is Test {
         assertEq(_gateway.__getReceiveDepositDataLength(), _RECEIVE_DEPOSIT_DATA_LENGTH);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_gateway.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_gateway.contractName(), "SettlementChainGateway");
+    }
+
     /* ============ deposit ============ */
 
     function test_deposit_paused() external {

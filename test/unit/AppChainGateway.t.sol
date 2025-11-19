@@ -74,6 +74,18 @@ contract AppChainGatewayTests is Test {
         assertFalse(_gateway.paused());
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_gateway.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_gateway.contractName(), "AppChainGateway");
+    }
+
     /* ============ withdraw ============ */
 
     function test_withdraw_paused() external {

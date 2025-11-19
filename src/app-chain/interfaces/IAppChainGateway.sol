@@ -2,13 +2,14 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for an App Chain Gateway.
  * @notice The AppChainGateway exposes the ability to receive parameters from the settlement chain gateway.
  */
-interface IAppChainGateway is IMigratable, IRegistryParametersErrors {
+interface IAppChainGateway is IMigratable, IIdentified, IRegistryParametersErrors {
     /* ============ Events ============ */
 
     /**

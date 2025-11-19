@@ -57,6 +57,18 @@ contract RateRegistryTests is Test {
         assertEq(_registry.__getAllRates().length, 0);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_registry.contractName(), "RateRegistry");
+    }
+
     /* ============ initializer ============ */
 
     function test_initialize_reinitialization() external {

@@ -681,6 +681,18 @@ contract NodeRegistryTests is Test {
         assertEq(_registry.admin(), address(1));
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_registry.contractName(), "NodeRegistry");
+    }
+
     /* ============ migrate ============ */
 
     function test_migrate_parameterOutOfTypeBounds() external {

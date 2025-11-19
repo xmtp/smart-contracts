@@ -2,11 +2,12 @@
 pragma solidity 0.8.28;
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 
 /**
  * @title Interface for a Factory contract that deterministically deploys implementations and proxies.
  */
-interface IFactory is IMigratable {
+interface IFactory is IMigratable, IIdentified {
     /* ============ Events ============ */
 
     /**

@@ -17,7 +17,6 @@ import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
  *      - Creates a GenericEIP1967Migrator with the new implementation
  *      - Sets the migrator address in the Parameter Registry
  *      - Executes the migration on the proxy
- *      - Updates the environment JSON file with the new implementation address
  *      - Compares the state before and after upgrade
  * Usage:
  *   ENVIRONMENT=testnet-dev \
@@ -26,8 +25,7 @@ import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
  *     --sig "UpgradeNodeRegistry()" \
  *     --rpc-url base_sepolia  \
  *     --broadcast \
- *     --slow \
- *     -vvv
+ *     --slow
  */
 contract NodeRegistryUpgrader is Script {
     error PrivateKeyNotSet();
@@ -78,7 +76,7 @@ contract NodeRegistryUpgrader is Script {
         address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
         address newImpl;
 
-        // Skip deploymwnt if implementation already exists
+        // Skip deployment if implementation already exists
         if (computedImpl.code.length > 0) {
             console.log("Implementation already exists at computed address, skipping deployment");
             newImpl = computedImpl;
@@ -106,11 +104,6 @@ contract NodeRegistryUpgrader is Script {
         _logContractState("State before upgrade:", _contractStateBefore);
         _logContractState("State after upgrade:", contractStateAfter);
         if (!isContractStateEqual(_contractStateBefore, contractStateAfter)) revert StateMismatch();
-
-        // Update environment file only if broadcasting
-        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
-            _writeNodeRegistryImplementation(newImpl);
-        }
     }
 
     function getContractState(address proxy_) public view returns (ContractState memory state_) {
@@ -135,12 +128,5 @@ contract NodeRegistryUpgrader is Script {
         console.log("  Parameter registry: %s", state_.parameterRegistry);
         console.log("  Canonical nodes count: %u", uint256(state_.canonicalNodesCount));
         console.log("  Node count: %u", uint256(state_.nodeCount));
-    }
-
-    function _writeNodeRegistryImplementation(address newImpl_) internal {
-        string memory filePath_ = string.concat("environments/", _environment, ".json");
-        vm.serializeJson("root", vm.readFile(filePath_));
-        string memory json_ = vm.serializeAddress("root", "nodeRegistryImplementation", newImpl_);
-        vm.writeJson(json_, filePath_);
     }
 }

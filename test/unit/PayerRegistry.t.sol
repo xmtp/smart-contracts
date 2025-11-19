@@ -83,6 +83,18 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.__getUnderlyingFeeToken(), _underlyingFeeToken);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_registry.contractName(), "PayerRegistry");
+    }
+
     /* ============ initializer ============ */
 
     function test_initialize_reinitialization() external {

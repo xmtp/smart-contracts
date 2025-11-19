@@ -78,6 +78,18 @@ contract DepositSplitterTests is Test {
         assertEq(_splitter.__getUnderlyingFeeToken(), _underlyingFeeToken);
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_splitter.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_splitter.contractName(), "DepositSplitter");
+    }
+
     /* ============ deposit ============ */
 
     function test_deposit_feeTokenTransferFromFailed_reverts() external {

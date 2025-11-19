@@ -16,6 +16,7 @@ import {
 } from "./interfaces/External.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
 
@@ -351,6 +352,16 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint256 payerReportIndex_
     ) external view returns (bool hasClaimed_) {
         return _getDistributionManagerStorage().areFeesClaimed[nodeId_][originatorNodeId_][payerReportIndex_];
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "DistributionManager";
     }
 
     /* ============ Internal Interactive Functions ============ */
