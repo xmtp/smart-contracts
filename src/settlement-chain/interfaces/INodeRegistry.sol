@@ -6,16 +6,24 @@ import { IERC721Errors } from "../../../lib/oz/contracts/interfaces/draft-IERC60
 import { IERC721Metadata } from "../../../lib/oz/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import { IMigratable } from "../../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../../abstract/interfaces/IIdentified.sol";
 import { IRegistryParametersErrors } from "../../libraries/interfaces/IRegistryParametersErrors.sol";
 
 /**
  * @title  Interface for the Node Registry.
- * @notice This interface defines the ERC721-based registry for “nodes” in the system.
+ * @notice This interface defines the ERC721-based registry for "nodes" in the system.
  *         Each node is minted as an NFT with a unique ID (starting at 100 and increasing by 100 with each new node).
  *         In addition to the standard ERC721 functionality, the contract supports node-specific features, including
  *         node property updates.
  */
-interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable, IRegistryParametersErrors {
+interface INodeRegistry is
+    IERC721,
+    IERC721Metadata,
+    IERC721Errors,
+    IMigratable,
+    IIdentified,
+    IRegistryParametersErrors
+{
     /* ============ Structs ============ */
 
     /**
@@ -210,6 +218,9 @@ interface INodeRegistry is IERC721, IERC721Metadata, IERC721Errors, IMigratable,
     /// @notice The increment for node IDs, which allows for 100 shard node IDs per node in the future (modulus 100).
     // slither-disable-next-line naming-convention
     function NODE_INCREMENT() external pure returns (uint32 nodeIncrement_);
+
+    /// @notice Returns semver version string.
+    function version() external pure returns (string memory version_);
 
     /// @notice The address of the admin.
     function admin() external view returns (address admin_);

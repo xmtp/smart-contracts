@@ -8,6 +8,7 @@ import { EnumerableSet } from "../../lib/oz/contracts/utils/structs/EnumerableSe
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 import { INodeRegistry } from "./interfaces/INodeRegistry.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -302,6 +303,16 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     function getSigner(uint32 nodeId_) external view returns (address signer_) {
         _requireOwned(nodeId_); // Reverts if the nodeId/tokenId does not exist.
         return _getNodeRegistryStorage().nodes[nodeId_].signer;
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "NodeRegistry";
     }
 
     /* ============ Internal View/Pure Functions ============ */

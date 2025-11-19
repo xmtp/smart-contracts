@@ -85,6 +85,18 @@ contract ParameterRegistryTests is Test {
         );
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_registry.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_registry.contractName(), "ParameterRegistryHarness");
+    }
+
     /* ============ set several ============ */
 
     function test_set_several_notAdmin() external {

@@ -15,6 +15,7 @@ import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 
 import { IFeeToken } from "./interfaces/IFeeToken.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 import { IPermitErc20Like } from "./interfaces/External.sol";
 
 import { Migratable } from "../abstract/Migratable.sol";
@@ -185,6 +186,16 @@ contract FeeToken is IFeeToken, Migratable, ERC20PermitUpgradeable {
         uint256 deadline_
     ) external view returns (bytes32 digest_) {
         return _getPermitDigest(owner_, spender_, value_, nonce_, deadline_);
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "FeeToken";
     }
 
     /* ============ Internal Interactive Functions ============ */

@@ -10,6 +10,7 @@ import { RegistryParameters } from "../libraries/RegistryParameters.sol";
 import { IFactory } from "./interfaces/IFactory.sol";
 import { IInitializable } from "./interfaces/IInitializable.sol";
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { Initializable } from "./Initializable.sol";
 import { Migratable } from "../abstract/Migratable.sol";
@@ -159,6 +160,16 @@ contract Factory is IFactory, Migratable, OZInitializable {
             abi.encode(_getFactoryStorage().initializableImplementation)
         );
         return Create2.computeAddress(keccak256(abi.encode(caller_, salt_)), keccak256(initCode_));
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "Factory";
     }
 
     /* ============ Internal Interactive Functions ============ */

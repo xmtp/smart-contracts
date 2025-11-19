@@ -102,6 +102,18 @@ contract DistributionManagerTests is Test {
         assertFalse(_manager.paused());
     }
 
+    /* ============ version ============ */
+
+    function test_version() external view {
+        assertEq(_manager.version(), "1.0.0");
+    }
+
+    /* ============ contractName ============ */
+
+    function test_contractName() external view {
+        assertEq(_manager.contractName(), "DistributionManager");
+    }
+
     /* ============ initializer ============ */
 
     function test_initialize_reinitialization() external {

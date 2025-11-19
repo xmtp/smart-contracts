@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import { IAppChainParameterRegistry } from "./interfaces/IAppChainParameterRegistry.sol";
 import { IParameterRegistry } from "../abstract/interfaces/IParameterRegistry.sol";
+import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 
 import { ParameterRegistry } from "../abstract/ParameterRegistry.sol";
 
@@ -31,5 +32,15 @@ contract AppChainParameterRegistry is IAppChainParameterRegistry, ParameterRegis
         returns (string memory key_)
     {
         return "xmtp.appChainParameterRegistry.isAdmin";
+    }
+
+    /// @inheritdoc IIdentified
+    function version() external pure returns (string memory version_) {
+        return "1.0.0";
+    }
+
+    /// @inheritdoc IIdentified
+    function contractName() external pure returns (string memory contractName_) {
+        return "AppChainParameterRegistry";
     }
 }
