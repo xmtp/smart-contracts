@@ -82,11 +82,10 @@ contract DeployNodeRegistryScript is DeployScripts {
             _deploymentData.parameterRegistryProxy
         );
 
-        console.log("=== NodeRegistry Predicted Addresses ===");
+        console.log("NodeRegistry Predicted Addresses");
         console.log("Implementation:", computedImplementation_);
         if (_deploymentData.nodeRegistryProxy != address(0)) {
             console.log("Proxy:", _deploymentData.nodeRegistryProxy);
         }
-        console.log("========================================");
     }
 }
