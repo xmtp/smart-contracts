@@ -60,8 +60,9 @@ contract DeployNodeRegistryScript is DeployScripts {
             vm.writeJson(json_, filePath_);
         } else {
             console.log("Not broadcasted. No writes to environment JSON.");
+            console.log("NodeRegistry Proxy: %s", _deploymentData.nodeRegistryProxy);
         }
-        console.log("NodeRegistry Proxy: %s", _deploymentData.nodeRegistryProxy);
+        
         console.log("NodeRegistry Implementation: %s", _deploymentData.nodeRegistryImplementation);
     }
 
@@ -76,16 +77,27 @@ contract DeployNodeRegistryScript is DeployScripts {
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+        if (_deploymentData.nodeRegistryProxySalt == 0) revert ProxySaltNotSet();
 
         address computedImplementation_ = NodeRegistryDeployer.getImplementation(
             _deploymentData.factory,
             _deploymentData.parameterRegistryProxy
         );
 
+        address computedProxy_ = NodeRegistryDeployer.getProxy(
+            _deploymentData.factory,
+            _deployer,
+            _deploymentData.nodeRegistryProxySalt
+        );
+
         console.log("NodeRegistry Predicted Addresses");
         console.log("Implementation:", computedImplementation_);
+        console.log("Proxy (calculated from salt):", computedProxy_);
         if (_deploymentData.nodeRegistryProxy != address(0)) {
-            console.log("Proxy:", _deploymentData.nodeRegistryProxy);
+            console.log("Proxy (from config JSON):", _deploymentData.nodeRegistryProxy);
+            if (computedProxy_ != _deploymentData.nodeRegistryProxy) {
+                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            }
         }
     }
 }
