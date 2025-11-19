@@ -8,14 +8,21 @@ import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
 
 /**
  * @title DeployNodeRegistryScript
- * @notice Script to deploy the NodeRegistry contract
- * @dev Calls into mass deploy script Deploy.s.sol for single deployment of NodeRegistry:
- *      - Validates the proxy & implementation addresses match the deterministic address
- *      - Deploys the implementation & proxy (no-ops if already present on chain)
- *      - Updates the environment JSON with the new nodeRegistry proxy address
- * Address Helper:
- * There is a helper function to predict the addresses of the implementation & proxy.
- * ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
+ * @notice Script to deploy a fresh release of the NodeRegistry contract (proxy and implementation pair)
+ * @dev Calls into mass deploy script Deploy.s.sol for a single deployment of NodeRegistry:
+ * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
+ * - Deploys the implementation & proxy (no-ops if already present on chain).
+ * - Updates the environment JSON with the new nodeRegistry proxy address.
+ *
+ * Script has two entry points, a deployer and an address helper:
+ *
+ * 1) deployNodeRegistry() to deploy a new NodeRegistry contract (proxy and implementation pair)
+ * Usage:
+ *   ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployNodeRegistry() --broadcast"
+ *
+ * 2) predictAddresses() to print the predicted addresses of the implementation & proxy
+ * Usage:
+ *   ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
  */
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
