@@ -6,6 +6,20 @@ import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 import { BaseUpgrader } from "./BaseUpgrader.s.sol";
 import { PayerRegistryDeployer } from "../deployers/PayerRegistryDeployer.sol";
 
+/**
+ * @notice Upgrades the PayerRegistry proxy to a new implementation
+ * @dev This script:
+ *      - Reads addresses for: factory, parameter registry and payer registry proxy from config JSON file
+ *      - Deploys a new PayerRegistry implementation via the Factory (no-ops if it exists)
+ *      - Creates a GenericEIP1967Migrator with the new implementation
+ *      - Sets the migrator address in the Parameter Registry
+ *      - Executes the migration on the proxy
+ *      - Compares the state before and after upgrade
+ *
+ * Usage:
+ *   ENVIRONMENT=testnet-dev forge script script/upgrades/PayerRegistryUpgrader.s.sol:PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradePayerRegistry()" --broadcast
+ *
+ */
 contract PayerRegistryUpgrader is BaseUpgrader {
     struct ContractState {
         address parameterRegistry;
