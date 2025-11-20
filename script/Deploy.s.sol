@@ -302,6 +302,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("Factory Implementation Name: %s", IFactory(implementation_).contractName());
+            console.log("Factory Implementation Version: %s", IFactory(implementation_).version());
             console.log("Factory Implementation: %s", implementation_);
         }
 
@@ -329,6 +331,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("Factory Implementation Name: %s", IFactory(implementation_).contractName());
+            console.log("Factory Implementation Version: %s", IFactory(implementation_).version());
             console.log("Factory Implementation: %s", implementation_);
         }
 
@@ -403,6 +407,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "SettlementChainParameterRegistry Implementation Name: %s",
+                ISettlementChainParameterRegistry(implementation_).contractName()
+            );
+            console.log(
+                "SettlementChainParameterRegistry Implementation Version: %s",
+                ISettlementChainParameterRegistry(implementation_).version()
+            );
             console.log("SettlementChainParameterRegistry Implementation: %s", implementation_);
         }
 
@@ -540,6 +552,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("FeeToken Implementation Name: %s", IFeeToken(implementation_).contractName());
+            console.log("FeeToken Implementation Version: %s", IFeeToken(implementation_).version());
             console.log("FeeToken Implementation: %s", implementation_);
         }
 
@@ -604,6 +618,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "SettlementChainGateway Implementation Name: %s",
+                ISettlementChainGateway(implementation_).contractName()
+            );
+            console.log(
+                "SettlementChainGateway Implementation Version: %s",
+                ISettlementChainGateway(implementation_).version()
+            );
             console.log("SettlementChainGateway Implementation: %s", implementation_);
         }
 
@@ -675,6 +697,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("PayerRegistry Implementation Name: %s", IPayerRegistry(implementation_).contractName());
+            console.log("PayerRegistry Implementation Version: %s", IPayerRegistry(implementation_).version());
             console.log("PayerRegistry Implementation: %s", implementation_);
         }
 
@@ -737,6 +761,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("RateRegistry Implementation Name: %s", IRateRegistry(implementation_).contractName());
+            console.log("RateRegistry Implementation Version: %s", IRateRegistry(implementation_).version());
             console.log("RateRegistry Implementation: %s", implementation_);
         }
 
@@ -795,6 +821,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("NodeRegistry Implementation Name: %s", INodeRegistry(implementation_).contractName());
+            console.log("NodeRegistry Implementation Version: %s", INodeRegistry(implementation_).version());
             console.log("NodeRegistry Implementation: %s", implementation_);
         }
 
@@ -857,6 +885,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "PayerReportManager Implementation Name: %s",
+                IPayerReportManager(implementation_).contractName()
+            );
+            console.log(
+                "PayerReportManager Implementation Version: %s",
+                IPayerReportManager(implementation_).version()
+            );
             console.log("PayerReportManager Implementation: %s", implementation_);
         }
 
@@ -934,6 +970,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "DistributionManager Implementation Name: %s",
+                IDistributionManager(implementation_).contractName()
+            );
+            console.log(
+                "DistributionManager Implementation Version: %s",
+                IDistributionManager(implementation_).version()
+            );
             console.log("DistributionManager Implementation: %s", implementation_);
         }
 
@@ -1052,6 +1096,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "AppChainParameterRegistry Implementation Name: %s",
+                IAppChainParameterRegistry(implementation_).contractName()
+            );
+            console.log(
+                "AppChainParameterRegistry Implementation Version: %s",
+                IAppChainParameterRegistry(implementation_).version()
+            );
             console.log("AppChainParameterRegistry Implementation: %s", implementation_);
         }
 
@@ -1123,6 +1175,8 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log("AppChainGateway Implementation Name: %s", IAppChainGateway(implementation_).contractName());
+            console.log("AppChainGateway Implementation Version: %s", IAppChainGateway(implementation_).version());
             console.log("AppChainGateway Implementation: %s", implementation_);
         }
 
@@ -1192,6 +1246,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "GroupMessageBroadcaster Implementation Name: %s",
+                IGroupMessageBroadcaster(implementation_).contractName()
+            );
+            console.log(
+                "GroupMessageBroadcaster Implementation Version: %s",
+                IGroupMessageBroadcaster(implementation_).version()
+            );
             console.log("GroupMessageBroadcaster Implementation: %s", implementation_);
         }
 
@@ -1255,6 +1317,14 @@ contract DeployScripts is Script {
 
             vm.stopBroadcast();
 
+            console.log(
+                "IdentityUpdateBroadcaster Implementation Name: %s",
+                IIdentityUpdateBroadcaster(implementation_).contractName()
+            );
+            console.log(
+                "IdentityUpdateBroadcaster Implementation Version: %s",
+                IIdentityUpdateBroadcaster(implementation_).version()
+            );
             console.log("IdentityUpdateBroadcaster Implementation: %s", implementation_);
         }
 
