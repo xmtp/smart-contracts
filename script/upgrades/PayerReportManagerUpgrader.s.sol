@@ -1,73 +1,154 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script, console } from "../../lib/forge-std/src/Script.sol";
-
-import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
-import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
-
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import { Utils } from "../utils/Utils.sol";
+import { console } from "../../lib/forge-std/src/Script.sol";
 import { PayerReportManager } from "../../src/settlement-chain/PayerReportManager.sol";
+import { BaseUpgrader } from "./BaseUpgrader.s.sol";
 import { PayerReportManagerDeployer } from "../deployers/PayerReportManagerDeployer.sol";
 
-contract PayerReportManagerUpgrader is Script {
-    error PrivateKeyNotSet();
-    error EnvironmentNotSet();
-
-    string internal _environment;
-
-    uint256 internal _privateKey;
-    address internal _admin;
-
-    Utils.DeploymentData internal deployment;
-
-    function setUp() external {
-        _environment = vm.envString("ENVIRONMENT");
-
-        if (bytes(_environment).length == 0) revert EnvironmentNotSet();
-
-        console.log("Environment: %s", _environment);
-
-        deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
-
-        _privateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-
-        if (_privateKey == 0) revert PrivateKeyNotSet();
-
-        _admin = vm.addr(_privateKey);
-
-        console.log("Admin: %s", _admin);
+/**
+ * @notice Upgrades the PayerReportManager proxy to a new implementation
+ * @dev This script:
+ *      - Reads addresses for: factory, parameter registry, node registry, payer registry and payer report manager proxy from config JSON file
+ *      - Deploys a new PayerReportManager implementation via the Factory (no-ops if it exists)
+ *      - Creates a GenericEIP1967Migrator with the new implementation
+ *      - Sets the migrator address in the Parameter Registry
+ *      - Executes the migration on the proxy
+ *      - Compares the state before and after upgrade
+ *
+ * Usage:
+ *   ENVIRONMENT=testnet-dev forge script script/upgrades/PayerReportManagerUpgrader.s.sol:PayerReportManagerUpgrader --rpc-url base_sepolia --slow --sig "UpgradePayerReportManager()" --broadcast
+ *
+ */
+contract PayerReportManagerUpgrader is BaseUpgrader {
+    struct ContractState {
+        address parameterRegistry;
+        address nodeRegistry;
+        address payerRegistry;
+        uint16 protocolFeeRate;
+        string contractName;
+        string version;
     }
 
     function UpgradePayerReportManager() external {
-        address factory = deployment.factory;
-        console.log("factory", factory);
-        address paramRegistry = deployment.parameterRegistryProxy;
-        console.log("paramRegistry", paramRegistry);
-        address proxy = deployment.payerReportManagerProxy;
-        console.log("proxy", proxy);
-        address nodeRegistry = deployment.nodeRegistryProxy;
-        console.log("nodeRegistry", nodeRegistry);
-        address payerRegistry = deployment.payerRegistryProxy;
-        console.log("payerRegistry", payerRegistry);
+        _upgrade();
+    }
 
-        vm.startBroadcast(_privateKey);
-        (address newImpl, ) = PayerReportManagerDeployer.deployImplementation(
+    function _getProxy() internal view override returns (address proxy_) {
+        return _deployment.payerReportManagerProxy;
+    }
+
+    function _deployOrGetImplementation() internal override returns (address implementation_) {
+        address factory = _deployment.factory;
+        address paramRegistry = _deployment.parameterRegistryProxy;
+        address nodeRegistry = _deployment.nodeRegistryProxy;
+        address payerRegistry = _deployment.payerRegistryProxy;
+
+        // Compute implementation address
+        address computedImpl = PayerReportManagerDeployer.getImplementation(
             factory,
             paramRegistry,
             nodeRegistry,
             payerRegistry
         );
-        console.log("newImpl", newImpl);
 
-        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
-        console.log("migrator", address(migrator));
-        string memory key = PayerReportManager(proxy).migratorParameterKey();
-        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
+        // Skip deployment if implementation already exists
+        if (computedImpl.code.length > 0) {
+            console.log("Implementation already exists at computed address, skipping deployment");
+            return computedImpl;
+        }
 
-        PayerReportManager(proxy).migrate();
+        // Deploy new implementation
+        (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
+            factory,
+            paramRegistry,
+            nodeRegistry,
+            payerRegistry
+        );
+    }
 
-        vm.stopBroadcast();
+    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
+        return PayerReportManager(proxy_).migratorParameterKey();
+    }
+
+    function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
+        ContractState memory state = _getPayerReportManagerState(proxy_);
+        return abi.encode(state);
+    }
+
+    function _isContractStateEqual(
+        bytes memory stateBefore_,
+        bytes memory stateAfter_
+    ) internal pure override returns (bool isEqual_) {
+        ContractState memory before = abi.decode(stateBefore_, (ContractState));
+        ContractState memory afterState = abi.decode(stateAfter_, (ContractState));
+
+        isEqual_ =
+            before.parameterRegistry == afterState.parameterRegistry &&
+            before.nodeRegistry == afterState.nodeRegistry &&
+            before.payerRegistry == afterState.payerRegistry &&
+            before.protocolFeeRate == afterState.protocolFeeRate;
+
+        // Only check contractName if it existed in the before state (non-empty)
+        // This handles upgrades from old versions without contractName to new versions with it
+        if (bytes(before.contractName).length > 0) {
+            isEqual_ = isEqual_ && keccak256(bytes(before.contractName)) == keccak256(bytes(afterState.contractName));
+        }
+        // Note: version is intentionally not checked, it can change
+    }
+
+    function _logContractState(string memory title_, bytes memory state_) internal view override {
+        ContractState memory state = abi.decode(state_, (ContractState));
+        console.log("%s", title_);
+        console.log("  Parameter registry: %s", state.parameterRegistry);
+        console.log("  Node registry: %s", state.nodeRegistry);
+        console.log("  Payer registry: %s", state.payerRegistry);
+        console.log("  Protocol fee rate: %s", uint256(state.protocolFeeRate));
+        console.log("  Name: %s", state.contractName);
+        console.log("  Version: %s", state.version);
+    }
+
+    function _getPayerReportManagerState(address proxy_) internal view returns (ContractState memory state_) {
+        PayerReportManager payerReportManager = PayerReportManager(proxy_);
+        state_.parameterRegistry = payerReportManager.parameterRegistry();
+        state_.nodeRegistry = payerReportManager.nodeRegistry();
+        state_.payerRegistry = payerReportManager.payerRegistry();
+        state_.protocolFeeRate = payerReportManager.protocolFeeRate();
+
+        // Try to get contractName and version, which may not exist in older implementations
+        try payerReportManager.contractName() returns (string memory contractName_) {
+            state_.contractName = contractName_;
+        } catch {
+            state_.contractName = "";
+        }
+
+        try payerReportManager.version() returns (string memory version_) {
+            state_.version = version_;
+        } catch {
+            state_.version = "";
+        }
+    }
+
+    // Public functions for testing
+    function getContractState(address proxy_) public view returns (ContractState memory state_) {
+        return _getPayerReportManagerState(proxy_);
+    }
+
+    function isContractStateEqual(
+        ContractState memory before_,
+        ContractState memory afterState_
+    ) public pure returns (bool isEqual_) {
+        isEqual_ =
+            before_.parameterRegistry == afterState_.parameterRegistry &&
+            before_.nodeRegistry == afterState_.nodeRegistry &&
+            before_.payerRegistry == afterState_.payerRegistry &&
+            before_.protocolFeeRate == afterState_.protocolFeeRate;
+
+        // Only check contractName if it existed in the before state (non-empty)
+        // This handles upgrades from old versions without contractName to new versions with it
+        if (bytes(before_.contractName).length > 0) {
+            isEqual_ = isEqual_ && keccak256(bytes(before_.contractName)) == keccak256(bytes(afterState_.contractName));
+        }
+        // Note: version is intentionally not checked, it can change
     }
 }

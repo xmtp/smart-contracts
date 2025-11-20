@@ -5,19 +5,19 @@ import "forge-std/Test.sol";
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
+import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
 
-import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import { SettlementChainGatewayUpgrader } from "../../script/upgrades/SettlementChainGatewayUpgrader.s.sol";
+import { DistributionManagerDeployer } from "../../script/deployers/DistributionManagerDeployer.sol";
+import { DistributionManagerUpgrader } from "../../script/upgrades/DistributionManagerUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
-contract SettlementChainGatewayUpgradeForkTest is Test {
+contract DistributionManagerUpgradeForkTest is Test {
     address constant admin = 0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7;
 
     Utils.DeploymentData internal deployment;
-    SettlementChainGatewayUpgrader internal upgrader;
+    DistributionManagerUpgrader internal upgrader;
 
     function setUp() external {
         // Hardcoded environment and RPC
@@ -27,24 +27,28 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
         string memory environment = "testnet-staging";
         deployment = Utils.parseDeploymentData(string.concat("config/", environment, ".json"));
 
-        upgrader = new SettlementChainGatewayUpgrader();
+        upgrader = new DistributionManagerUpgrader();
     }
 
-    function test_settlement_chain_gateway() external {
+    function test_distribution_manager() external {
         address factory = deployment.factory;
         address paramRegistry = deployment.parameterRegistryProxy;
-        address appChainGateway = deployment.gatewayProxy;
+        address nodeRegistry = deployment.nodeRegistryProxy;
+        address payerReportManager = deployment.payerReportManagerProxy;
+        address payerRegistry = deployment.payerRegistryProxy;
         address feeToken = deployment.feeTokenProxy;
-        address proxy = deployment.gatewayProxy;
+        address proxy = deployment.distributionManagerProxy;
 
         // Get state before upgrade using script's getContractState
-        SettlementChainGatewayUpgrader.ContractState memory stateBefore = upgrader.getContractState(proxy);
+        DistributionManagerUpgrader.ContractState memory stateBefore = upgrader.getContractState(proxy);
 
         // Compute the implementation address
-        address computedImpl = SettlementChainGatewayDeployer.getImplementation(
+        address computedImpl = DistributionManagerDeployer.getImplementation(
             factory,
             paramRegistry,
-            appChainGateway,
+            nodeRegistry,
+            payerReportManager,
+            payerRegistry,
             feeToken
         );
 
@@ -54,10 +58,12 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
             newImpl = computedImpl;
         } else {
             // Deploy new implementation
-            (newImpl, ) = SettlementChainGatewayDeployer.deployImplementation(
+            (newImpl, ) = DistributionManagerDeployer.deployImplementation(
                 factory,
                 paramRegistry,
-                appChainGateway,
+                nodeRegistry,
+                payerReportManager,
+                payerRegistry,
                 feeToken
             );
         }
@@ -67,7 +73,7 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
 
         // Set the migrator in ParameterRegistry (impersonate admin)
         vm.startPrank(admin);
-        string memory key = SettlementChainGateway(proxy).migratorParameterKey();
+        string memory key = DistributionManager(proxy).migratorParameterKey();
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         vm.stopPrank();
 
@@ -75,14 +81,14 @@ contract SettlementChainGatewayUpgradeForkTest is Test {
         emit IMigratable.Migrated(address(migrator));
 
         // Execute migration
-        SettlementChainGateway(proxy).migrate();
+        DistributionManager(proxy).migrate();
 
         // Confirm the implementation changed
         address afterImpl = IERC1967(proxy).implementation();
         assertEq(afterImpl, newImpl, "Implementation did not update");
 
         // Get state after upgrade using script's getContractState
-        SettlementChainGatewayUpgrader.ContractState memory stateAfter = upgrader.getContractState(proxy);
+        DistributionManagerUpgrader.ContractState memory stateAfter = upgrader.getContractState(proxy);
 
         // Validate state using script's isContractStateEqual
         bool statesMatch = upgrader.isContractStateEqual(stateBefore, stateAfter);

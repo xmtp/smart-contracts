@@ -2,39 +2,38 @@
 pragma solidity 0.8.28;
 
 import { console } from "../../lib/forge-std/src/Script.sol";
-import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
+import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
+import { RateRegistryDeployer } from "../deployers/RateRegistryDeployer.sol";
 
 /**
- * @notice Upgrades the NodeRegistry proxy to a new implementation
+ * @notice Upgrades the RateRegistry proxy to a new implementation
  * @dev This script:
- *      - Reads addresses for: factory, parameter registry and node registry proxy from config JSON file
- *      - Deploys a new NodeRegistry implementation via the Factory (no-ops if it exists)
+ *      - Reads addresses for: factory, parameter registry and rate registry proxy from config JSON file
+ *      - Deploys a new RateRegistry implementation via the Factory (no-ops if it exists)
  *      - Creates a GenericEIP1967Migrator with the new implementation
  *      - Sets the migrator address in the Parameter Registry
  *      - Executes the migration on the proxy
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/NodeRegistryUpgrader.s.sol:NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeNodeRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script script/upgrades/RateRegistryUpgrader.s.sol:RateRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeRateRegistry()" --broadcast
  *
  */
-contract NodeRegistryUpgrader is BaseUpgrader {
+contract RateRegistryUpgrader is BaseUpgrader {
     struct ContractState {
         address parameterRegistry;
-        uint8 canonicalNodesCount;
-        uint32 nodeCount;
+        uint256 ratesCount;
         string contractName;
         string version;
     }
 
-    function UpgradeNodeRegistry() external {
+    function UpgradeRateRegistry() external {
         _upgrade();
     }
 
     function _getProxy() internal view override returns (address proxy_) {
-        return _deployment.nodeRegistryProxy;
+        return _deployment.rateRegistryProxy;
     }
 
     function _deployOrGetImplementation() internal override returns (address implementation_) {
@@ -42,7 +41,7 @@ contract NodeRegistryUpgrader is BaseUpgrader {
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         // Compute implementation address
-        address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
+        address computedImpl = RateRegistryDeployer.getImplementation(factory, paramRegistry);
 
         // Skip deployment if implementation already exists
         if (computedImpl.code.length > 0) {
@@ -51,15 +50,15 @@ contract NodeRegistryUpgrader is BaseUpgrader {
         }
 
         // Deploy new implementation
-        (implementation_, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
+        (implementation_, ) = RateRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
     function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
-        return NodeRegistry(proxy_).migratorParameterKey();
+        return RateRegistry(proxy_).migratorParameterKey();
     }
 
     function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
-        ContractState memory state = _getNodeRegistryState(proxy_);
+        ContractState memory state = _getRateRegistryState(proxy_);
         return abi.encode(state);
     }
 
@@ -72,8 +71,7 @@ contract NodeRegistryUpgrader is BaseUpgrader {
 
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
-            before.canonicalNodesCount == afterState.canonicalNodesCount &&
-            before.nodeCount == afterState.nodeCount;
+            before.ratesCount == afterState.ratesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
@@ -87,26 +85,24 @@ contract NodeRegistryUpgrader is BaseUpgrader {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
         console.log("  Parameter registry: %s", state.parameterRegistry);
-        console.log("  Canonical nodes count: %s", uint256(state.canonicalNodesCount));
-        console.log("  Node count: %s", uint256(state.nodeCount));
+        console.log("  Rates count: %s", state.ratesCount);
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
 
-    function _getNodeRegistryState(address proxy_) internal view returns (ContractState memory state_) {
-        NodeRegistry nodeRegistry = NodeRegistry(proxy_);
-        state_.parameterRegistry = nodeRegistry.parameterRegistry();
-        state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
-        state_.nodeCount = nodeRegistry.getAllNodesCount();
+    function _getRateRegistryState(address proxy_) internal view returns (ContractState memory state_) {
+        RateRegistry rateRegistry = RateRegistry(proxy_);
+        state_.parameterRegistry = rateRegistry.parameterRegistry();
+        state_.ratesCount = rateRegistry.getRatesCount();
 
         // Try to get contractName and version, which may not exist in older implementations
-        try nodeRegistry.contractName() returns (string memory contractName_) {
+        try rateRegistry.contractName() returns (string memory contractName_) {
             state_.contractName = contractName_;
         } catch {
             state_.contractName = "";
         }
 
-        try nodeRegistry.version() returns (string memory version_) {
+        try rateRegistry.version() returns (string memory version_) {
             state_.version = version_;
         } catch {
             state_.version = "";
@@ -115,7 +111,7 @@ contract NodeRegistryUpgrader is BaseUpgrader {
 
     // Public functions for testing
     function getContractState(address proxy_) public view returns (ContractState memory state_) {
-        return _getNodeRegistryState(proxy_);
+        return _getRateRegistryState(proxy_);
     }
 
     function isContractStateEqual(
@@ -124,8 +120,7 @@ contract NodeRegistryUpgrader is BaseUpgrader {
     ) public pure returns (bool isEqual_) {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
-            before_.canonicalNodesCount == afterState_.canonicalNodesCount &&
-            before_.nodeCount == afterState_.nodeCount;
+            before_.ratesCount == afterState_.ratesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
