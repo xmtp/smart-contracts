@@ -54,7 +54,7 @@ contract NodeRegistryUpgrader is BaseUpgrader {
         (implementation_, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
-    function _getMigratorParameterKey(address proxy_) internal pure override returns (string memory key_) {
+    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return NodeRegistry(proxy_).migratorParameterKey();
     }
 

@@ -69,7 +69,7 @@ contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
-        bool isEqual_ = true;
+        isEqual_ = true;
         if (bytes(before.contractName).length > 0) {
             isEqual_ = keccak256(bytes(before.contractName)) == keccak256(bytes(afterState.contractName));
         }
@@ -114,7 +114,7 @@ contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
     ) public pure returns (bool isEqual_) {
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
-        bool isEqual_ = true;
+        isEqual_ = true;
         if (bytes(before_.contractName).length > 0) {
             isEqual_ = keccak256(bytes(before_.contractName)) == keccak256(bytes(afterState_.contractName));
         }

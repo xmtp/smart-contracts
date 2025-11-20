@@ -58,7 +58,7 @@ contract FeeTokenUpgrader is BaseUpgrader {
         (implementation_, ) = FeeTokenDeployer.deployImplementation(factory, paramRegistry, underlying);
     }
 
-    function _getMigratorParameterKey(address proxy_) internal pure override returns (string memory key_) {
+    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return FeeToken(proxy_).migratorParameterKey();
     }
 

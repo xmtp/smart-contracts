@@ -53,7 +53,7 @@ contract RateRegistryUpgrader is BaseUpgrader {
         (implementation_, ) = RateRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
-    function _getMigratorParameterKey(address proxy_) internal pure override returns (string memory key_) {
+    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return RateRegistry(proxy_).migratorParameterKey();
     }
 

@@ -78,7 +78,7 @@ contract DistributionManagerUpgrader is BaseUpgrader {
         );
     }
 
-    function _getMigratorParameterKey(address proxy_) internal pure override returns (string memory key_) {
+    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return DistributionManager(proxy_).migratorParameterKey();
     }
 
