@@ -13,7 +13,7 @@ import { Utils } from "../utils/Utils.sol";
  *      - `_getProxy()` to return the proxy address from deployment data
  *      - `_deployOrGetImplementation()` to deploy or get the implementation address
  *      - `_getMigratorParameterKey()` to get the migrator parameter key
- *      - `_getContractState()` to capture contract state (return empty bytes to skip comparison)
+ *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
  */
@@ -49,7 +49,7 @@ abstract contract BaseUpgrader is Script {
      *      2. Creates a GenericEIP1967Migrator
      *      3. Sets the migrator in the parameter registry
      *      4. Executes the migration
-     *      5. Optionally compares state before and after
+     *      5. Compares state before and after
      */
     function _upgrade() internal {
         address factory = _deployment.factory;
@@ -85,13 +85,12 @@ abstract contract BaseUpgrader is Script {
 
         // Compare state before and after upgrade
         bytes memory stateAfter = _getContractState(proxy);
-        if (stateBefore.length > 0 && stateAfter.length > 0) {
-            _logContractState("State before upgrade:", stateBefore);
-            _logContractState("State after upgrade:", stateAfter);
-            if (!_isContractStateEqual(stateBefore, stateAfter)) revert StateMismatch();
-        } else {
+        if (stateBefore.length == 0 || stateAfter.length == 0) {
             revert StateComparisonNotImplemented();
         }
+        _logContractState("State before upgrade:", stateBefore);
+        _logContractState("State after upgrade:", stateAfter);
+        if (!_isContractStateEqual(stateBefore, stateAfter)) revert StateMismatch();
     }
 
     /**
@@ -117,8 +116,8 @@ abstract contract BaseUpgrader is Script {
     /**
      * @notice Gets the contract state before/after upgrade
      * @param proxy_ The proxy address
-     * @return state_ Encoded state data (return empty bytes to skip state comparison)
-     * @dev Must be implemented by all upgraders. Return empty bytes if state comparison is not needed.
+     * @return state_ Encoded state data
+     * @dev Must be implemented by all upgraders. Must return non-empty bytes for state comparison.
      */
     function _getContractState(address proxy_) internal view virtual returns (bytes memory state_);
 
@@ -127,7 +126,7 @@ abstract contract BaseUpgrader is Script {
      * @param stateBefore_ Encoded state before upgrade
      * @param stateAfter_ Encoded state after upgrade
      * @return isEqual_ Whether the states are equal
-     * @dev Must be implemented by all upgraders. Only called if both states are non-empty.
+     * @dev Must be implemented by all upgraders.
      */
     function _isContractStateEqual(
         bytes memory stateBefore_,
@@ -138,7 +137,7 @@ abstract contract BaseUpgrader is Script {
      * @notice Logs the contract state
      * @param title_ Title for the log
      * @param state_ Encoded state data
-     * @dev Must be implemented by all upgraders. Only called if state is non-empty.
+     * @dev Must be implemented by all upgraders.
      */
     function _logContractState(string memory title_, bytes memory state_) internal view virtual;
 }
