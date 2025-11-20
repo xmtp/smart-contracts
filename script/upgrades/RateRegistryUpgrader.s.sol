@@ -2,44 +2,46 @@
 pragma solidity 0.8.28;
 
 import { console } from "../../lib/forge-std/src/Script.sol";
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
+import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { SettlementChainParameterRegistryDeployer } from "../deployers/SettlementChainParameterRegistryDeployer.sol";
+import { RateRegistryDeployer } from "../deployers/RateRegistryDeployer.sol";
 
 /**
- * @notice Upgrades the SettlementChainParameterRegistry proxy to a new implementation
+ * @notice Upgrades the RateRegistry proxy to a new implementation
  * @dev This script:
- *      - Reads addresses for: factory and parameter registry proxy from config JSON file
- *      - Deploys a new SettlementChainParameterRegistry implementation via the Factory (no-ops if it exists)
+ *      - Reads addresses for: factory, parameter registry and rate registry proxy from config JSON file
+ *      - Deploys a new RateRegistry implementation via the Factory (no-ops if it exists)
  *      - Creates a GenericEIP1967Migrator with the new implementation
  *      - Sets the migrator address in the Parameter Registry
  *      - Executes the migration on the proxy
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/SettlementChainParameterRegistryUpgrader.s.sol:SettlementChainParameterRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeSettlementChainParameterRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script script/upgrades/RateRegistryUpgrader.s.sol:RateRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeRateRegistry()" --broadcast
  *
  */
-contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
+contract RateRegistryUpgrader is BaseUpgrader {
     struct ContractState {
+        address parameterRegistry;
+        uint256 ratesCount;
         string contractName;
         string version;
     }
 
-    function UpgradeSettlementChainParameterRegistry() external {
+    function UpgradeRateRegistry() external {
         _upgrade();
     }
 
     function _getProxy() internal view override returns (address proxy_) {
-        return _deployment.parameterRegistryProxy;
+        return _deployment.rateRegistryProxy;
     }
 
     function _deployOrGetImplementation() internal override returns (address implementation_) {
         address factory = _deployment.factory;
+        address paramRegistry = _deployment.parameterRegistryProxy;
 
         // Compute implementation address
-        address computedImpl = SettlementChainParameterRegistryDeployer.getImplementation(factory);
+        address computedImpl = RateRegistryDeployer.getImplementation(factory, paramRegistry);
 
         // Skip deployment if implementation already exists
         if (computedImpl.code.length > 0) {
@@ -48,15 +50,15 @@ contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
         }
 
         // Deploy new implementation
-        (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(factory);
+        (implementation_, ) = RateRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
-    function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
-        return IParameterRegistry(proxy_).migratorParameterKey();
+    function _getMigratorParameterKey(address proxy_) internal pure override returns (string memory key_) {
+        return RateRegistry(proxy_).migratorParameterKey();
     }
 
     function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
-        ContractState memory state = _getSettlementChainParameterRegistryState(proxy_);
+        ContractState memory state = _getRateRegistryState(proxy_);
         return abi.encode(state);
     }
 
@@ -67,36 +69,40 @@ contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
         ContractState memory before = abi.decode(stateBefore_, (ContractState));
         ContractState memory afterState = abi.decode(stateAfter_, (ContractState));
 
+        isEqual_ =
+            before.parameterRegistry == afterState.parameterRegistry &&
+            before.ratesCount == afterState.ratesCount;
+
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
-        bool isEqual_ = true;
         if (bytes(before.contractName).length > 0) {
-            isEqual_ = keccak256(bytes(before.contractName)) == keccak256(bytes(afterState.contractName));
+            isEqual_ = isEqual_ && keccak256(bytes(before.contractName)) == keccak256(bytes(afterState.contractName));
         }
         // Note: version is intentionally not checked, it can change
-        return isEqual_;
     }
 
     function _logContractState(string memory title_, bytes memory state_) internal view override {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
+        console.log("  Parameter registry: %s", state.parameterRegistry);
+        console.log("  Rates count: %s", state.ratesCount);
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
 
-    function _getSettlementChainParameterRegistryState(
-        address proxy_
-    ) internal view returns (ContractState memory state_) {
-        SettlementChainParameterRegistry paramRegistry = SettlementChainParameterRegistry(proxy_);
+    function _getRateRegistryState(address proxy_) internal view returns (ContractState memory state_) {
+        RateRegistry rateRegistry = RateRegistry(proxy_);
+        state_.parameterRegistry = rateRegistry.parameterRegistry();
+        state_.ratesCount = rateRegistry.getRatesCount();
 
         // Try to get contractName and version, which may not exist in older implementations
-        try paramRegistry.contractName() returns (string memory contractName_) {
+        try rateRegistry.contractName() returns (string memory contractName_) {
             state_.contractName = contractName_;
         } catch {
             state_.contractName = "";
         }
 
-        try paramRegistry.version() returns (string memory version_) {
+        try rateRegistry.version() returns (string memory version_) {
             state_.version = version_;
         } catch {
             state_.version = "";
@@ -105,20 +111,22 @@ contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
 
     // Public functions for testing
     function getContractState(address proxy_) public view returns (ContractState memory state_) {
-        return _getSettlementChainParameterRegistryState(proxy_);
+        return _getRateRegistryState(proxy_);
     }
 
     function isContractStateEqual(
         ContractState memory before_,
         ContractState memory afterState_
     ) public pure returns (bool isEqual_) {
+        isEqual_ =
+            before_.parameterRegistry == afterState_.parameterRegistry &&
+            before_.ratesCount == afterState_.ratesCount;
+
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
-        bool isEqual_ = true;
         if (bytes(before_.contractName).length > 0) {
-            isEqual_ = keccak256(bytes(before_.contractName)) == keccak256(bytes(afterState_.contractName));
+            isEqual_ = isEqual_ && keccak256(bytes(before_.contractName)) == keccak256(bytes(afterState_.contractName));
         }
         // Note: version is intentionally not checked, it can change
-        return isEqual_;
     }
 }
