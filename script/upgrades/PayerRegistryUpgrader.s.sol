@@ -104,7 +104,7 @@ contract PayerRegistryUpgrader is BaseUpgrader {
         console.log("  Settler: %s", state.settler);
         console.log("  Fee distributor: %s", state.feeDistributor);
         console.log("  Paused: %s", state.paused);
-        console.log("  Total deposits: %s", uint256(uint104(state.totalDeposits)));
+        console.log("  Total deposits: %s", int256(state.totalDeposits));
         console.log("  Total debt: %s", uint256(state.totalDebt));
         console.log("  Minimum deposit: %s", uint256(state.minimumDeposit));
         console.log("  Withdraw lock period: %s", uint256(state.withdrawLockPeriod));
