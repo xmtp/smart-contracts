@@ -18,14 +18,10 @@ import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
  *      - Sets the migrator address in the Parameter Registry
  *      - Executes the migration on the proxy
  *      - Compares the state before and after upgrade
+ *
  * Usage:
- *   ENVIRONMENT=testnet-dev \
- *   ADMIN_PRIVATE_KEY=0x... \
- *   forge script script/upgrades/NodeRegistryUpgrader.s.sol:NodeRegistryUpgrader \
- *     --sig "UpgradeNodeRegistry()" \
- *     --rpc-url base_sepolia  \
- *     --broadcast \
- *     --slow
+ *   ENVIRONMENT=testnet-dev forge script script/upgrades/NodeRegistryUpgrader.s.sol:NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeNodeRegistry()" --broadcast
+ *
  */
 contract NodeRegistryUpgrader is Script {
     error PrivateKeyNotSet();
@@ -113,8 +109,19 @@ contract NodeRegistryUpgrader is Script {
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
-        state_.contractName = nodeRegistry.contractName();
-        state_.version = nodeRegistry.version();
+
+        // Try to get contractName and version, which may not exist in older implementations
+        try nodeRegistry.contractName() returns (string memory contractName_) {
+            state_.contractName = contractName_;
+        } catch {
+            state_.contractName = "";
+        }
+
+        try nodeRegistry.version() returns (string memory version_) {
+            state_.version = version_;
+        } catch {
+            state_.version = "";
+        }
     }
 
     function isContractStateEqual(
@@ -124,8 +131,14 @@ contract NodeRegistryUpgrader is Script {
         isEqual_ =
             before_.parameterRegistry == after_.parameterRegistry &&
             before_.canonicalNodesCount == after_.canonicalNodesCount &&
-            before_.nodeCount == after_.nodeCount &&
-            keccak256(bytes(before_.contractName)) == keccak256(bytes(after_.contractName));
+            before_.nodeCount == after_.nodeCount;
+
+        // Only check contractName if it existed in the before state (non-empty)
+        // This handles upgrades from old versions without contractName to new versions with it
+        if (bytes(before_.contractName).length > 0) {
+            isEqual_ = isEqual_ && keccak256(bytes(before_.contractName)) == keccak256(bytes(after_.contractName));
+        }
+        // Note: version is intentionally not checked, it can change
     }
 
     function _logContractState(string memory title_, ContractState memory state_) internal view {
