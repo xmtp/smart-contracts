@@ -368,6 +368,9 @@ contract DeployLocalScripts is Script {
         vm.startBroadcast(_privateKey);
         (implementation_, ) = FactoryDeployer.deployImplementation(parameterRegistry_);
         vm.stopBroadcast();
+
+        console.log("Factory Implementation Name: %s", IFactory(implementation_).contractName());
+        console.log("Factory Implementation Version: %s", IFactory(implementation_).version());
     }
 
     function _deployFactoryProxy(address implementation_) internal returns (IFactory factory_) {
@@ -423,6 +426,15 @@ contract DeployLocalScripts is Script {
         vm.startBroadcast(_privateKey);
         (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(address(_factory));
         vm.stopBroadcast();
+
+        console.log(
+            "SettlementChainParameterRegistry Implementation Name: %s",
+            ISettlementChainParameterRegistry(implementation_).contractName()
+        );
+        console.log(
+            "SettlementChainParameterRegistry Implementation Version: %s",
+            ISettlementChainParameterRegistry(implementation_).version()
+        );
     }
 
     function _deploySettlementChainParameterRegistryProxy(
@@ -456,6 +468,9 @@ contract DeployLocalScripts is Script {
         vm.startBroadcast(_privateKey);
         (implementation_, ) = FeeTokenDeployer.deployImplementation(address(_factory), parameterRegistry_, underlying_);
         vm.stopBroadcast();
+
+        console.log("FeeToken Implementation Name: %s", IFeeToken(implementation_).contractName());
+        console.log("FeeToken Implementation Version: %s", IFeeToken(implementation_).version());
     }
 
     function _deployFeeTokenProxy(address implementation_) internal returns (IFeeToken feeToken_) {
@@ -479,6 +494,15 @@ contract DeployLocalScripts is Script {
             parameterRegistry_
         );
         vm.stopBroadcast();
+
+        console.log(
+            "GroupMessageBroadcaster Implementation Name: %s",
+            IGroupMessageBroadcaster(implementation_).contractName()
+        );
+        console.log(
+            "GroupMessageBroadcaster Implementation Version: %s",
+            IGroupMessageBroadcaster(implementation_).version()
+        );
 
         if (IGroupMessageBroadcaster(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Group message broadcaster parameter registry mismatch");
@@ -514,6 +538,15 @@ contract DeployLocalScripts is Script {
             parameterRegistry_
         );
         vm.stopBroadcast();
+
+        console.log(
+            "IdentityUpdateBroadcaster Implementation Name: %s",
+            IIdentityUpdateBroadcaster(implementation_).contractName()
+        );
+        console.log(
+            "IdentityUpdateBroadcaster Implementation Version: %s",
+            IIdentityUpdateBroadcaster(implementation_).version()
+        );
 
         if (IIdentityUpdateBroadcaster(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Identity update broadcaster parameter registry mismatch");
@@ -647,6 +680,9 @@ contract DeployLocalScripts is Script {
         );
         vm.stopBroadcast();
 
+        console.log("PayerRegistry Implementation Name: %s", IPayerRegistry(implementation_).contractName());
+        console.log("PayerRegistry Implementation Version: %s", IPayerRegistry(implementation_).version());
+
         if (IPayerRegistry(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Payer registry parameter registry mismatch");
         }
@@ -732,6 +768,9 @@ contract DeployLocalScripts is Script {
         (implementation_, ) = RateRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_);
         vm.stopBroadcast();
 
+        console.log("RateRegistry Implementation Name: %s", IRateRegistry(implementation_).contractName());
+        console.log("RateRegistry Implementation Version: %s", IRateRegistry(implementation_).version());
+
         if (IRateRegistry(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Rate registry parameter registry mismatch");
         }
@@ -812,6 +851,9 @@ contract DeployLocalScripts is Script {
         (implementation_, ) = NodeRegistryDeployer.deployImplementation(address(_factory), parameterRegistry_);
         vm.stopBroadcast();
 
+        console.log("NodeRegistry Implementation Name: %s", INodeRegistry(implementation_).contractName());
+        console.log("NodeRegistry Implementation Version: %s", INodeRegistry(implementation_).version());
+
         if (INodeRegistry(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Node registry parameter registry mismatch");
         }
@@ -877,6 +919,9 @@ contract DeployLocalScripts is Script {
         );
         vm.stopBroadcast();
 
+        console.log("AppChainGateway Implementation Name: %s", IAppChainGateway(implementation_).contractName());
+        console.log("AppChainGateway Implementation Version: %s", IAppChainGateway(implementation_).version());
+
         if (IAppChainGateway(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("App chain gateway parameter registry mismatch");
         }
@@ -914,6 +959,9 @@ contract DeployLocalScripts is Script {
             payerRegistry_
         );
         vm.stopBroadcast();
+
+        console.log("PayerReportManager Implementation Name: %s", IPayerReportManager(implementation_).contractName());
+        console.log("PayerReportManager Implementation Version: %s", IPayerReportManager(implementation_).version());
 
         if (IPayerReportManager(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Payer report manager parameter registry mismatch");
@@ -961,6 +1009,12 @@ contract DeployLocalScripts is Script {
             feeToken_
         );
         vm.stopBroadcast();
+
+        console.log(
+            "DistributionManager Implementation Name: %s",
+            IDistributionManager(implementation_).contractName()
+        );
+        console.log("DistributionManager Implementation Version: %s", IDistributionManager(implementation_).version());
 
         if (IDistributionManager(implementation_).parameterRegistry() != parameterRegistry_) {
             revert("Distribution manager parameter registry mismatch");
@@ -1016,6 +1070,16 @@ contract DeployLocalScripts is Script {
             feeToken_
         );
         vm.stopBroadcast();
+
+        console.log(
+            "SettlementChainGateway Implementation Name: %s",
+            ISettlementChainGateway(implementation_).contractName()
+        );
+        console.log(
+            "SettlementChainGateway Implementation Version: %s",
+            ISettlementChainGateway(implementation_).version()
+        );
+
         if (ISettlementChainGateway(implementation_).parameterRegistry() != parameterRegistry_)
             revert("SC GW param reg mismatch");
         if (ISettlementChainGateway(implementation_).appChainGateway() != appChainGateway_)
