@@ -36,6 +36,8 @@ contract NodeRegistryUpgrader is Script {
         address parameterRegistry;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
+        string contractName;
+        string version;
     }
 
     string internal _environment;
@@ -111,6 +113,8 @@ contract NodeRegistryUpgrader is Script {
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
+        state_.contractName = nodeRegistry.contractName();
+        state_.version = nodeRegistry.version();
     }
 
     function isContractStateEqual(
@@ -120,7 +124,8 @@ contract NodeRegistryUpgrader is Script {
         isEqual_ =
             before_.parameterRegistry == after_.parameterRegistry &&
             before_.canonicalNodesCount == after_.canonicalNodesCount &&
-            before_.nodeCount == after_.nodeCount;
+            before_.nodeCount == after_.nodeCount &&
+            keccak256(bytes(before_.contractName)) == keccak256(bytes(after_.contractName));
     }
 
     function _logContractState(string memory title_, ContractState memory state_) internal view {
@@ -128,5 +133,7 @@ contract NodeRegistryUpgrader is Script {
         console.log("  Parameter registry: %s", state_.parameterRegistry);
         console.log("  Canonical nodes count: %u", uint256(state_.canonicalNodesCount));
         console.log("  Node count: %u", uint256(state_.nodeCount));
+        console.log("  Name: %s", state_.contractName);
+        console.log("  Version: %s", state_.version);
     }
 }
