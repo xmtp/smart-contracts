@@ -66,8 +66,13 @@ contract DeployScripts is Script {
     error UnexpectedChainId();
     error UnexpectedDeployer();
     error UnexpectedFactory();
-    error UnexpectedImplementation();
-    error UnexpectedProxy();
+    error UnexpectedImplementation(address expected, address actual);
+    error UnexpectedProxy(address expected, address actual);
+    error ProxyExistsWithDifferentImplementation(
+        address proxy,
+        address expectedImplementation,
+        address actualImplementation
+    );
 
     Utils.DeploymentData internal _deploymentData;
 
@@ -307,10 +312,15 @@ contract DeployScripts is Script {
             console.log("Factory Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.factoryImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.factoryImplementation) {
+            revert UnexpectedImplementation(_deploymentData.factoryImplementation, implementation_);
+        }
 
         if (IFactory(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IFactory(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -336,10 +346,15 @@ contract DeployScripts is Script {
             console.log("Factory Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.factoryImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.factoryImplementation) {
+            revert UnexpectedImplementation(_deploymentData.factoryImplementation, implementation_);
+        }
 
         if (IFactory(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IFactory(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -359,7 +374,7 @@ contract DeployScripts is Script {
             console.log("Factory Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.factory) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.factory) revert UnexpectedProxy(_deploymentData.factory, proxy_);
 
         // NOTE: The factory implementation may not yet be deployed, so `factory_.implementation()` may revert.
     }
@@ -381,14 +396,20 @@ contract DeployScripts is Script {
         }
 
         if (IFactory(_deploymentData.factory).implementation() != _deploymentData.factoryImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.factoryImplementation,
+                IFactory(_deploymentData.factory).implementation()
+            );
         }
 
         if (
             IFactory(_deploymentData.factory).initializableImplementation() !=
             _deploymentData.initializableImplementation
         ) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.initializableImplementation,
+                IFactory(_deploymentData.factory).initializableImplementation()
+            );
         }
     }
 
@@ -419,7 +440,10 @@ contract DeployScripts is Script {
         }
 
         if (implementation_ != _deploymentData.settlementChainParameterRegistryImplementation) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.settlementChainParameterRegistryImplementation,
+                implementation_
+            );
         }
     }
 
@@ -453,17 +477,24 @@ contract DeployScripts is Script {
             console.log("SettlementChainParameterRegistry Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.parameterRegistryProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedProxy(_deploymentData.parameterRegistryProxy, proxy_);
+        }
 
         if (
             ISettlementChainParameterRegistry(proxy_).implementation() !=
             _deploymentData.settlementChainParameterRegistryImplementation
         ) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.settlementChainParameterRegistryImplementation,
+                ISettlementChainParameterRegistry(proxy_).implementation()
+            );
         }
 
         for (uint256 index_; index_ < admins_.length; ++index_) {
-            if (!ISettlementChainParameterRegistry(proxy_).isAdmin(admins_[index_])) revert UnexpectedProxy();
+            if (!ISettlementChainParameterRegistry(proxy_).isAdmin(admins_[index_])) {
+                revert UnexpectedProxy(admins_[index_], address(0));
+            }
         }
     }
 
@@ -491,10 +522,15 @@ contract DeployScripts is Script {
             console.log("MockUnderlyingFeeToken Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.mockUnderlyingFeeTokenImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.mockUnderlyingFeeTokenImplementation) {
+            revert UnexpectedImplementation(_deploymentData.mockUnderlyingFeeTokenImplementation, implementation_);
+        }
 
         if (MockUnderlyingFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                MockUnderlyingFeeToken(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -524,10 +560,15 @@ contract DeployScripts is Script {
             console.log("MockUnderlyingFeeToken Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.underlyingFeeToken) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.underlyingFeeToken) {
+            revert UnexpectedProxy(_deploymentData.underlyingFeeToken, proxy_);
+        }
 
         if (MockUnderlyingFeeToken(proxy_).implementation() != _deploymentData.mockUnderlyingFeeTokenImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.mockUnderlyingFeeTokenImplementation,
+                MockUnderlyingFeeToken(proxy_).implementation()
+            );
         }
     }
 
@@ -557,14 +598,22 @@ contract DeployScripts is Script {
             console.log("FeeToken Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.feeTokenImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.feeTokenImplementation) {
+            revert UnexpectedImplementation(_deploymentData.feeTokenImplementation, implementation_);
+        }
 
         if (IFeeToken(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IFeeToken(implementation_).parameterRegistry()
+            );
         }
 
         if (IFeeToken(implementation_).underlying() != _deploymentData.underlyingFeeToken) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.underlyingFeeToken,
+                IFeeToken(implementation_).underlying()
+            );
         }
     }
 
@@ -592,9 +641,13 @@ contract DeployScripts is Script {
             console.log("FeeToken Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.feeTokenProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.feeTokenProxy) {
+            revert UnexpectedProxy(_deploymentData.feeTokenProxy, proxy_);
+        }
 
-        if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) revert UnexpectedProxy();
+        if (IFeeToken(proxy_).implementation() != _deploymentData.feeTokenImplementation) {
+            revert UnexpectedImplementation(_deploymentData.feeTokenImplementation, IFeeToken(proxy_).implementation());
+        }
     }
 
     function deploySettlementChainGatewayImplementation() public {
@@ -629,18 +682,29 @@ contract DeployScripts is Script {
             console.log("SettlementChainGateway Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.settlementChainGatewayImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.settlementChainGatewayImplementation) {
+            revert UnexpectedImplementation(_deploymentData.settlementChainGatewayImplementation, implementation_);
+        }
 
         if (ISettlementChainGateway(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                ISettlementChainGateway(implementation_).parameterRegistry()
+            );
         }
 
         if (ISettlementChainGateway(implementation_).appChainGateway() != _deploymentData.gatewayProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.gatewayProxy,
+                ISettlementChainGateway(implementation_).appChainGateway()
+            );
         }
 
         if (ISettlementChainGateway(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.feeTokenProxy,
+                ISettlementChainGateway(implementation_).feeToken()
+            );
         }
     }
 
@@ -671,10 +735,15 @@ contract DeployScripts is Script {
             console.log("SettlementChainGateway Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.gatewayProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.gatewayProxy) {
+            revert UnexpectedProxy(_deploymentData.gatewayProxy, proxy_);
+        }
 
         if (ISettlementChainGateway(proxy_).implementation() != _deploymentData.settlementChainGatewayImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.settlementChainGatewayImplementation,
+                ISettlementChainGateway(proxy_).implementation()
+            );
         }
     }
 
@@ -702,14 +771,19 @@ contract DeployScripts is Script {
             console.log("PayerRegistry Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.payerRegistryImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.payerRegistryImplementation) {
+            revert UnexpectedImplementation(_deploymentData.payerRegistryImplementation, implementation_);
+        }
 
         if (IPayerRegistry(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IPayerRegistry(implementation_).parameterRegistry()
+            );
         }
 
         if (IPayerRegistry(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(_deploymentData.feeTokenProxy, IPayerRegistry(implementation_).feeToken());
         }
     }
 
@@ -737,10 +811,15 @@ contract DeployScripts is Script {
             console.log("PayerRegistry Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.payerRegistryProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.payerRegistryProxy) {
+            revert UnexpectedProxy(_deploymentData.payerRegistryProxy, proxy_);
+        }
 
         if (IPayerRegistry(proxy_).implementation() != _deploymentData.payerRegistryImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.payerRegistryImplementation,
+                IPayerRegistry(proxy_).implementation()
+            );
         }
     }
 
@@ -766,10 +845,15 @@ contract DeployScripts is Script {
             console.log("RateRegistry Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.rateRegistryImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.rateRegistryImplementation) {
+            revert UnexpectedImplementation(_deploymentData.rateRegistryImplementation, implementation_);
+        }
 
         if (IRateRegistry(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IRateRegistry(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -797,10 +881,15 @@ contract DeployScripts is Script {
             console.log("RateRegistry Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.rateRegistryProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.rateRegistryProxy) {
+            revert UnexpectedProxy(_deploymentData.rateRegistryProxy, proxy_);
+        }
 
         if (IRateRegistry(proxy_).implementation() != _deploymentData.rateRegistryImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.rateRegistryImplementation,
+                IRateRegistry(proxy_).implementation()
+            );
         }
     }
 
@@ -826,10 +915,15 @@ contract DeployScripts is Script {
             console.log("NodeRegistry Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.nodeRegistryImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.nodeRegistryImplementation) {
+            revert UnexpectedImplementation(_deploymentData.nodeRegistryImplementation, implementation_);
+        }
 
         if (INodeRegistry(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                INodeRegistry(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -840,8 +934,10 @@ contract DeployScripts is Script {
         if (_deploymentData.nodeRegistryProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.nodeRegistryProxy;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
-        if (proxy_.code.length == 0) {
+        // Deploy proxy if it doesn't exist
+        if (!proxyAlreadyExists) {
             console.log("NodeRegistry Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.nodeRegistryProxySalt));
 
             vm.startBroadcast(_privateKey);
@@ -857,10 +953,18 @@ contract DeployScripts is Script {
             console.log("NodeRegistry Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.nodeRegistryProxy) revert UnexpectedProxy();
+        // Verify proxy address matches config
+        if (proxy_ != _deploymentData.nodeRegistryProxy) {
+            revert UnexpectedProxy(_deploymentData.nodeRegistryProxy, proxy_);
+        }
 
-        if (INodeRegistry(proxy_).implementation() != _deploymentData.nodeRegistryImplementation) {
-            revert UnexpectedProxy();
+        // Verify implementation matches expected
+        address currentImplementation_ = INodeRegistry(proxy_).implementation();
+        _verifyProxyImplementation(proxy_, _deploymentData.nodeRegistryImplementation, currentImplementation_);
+
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
+            console.log("Proxy already exists with correct implementation - no-op");
         }
     }
 
@@ -896,18 +1000,29 @@ contract DeployScripts is Script {
             console.log("PayerReportManager Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.payerReportManagerImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.payerReportManagerImplementation) {
+            revert UnexpectedImplementation(_deploymentData.payerReportManagerImplementation, implementation_);
+        }
 
         if (IPayerReportManager(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IPayerReportManager(implementation_).parameterRegistry()
+            );
         }
 
         if (IPayerReportManager(implementation_).nodeRegistry() != _deploymentData.nodeRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.nodeRegistryProxy,
+                IPayerReportManager(implementation_).nodeRegistry()
+            );
         }
 
         if (IPayerReportManager(implementation_).payerRegistry() != _deploymentData.payerRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.payerRegistryProxy,
+                IPayerReportManager(implementation_).payerRegistry()
+            );
         }
     }
 
@@ -918,8 +1033,10 @@ contract DeployScripts is Script {
         if (_deploymentData.payerReportManagerProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.payerReportManagerProxy;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
-        if (proxy_.code.length == 0) {
+        // Deploy proxy if it doesn't exist
+        if (!proxyAlreadyExists) {
             console.log(
                 "PayerReportManager Proxy Salt: %s",
                 Utils.bytes32ToString(_deploymentData.payerReportManagerProxySalt)
@@ -938,10 +1055,18 @@ contract DeployScripts is Script {
             console.log("PayerReportManager Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.payerReportManagerProxy) revert UnexpectedProxy();
+        // Verify proxy address matches config
+        if (proxy_ != _deploymentData.payerReportManagerProxy) {
+            revert UnexpectedProxy(_deploymentData.payerReportManagerProxy, proxy_);
+        }
 
-        if (IPayerReportManager(proxy_).implementation() != _deploymentData.payerReportManagerImplementation) {
-            revert UnexpectedProxy();
+        // Verify implementation matches expected
+        address currentImplementation_ = IPayerReportManager(proxy_).implementation();
+        _verifyProxyImplementation(proxy_, _deploymentData.payerReportManagerImplementation, currentImplementation_);
+
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
+            console.log("Proxy already exists with correct implementation - no-op");
         }
     }
 
@@ -981,26 +1106,43 @@ contract DeployScripts is Script {
             console.log("DistributionManager Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.distributionManagerImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.distributionManagerImplementation) {
+            revert UnexpectedImplementation(_deploymentData.distributionManagerImplementation, implementation_);
+        }
 
         if (IDistributionManager(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IDistributionManager(implementation_).parameterRegistry()
+            );
         }
 
         if (IDistributionManager(implementation_).nodeRegistry() != _deploymentData.nodeRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.nodeRegistryProxy,
+                IDistributionManager(implementation_).nodeRegistry()
+            );
         }
 
         if (IDistributionManager(implementation_).payerReportManager() != _deploymentData.payerReportManagerProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.payerReportManagerProxy,
+                IDistributionManager(implementation_).payerReportManager()
+            );
         }
 
         if (IDistributionManager(implementation_).payerRegistry() != _deploymentData.payerRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.payerRegistryProxy,
+                IDistributionManager(implementation_).payerRegistry()
+            );
         }
 
         if (IDistributionManager(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.feeTokenProxy,
+                IDistributionManager(implementation_).feeToken()
+            );
         }
     }
 
@@ -1011,8 +1153,10 @@ contract DeployScripts is Script {
         if (_deploymentData.distributionManagerProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.distributionManagerProxy;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
-        if (proxy_.code.length == 0) {
+        // Deploy proxy if it doesn't exist
+        if (!proxyAlreadyExists) {
             console.log(
                 "DistributionManager Proxy Salt: %s",
                 Utils.bytes32ToString(_deploymentData.distributionManagerProxySalt)
@@ -1031,10 +1175,18 @@ contract DeployScripts is Script {
             console.log("DistributionManager Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.distributionManagerProxy) revert UnexpectedProxy();
+        // Verify proxy address matches config
+        if (proxy_ != _deploymentData.distributionManagerProxy) {
+            revert UnexpectedProxy(_deploymentData.distributionManagerProxy, proxy_);
+        }
 
-        if (IDistributionManager(proxy_).implementation() != _deploymentData.distributionManagerImplementation) {
-            revert UnexpectedProxy();
+        // Verify implementation matches expected
+        address currentImplementation_ = IDistributionManager(proxy_).implementation();
+        _verifyProxyImplementation(proxy_, _deploymentData.distributionManagerImplementation, currentImplementation_);
+
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
+            console.log("Proxy already exists with correct implementation - no-op");
         }
     }
 
@@ -1064,22 +1216,33 @@ contract DeployScripts is Script {
             console.log("DepositSplitter: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.depositSplitter) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.depositSplitter) {
+            revert UnexpectedImplementation(_deploymentData.depositSplitter, implementation_);
+        }
 
         if (IDepositSplitter(implementation_).feeToken() != _deploymentData.feeTokenProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.feeTokenProxy,
+                IDepositSplitter(implementation_).feeToken()
+            );
         }
 
         if (IDepositSplitter(implementation_).payerRegistry() != _deploymentData.payerRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.payerRegistryProxy,
+                IDepositSplitter(implementation_).payerRegistry()
+            );
         }
 
         if (IDepositSplitter(implementation_).settlementChainGateway() != _deploymentData.gatewayProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.gatewayProxy,
+                IDepositSplitter(implementation_).settlementChainGateway()
+            );
         }
 
         if (IDepositSplitter(implementation_).appChainId() != _deploymentData.appChainId) {
-            revert UnexpectedImplementation();
+            revert("Unexpected appChainId");
         }
     }
 
@@ -1108,7 +1271,7 @@ contract DeployScripts is Script {
         }
 
         if (implementation_ != _deploymentData.appChainParameterRegistryImplementation) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(_deploymentData.appChainParameterRegistryImplementation, implementation_);
         }
     }
 
@@ -1144,16 +1307,23 @@ contract DeployScripts is Script {
             console.log("AppChainParameterRegistry Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.parameterRegistryProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.parameterRegistryProxy) {
+            revert UnexpectedProxy(_deploymentData.parameterRegistryProxy, proxy_);
+        }
 
         if (
             IAppChainParameterRegistry(proxy_).implementation() !=
             _deploymentData.appChainParameterRegistryImplementation
         ) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.appChainParameterRegistryImplementation,
+                IAppChainParameterRegistry(proxy_).implementation()
+            );
         }
 
-        if (!IAppChainParameterRegistry(proxy_).isAdmin(_deploymentData.gatewayProxy)) revert UnexpectedProxy();
+        if (!IAppChainParameterRegistry(proxy_).isAdmin(_deploymentData.gatewayProxy)) {
+            revert UnexpectedProxy(_deploymentData.gatewayProxy, address(0));
+        }
     }
 
     function deployAppChainGatewayImplementation() public {
@@ -1180,21 +1350,32 @@ contract DeployScripts is Script {
             console.log("AppChainGateway Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.appChainGatewayImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.appChainGatewayImplementation) {
+            revert UnexpectedImplementation(_deploymentData.appChainGatewayImplementation, implementation_);
+        }
 
         if (IAppChainGateway(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IAppChainGateway(implementation_).parameterRegistry()
+            );
         }
 
         if (IAppChainGateway(implementation_).settlementChainGateway() != _deploymentData.gatewayProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.gatewayProxy,
+                IAppChainGateway(implementation_).settlementChainGateway()
+            );
         }
 
         if (
             IAppChainGateway(implementation_).settlementChainGatewayAlias() !=
             AddressAliasHelper.toAlias(_deploymentData.gatewayProxy)
         ) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                AddressAliasHelper.toAlias(_deploymentData.gatewayProxy),
+                IAppChainGateway(implementation_).settlementChainGatewayAlias()
+            );
         }
     }
 
@@ -1222,10 +1403,15 @@ contract DeployScripts is Script {
             console.log("AppChainGateway Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.gatewayProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.gatewayProxy) {
+            revert UnexpectedProxy(_deploymentData.gatewayProxy, proxy_);
+        }
 
         if (IAppChainGateway(proxy_).implementation() != _deploymentData.appChainGatewayImplementation) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.appChainGatewayImplementation,
+                IAppChainGateway(proxy_).implementation()
+            );
         }
     }
 
@@ -1257,10 +1443,15 @@ contract DeployScripts is Script {
             console.log("GroupMessageBroadcaster Implementation: %s", implementation_);
         }
 
-        if (implementation_ != _deploymentData.groupMessageBroadcasterImplementation) revert UnexpectedImplementation();
+        if (implementation_ != _deploymentData.groupMessageBroadcasterImplementation) {
+            revert UnexpectedImplementation(_deploymentData.groupMessageBroadcasterImplementation, implementation_);
+        }
 
         if (IGroupMessageBroadcaster(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IGroupMessageBroadcaster(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -1291,12 +1482,17 @@ contract DeployScripts is Script {
             console.log("GroupMessageBroadcaster Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.groupMessageBroadcasterProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.groupMessageBroadcasterProxy) {
+            revert UnexpectedProxy(_deploymentData.groupMessageBroadcasterProxy, proxy_);
+        }
 
         if (
             IGroupMessageBroadcaster(proxy_).implementation() != _deploymentData.groupMessageBroadcasterImplementation
         ) {
-            revert UnexpectedProxy();
+            revert UnexpectedImplementation(
+                _deploymentData.groupMessageBroadcasterImplementation,
+                IGroupMessageBroadcaster(proxy_).implementation()
+            );
         }
     }
 
@@ -1329,11 +1525,14 @@ contract DeployScripts is Script {
         }
 
         if (implementation_ != _deploymentData.identityUpdateBroadcasterImplementation) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(_deploymentData.identityUpdateBroadcasterImplementation, implementation_);
         }
 
         if (IIdentityUpdateBroadcaster(implementation_).parameterRegistry() != _deploymentData.parameterRegistryProxy) {
-            revert UnexpectedImplementation();
+            revert UnexpectedImplementation(
+                _deploymentData.parameterRegistryProxy,
+                IIdentityUpdateBroadcaster(implementation_).parameterRegistry()
+            );
         }
     }
 
@@ -1364,15 +1563,39 @@ contract DeployScripts is Script {
             console.log("IdentityUpdateBroadcaster Proxy: %s", proxy_);
         }
 
-        if (proxy_ != _deploymentData.identityUpdateBroadcasterProxy) revert UnexpectedProxy();
+        if (proxy_ != _deploymentData.identityUpdateBroadcasterProxy) {
+            revert UnexpectedProxy(_deploymentData.identityUpdateBroadcasterProxy, proxy_);
+        }
 
         if (
             IIdentityUpdateBroadcaster(proxy_).implementation() !=
             _deploymentData.identityUpdateBroadcasterImplementation
-        ) revert UnexpectedProxy();
+        ) {
+            revert UnexpectedImplementation(
+                _deploymentData.identityUpdateBroadcasterImplementation,
+                IIdentityUpdateBroadcaster(proxy_).implementation()
+            );
+        }
     }
 
     /* ============ Internal Functions ============ */
+
+    function _verifyProxyImplementation(
+        address proxy_,
+        address expectedImplementation_,
+        address currentImplementation_
+    ) internal {
+        if (currentImplementation_ != expectedImplementation_) {
+            console.log("ERROR: Proxy points to a different implementation than expected.");
+            console.log("  Proxy:", proxy_);
+            console.log("  Expected implementation:", expectedImplementation_);
+            console.log("  Actual implementation:", currentImplementation_);
+            console.log("  You either need to:");
+            console.log("    - Change the proxy's salt to get a fresh proxy deploy at new address,");
+            console.log("    - Or upgrade the existing proxy (not deploy).");
+            revert ProxyExistsWithDifferentImplementation(proxy_, expectedImplementation_, currentImplementation_);
+        }
+    }
 
     function _getAdmins() internal view returns (address[] memory admins_) {
         uint256 adminCount_ = _deploymentData.settlementChainParameterRegistryAdmin1 == address(0)
