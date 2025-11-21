@@ -1153,8 +1153,10 @@ contract DeployScripts is Script {
         if (_deploymentData.distributionManagerProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.distributionManagerProxy;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
-        if (proxy_.code.length == 0) {
+        // Deploy proxy if it doesn't exist
+        if (!proxyAlreadyExists) {
             console.log(
                 "DistributionManager Proxy Salt: %s",
                 Utils.bytes32ToString(_deploymentData.distributionManagerProxySalt)
@@ -1173,15 +1175,18 @@ contract DeployScripts is Script {
             console.log("DistributionManager Proxy: %s", proxy_);
         }
 
+        // Verify proxy address matches config
         if (proxy_ != _deploymentData.distributionManagerProxy) {
             revert UnexpectedProxy(_deploymentData.distributionManagerProxy, proxy_);
         }
 
-        if (IDistributionManager(proxy_).implementation() != _deploymentData.distributionManagerImplementation) {
-            revert UnexpectedImplementation(
-                _deploymentData.distributionManagerImplementation,
-                IDistributionManager(proxy_).implementation()
-            );
+        // Verify implementation matches expected
+        address currentImplementation_ = IDistributionManager(proxy_).implementation();
+        _verifyProxyImplementation(proxy_, _deploymentData.distributionManagerImplementation, currentImplementation_);
+
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
+            console.log("Proxy already exists with correct implementation - no-op");
         }
     }
 
