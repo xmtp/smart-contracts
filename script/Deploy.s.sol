@@ -934,8 +934,10 @@ contract DeployScripts is Script {
         if (_deploymentData.nodeRegistryProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.nodeRegistryProxy;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
-        if (proxy_.code.length == 0) {
+        // Deploy proxy if it doesn't exist
+        if (!proxyAlreadyExists) {
             console.log("NodeRegistry Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.nodeRegistryProxySalt));
 
             vm.startBroadcast(_privateKey);
@@ -951,15 +953,18 @@ contract DeployScripts is Script {
             console.log("NodeRegistry Proxy: %s", proxy_);
         }
 
+        // Verify proxy address matches config
         if (proxy_ != _deploymentData.nodeRegistryProxy) {
             revert UnexpectedProxy(_deploymentData.nodeRegistryProxy, proxy_);
         }
 
-        if (INodeRegistry(proxy_).implementation() != _deploymentData.nodeRegistryImplementation) {
-            revert UnexpectedImplementation(
-                _deploymentData.nodeRegistryImplementation,
-                INodeRegistry(proxy_).implementation()
-            );
+        // Verify implementation matches expected
+        address currentImplementation_ = INodeRegistry(proxy_).implementation();
+        _verifyProxyImplementation(proxy_, _deploymentData.nodeRegistryImplementation, currentImplementation_);
+
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
+            console.log("Proxy already exists with correct implementation - no-op");
         }
     }
 
@@ -1028,10 +1033,10 @@ contract DeployScripts is Script {
         if (_deploymentData.payerReportManagerProxySalt == 0) revert ProxySaltNotSet();
 
         address proxy_ = _deploymentData.payerReportManagerProxy;
-        bool proxyAlreadyExisted = proxy_.code.length > 0;
+        bool proxyAlreadyExists = proxy_.code.length > 0;
 
         // Deploy proxy if it doesn't exist
-        if (!proxyAlreadyExisted) {
+        if (!proxyAlreadyExists) {
             console.log(
                 "PayerReportManager Proxy Salt: %s",
                 Utils.bytes32ToString(_deploymentData.payerReportManagerProxySalt)
@@ -1057,23 +1062,10 @@ contract DeployScripts is Script {
 
         // Verify implementation matches expected
         address currentImplementation_ = IPayerReportManager(proxy_).implementation();
-        if (currentImplementation_ != _deploymentData.payerReportManagerImplementation) {
-            console.log("ERROR: Proxy points to a different implementation than expected.");
-            console.log("  Proxy:", proxy_);
-            console.log("  Expected implementation:", _deploymentData.payerReportManagerImplementation);
-            console.log("  Actual implementation:", currentImplementation_);
-            console.log("  You either need to:");
-            console.log("    - Change the proxy's salt to get a fresh proxy deploy at new address,");
-            console.log("    - Or upgrade the existing proxy (not deploy).");
-            revert ProxyExistsWithDifferentImplementation(
-                proxy_,
-                _deploymentData.payerReportManagerImplementation,
-                currentImplementation_
-            );
-        }
+        _verifyProxyImplementation(proxy_, _deploymentData.payerReportManagerImplementation, currentImplementation_);
 
-        // If proxy already existed with correct implementation, log no-op
-        if (proxyAlreadyExisted) {
+        // If proxy already exists with correct implementation, log no-op
+        if (proxyAlreadyExists) {
             console.log("Proxy already exists with correct implementation - no-op");
         }
     }
@@ -1582,6 +1574,23 @@ contract DeployScripts is Script {
     }
 
     /* ============ Internal Functions ============ */
+
+    function _verifyProxyImplementation(
+        address proxy_,
+        address expectedImplementation_,
+        address currentImplementation_
+    ) internal {
+        if (currentImplementation_ != expectedImplementation_) {
+            console.log("ERROR: Proxy points to a different implementation than expected.");
+            console.log("  Proxy:", proxy_);
+            console.log("  Expected implementation:", expectedImplementation_);
+            console.log("  Actual implementation:", currentImplementation_);
+            console.log("  You either need to:");
+            console.log("    - Change the proxy's salt to get a fresh proxy deploy at new address,");
+            console.log("    - Or upgrade the existing proxy (not deploy).");
+            revert ProxyExistsWithDifferentImplementation(proxy_, expectedImplementation_, currentImplementation_);
+        }
+    }
 
     function _getAdmins() internal view returns (address[] memory admins_) {
         uint256 adminCount_ = _deploymentData.settlementChainParameterRegistryAdmin1 == address(0)
