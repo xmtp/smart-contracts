@@ -134,6 +134,14 @@ contract DeployPayerReportManagerScript is DeployScripts {
                 console.log("WARNING: Computed proxy address does not match config proxy address!");
             }
         }
+
+        // Check if code already exists at predicted addresses
+        if (computedImplementation_.code.length > 0) {
+            console.log("WARNING: Code already exists at predicted implementation address!");
+        }
+        if (computedProxy_.code.length > 0) {
+            console.log("WARNING: Code already exists at predicted proxy address!");
+        }
     }
 
     function _ensureNoPayerReportManager(string memory json_) internal view {
