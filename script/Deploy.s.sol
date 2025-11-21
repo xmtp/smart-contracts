@@ -68,7 +68,11 @@ contract DeployScripts is Script {
     error UnexpectedFactory();
     error UnexpectedImplementation(address expected, address actual);
     error UnexpectedProxy(address expected, address actual);
-    error ProxyExistsWithDifferentImplementation(address proxy, address expectedImplementation, address actualImplementation);
+    error ProxyExistsWithDifferentImplementation(
+        address proxy,
+        address expectedImplementation,
+        address actualImplementation
+    );
 
     Utils.DeploymentData internal _deploymentData;
 
@@ -1060,7 +1064,7 @@ contract DeployScripts is Script {
             console.log("  Actual implementation:", currentImplementation_);
             console.log("  You either need to:");
             console.log("    - Change the proxy's salt to get a fresh proxy deploy at new address,");
-            console.log("    - Or upgrade the existing proxy (not deploy).");             
+            console.log("    - Or upgrade the existing proxy (not deploy).");
             revert ProxyExistsWithDifferentImplementation(
                 proxy_,
                 _deploymentData.payerReportManagerImplementation,
