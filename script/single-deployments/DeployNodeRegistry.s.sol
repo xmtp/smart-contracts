@@ -10,16 +10,18 @@ import { Utils } from "../utils/Utils.sol";
 /**
  * @title DeployNodeRegistryScript
  * @notice Script to deploy a fresh release of the NodeRegistry contract (proxy and implementation pair)
- * @dev Calls into mass deploy script Deploy.s.sol for a single deployment of NodeRegistry:
+ * @dev This script inherits from Deploy.s.sol, and has three entry points:
+ * 1) deployContract() to deploy a new NodeRegistry contract (proxy and implementation pair)
+ * Calls into mass deploy script Deploy.s.sol for a single deployment of NodeRegistry:
  * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
  * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
  * - Updates the environment JSON with the new nodeRegistry proxy address.
+ * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
  *
- * Script has two entry points, a deployer and an address helper:
- * 1) deployNodeRegistry() to deploy a new NodeRegistry contract (proxy and implementation pair)
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployNodeRegistry()" --broadcast
+ * 2) updateDependencies() to update the dependencies of the NodeRegistry contract
+ * Not implemented yet.
  *
- * 2) predictAddresses() to print the predicted addresses of the implementation & proxy
+ * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
  * The proxy address depends on the factory addresss, deployer address and the salt.
  * The implementation address depends on the factory address and the implementation bytecode.
  * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
@@ -27,8 +29,9 @@ import { Utils } from "../utils/Utils.sol";
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
     error ImplementationAddressMismatch(address expected, address computed);
+    error NotImplemented();
 
-    function deployNodeRegistry() external {
+    function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
         console.log("Deploying NodeRegistry");
@@ -46,6 +49,14 @@ contract DeployNodeRegistryScript is DeployScripts {
         _writeNodeRegistryToEnvironment();
 
         console.log("NodeRegistry deployment complete");
+    }
+
+    function updateDependencies() external {
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+
+        console.log("Updating NodeRegistry dependencies");
+        // Update the dependencies of the NodeRegistry contract
+        revert NotImplemented();
     }
 
     function predictAddresses() external view {
@@ -83,6 +94,7 @@ contract DeployNodeRegistryScript is DeployScripts {
             revert EnvironmentContainsNodeRegistry();
         }
     }
+
     function _validateImplementationAddress() internal view {
         if (_deploymentData.nodeRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
