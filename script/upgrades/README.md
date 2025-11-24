@@ -9,7 +9,7 @@ An **upgrade** refers to upgrading an existing **proxy** to point to a new **imp
 - [ ] `ADMIN_PRIVATE_KEY`. This address must be an admin of the contract being upgraded.
 - [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider.
 - [ ] `ETHERSCAN_API_KEY` your etherscan API key.
-- [ ] `ETHERSCAN_API_URL` 'https://api-sepolia.basescan.org/api'
+- [ ] `ETHERSCAN_API_URL` '`https://api-sepolia.basescan.org/api`'
 
 ### 2. Maintain `config/testnet-staging.json` to have:
 
@@ -27,7 +27,7 @@ In this example we are upgrading `NodeRegistry`.
 
 The upgrade script performs an end-to-end upgrade (deploy implementation or no-op if it exists, deploy migrator, set parameter, execute upgrade):
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script script/upgrades/NodeRegistryUpgrader.s.sol --rpc-url base_sepolia --sig "UpgradeNodeRegistry()" --broadcast
 ```
 
@@ -39,6 +39,6 @@ ENVIRONMENT=testnet-staging forge script script/upgrades/NodeRegistryUpgrader.s.
 
 Code verification is only needed once per implementation. To verify the code of upgraded implementations:
 
-```
+```bash
 forge verify-contract --chain-id 84532 <implementation address> src/settlement-chain/NodeRegistry.sol:NodeRegistry
 ```

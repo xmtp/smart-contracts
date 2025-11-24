@@ -17,7 +17,7 @@ The instructions below cover the complete process of deploying a new Payer Repor
 - [ ] `ADMIN` and `ADMIN_PRIVATE_KEY`. This address must be an admin of the `SettlementChainParameterRegistry`. This address is used during a deploy to point the proxy at the new implementation.
 - [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider.
 - [ ] `ETHERSCAN_API_KEY` your etherscan API key.
-- [ ] `ETHERSCAN_API_URL` 'https://api-sepolia.basescan.org/api'
+- [ ] `ETHERSCAN_API_URL` '`https://api-sepolia.basescan.org/api`'
 
 ### 2. Edit file `config/testnet-staging.json` to have:
 
@@ -28,7 +28,7 @@ The instructions below cover the complete process of deploying a new Payer Repor
 
 - [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation. This call will show warnings if the proxy or implementation is already in use. If the proxy is already in use, you can change the salt in previous step:
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
 ```
 
@@ -46,7 +46,7 @@ ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-ur
 
 This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
 ```
 
@@ -54,7 +54,7 @@ ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-ur
 
 Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.settler` with the new `PayerReportManager` proxy address. It then calls `PayerRegistry.updateSettler()` to update the settler in the `PayerRegistry` contract.
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
 ```
 
@@ -70,7 +70,7 @@ Assuming that all values maintained in previous stage remain (the `.env` values 
 
 - [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation:
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
 ```
 
@@ -87,7 +87,7 @@ ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-u
 
 This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
 ```
 
@@ -95,7 +95,7 @@ ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-u
 
 Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.feeDistributor` with the new `DistributionManager` proxy address. It then calls `PayerRegistry.updateFeeDistributor()` to update the fee distributor in the `PayerRegistry` contract.
 
-```
+```bash
 ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
 ```
 
@@ -103,7 +103,7 @@ ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-u
 
 To verify the code of the new implementations:
 
-```
+```bash
 forge verify-contract --chain-id 84532 <newly deployed payer report manager implementation address> src/settlement-chain/PayerReportManager.sol:PayerReportManager
 forge verify-contract --chain-id 84532 <newly deployed distribution manager implementation address> src/settlement-chain/DistributionManager.sol:DistributionManager
 ```
