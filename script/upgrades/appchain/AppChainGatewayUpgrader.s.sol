@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { console } from "../../../lib/forge-std/src/Script.sol";
 import { AppChainGateway } from "../../../src/app-chain/AppChainGateway.sol";
 import { AppChainGatewayDeployer } from "../../deployers/AppChainGatewayDeployer.sol";
 import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
@@ -13,6 +14,7 @@ import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
  *      - Upgrade(): Step 3 - Execute migration and verify state preservation
  *
  * Usage:
+ * NOTE: These steps execute on different chains, take care to get the --rpc-url correct for each step.
  *   Step 1: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
  *   Step 2: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
  *   Step 3: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
@@ -127,4 +129,3 @@ contract AppChainGatewayUpgrader is BaseAppChainUpgrader {
         console.log("  Version: %s", state.version);
     }
 }
-

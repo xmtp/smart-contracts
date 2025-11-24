@@ -254,4 +254,3 @@ abstract contract BaseAppChainUpgrader is Script {
      */
     function _logContractState(string memory title_, bytes memory state_) internal view virtual;
 }
-
