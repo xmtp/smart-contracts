@@ -2,19 +2,22 @@
 pragma solidity 0.8.28;
 
 import { AppChainGateway } from "../../../src/app-chain/AppChainGateway.sol";
+import { AppChainGatewayDeployer } from "../../deployers/AppChainGatewayDeployer.sol";
 import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
 
 /**
- * @notice Step 3 of 3: Perform the upgrade on the app chain
- * @dev This script:
- *      - Captures contract state before upgrade
- *      - Executes the migration
- *      - Compares state before and after upgrade
+ * @notice App Chain Gateway upgrader
+ * @dev This contract provides three entry points for the upgrade process:
+ *      - Prepare(): Step 1 - Deploy implementation and migrator on app chain
+ *      - Bridge(address): Step 2 - Bridge migrator parameter from settlement chain to app chain
+ *      - Upgrade(): Step 3 - Execute migration and verify state preservation
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_3_of_3 --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+ *   Step 1: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+ *   Step 2: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 3: ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
  */
-contract AppChainGatewayUpgrader_3_of_3 is BaseAppChainUpgrader {
+contract AppChainGatewayUpgrader is BaseAppChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         address settlementChainGateway;
@@ -37,11 +40,33 @@ contract AppChainGatewayUpgrader_3_of_3 is BaseAppChainUpgrader {
     }
 
     function _deployOrGetImplementation(
-        address,
-        address,
-        address
-    ) internal pure override returns (address) {
-        revert("Not used in step 3");
+        address factory_,
+        address paramRegistry_,
+        address proxy_
+    ) internal override returns (address implementation_) {
+        // Get settlement chain gateway from proxy
+        AppChainGateway gateway = AppChainGateway(proxy_);
+        address settlementChainGateway_ = gateway.settlementChainGateway();
+
+        // Compute implementation address
+        address computedImpl = AppChainGatewayDeployer.getImplementation(
+            factory_,
+            paramRegistry_,
+            settlementChainGateway_
+        );
+
+        // Skip deployment if implementation already exists
+        if (computedImpl.code.length > 0) {
+            console.log("Implementation already exists at computed address, skipping deployment");
+            return computedImpl;
+        }
+
+        // Deploy new implementation
+        (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
+            factory_,
+            paramRegistry_,
+            settlementChainGateway_
+        );
     }
 
     function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
@@ -102,3 +127,4 @@ contract AppChainGatewayUpgrader_3_of_3 is BaseAppChainUpgrader {
         console.log("  Version: %s", state.version);
     }
 }
+

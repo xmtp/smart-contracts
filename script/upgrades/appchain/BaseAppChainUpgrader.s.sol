@@ -14,10 +14,10 @@ import { Utils } from "../../utils/Utils.sol";
  * @dev Concrete upgraders must implement:
  *      - `_getProxy()` to return the proxy address from deployment data
  *      - `_getContractName()` to return the contract name for parameter keys
- *      - `_deployOrGetImplementation()` to deploy or get the implementation address (step 1 only)
- *      - `_getContractState()` to capture contract state (step 3 only, optional for step 1)
- *      - `_isContractStateEqual()` to compare states (step 3 only)
- *      - `_logContractState()` to log state information (step 3 only, optional override)
+ *      - `_deployOrGetImplementation()` to deploy or get the implementation address
+ *      - `_getContractState()` to capture contract state
+ *      - `_isContractStateEqual()` to compare states
+ *      - `_logContractState()` to log state information
  */
 abstract contract BaseAppChainUpgrader is Script {
     error PrivateKeyNotSet();
@@ -233,36 +233,25 @@ abstract contract BaseAppChainUpgrader is Script {
      * @notice Gets the contract state before/after upgrade
      * @param proxy_ The proxy address
      * @return state_ Encoded state data
-     * @dev Default implementation returns empty bytes. Override in step 3 scripts to capture actual state.
      */
-    function _getContractState(address) internal view virtual returns (bytes memory state_) {
-        // Default: return empty bytes. Step 3 scripts should override this.
-        return "";
-    }
+    function _getContractState(address proxy_) internal view virtual returns (bytes memory state_);
 
     /**
      * @notice Compares contract state before and after upgrade
      * @param stateBefore_ Encoded state before upgrade
      * @param stateAfter_ Encoded state after upgrade
      * @return isEqual_ Whether the states are equal
-     * @dev Default implementation returns true. Override in step 3 scripts to perform actual comparison.
      */
     function _isContractStateEqual(
-        bytes memory,
-        bytes memory
-    ) internal pure virtual returns (bool isEqual_) {
-        // Default: return true. Step 3 scripts should override this.
-        return true;
-    }
+        bytes memory stateBefore_,
+        bytes memory stateAfter_
+    ) internal pure virtual returns (bool isEqual_);
 
     /**
      * @notice Logs the contract state
      * @param title_ Title for the log
      * @param state_ Encoded state data
-     * @dev Default implementation is a no-op. Override in step 3 scripts to provide actual logging.
      */
-    function _logContractState(string memory, bytes memory) internal view virtual {
-        // Default: no-op. Step 3 scripts should override this.
-    }
+    function _logContractState(string memory title_, bytes memory state_) internal view virtual;
 }
 
