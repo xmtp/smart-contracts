@@ -13,7 +13,7 @@ import { Utils } from "../../utils/Utils.sol";
  *      - Captures contract state before upgrade
  *      - Deploys or gets the implementation
  *      - Deploys a GenericEIP1967Migrator
- *      - Outputs the migrator address for use in step 2
+ *      - Outputs the migrator address for use in the script 2_of_3.
  *
  * Usage:
  *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_1_of_3 --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast

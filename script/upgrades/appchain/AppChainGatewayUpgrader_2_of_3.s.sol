@@ -13,8 +13,12 @@ import { Utils } from "../../utils/Utils.sol";
  *      - Sets the migrator address in the parameter registry on the settlement chain
  *      - Bridges the parameter to the app chain via the settlement chain gateway
  *
+ * The value for MIGRATOR_ADDRESS is output by script 1_of_3.
+ *
  * Usage:
  *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_2_of_3 --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+ *
+ * Manually wait until bridging is complete before proceeding to script 3_of_3.
  */
 contract AppChainGatewayUpgrader_2_of_3 is Script {
     error PrivateKeyNotSet();
