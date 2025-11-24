@@ -14,7 +14,7 @@ import { Utils } from "../../utils/Utils.sol";
  *      - Bridges the parameter to the app chain via the settlement chain gateway
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_2_of_3 --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast 
+ *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_2_of_3 --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
  */
 contract AppChainGatewayUpgrader_2_of_3 is Script {
     error PrivateKeyNotSet();
@@ -96,4 +96,3 @@ contract AppChainGatewayUpgrader_2_of_3 is Script {
         vm.stopBroadcast();
     }
 }
-

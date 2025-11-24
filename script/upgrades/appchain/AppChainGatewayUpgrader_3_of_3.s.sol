@@ -142,4 +142,3 @@ contract AppChainGatewayUpgrader_3_of_3 is Script {
         console.log("  Version: %s", state.version);
     }
 }
-

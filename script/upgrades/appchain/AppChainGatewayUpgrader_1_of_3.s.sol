@@ -131,4 +131,3 @@ contract AppChainGatewayUpgrader_1_of_3 is Script {
         console.log("  Paused: %s", state.paused);
     }
 }
-
