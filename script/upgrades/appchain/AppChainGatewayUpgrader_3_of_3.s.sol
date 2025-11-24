@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script, console } from "../../../lib/forge-std/src/Script.sol";
 import { AppChainGateway } from "../../../src/app-chain/AppChainGateway.sol";
-import { IMigratable } from "../../../src/abstract/interfaces/IMigratable.sol";
-import { Utils } from "../../utils/Utils.sol";
+import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
 
 /**
  * @notice Step 3 of 3: Perform the upgrade on the app chain
@@ -16,11 +14,7 @@ import { Utils } from "../../utils/Utils.sol";
  * Usage:
  *   ENVIRONMENT=testnet-dev forge script AppChainGatewayUpgrader_3_of_3 --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
  */
-contract AppChainGatewayUpgrader_3_of_3 is Script {
-    error PrivateKeyNotSet();
-    error EnvironmentNotSet();
-    error StateMismatch();
-
+contract AppChainGatewayUpgrader_3_of_3 is BaseAppChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         address settlementChainGateway;
@@ -30,61 +24,27 @@ contract AppChainGatewayUpgrader_3_of_3 is Script {
         string version;
     }
 
-    string internal _environment;
-    uint256 internal _privateKey;
-    address internal _admin;
-    Utils.DeploymentData internal _deployment;
-
-    function setUp() external {
-        // Environment
-        _environment = vm.envString("ENVIRONMENT");
-        if (bytes(_environment).length == 0) revert EnvironmentNotSet();
-        console.log("Environment: %s", _environment);
-
-        // Admin private key
-        _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
-        _privateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_privateKey == 0) revert PrivateKeyNotSet();
-        _admin = vm.addr(_privateKey);
-        console.log("Admin: %s", _admin);
+    function _getProxy() internal view override returns (address proxy_) {
+        return _deployment.gatewayProxy;
     }
 
-    function Upgrade() external {
-        address proxy = _deployment.gatewayProxy;
-
-        console.log("proxy: %s", proxy);
-
-        // Get implementation address before upgrade
-        AppChainGateway gateway = AppChainGateway(proxy);
-        address implBefore = gateway.implementation();
-        console.log("Implementation before upgrade: %s", implBefore);
-
-        // Get contract state before upgrade
-        bytes memory stateBefore = _getContractState(proxy);
-        _logContractState("State before upgrade:", stateBefore);
-
-        vm.startBroadcast(_privateKey);
-
-        // Perform migration
-        IMigratable(proxy).migrate();
-        console.log("Migration completed");
-
-        vm.stopBroadcast();
-
-        // Get implementation address after upgrade
-        address implAfter = gateway.implementation();
-        console.log("Implementation after upgrade: %s", implAfter);
-
-        // Compare state before and after upgrade
-        bytes memory stateAfter = _getContractState(proxy);
-        _logContractState("State after upgrade:", stateAfter);
-
-        if (!_isContractStateEqual(stateBefore, stateAfter)) revert StateMismatch();
-
-        console.log("State comparison passed - upgrade successful!");
+    function _getContractName() internal pure override returns (string memory name_) {
+        return "appChainGateway";
     }
 
-    function _getContractState(address proxy_) internal view returns (bytes memory state_) {
+    function _getImplementationAddress(address proxy_) internal view override returns (address impl_) {
+        return AppChainGateway(proxy_).implementation();
+    }
+
+    function _deployOrGetImplementation(
+        address,
+        address,
+        address
+    ) internal pure override returns (address) {
+        revert("Not used in step 3");
+    }
+
+    function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
         ContractState memory state = _getAppChainGatewayState(proxy_);
         return abi.encode(state);
     }
@@ -113,7 +73,7 @@ contract AppChainGatewayUpgrader_3_of_3 is Script {
     function _isContractStateEqual(
         bytes memory stateBefore_,
         bytes memory stateAfter_
-    ) internal pure returns (bool isEqual_) {
+    ) internal pure override returns (bool isEqual_) {
         ContractState memory before = abi.decode(stateBefore_, (ContractState));
         ContractState memory afterState = abi.decode(stateAfter_, (ContractState));
 
@@ -131,7 +91,7 @@ contract AppChainGatewayUpgrader_3_of_3 is Script {
         // Note: version is intentionally not checked, it can change
     }
 
-    function _logContractState(string memory title_, bytes memory state_) internal view {
+    function _logContractState(string memory title_, bytes memory state_) internal view override {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
         console.log("  Parameter registry: %s", state.parameterRegistry);
