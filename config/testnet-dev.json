@@ -17,7 +17,7 @@
   "groupMessageBroadcasterImplementation": "0xfbC4D2f16F697Cc5Cf28Bb81e2B5E1A9F3F0fA2f",
   "groupMessageBroadcasterProxy": "0xbDF24fD4bBaE0E3CCd42Fb6C07EC6eA347A1Ef87",
   "groupMessageBroadcasterProxySalt": "GroupMessageBroadcaster_0_0",
-  "identityUpdateBroadcasterImplementation": "0x7f0aD1b1fdcC68B04E515400E209BF9F2B3378E2",
+  "identityUpdateBroadcasterImplementation": "0x1F22941cAA4A18E4c8434B644Cb8E51592BC47C8",
   "identityUpdateBroadcasterProxy": "0x559c8c08A251Cc917ccCde13Caf273156d0c8f35",
   "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0_0",
   "initializableImplementation": "0x8a5b177657b9B0dd469f7C61e3c34C841883772C",
