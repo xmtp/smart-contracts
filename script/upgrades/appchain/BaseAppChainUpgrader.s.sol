@@ -29,7 +29,11 @@ abstract contract BaseAppChainUpgrader is Script {
 
     uint256 internal constant _TX_STIPEND = 21_000;
     uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
-    uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000; // 2 gwei per gas
+
+    /// @dev Default value copied from Administration.s.sol
+    /// On app chain, each gas unit costs 2 gwei (measured as fraction of the xUSD native token).
+    /// Arbitrum L3 default is 0.1 gwei, but this fluctuates with demand.
+    uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000;
 
     string internal _environment;
     uint256 internal _privateKey;
@@ -108,7 +112,8 @@ abstract contract BaseAppChainUpgrader is Script {
         console.log("Set migrator in parameter registry");
 
         // Calculate gas and cost for bridging
-        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1); // 1 key
+        // The value 1 below is the number of parameter keys being bridged
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1);
 
         // Convert from 18 decimals (app chain gas token) to 6 decimals (fee token).
         uint256 cost_ = ((_APP_CHAIN_GAS_PRICE * gasLimit_) * 1e6) / 1e18;
