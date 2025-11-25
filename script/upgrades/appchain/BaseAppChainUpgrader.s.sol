@@ -14,6 +14,7 @@ import { Utils } from "../../utils/Utils.sol";
  * @dev Concrete upgraders must implement:
  *      - `_getProxy()` to return the proxy address from deployment data
  *      - `_getContractName()` to return the contract name for parameter keys
+ *      - `_getImplementationAddress()` to get the implementation address from the proxy
  *      - `_deployOrGetImplementation()` to deploy or get the implementation address
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
@@ -59,6 +60,8 @@ abstract contract BaseAppChainUpgrader is Script {
      * @dev Deploys or gets the implementation and creates a migrator
      */
     function Prepare() external {
+        if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
+
         address factory = _deployment.factory;
         address paramRegistry = _deployment.parameterRegistryProxy;
         address proxy = _getProxy();
@@ -202,23 +205,9 @@ abstract contract BaseAppChainUpgrader is Script {
      * @notice Gets the implementation address from a proxy
      * @param proxy_ The proxy address
      * @return impl_ The implementation address
-     * @dev This is a helper that can be overridden if the contract has a different way to get the implementation
+     * @dev Must be implemented by all upgraders to read the implementation address from the proxy
      */
-    function _getImplementationAddress(address proxy_) internal view virtual returns (address impl_) {
-        // Default implementation: try to call implementation() on the proxy
-        // This works for contracts that expose an implementation() function
-        (bool success, bytes memory data) = proxy_.staticcall(abi.encodeWithSignature("implementation()"));
-        if (success && data.length >= 32) {
-            return abi.decode(data, (address));
-        }
-        // If that fails, try to read from EIP-1967 storage slot
-        bytes32 slot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-        bytes32 value;
-        assembly {
-            value := sload(slot)
-        }
-        return address(uint160(uint256(value)));
-    }
+    function _getImplementationAddress(address proxy_) internal view virtual returns (address impl_);
 
     /**
      * @notice Deploys or gets the implementation address
