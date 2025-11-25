@@ -1,26 +1,30 @@
 # Process Steps for App Chain Upgrades
 
-An **app chain upgrade** refers to upgrading an existing **proxy** on an app chain to point to a new **implementation** address. App chain upgrades require a three-step process that spans both the settlement chain and the app chain: (1) prepare the new implementation and migrator on the app chain, (2) bridge the migrator parameter from the settlement chain to the app chain, and (3) execute the upgrade on the app chain. All examples below use the environment `staging`, so config files are named `testnet-staging.json`.
+An **app chain upgrade** refers to upgrading an existing **proxy** on an app chain to point to a new **implementation** address. App chain upgrades require a three-step process that spans both the settlement chain and the app chain:
+
+1. **Prepare** the new implementation and migrator on the app chain, that is, deploy them.
+2. **Bridge** the migrator parameter from the settlement chain to the app chain.
+3. **Upgrade** the contract on the app chain.
+
+All examples below use the environment `staging`, so config files are named `testnet-staging.json`.
 
 ## Token Requirements
 
-The ADMIN address must have the following tokens at each step:
+The ADMIN address must have the following tokens funded:
 
-| Step         | Executed on      | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
-|--------------|------------------|-----------------------|-----------------------|---------------------------|
-| 1. Prepare   | App Chain        | -                     | -                     | yes for deployment tx gas |
-| 2. Bridge    | Settlement Chain | yes for bridge tx gas | yes to give to bridge | -                         |
-| 3. Upgrade   | App Chain        | -                     | -                     | yes for upgrade tx gas    |
+| Step       | Executed on      | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
+| ---------- | ---------------- | --------------------- | --------------------- | ------------------------- |
+| 1. Prepare | App Chain        | -                     | -                     | yes for deployment tx gas |
+| 2. Bridge  | Settlement Chain | yes for bridge tx gas | yes to give to bridge | -                         |
+| 3. Upgrade | App Chain        | -                     | -                     | yes for upgrade tx gas    |
 
 ## STAGE 1 - Setup
 
 ### 1. Maintain the root `.env` file to have:
 
 - [ ] `ADMIN_PRIVATE_KEY`. This address must be an admin of the contract being upgraded.
-- [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider for the settlement chain.
-- [ ] App chain RPC URL (e.g., `XMTP_ROPSTEN_RPC_URL` for the app chain).
-- [ ] `ETHERSCAN_API_KEY` your etherscan API key.
-- [ ] `ETHERSCAN_API_URL` for the settlement chain (e.g., `https://api-sepolia.basescan.org/api`).
+- [ ] `BASE_SEPOLIA_RPC_URL` the RPC provider for the settlement chain.
+- [ ] `XMTP_ROPSTEN_RPC_URL` the RPC for the app chain.
 
 ### 2. Maintain `config/testnet-staging.json` to have:
 
@@ -32,7 +36,9 @@ Note: There are no dependencies on `environments/testnet-staging.json` for upgra
 
 ## STAGE 2 - Upgrade Contracts
 
-App chain upgrades require three steps that execute on different chains. Take care to use the correct `--rpc-url` for each step.
+App chain upgrades require three steps that execute on different chains.
+
+**NB: Take care to use the correct `--rpc-url` for each step!**
 
 ### Example: Upgrade Identity Update Broadcaster
 
@@ -51,16 +57,17 @@ ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc
 Bridge the migrator parameter from the settlement chain to the app chain:
 
 ```bash
-ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 - [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.identityUpdateBroadcaster.migrator`).
 
 #### Step 3 - Verify bridge and execute upgrade
 
-- [ ] Manually verify the bridge completed successfully by checking the parameter registry on the app chain. The parameter key from Step 2 should have the migrator address from Step 1.
+- [ ] Manually verify the bridge completed successfully by checking the parameter registry on the app chain. The parameter key from Step 2 should show the migrator address from Step 1.
 
 Example verification URL:
+
 ```
 https://xmtp-ropsten.explorer.alchemy.com/address/0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D?tab=read_write_proxy
 ```
@@ -77,40 +84,6 @@ ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc
 
 - [ ] Manually copy the new implementation address from Step 3 to the corresponding `config/testnet-staging.json` file, so that the file shows the correct implementation address.
 
-### Example: Upgrade Group Message Broadcaster
-
-#### Step 1 - Prepare new implementation on app chain
-
-```bash
-ENVIRONMENT=testnet-staging forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
-```
-
-- [ ] Note the migrator address from the output.
-
-#### Step 2 - Bridge the migrator parameter
-
-```bash
-ENVIRONMENT=testnet-staging forge script GroupMessageBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
-```
-
-- [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.groupMessageBroadcaster.migrator`).
-
-#### Step 3 - Verify bridge and execute upgrade
-
-- [ ] Manually verify the bridge completed successfully by checking the parameter registry on the app chain.
-
-Execute the upgrade:
-
-```bash
-ENVIRONMENT=testnet-staging forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
-```
-
-- [ ] Note the new implementation address from the output.
-
-#### Step 4 - Update configuration file
-
-- [ ] Manually copy the new implementation address from Step 3 to the corresponding `config/testnet-staging.json` file.
-
 ## STAGE 3 - Code Verification
 
 Code verification is only needed once per implementation. The automated verification script is idempotent and will skip previously verified contracts:
@@ -119,19 +92,7 @@ Code verification is only needed once per implementation. The automated verifica
 ./dev/verify-base xmtp_ropsten alchemy
 ```
 
-If any contracts were not picked up by the automated script, verify them manually:
-
-```bash
-forge verify-contract \
-  --verifier blockscout \
-  --verifier-url https://xmtp-ropsten.explorer.alchemy.com/api/ \
-  --chain-id 351243127 \
-  --constructor-args $(cast abi-encode "constructor(address)" "<PARAMETER_REGISTRY_ADDRESS>") \
-  <IMPLEMENTATION_ADDRESS> \
-  src/app-chain/<ContractName>.sol:<ContractName>
-```
-
-Example for Identity Update Broadcaster:
+If any contracts were not picked up by the automated script, verify them manually. Example for Identity Update Broadcaster:
 
 ```bash
 forge verify-contract \
@@ -143,14 +104,4 @@ forge verify-contract \
   src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
 ```
 
-Example for Group Message Broadcaster:
-
-```bash
-forge verify-contract \
-  --verifier blockscout \
-  --verifier-url https://xmtp-ropsten.explorer.alchemy.com/api/ \
-  --chain-id 351243127 \
-  --constructor-args $(cast abi-encode "constructor(address)" "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D") \
-  <IMPLEMENTATION_ADDRESS> \
-  src/app-chain/GroupMessageBroadcaster.sol:GroupMessageBroadcaster
-```
+In the above, the address `0xB2EA...` is the parameter registry address.
