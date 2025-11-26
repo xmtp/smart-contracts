@@ -10,7 +10,7 @@ import { FeeToken } from "../../src/settlement-chain/FeeToken.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { FeeTokenDeployer } from "../../script/deployers/FeeTokenDeployer.sol";
-import { FeeTokenUpgrader } from "../../script/upgrades/FeeTokenUpgrader.s.sol";
+import { FeeTokenUpgrader } from "../../script/upgrades/settlement-chain/FeeTokenUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract FeeTokenUpgradeForkTest is Test {

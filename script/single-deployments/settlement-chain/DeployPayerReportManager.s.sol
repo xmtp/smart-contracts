@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/console.sol";
-import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
-import { DeployScripts } from "../Deploy.s.sol";
-import { PayerReportManagerDeployer } from "../deployers/PayerReportManagerDeployer.sol";
-import { Utils } from "../utils/Utils.sol";
+import { console } from "../../../lib/forge-std/src/console.sol";
+import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
+import { DeployScripts } from "../../Deploy.s.sol";
+import { PayerReportManagerDeployer } from "../../deployers/PayerReportManagerDeployer.sol";
+import { Utils } from "../../utils/Utils.sol";
 import {
     ISettlementChainParameterRegistry
-} from "../../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
-import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
+} from "../../../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
+import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 
 /**
  * @title DeployPayerReportManagerScript
@@ -20,17 +20,17 @@ import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegi
  * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
  * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
  * - Updates the environment JSON with the new payerReportManager proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployPayerReportManager.s.sol:DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
  *
  * 2) updateDependencies() to update the dependencies of the PayerReportManager contract
  * - Updates the SettlementChainParameterRegistry key xmtp.payerRegistry.settler with the new PayerReportManager proxy address
  * - Calls PayerRegistry.updateSettler() to update the settler in the PayerRegistry contract
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployPayerReportManager.s.sol:DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
  *
  * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
  * The proxy address depends on the factory addresss, deployer address and the salt.
  * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployPayerReportManager.s.sol:DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
  */
 contract DeployPayerReportManagerScript is DeployScripts {
     error EnvironmentContainsPayerReportManager();

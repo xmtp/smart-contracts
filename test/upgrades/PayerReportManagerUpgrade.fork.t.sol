@@ -10,7 +10,7 @@ import { PayerReportManager } from "../../src/settlement-chain/PayerReportManage
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { PayerReportManagerDeployer } from "../../script/deployers/PayerReportManagerDeployer.sol";
-import { PayerReportManagerUpgrader } from "../../script/upgrades/PayerReportManagerUpgrader.s.sol";
+import { PayerReportManagerUpgrader } from "../../script/upgrades/settlement-chain/PayerReportManagerUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract PayerReportManagerUpgradeForkTest is Test {

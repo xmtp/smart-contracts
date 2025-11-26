@@ -10,7 +10,7 @@ import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { PayerRegistryDeployer } from "../../script/deployers/PayerRegistryDeployer.sol";
-import { PayerRegistryUpgrader } from "../../script/upgrades/PayerRegistryUpgrader.s.sol";
+import { PayerRegistryUpgrader } from "../../script/upgrades/settlement-chain/PayerRegistryUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract PayerRegistryUpgradeForkTest is Test {

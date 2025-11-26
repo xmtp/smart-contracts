@@ -10,7 +10,7 @@ import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { RateRegistryDeployer } from "../../script/deployers/RateRegistryDeployer.sol";
-import { RateRegistryUpgrader } from "../../script/upgrades/RateRegistryUpgrader.s.sol";
+import { RateRegistryUpgrader } from "../../script/upgrades/settlement-chain/RateRegistryUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract RateRegistryUpgradeForkTest is Test {

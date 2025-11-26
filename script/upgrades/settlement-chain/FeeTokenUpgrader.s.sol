@@ -1,56 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { SettlementChainGateway } from "../../src/settlement-chain/SettlementChainGateway.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { SettlementChainGatewayDeployer } from "../deployers/SettlementChainGatewayDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { FeeToken } from "../../../src/settlement-chain/FeeToken.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { FeeTokenDeployer } from "../../deployers/FeeTokenDeployer.sol";
 
 /**
- * @notice Upgrades the SettlementChainGateway proxy to a new implementation
+ * @notice Upgrades the FeeToken proxy to a new implementation
  * @dev This script:
- *      - Reads addresses for: factory, parameter registry, app chain gateway, fee token and settlement chain gateway proxy from config JSON file
- *      - Deploys a new SettlementChainGateway implementation via the Factory (no-ops if it exists)
+ *      - Reads addresses for: factory, parameter registry, underlying token and fee token proxy from config JSON file
+ *      - Deploys a new FeeToken implementation via the Factory (no-ops if it exists)
  *      - Creates a GenericEIP1967Migrator with the new implementation
  *      - Sets the migrator address in the Parameter Registry
  *      - Executes the migration on the proxy
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/SettlementChainGatewayUpgrader.s.sol:SettlementChainGatewayUpgrader --rpc-url base_sepolia --slow --sig "UpgradeSettlementChainGateway()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script FeeTokenUpgrader --rpc-url base_sepolia --slow --sig "UpgradeFeeToken()" --broadcast
  *
  */
-contract SettlementChainGatewayUpgrader is BaseUpgrader {
+contract FeeTokenUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
-        address appChainGateway;
-        address feeToken;
-        bool paused;
+        address underlying;
+        string name;
+        string symbol;
+        uint8 decimals;
+        uint256 totalSupply;
         string contractName;
         string version;
     }
 
-    function UpgradeSettlementChainGateway() external {
+    function UpgradeFeeToken() external {
         _upgrade();
     }
 
     function _getProxy() internal view override returns (address proxy_) {
-        return _deployment.gatewayProxy;
+        return _deployment.feeTokenProxy;
     }
 
     function _deployOrGetImplementation() internal override returns (address implementation_) {
         address factory = _deployment.factory;
         address paramRegistry = _deployment.parameterRegistryProxy;
-        address appChainGateway = _deployment.gatewayProxy;
-        address feeToken = _deployment.feeTokenProxy;
+        address underlying = _deployment.underlyingFeeToken;
 
         // Compute implementation address
-        address computedImpl = SettlementChainGatewayDeployer.getImplementation(
-            factory,
-            paramRegistry,
-            appChainGateway,
-            feeToken
-        );
+        address computedImpl = FeeTokenDeployer.getImplementation(factory, paramRegistry, underlying);
 
         // Skip deployment if implementation already exists
         if (computedImpl.code.length > 0) {
@@ -59,20 +55,15 @@ contract SettlementChainGatewayUpgrader is BaseUpgrader {
         }
 
         // Deploy new implementation
-        (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
-            factory,
-            paramRegistry,
-            appChainGateway,
-            feeToken
-        );
+        (implementation_, ) = FeeTokenDeployer.deployImplementation(factory, paramRegistry, underlying);
     }
 
     function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
-        return SettlementChainGateway(proxy_).migratorParameterKey();
+        return FeeToken(proxy_).migratorParameterKey();
     }
 
     function _getContractState(address proxy_) internal view override returns (bytes memory state_) {
-        ContractState memory state = _getSettlementChainGatewayState(proxy_);
+        ContractState memory state = _getFeeTokenState(proxy_);
         return abi.encode(state);
     }
 
@@ -85,9 +76,11 @@ contract SettlementChainGatewayUpgrader is BaseUpgrader {
 
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
-            before.appChainGateway == afterState.appChainGateway &&
-            before.feeToken == afterState.feeToken &&
-            before.paused == afterState.paused;
+            before.underlying == afterState.underlying &&
+            keccak256(bytes(before.name)) == keccak256(bytes(afterState.name)) &&
+            keccak256(bytes(before.symbol)) == keccak256(bytes(afterState.symbol)) &&
+            before.decimals == afterState.decimals &&
+            before.totalSupply == afterState.totalSupply;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
@@ -101,28 +94,32 @@ contract SettlementChainGatewayUpgrader is BaseUpgrader {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
         console.log("  Parameter registry: %s", state.parameterRegistry);
-        console.log("  App chain gateway: %s", state.appChainGateway);
-        console.log("  Fee token: %s", state.feeToken);
-        console.log("  Paused: %s", state.paused);
-        console.log("  Name: %s", state.contractName);
+        console.log("  Underlying: %s", state.underlying);
+        console.log("  Name: %s", state.name);
+        console.log("  Symbol: %s", state.symbol);
+        console.log("  Decimals: %s", uint256(state.decimals));
+        console.log("  Total supply: %s", state.totalSupply);
+        console.log("  Contract name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
 
-    function _getSettlementChainGatewayState(address proxy_) internal view returns (ContractState memory state_) {
-        SettlementChainGateway gateway = SettlementChainGateway(proxy_);
-        state_.parameterRegistry = gateway.parameterRegistry();
-        state_.appChainGateway = gateway.appChainGateway();
-        state_.feeToken = gateway.feeToken();
-        state_.paused = gateway.paused();
+    function _getFeeTokenState(address proxy_) internal view returns (ContractState memory state_) {
+        FeeToken feeToken = FeeToken(proxy_);
+        state_.parameterRegistry = feeToken.parameterRegistry();
+        state_.underlying = feeToken.underlying();
+        state_.name = feeToken.name();
+        state_.symbol = feeToken.symbol();
+        state_.decimals = feeToken.decimals();
+        state_.totalSupply = feeToken.totalSupply();
 
         // Try to get contractName and version, which may not exist in older implementations
-        try gateway.contractName() returns (string memory contractName_) {
+        try feeToken.contractName() returns (string memory contractName_) {
             state_.contractName = contractName_;
         } catch {
             state_.contractName = "";
         }
 
-        try gateway.version() returns (string memory version_) {
+        try feeToken.version() returns (string memory version_) {
             state_.version = version_;
         } catch {
             state_.version = "";
@@ -131,7 +128,7 @@ contract SettlementChainGatewayUpgrader is BaseUpgrader {
 
     // Public functions for testing
     function getContractState(address proxy_) public view returns (ContractState memory state_) {
-        return _getSettlementChainGatewayState(proxy_);
+        return _getFeeTokenState(proxy_);
     }
 
     function isContractStateEqual(
@@ -140,9 +137,11 @@ contract SettlementChainGatewayUpgrader is BaseUpgrader {
     ) public pure returns (bool isEqual_) {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
-            before_.appChainGateway == afterState_.appChainGateway &&
-            before_.feeToken == afterState_.feeToken &&
-            before_.paused == afterState_.paused;
+            before_.underlying == afterState_.underlying &&
+            keccak256(bytes(before_.name)) == keccak256(bytes(afterState_.name)) &&
+            keccak256(bytes(before_.symbol)) == keccak256(bytes(afterState_.symbol)) &&
+            before_.decimals == afterState_.decimals &&
+            before_.totalSupply == afterState_.totalSupply;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it

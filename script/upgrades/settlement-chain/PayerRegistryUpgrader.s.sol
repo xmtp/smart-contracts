@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { PayerRegistry } from "../../src/settlement-chain/PayerRegistry.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { PayerRegistryDeployer } from "../deployers/PayerRegistryDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { PayerRegistry } from "../../../src/settlement-chain/PayerRegistry.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { PayerRegistryDeployer } from "../../deployers/PayerRegistryDeployer.sol";
 
 /**
  * @notice Upgrades the PayerRegistry proxy to a new implementation
@@ -17,10 +17,10 @@ import { PayerRegistryDeployer } from "../deployers/PayerRegistryDeployer.sol";
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/PayerRegistryUpgrader.s.sol:PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradePayerRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradePayerRegistry()" --broadcast
  *
  */
-contract PayerRegistryUpgrader is BaseUpgrader {
+contract PayerRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         address feeToken;

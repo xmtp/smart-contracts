@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script, console } from "../../lib/forge-std/src/Script.sol";
-import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
-import { Utils } from "../utils/Utils.sol";
+import { Script, console } from "../../../lib/forge-std/src/Script.sol";
+import { GenericEIP1967Migrator } from "../../../src/any-chain/GenericEIP1967Migrator.sol";
+import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
+import { IMigratable } from "../../../src/abstract/interfaces/IMigratable.sol";
+import { Utils } from "../../utils/Utils.sol";
 
 /**
  * @notice Abstract base contract for upgrading proxy contracts
@@ -17,7 +17,7 @@ import { Utils } from "../utils/Utils.sol";
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
  */
-abstract contract BaseUpgrader is Script {
+abstract contract BaseSettlementChainUpgrader is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
     error StateMismatch();

@@ -10,7 +10,7 @@ import { SettlementChainGateway } from "../../src/settlement-chain/SettlementCha
 import { SettlementChainGatewayDeployer } from "../../script/deployers/SettlementChainGatewayDeployer.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
-import { SettlementChainGatewayUpgrader } from "../../script/upgrades/SettlementChainGatewayUpgrader.s.sol";
+import { SettlementChainGatewayUpgrader } from "../../script/upgrades/settlement-chain/SettlementChainGatewayUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract SettlementChainGatewayUpgradeForkTest is Test {
