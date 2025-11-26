@@ -31,7 +31,7 @@
   "payerRegistryImplementation": "0xffF6fD963B3d7F15d917D446c0c1C237292AD3E0",
   "payerRegistryProxy": "0x77a9129Cb584DF076a64A995dDEF9158d589D80c",
   "payerRegistryProxySalt": "PayerRegistry_0_0",
-  "payerReportManagerImplementation": "0xBE241D106B0EC495fFFc5E42535265fD3E50548d",
+  "payerReportManagerImplementation": "0x4665A7694478d8452F5d531E1aa20A3552e7716e",
   "payerReportManagerProxy": "0x2B2F8f775DF00D42D6A4F0b279E1ee7A6A0F1f05",
   "payerReportManagerProxySalt": "PayerReportManager_0_2",
   "rateRegistryImplementation": "0xBa0479d260e3276142Ba338dfC5498407e1d4063",
