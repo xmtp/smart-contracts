@@ -135,9 +135,6 @@ interface IPayerReportManager is
     /// @notice Thrown when the length of the payer fees array is too long.
     error PayerFeesLengthTooLong();
 
-    /// @notice Thrown when failing to settle usage via the payer registry.
-    error SettleUsageFailed(bytes returnData_);
-
     /// @notice Thrown when the lengths of input arrays don't match.
     error ArrayLengthMismatch();
 

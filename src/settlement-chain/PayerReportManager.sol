@@ -214,15 +214,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             payerReport_.nodeIds
         );
 
-        // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically
-        // decoded as the required structs by the payer registry's `settleUsage` function.
-        (bool success_, bytes memory returnData_) = payerRegistry.call(
-            abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, digest_, payerFees_)
-        );
-
-        if (!success_) revert SettleUsageFailed(returnData_);
-
-        uint96 feesSettled_ = abi.decode(returnData_, (uint96));
+        uint96 feesSettled_ = _settleUsage(digest_, payerFees_);
 
         // slither-disable-next-line reentrancy-events
         emit PayerReportSubsetSettled(
@@ -566,5 +558,16 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
             array_[j] = key;
         }
+    }
+
+    
+    function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
+        IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](payerFees_.length);
+
+        for (uint256 i = 0; i < payerFees_.length; i++) {
+            decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistryLike.PayerFee));
+        }
+
+        return IPayerRegistryLike(payerRegistry).settleUsage(digest_, decodedPayerFees);
     }
 }

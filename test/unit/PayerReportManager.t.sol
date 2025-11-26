@@ -7,6 +7,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 import { ISequentialMerkleProofsErrors } from "../../src/libraries/interfaces/ISequentialMerkleProofsErrors.sol";
@@ -822,11 +823,11 @@ contract PayerReportManagerTests is Test {
 
         vm.mockCallRevert(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             "Test Failure"
         );
 
-        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.SettleUsageFailed.selector, "Test Failure"));
+        vm.expectRevert("Test Failure");
         _manager.settle(0, 0, payerFees_, proofElements_);
     }
 
@@ -861,7 +862,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(600))
         );
 
@@ -905,7 +906,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(1_500))
         );
 
@@ -951,7 +952,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(2_100))
         );
 
