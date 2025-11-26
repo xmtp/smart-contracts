@@ -1,4 +1,4 @@
-# Process Steps for Upgrades
+# Process Steps for Upgrades on Settlement Chain
 
 An **upgrade** refers to upgrading an existing **proxy** to point to a new **implementation** address. Upgrades do not require predicting the new implementation address ahead of time (unlike deployments). The upgrade process deploys a new implementation (or reuses an existing one), deploys a migrator, sets the migrator parameter, and executes the upgrade. All examples below use the environment `staging` so config files are named `testnet-staging.json`.
 
@@ -28,7 +28,7 @@ In this example we are upgrading `NodeRegistry`.
 The upgrade script performs an end-to-end upgrade (deploy implementation or no-op if it exists, deploy migrator, set parameter, execute upgrade):
 
 ```bash
-ENVIRONMENT=testnet-staging forge script script/upgrades/NodeRegistryUpgrader.s.sol --rpc-url base_sepolia --sig "UpgradeNodeRegistry()" --broadcast
+ENVIRONMENT=testnet-staging forge script NodeRegistryUpgrader --rpc-url base_sepolia --sig "UpgradeNodeRegistry()" --broadcast
 ```
 
 ### 2. Update configuration file:

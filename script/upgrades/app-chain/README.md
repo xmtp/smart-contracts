@@ -1,4 +1,4 @@
-# Process Steps for App Chain Upgrades
+# Process Steps for Upgrades on App Chain
 
 An **app chain upgrade** refers to upgrading an existing **proxy** on an app chain to point to a new **implementation** address. App chain upgrades require a three-step process that spans both the settlement chain and the app chain:
 
