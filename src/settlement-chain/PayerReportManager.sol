@@ -214,15 +214,7 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
             payerReport_.nodeIds
         );
 
-        // Low level call which handles passing the `payerFees_` arrays as a bytes array that will be automatically
-        // decoded as the required structs by the payer registry's `settleUsage` function.
-        (bool success_, bytes memory returnData_) = payerRegistry.call(
-            abi.encodeWithSelector(IPayerRegistryLike.settleUsage.selector, digest_, payerFees_)
-        );
-
-        if (!success_) revert SettleUsageFailed(returnData_);
-
-        uint96 feesSettled_ = abi.decode(returnData_, (uint96));
+        uint96 feesSettled_ = _settleUsage(digest_, payerFees_);
 
         // slither-disable-next-line reentrancy-events
         emit PayerReportSubsetSettled(
@@ -566,5 +558,24 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
             array_[j] = key;
         }
+    }
+
+    /**
+     * @dev    Decodes ABI-encoded payer fees and forwards them to the payer registry.
+     * @param  digest_       The payer report digest for settlement verification.
+     * @param  payerFees_    Array of ABI-encoded (address payer, uint96 fee) tuples.
+     * @return feesSettled_  The total fees settled by the payer registry.
+     */
+    function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
+        uint256 length = payerFees_.length;
+
+        IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](length);
+
+        // Each payerFee is 64 bytes of ABI-encoded data containing the address and uint96. Decode each one into a PayerFee struct.
+        for (uint256 i = 0; i < length; i++) {
+            decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistryLike.PayerFee));
+        }
+
+        return IPayerRegistryLike(payerRegistry).settleUsage(digest_, decodedPayerFees);
     }
 }
