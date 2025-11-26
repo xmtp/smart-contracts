@@ -7,6 +7,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 import { ISequentialMerkleProofsErrors } from "../../src/libraries/interfaces/ISequentialMerkleProofsErrors.sol";
@@ -820,14 +821,65 @@ contract PayerReportManagerTests is Test {
 
         bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
 
-        vm.mockCallRevert(
-            _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
-            "Test Failure"
+        vm.mockCallRevert(_payerRegistry, abi.encodeWithSelector(IPayerRegistry.settleUsage.selector), "Test Failure");
+
+        vm.expectRevert("Test Failure");
+        _manager.settle(0, 0, payerFees_, proofElements_);
+    }
+
+    function test_settle_decodedPayerFees() external {
+        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
+        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+
+        // ABI encoded payer fees.
+        bytes[] memory payerFees_ = new bytes[](3);
+        payerFees_[0] = abi.encode(address(1), uint96(100));
+        payerFees_[1] = abi.encode(address(2), uint96(200));
+        payerFees_[2] = abi.encode(address(3), uint96(300));
+
+        bytes32[] memory proofElements_ = new bytes32[](3);
+        proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
+        proofElements_[1] = bytes32(0xbf3990232dba4985267c2b0c64d09165457aa9bc02292fff8416821335f719ad);
+        proofElements_[2] = bytes32(0x179a5ab6250bc7b598e955bb7a59ed2b26171140d0c9ecbdb5e2ee15a529dfc5);
+
+        _manager.__pushPayerReport({
+            originatorNodeId_: 0,
+            startSequenceId_: 0,
+            endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
+            feesSettled_: 0,
+            offset_: 0,
+            isSettled_: false,
+            protocolFeeRate_: 0,
+            payersMerkleRoot_: payersMerkleRoot_,
+            nodeIds_: new uint32[](0)
+        });
+
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
+        // Expected ABI decoded PayerFee array.
+        IPayerRegistry.PayerFee[] memory expectedPayerFees = new IPayerRegistry.PayerFee[](3);
+        expectedPayerFees[0] = IPayerRegistry.PayerFee({ payer: address(1), fee: 100 });
+        expectedPayerFees[1] = IPayerRegistry.PayerFee({ payer: address(2), fee: 200 });
+        expectedPayerFees[2] = IPayerRegistry.PayerFee({ payer: address(3), fee: 300 });
+
+        // Expect the call with ABI decoded PayerFee array.
+        vm.expectCall(
+            address(_payerRegistry),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector, digest_, expectedPayerFees)
         );
 
-        vm.expectRevert(abi.encodeWithSelector(IPayerReportManager.SettleUsageFailed.selector, "Test Failure"));
+        vm.mockCall(
+            _payerRegistry,
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
+            abi.encode(uint96(600))
+        );
+
+        // Invoke settle with the ABI encoded payer fees.
         _manager.settle(0, 0, payerFees_, proofElements_);
+
+        // Verify the fees settled is 600.
+        assertEq(_manager.getPayerReport(0, 0).feesSettled, 600);
     }
 
     function test_settle_firstHalf() external {
@@ -861,7 +913,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(600))
         );
 
@@ -905,7 +957,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(1_500))
         );
 
@@ -951,7 +1003,7 @@ contract PayerReportManagerTests is Test {
 
         Utils.expectAndMockCall(
             _payerRegistry,
-            abi.encodeWithSignature("settleUsage(bytes32,(address,uint96)[])", digest_, payerFees_),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
             abi.encode(uint96(2_100))
         );
 
