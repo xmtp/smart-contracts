@@ -13,7 +13,7 @@ import {
 } from "../../script/deployers/SettlementChainParameterRegistryDeployer.sol";
 import {
     SettlementChainParameterRegistryUpgrader
-} from "../../script/upgrades/SettlementChainParameterRegistryUpgrader.s.sol";
+} from "../../script/upgrades/settlement-chain/SettlementChainParameterRegistryUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract SettlementChainParameterRegistryUpgradeForkTest is Test {

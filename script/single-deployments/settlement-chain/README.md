@@ -1,4 +1,4 @@
-# Process Steps for Single Deployments
+# Process Steps for Single Deployments on Settlement Chain
 
 A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Any dependencies must be manually maintained. All examples below use the environment of `staging`, so config files are named `testnet-staging.json`.
 

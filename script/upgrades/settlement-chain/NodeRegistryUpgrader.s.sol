@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { NodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 
 /**
  * @notice Upgrades the NodeRegistry proxy to a new implementation
@@ -17,10 +17,10 @@ import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/NodeRegistryUpgrader.s.sol:NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeNodeRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeNodeRegistry()" --broadcast
  *
  */
-contract NodeRegistryUpgrader is BaseUpgrader {
+contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         uint8 canonicalNodesCount;

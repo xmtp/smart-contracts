@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { RateRegistry } from "../../src/settlement-chain/RateRegistry.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { RateRegistryDeployer } from "../deployers/RateRegistryDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { RateRegistry } from "../../../src/settlement-chain/RateRegistry.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { RateRegistryDeployer } from "../../deployers/RateRegistryDeployer.sol";
 
 /**
  * @notice Upgrades the RateRegistry proxy to a new implementation
@@ -17,10 +17,10 @@ import { RateRegistryDeployer } from "../deployers/RateRegistryDeployer.sol";
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/RateRegistryUpgrader.s.sol:RateRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeRateRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script RateRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeRateRegistry()" --broadcast
  *
  */
-contract RateRegistryUpgrader is BaseUpgrader {
+contract RateRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         uint256 ratesCount;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { DistributionManager } from "../../src/settlement-chain/DistributionManager.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { DistributionManagerDeployer } from "../deployers/DistributionManagerDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { DistributionManager } from "../../../src/settlement-chain/DistributionManager.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { DistributionManagerDeployer } from "../../deployers/DistributionManagerDeployer.sol";
 
 /**
  * @notice Upgrades the DistributionManager proxy to a new implementation
@@ -17,10 +17,10 @@ import { DistributionManagerDeployer } from "../deployers/DistributionManagerDep
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/DistributionManagerUpgrader.s.sol:DistributionManagerUpgrader --rpc-url base_sepolia --slow --sig "UpgradeDistributionManager()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script DistributionManagerUpgrader --rpc-url base_sepolia --slow --sig "UpgradeDistributionManager()" --broadcast
  *
  */
-contract DistributionManagerUpgrader is BaseUpgrader {
+contract DistributionManagerUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
         address nodeRegistry;

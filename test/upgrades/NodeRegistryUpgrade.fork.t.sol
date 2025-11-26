@@ -10,7 +10,7 @@ import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { NodeRegistryDeployer } from "../../script/deployers/NodeRegistryDeployer.sol";
-import { NodeRegistryUpgrader } from "../../script/upgrades/NodeRegistryUpgrader.s.sol";
+import { NodeRegistryUpgrader } from "../../script/upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract NodeRegistryUpgradeForkTest is Test {

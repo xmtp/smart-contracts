@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/console.sol";
-import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
-import { DeployScripts } from "../Deploy.s.sol";
-import { NodeRegistryDeployer } from "../deployers/NodeRegistryDeployer.sol";
-import { Utils } from "../utils/Utils.sol";
+import { console } from "../../../lib/forge-std/src/console.sol";
+import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
+import { DeployScripts } from "../../Deploy.s.sol";
+import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
+import { Utils } from "../../utils/Utils.sol";
 
 /**
  * @title DeployNodeRegistryScript
@@ -16,7 +16,7 @@ import { Utils } from "../utils/Utils.sol";
  * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
  * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
  * - Updates the environment JSON with the new nodeRegistry proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
  *
  * 2) updateDependencies() to update the dependencies of the NodeRegistry contract
  * Not implemented yet.
@@ -24,7 +24,7 @@ import { Utils } from "../utils/Utils.sol";
  * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
  * The proxy address depends on the factory addresss, deployer address and the salt.
  * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script script/single-deployments/DeployNodeRegistry.s.sol:DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
  */
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();

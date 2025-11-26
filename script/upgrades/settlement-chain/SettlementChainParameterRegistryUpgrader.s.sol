@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { console } from "../../lib/forge-std/src/Script.sol";
-import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
-import { SettlementChainParameterRegistry } from "../../src/settlement-chain/SettlementChainParameterRegistry.sol";
-import { BaseUpgrader } from "./BaseUpgrader.s.sol";
-import { SettlementChainParameterRegistryDeployer } from "../deployers/SettlementChainParameterRegistryDeployer.sol";
+import { console } from "../../../lib/forge-std/src/Script.sol";
+import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
+import { SettlementChainParameterRegistry } from "../../../src/settlement-chain/SettlementChainParameterRegistry.sol";
+import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
+import { SettlementChainParameterRegistryDeployer } from "../../deployers/SettlementChainParameterRegistryDeployer.sol";
 
 /**
  * @notice Upgrades the SettlementChainParameterRegistry proxy to a new implementation
@@ -18,10 +18,10 @@ import { SettlementChainParameterRegistryDeployer } from "../deployers/Settlemen
  *      - Compares the state before and after upgrade
  *
  * Usage:
- *   ENVIRONMENT=testnet-dev forge script script/upgrades/SettlementChainParameterRegistryUpgrader.s.sol:SettlementChainParameterRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeSettlementChainParameterRegistry()" --broadcast
+ *   ENVIRONMENT=testnet-dev forge script SettlementChainParameterRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradeSettlementChainParameterRegistry()" --broadcast
  *
  */
-contract SettlementChainParameterRegistryUpgrader is BaseUpgrader {
+contract SettlementChainParameterRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         string contractName;
         string version;

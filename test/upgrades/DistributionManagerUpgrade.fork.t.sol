@@ -10,7 +10,7 @@ import { DistributionManager } from "../../src/settlement-chain/DistributionMana
 import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { DistributionManagerDeployer } from "../../script/deployers/DistributionManagerDeployer.sol";
-import { DistributionManagerUpgrader } from "../../script/upgrades/DistributionManagerUpgrader.s.sol";
+import { DistributionManagerUpgrader } from "../../script/upgrades/settlement-chain/DistributionManagerUpgrader.s.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
 
 contract DistributionManagerUpgradeForkTest is Test {
