@@ -567,10 +567,12 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
      * @return feesSettled_  The total fees settled by the payer registry.
      */
     function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
-        IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](payerFees_.length);
+        uint256 length = payerFees_.length;
+
+        IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](length);
 
         // Each payerFee is 64 bytes of ABI-encoded data containing the address and uint96. Decode each one into a PayerFee struct.
-        for (uint256 i = 0; i < payerFees_.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistryLike.PayerFee));
         }
 
