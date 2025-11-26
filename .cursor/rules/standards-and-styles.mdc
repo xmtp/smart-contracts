@@ -115,3 +115,23 @@ globs: **/*.sol
 - Extract repeated code into reusable functions.
 - Share common logic through proper abstraction.
 - Maintain single sources of truth. For example, if there is some formula to compute `foo` from `bar` and `baz` whcih is not obivous, it should live in its own pure function and used throughout the code.
+
+## Version Management
+- Anytime any change is made to a contract that affects its bytecode, and that contract contains an external `version()` function, remember to suggest bumping that version according to semantic versioning:
+  - **Major version** (X.0.0): Breaking changes that require users to update their code or integrations:
+    - Removing functions
+    - Changing function signatures (parameter types, return types, parameter order)
+    - Removing state variables that are part of the public interface
+    - Changing function behavior in ways that break existing integrations
+  - **Minor version** (0.X.0): New features and additions that are backward compatible:
+    - Adding new functions
+    - Adding new state variables
+    - Adding new events
+    - Extending functionality without breaking existing behavior
+  - **Patch version** (0.0.X): Bug fixes, non-breaking changes, and any change that affects bytecode but not functionality:
+    - Fixing bugs in existing functions
+    - Changing comments (because comments affect the metadata hash, which is part of the bytecode)
+    - Refactoring that doesn't change external behavior
+    - Changing access modifiers of internal/private functions
+    - Any other change that results in different compiled bytecode but maintains the same external interface and behavior
+- When you detect such changes, always remind the user to update the `version()` function return value to reflect the appropriate version bump, and suggest what the new version should be.
