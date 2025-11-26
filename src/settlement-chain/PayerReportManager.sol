@@ -560,7 +560,6 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         }
     }
 
-    
     function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
         IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](payerFees_.length);
 

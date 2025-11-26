@@ -821,11 +821,7 @@ contract PayerReportManagerTests is Test {
 
         bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
 
-        vm.mockCallRevert(
-            _payerRegistry,
-            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
-            "Test Failure"
-        );
+        vm.mockCallRevert(_payerRegistry, abi.encodeWithSelector(IPayerRegistry.settleUsage.selector), "Test Failure");
 
         vm.expectRevert("Test Failure");
         _manager.settle(0, 0, payerFees_, proofElements_);
