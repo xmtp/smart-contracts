@@ -560,6 +560,12 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
         }
     }
 
+    /**
+     * @dev    Decodes ABI-encoded payer fees and forwards them to the payer registry.
+     * @param  digest_       The payer report digest for settlement verification.
+     * @param  payerFees_    Array of ABI-encoded (address payer, uint96 fee) tuples.
+     * @return feesSettled_  The total fees settled by the payer registry.
+     */
     function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
         IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](payerFees_.length);
 
