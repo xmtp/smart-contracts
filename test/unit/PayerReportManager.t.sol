@@ -1389,6 +1389,7 @@ contract PayerReportManagerTests is Test {
             assertEq(payerReports_[1].nodeIds[index_], 10 + index_);
         }
     }
+
     function test_getPayerReports_noReportsForOriginator() external {
         uint32[] memory nodeIds_ = new uint32[](8);
 
@@ -1524,6 +1525,104 @@ contract PayerReportManagerTests is Test {
 
         vm.expectRevert(IPayerReportManager.PayerReportIndexOutOfBounds.selector);
         _manager.getPayerReport(1, 1);
+    }
+
+    /* ============ _sortUint32Array ============ */
+
+    function test_internal_sortUint32Array_empty() external {
+        uint32[] memory array_ = new uint32[](0);
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_.length, 0);
+    }
+
+    function test_internal_sortUint32Array_singleElement() external {
+        uint32[] memory array_ = new uint32[](1);
+        array_[0] = 42;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_.length, 1);
+        assertEq(array_[0], 42);
+    }
+
+    function test_internal_sortUint32Array_twoElements_unsorted() external {
+        uint32[] memory array_ = new uint32[](2);
+        array_[0] = 5;
+        array_[1] = 2;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 2);
+        assertEq(array_[1], 5);
+    }
+
+    function test_internal_sortUint32Array_twoElements_sorted() external {
+        uint32[] memory array_ = new uint32[](2);
+        array_[0] = 2;
+        array_[1] = 5;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 2);
+        assertEq(array_[1], 5);
+    }
+
+    function test_internal_sortUint32Array_unsorted() external {
+        uint32[] memory array_ = new uint32[](3);
+        array_[0] = 3;
+        array_[1] = 2;
+        array_[2] = 1;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 1);
+        assertEq(array_[1], 2);
+        assertEq(array_[2], 3);
+    }
+
+    function test_internal_sortUint32Array_sorted() external {
+        uint32[] memory array_ = new uint32[](3);
+        array_[0] = 1;
+        array_[1] = 2;
+        array_[2] = 3;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 1);
+        assertEq(array_[1], 2);
+        assertEq(array_[2], 3);
+    }
+
+    function test_internal_sortUint32Array_partiallySorted() external {
+        uint32[] memory array_ = new uint32[](5);
+        array_[0] = 1;
+        array_[1] = 3;
+        array_[2] = 2;
+        array_[3] = 5;
+        array_[4] = 4;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 1);
+        assertEq(array_[1], 2);
+        assertEq(array_[2], 3);
+        assertEq(array_[3], 4);
+        assertEq(array_[4], 5);
+    }
+
+    function test_internal_sortUint32Array_largeValues() external {
+        uint32[] memory array_ = new uint32[](3);
+        array_[0] = type(uint32).max;
+        array_[1] = 0;
+        array_[2] = type(uint32).max - 1;
+
+        array_ = _manager.__sortUint32Array(array_);
+
+        assertEq(array_[0], 0);
+        assertEq(array_[1], type(uint32).max - 1);
+        assertEq(array_[2], type(uint32).max);
     }
 
     /* ============ DOMAIN_SEPARATOR ============ */
