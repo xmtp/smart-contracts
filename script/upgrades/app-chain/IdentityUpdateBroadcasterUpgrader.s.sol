@@ -124,4 +124,8 @@ contract IdentityUpdateBroadcasterUpgrader is BaseAppChainUpgrader {
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
+
+    function getContractState(address proxy_) public view returns (ContractState memory state_) {
+        return _getIdentityUpdateBroadcasterState(proxy_);
+    }
 }

@@ -35,3 +35,6 @@ environments/anvil.json
 
 artifacts/
 broadcast/
+
+# Contract snapshots (exported state)
+export/
