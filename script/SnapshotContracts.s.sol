@@ -51,7 +51,7 @@ contract SnapshotContracts is Script {
     /**
      * @notice Helper to get implementation address from any EIP1967 proxy
      */
-    function _getImplementation(address proxy_) internal returns (address implementation_) {
+    function _getImplementation(address proxy_) internal view returns (address implementation_) {
         return IERC1967(proxy_).implementation();
     }
 
@@ -200,7 +200,14 @@ contract SnapshotContracts is Script {
         console.log('        "settler": "%s",', state.settler);
         console.log('        "feeDistributor": "%s",', state.feeDistributor);
         console.log('        "paused": %s,', state.paused ? "true" : "false");
-        console.log('        "totalDeposits": %s,', uint256(int256(state.totalDeposits)));
+
+        // Handle potentially negative totalDeposits
+        if (state.totalDeposits >= 0) {
+            console.log('        "totalDeposits": %s,', uint256(int256(state.totalDeposits)));
+        } else {
+            console.log('        "totalDeposits": -%s,', uint256(-int256(state.totalDeposits)));
+        }
+
         console.log('        "totalDebt": %s,', state.totalDebt);
         console.log('        "minimumDeposit": %s,', state.minimumDeposit);
         console.log('        "withdrawLockPeriod": %s,', state.withdrawLockPeriod);
