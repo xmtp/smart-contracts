@@ -170,6 +170,8 @@ contract SnapshotContracts is Script {
         }
         console.log("        ],");
 
+        console.log('        "admin": "%s",', state.admin);
+        console.log('        "adminParameterKey": "%s",', state.adminParameterKey);
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
         console.log("      }");

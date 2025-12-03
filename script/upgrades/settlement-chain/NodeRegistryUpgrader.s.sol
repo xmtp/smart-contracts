@@ -28,6 +28,8 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         uint32[] canonicalNodes;
         bool hasGetCanonicalNodesFunction;
         INodeRegistry.NodeWithId[] allNodes;
+        address admin;
+        string adminParameterKey;
         string contractName;
         string version;
     }
@@ -101,6 +103,8 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             }
         }
 
+        console.log("  Admin: %s", state.admin);
+        console.log("  Admin parameter key: %s", state.adminParameterKey);
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
@@ -120,6 +124,10 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             state_.canonicalNodes = new uint32[](0);
             state_.hasGetCanonicalNodesFunction = false;
         }
+
+        // Admin and adminParameterKey are always present (per user)
+        state_.admin = nodeRegistry.admin();
+        state_.adminParameterKey = nodeRegistry.adminParameterKey();
 
         // Try to get contractName and version, which may not exist in older implementations
         try nodeRegistry.contractName() returns (string memory contractName_) {
