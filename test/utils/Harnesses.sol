@@ -588,6 +588,11 @@ contract PayerReportManagerHarness is PayerReportManager {
                 nodeIds_
             );
     }
+
+    function __sortUint32Array(uint32[] memory array_) external pure returns (uint32[] memory sortedArray_) {
+        _sortUint32Array(array_);
+        return array_;
+    }
 }
 
 contract DistributionManagerHarness is DistributionManager {
