@@ -25,6 +25,8 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         address parameterRegistry;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
+        uint32[] canonicalNodes;
+        bool hasGetCanonicalNodesFunction;
         string contractName;
         string version;
     }
@@ -89,6 +91,14 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         console.log("  Parameter registry: %s", state.parameterRegistry);
         console.log("  Canonical nodes count: %s", uint256(state.canonicalNodesCount));
         console.log("  Node count: %s", uint256(state.nodeCount));
+
+        if (state.hasGetCanonicalNodesFunction) {
+            console.log("  Canonical nodes array length: %s", state.canonicalNodes.length);
+            if (state.canonicalNodes.length == 0 && state.nodeCount > 0) {
+                console.log("  WARNING: Canonical nodes array is empty but node count is %s", uint256(state.nodeCount));
+            }
+        }
+
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
@@ -98,6 +108,15 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
+
+        // Try to get canonical nodes array, which may not exist in older implementations
+        try nodeRegistry.getCanonicalNodes() returns (uint32[] memory canonicalNodes_) {
+            state_.canonicalNodes = canonicalNodes_;
+            state_.hasGetCanonicalNodesFunction = true;
+        } catch {
+            state_.canonicalNodes = new uint32[](0);
+            state_.hasGetCanonicalNodesFunction = false;
+        }
 
         // Try to get contractName and version, which may not exist in older implementations
         try nodeRegistry.contractName() returns (string memory contractName_) {

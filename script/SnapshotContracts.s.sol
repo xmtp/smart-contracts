@@ -124,6 +124,25 @@ contract SnapshotContracts is Script {
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "canonicalNodesCount": %s,', uint256(state.canonicalNodesCount));
         console.log('        "nodeCount": %s,', uint256(state.nodeCount));
+
+        // Output canonical nodes array if available
+        if (state.hasGetCanonicalNodesFunction) {
+            console.log('        "canonicalNodes": [');
+            for (uint256 i = 0; i < state.canonicalNodes.length; i++) {
+                if (i < state.canonicalNodes.length - 1) {
+                    console.log("          %s,", uint256(state.canonicalNodes[i]));
+                } else {
+                    console.log("          %s", uint256(state.canonicalNodes[i]));
+                }
+            }
+            console.log("        ],");
+
+            // Issue warning if array is empty but nodes exist
+            if (state.canonicalNodes.length == 0 && state.nodeCount > 0) {
+                console.log('        "warning": "Canonical nodes array is empty but node count is non-zero",');
+            }
+        }
+
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
         console.log("      }");
