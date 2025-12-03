@@ -141,14 +141,12 @@ contract IdentityUpdateBroadcasterHarness is IdentityUpdateBroadcaster {
 }
 
 contract NodeRegistryHarness is NodeRegistry {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     constructor(address parameterRegistry_) NodeRegistry(parameterRegistry_) {}
 
     function __setMaxCanonicalNodes(uint256 maxCanonicalNodes_) external {
         _getNodeRegistryStorage().maxCanonicalNodes = uint8(maxCanonicalNodes_);
-    }
-
-    function __setCanonicalNodesCount(uint256 canonicalNodesCount_) external {
-        _getNodeRegistryStorage().canonicalNodesCount = uint8(canonicalNodesCount_);
     }
 
     function __setNodeCount(uint256 nodeCount_) external {
@@ -161,10 +159,12 @@ contract NodeRegistryHarness is NodeRegistry {
 
     function __addNodeToCanonicalNetwork(uint256 nodeId_) external {
         _getNodeRegistryStorage().nodes[uint32(nodeId_)].isCanonical = true;
+        _getNodeRegistryStorage().canonicalNodes.add(nodeId_);
     }
 
     function __removeNodeFromCanonicalNetwork(uint256 nodeId_) external {
         delete _getNodeRegistryStorage().nodes[uint32(nodeId_)].isCanonical;
+        _getNodeRegistryStorage().canonicalNodes.remove(nodeId_);
     }
 
     function __setNode(

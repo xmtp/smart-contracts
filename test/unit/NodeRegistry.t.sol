@@ -265,7 +265,12 @@ contract NodeRegistryTests is Test {
         _registry.addToNetwork(1);
 
         _registry.__setMaxCanonicalNodes(10);
-        _registry.__setCanonicalNodesCount(10);
+
+        // Add 10 nodes to the canonical network to reach the max
+        for (uint256 i = 2; i <= 11; i++) {
+            _addNode(i * 100, _alice, address(0), false, "", "");
+            _registry.__addNodeToCanonicalNetwork(i * 100);
+        }
 
         vm.expectRevert(INodeRegistry.MaxCanonicalNodesReached.selector);
 
@@ -536,7 +541,12 @@ contract NodeRegistryTests is Test {
 
     function test_updateMaxCanonicalNodes_maxCanonicalNodesBelowCurrentCount() external {
         _registry.__setMaxCanonicalNodes(2);
-        _registry.__setCanonicalNodesCount(2);
+
+        // Add 2 nodes to the canonical network
+        _addNode(100, _alice, address(0), false, "", "");
+        _registry.__addNodeToCanonicalNetwork(100);
+        _addNode(200, _alice, address(0), false, "", "");
+        _registry.__addNodeToCanonicalNetwork(200);
 
         Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MAX_CANONICAL_NODES_KEY, bytes32(uint256(1)));
 
@@ -573,11 +583,19 @@ contract NodeRegistryTests is Test {
     /* ============ canonicalNodesCount ============ */
 
     function test_canonicalNodesCount() external {
-        _registry.__setCanonicalNodesCount(10);
+        // Add 10 nodes to the canonical network
+        for (uint256 i = 1; i <= 10; i++) {
+            _addNode(i * 100, _alice, address(0), false, "", "");
+            _registry.__addNodeToCanonicalNetwork(i * 100);
+        }
 
         assertEq(_registry.canonicalNodesCount(), 10);
 
-        _registry.__setCanonicalNodesCount(20);
+        // Add 10 more nodes to reach 20
+        for (uint256 i = 11; i <= 20; i++) {
+            _addNode(i * 100, _alice, address(0), false, "", "");
+            _registry.__addNodeToCanonicalNetwork(i * 100);
+        }
 
         assertEq(_registry.canonicalNodesCount(), 20);
     }

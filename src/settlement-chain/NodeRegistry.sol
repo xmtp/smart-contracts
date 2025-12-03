@@ -43,7 +43,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @notice The UUPS storage for the node registry.
      * @param  admin               The admin address.
      * @param  maxCanonicalNodes   The maximum number of canonical nodes.
-     * @param  canonicalNodesCount The current number of canonical nodes.
+     * @param  canonicalNodesCount DO NOT USE. Use canonicalNodes.length() instead.
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
      * @param  baseURI             The base component of the token URI.
@@ -52,7 +52,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     struct NodeRegistryStorage {
         address admin;
         uint8 maxCanonicalNodes;
-        uint8 canonicalNodesCount;
+        uint8 canonicalNodesCount; // DO NOT USE. Use canonicalNodes.length() instead.
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
         string baseURI;
@@ -135,7 +135,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
         if ($.canonicalNodes.contains(nodeId_)) return;
 
-        if (++$.canonicalNodesCount > $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
+        if ($.canonicalNodes.length() >= $.maxCanonicalNodes) revert MaxCanonicalNodesReached();
 
         $.nodes[nodeId_].isCanonical = true;
 
@@ -155,8 +155,6 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         delete $.nodes[nodeId_].isCanonical;
 
         if (!$.canonicalNodes.remove(nodeId_)) revert FailedToRemoveNodeFromCanonicalNetwork();
-
-        --$.canonicalNodesCount;
 
         emit NodeRemovedFromCanonicalNetwork(nodeId_);
     }
@@ -212,7 +210,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
         if (maxCanonicalNodes_ == $.maxCanonicalNodes) revert NoChange();
-        if (maxCanonicalNodes_ < $.canonicalNodesCount) revert MaxCanonicalNodesBelowCurrentCount();
+        if (maxCanonicalNodes_ < uint8($.canonicalNodes.length())) revert MaxCanonicalNodesBelowCurrentCount();
 
         emit MaxCanonicalNodesUpdated($.maxCanonicalNodes = maxCanonicalNodes_);
     }
@@ -252,7 +250,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc INodeRegistry
     function canonicalNodesCount() external view returns (uint8 canonicalNodesCount_) {
-        return _getNodeRegistryStorage().canonicalNodesCount;
+        return uint8(_getNodeRegistryStorage().canonicalNodes.length());
     }
 
     /// @inheritdoc INodeRegistry
