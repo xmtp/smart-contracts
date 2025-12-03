@@ -24,7 +24,11 @@ SNAPSHOT_DIR=$(dirname "$OUTPUT_FILE")
 mkdir -p "$SNAPSHOT_DIR"
 
 # Validate environment and get chain names
-SETTLEMENT_CHAIN=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
+if ! SETTLEMENT_CHAIN=$(get_chain_name "$ENVIRONMENT" "settlement-chain" 2>&1); then
+    echo "Error: Invalid environment '$ENVIRONMENT'"
+    echo "Valid environments: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
+fi
 APP_CHAIN=$(get_chain_name "$ENVIRONMENT" "app-chain")
 
 # Get chain IDs for display

@@ -56,6 +56,13 @@ contract SnapshotContracts is Script {
     }
 
     /**
+     * @notice Helper to check if a contract exists at an address
+     */
+    function _contractExists(address address_) internal view returns (bool exists_) {
+        return address_.code.length > 0;
+    }
+
+    /**
      * @notice Snapshots all settlement chain contracts
      * @dev Run this on the settlement chain RPC
      */
@@ -114,12 +121,21 @@ contract SnapshotContracts is Script {
     // ============ Settlement Chain Snapshots ============
 
     function _snapshotNodeRegistry() internal {
+        console.log('    "nodeRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.nodeRegistryProxy);
+
+        if (!_contractExists(_deployment.nodeRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.nodeRegistryProxy));
+
         NodeRegistryUpgrader upgrader = new NodeRegistryUpgrader();
         NodeRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.nodeRegistryProxy);
 
-        console.log('    "nodeRegistry": {');
-        console.log('      "proxy": "%s",', _deployment.nodeRegistryProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.nodeRegistryProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "canonicalNodesCount": %s,', uint256(state.canonicalNodesCount));
@@ -136,12 +152,23 @@ contract SnapshotContracts is Script {
                 }
             }
             console.log("        ],");
+        }
 
-            // Issue warning if array is empty but nodes exist
-            if (state.canonicalNodes.length == 0 && state.nodeCount > 0) {
-                console.log('        "warning": "Canonical nodes array is empty but node count is non-zero",');
+        // Output all nodes array
+        console.log('        "allNodes": [');
+        for (uint256 i = 0; i < state.allNodes.length; i++) {
+            console.log("          {");
+            console.log('            "nodeId": %s,', uint256(state.allNodes[i].nodeId));
+            console.log('            "signer": "%s",', state.allNodes[i].node.signer);
+            console.log('            "isCanonical": %s,', state.allNodes[i].node.isCanonical ? "true" : "false");
+            console.log('            "httpAddress": "%s"', state.allNodes[i].node.httpAddress);
+            if (i < state.allNodes.length - 1) {
+                console.log("          },");
+            } else {
+                console.log("          }");
             }
         }
+        console.log("        ],");
 
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
@@ -150,12 +177,21 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotPayerRegistry() internal {
+        console.log('    "payerRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.payerRegistryProxy);
+
+        if (!_contractExists(_deployment.payerRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerRegistryProxy));
+
         PayerRegistryUpgrader upgrader = new PayerRegistryUpgrader();
         PayerRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.payerRegistryProxy);
 
-        console.log('    "payerRegistry": {');
-        console.log('      "proxy": "%s",', _deployment.payerRegistryProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerRegistryProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "feeToken": "%s",', state.feeToken);
@@ -173,14 +209,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotPayerReportManager() internal {
+        console.log('    "payerReportManager": {');
+        console.log('      "proxy": "%s",', _deployment.payerReportManagerProxy);
+
+        if (!_contractExists(_deployment.payerReportManagerProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerReportManagerProxy));
+
         PayerReportManagerUpgrader upgrader = new PayerReportManagerUpgrader();
         PayerReportManagerUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.payerReportManagerProxy
         );
 
-        console.log('    "payerReportManager": {');
-        console.log('      "proxy": "%s",', _deployment.payerReportManagerProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerReportManagerProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "payerRegistry": "%s",', state.payerRegistry);
@@ -193,12 +238,21 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotRateRegistry() internal {
+        console.log('    "rateRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.rateRegistryProxy);
+
+        if (!_contractExists(_deployment.rateRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.rateRegistryProxy));
+
         RateRegistryUpgrader upgrader = new RateRegistryUpgrader();
         RateRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.rateRegistryProxy);
 
-        console.log('    "rateRegistry": {');
-        console.log('      "proxy": "%s",', _deployment.rateRegistryProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.rateRegistryProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "ratesCount": %s,', state.ratesCount);
@@ -209,14 +263,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotDistributionManager() internal {
+        console.log('    "distributionManager": {');
+        console.log('      "proxy": "%s",', _deployment.distributionManagerProxy);
+
+        if (!_contractExists(_deployment.distributionManagerProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.distributionManagerProxy));
+
         DistributionManagerUpgrader upgrader = new DistributionManagerUpgrader();
         DistributionManagerUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.distributionManagerProxy
         );
 
-        console.log('    "distributionManager": {');
-        console.log('      "proxy": "%s",', _deployment.distributionManagerProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.distributionManagerProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "nodeRegistry": "%s",', state.nodeRegistry);
@@ -234,12 +297,21 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotFeeToken() internal {
+        console.log('    "feeToken": {');
+        console.log('      "proxy": "%s",', _deployment.feeTokenProxy);
+
+        if (!_contractExists(_deployment.feeTokenProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.feeTokenProxy));
+
         FeeTokenUpgrader upgrader = new FeeTokenUpgrader();
         FeeTokenUpgrader.ContractState memory state = upgrader.getContractState(_deployment.feeTokenProxy);
 
-        console.log('    "feeToken": {');
-        console.log('      "proxy": "%s",', _deployment.feeTokenProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.feeTokenProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "underlying": "%s",', state.underlying);
@@ -254,12 +326,21 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotSettlementChainGateway() internal {
+        console.log('    "settlementChainGateway": {');
+        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
+
+        if (!_contractExists(_deployment.gatewayProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
+
         SettlementChainGatewayUpgrader upgrader = new SettlementChainGatewayUpgrader();
         SettlementChainGatewayUpgrader.ContractState memory state = upgrader.getContractState(_deployment.gatewayProxy);
 
-        console.log('    "settlementChainGateway": {');
-        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "appChainGateway": "%s",', state.appChainGateway);
@@ -272,14 +353,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotSettlementChainParameterRegistry() internal {
+        console.log('    "settlementChainParameterRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
+
+        if (!_contractExists(_deployment.parameterRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
+
         SettlementChainParameterRegistryUpgrader upgrader = new SettlementChainParameterRegistryUpgrader();
         SettlementChainParameterRegistryUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.parameterRegistryProxy
         );
 
-        console.log('    "settlementChainParameterRegistry": {');
-        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
         console.log('      "state": {');
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
@@ -290,12 +380,21 @@ contract SnapshotContracts is Script {
     // ============ App Chain Snapshots ============
 
     function _snapshotAppChainGateway() internal {
+        console.log('    "appChainGateway": {');
+        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
+
+        if (!_contractExists(_deployment.gatewayProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
+
         AppChainGatewayUpgrader upgrader = new AppChainGatewayUpgrader();
         AppChainGatewayUpgrader.ContractState memory state = upgrader.getContractState(_deployment.gatewayProxy);
 
-        console.log('    "appChainGateway": {');
-        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "settlementChainGateway": "%s",', state.settlementChainGateway);
@@ -308,14 +407,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotAppChainParameterRegistry() internal {
+        console.log('    "appChainParameterRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
+
+        if (!_contractExists(_deployment.parameterRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
+
         AppChainParameterRegistryUpgrader upgrader = new AppChainParameterRegistryUpgrader();
         AppChainParameterRegistryUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.parameterRegistryProxy
         );
 
-        console.log('    "appChainParameterRegistry": {');
-        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
         console.log('      "state": {');
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
@@ -324,14 +432,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotGroupMessageBroadcaster() internal {
+        console.log('    "groupMessageBroadcaster": {');
+        console.log('      "proxy": "%s",', _deployment.groupMessageBroadcasterProxy);
+
+        if (!_contractExists(_deployment.groupMessageBroadcasterProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.groupMessageBroadcasterProxy));
+
         GroupMessageBroadcasterUpgrader upgrader = new GroupMessageBroadcasterUpgrader();
         GroupMessageBroadcasterUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.groupMessageBroadcasterProxy
         );
 
-        console.log('    "groupMessageBroadcaster": {');
-        console.log('      "proxy": "%s",', _deployment.groupMessageBroadcasterProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.groupMessageBroadcasterProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "minPayloadSize": %s,', state.minPayloadSize);
@@ -345,14 +462,23 @@ contract SnapshotContracts is Script {
     }
 
     function _snapshotIdentityUpdateBroadcaster() internal {
+        console.log('    "identityUpdateBroadcaster": {');
+        console.log('      "proxy": "%s",', _deployment.identityUpdateBroadcasterProxy);
+
+        if (!_contractExists(_deployment.identityUpdateBroadcasterProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.identityUpdateBroadcasterProxy));
+
         IdentityUpdateBroadcasterUpgrader upgrader = new IdentityUpdateBroadcasterUpgrader();
         IdentityUpdateBroadcasterUpgrader.ContractState memory state = upgrader.getContractState(
             _deployment.identityUpdateBroadcasterProxy
         );
 
-        console.log('    "identityUpdateBroadcaster": {');
-        console.log('      "proxy": "%s",', _deployment.identityUpdateBroadcasterProxy);
-        console.log('      "implementation": "%s",', _getImplementation(_deployment.identityUpdateBroadcasterProxy));
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
         console.log('        "minPayloadSize": %s,', state.minPayloadSize);

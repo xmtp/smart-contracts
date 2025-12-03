@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import { console } from "../../../lib/forge-std/src/Script.sol";
-import { NodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
+import { NodeRegistry, INodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
 import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 
@@ -27,6 +27,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         uint32 nodeCount;
         uint32[] canonicalNodes;
         bool hasGetCanonicalNodesFunction;
+        INodeRegistry.NodeWithId[] allNodes;
         string contractName;
         string version;
     }
@@ -91,6 +92,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         console.log("  Parameter registry: %s", state.parameterRegistry);
         console.log("  Canonical nodes count: %s", uint256(state.canonicalNodesCount));
         console.log("  Node count: %s", uint256(state.nodeCount));
+        console.log("  All nodes array length: %s", state.allNodes.length);
 
         if (state.hasGetCanonicalNodesFunction) {
             console.log("  Canonical nodes array length: %s", state.canonicalNodes.length);
@@ -108,6 +110,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
+        state_.allNodes = nodeRegistry.getAllNodes();
 
         // Try to get canonical nodes array, which may not exist in older implementations
         try nodeRegistry.getCanonicalNodes() returns (uint32[] memory canonicalNodes_) {
