@@ -23,6 +23,7 @@ import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
+        uint8 maxCanonicalNodes;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
         uint32[] canonicalNodes;
@@ -77,6 +78,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
 
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
+            before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
             before.canonicalNodesCount == afterState.canonicalNodesCount &&
             before.nodeCount == afterState.nodeCount;
 
@@ -92,6 +94,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
         console.log("  Parameter registry: %s", state.parameterRegistry);
+        console.log("  Max canonical nodes: %s", uint256(state.maxCanonicalNodes));
         console.log("  Canonical nodes count: %s", uint256(state.canonicalNodesCount));
         console.log("  Node count: %s", uint256(state.nodeCount));
         console.log("  All nodes array length: %s", state.allNodes.length);
@@ -112,6 +115,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     function _getNodeRegistryState(address proxy_) internal view returns (ContractState memory state_) {
         NodeRegistry nodeRegistry = NodeRegistry(proxy_);
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
+        state_.maxCanonicalNodes = nodeRegistry.maxCanonicalNodes();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
         state_.allNodes = nodeRegistry.getAllNodes();
@@ -154,6 +158,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     ) public pure returns (bool isEqual_) {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
+            before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
             before_.canonicalNodesCount == afterState_.canonicalNodesCount &&
             before_.nodeCount == afterState_.nodeCount;
 

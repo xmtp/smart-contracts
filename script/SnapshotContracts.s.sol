@@ -138,6 +138,7 @@ contract SnapshotContracts is Script {
 
         console.log('      "state": {');
         console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "maxCanonicalNodes": %s,', uint256(state.maxCanonicalNodes));
         console.log('        "canonicalNodesCount": %s,', uint256(state.canonicalNodesCount));
         console.log('        "nodeCount": %s,', uint256(state.nodeCount));
 
