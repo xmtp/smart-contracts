@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import { Script, console } from "../lib/forge-std/src/Script.sol";
 import { Utils } from "./utils/Utils.sol";
 import { IERC1967 } from "../src/abstract/interfaces/IERC1967.sol";
+import { IIdentified } from "../src/abstract/interfaces/IIdentified.sol";
 
 // Settlement chain upgraders
 import { NodeRegistryUpgrader } from "./upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
@@ -84,6 +85,8 @@ contract SnapshotContracts is Script {
         _snapshotDistributionManager();
         console.log(",");
         _snapshotFeeToken();
+        console.log(",");
+        _snapshotDepositSplitter();
         console.log(",");
         _snapshotSettlementChainGateway();
         console.log(",");
@@ -332,6 +335,38 @@ contract SnapshotContracts is Script {
         console.log('        "contractName": "%s",', state.contractName);
         console.log('        "version": "%s"', state.version);
         console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotDepositSplitter() internal {
+        console.log('    "depositSplitter": {');
+        console.log('      "address": "%s",', _deployment.depositSplitter);
+
+        if (!_contractExists(_deployment.depositSplitter)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+
+        string memory contractName_;
+        string memory version_;
+
+        try IIdentified(_deployment.depositSplitter).contractName() returns (string memory name_) {
+            contractName_ = name_;
+        } catch {
+            contractName_ = "";
+        }
+
+        try IIdentified(_deployment.depositSplitter).version() returns (string memory ver_) {
+            version_ = ver_;
+        } catch {
+            version_ = "";
+        }
+
+        console.log('      "contractName": "%s",', contractName_);
+        console.log('      "version": "%s"', version_);
         console.log("    }");
     }
 
