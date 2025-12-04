@@ -6,6 +6,7 @@ import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
 import { DeployScripts } from "../../Deploy.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { INodeRegistry } from "../../../src/settlement-chain/interfaces/INodeRegistry.sol";
 
 /**
  * @title DeployNodeRegistryScript
@@ -19,7 +20,8 @@ import { Utils } from "../../utils/Utils.sol";
  * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
  *
  * 2) updateDependencies() to update the dependencies of the NodeRegistry contract
- * Not implemented yet.
+ * Updates the admin and maxCanonicalNodes by calling updateAdmin() and updateMaxCanonicalNodes()
+ * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
  *
  * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
  * The proxy address depends on the factory addresss, deployer address and the salt.
@@ -29,7 +31,6 @@ import { Utils } from "../../utils/Utils.sol";
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
     error ImplementationAddressMismatch(address expected, address computed);
-    error NotImplemented();
 
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
@@ -53,10 +54,30 @@ contract DeployNodeRegistryScript is DeployScripts {
 
     function updateDependencies() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+        if (_deploymentData.nodeRegistryProxy == address(0)) revert NodeRegistryProxyNotSet();
 
         console.log("Updating NodeRegistry dependencies");
-        // Update the dependencies of the NodeRegistry contract
-        revert NotImplemented();
+
+        vm.startBroadcast(_privateKey);
+        INodeRegistry(_deploymentData.nodeRegistryProxy).updateAdmin();
+        INodeRegistry(_deploymentData.nodeRegistryProxy).updateMaxCanonicalNodes();
+        vm.stopBroadcast();
+
+        // Check if the updated values are zero and log warnings
+        address admin_ = INodeRegistry(_deploymentData.nodeRegistryProxy).admin();
+        uint8 maxCanonicalNodes_ = INodeRegistry(_deploymentData.nodeRegistryProxy).maxCanonicalNodes();
+
+        if (admin_ == address(0)) {
+            console.log("WARNING: NodeRegistry admin is zero address! Set a value in the parameter registry first.");
+        }
+
+        if (maxCanonicalNodes_ == 0) {
+            console.log(
+                "WARNING: NodeRegistry maxCanonicalNodes is zero! Set a value in the parameter registry first."
+            );
+        }
+
+        console.log("NodeRegistry dependencies updated");
     }
 
     function predictAddresses() external view {
