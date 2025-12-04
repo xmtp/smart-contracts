@@ -305,7 +305,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
 
     /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     /// @inheritdoc IIdentified
