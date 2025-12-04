@@ -43,7 +43,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
      * @notice The UUPS storage for the node registry.
      * @param  admin               The admin address.
      * @param  maxCanonicalNodes   The maximum number of canonical nodes.
-     * @param  canonicalNodesCount DO NOT USE. Use canonicalNodes.length() instead.
+     * @param  canonicalNodesCount Not used, use canonicalNodes.length() instead.
      * @param  nodeCount           The current number of nodes.
      * @param  nodes               A mapping of node/token IDs to nodes.
      * @param  baseURI             The base component of the token URI.
@@ -52,7 +52,7 @@ contract NodeRegistry is INodeRegistry, Migratable, ERC721Upgradeable {
     struct NodeRegistryStorage {
         address admin;
         uint8 maxCanonicalNodes;
-        uint8 canonicalNodesCount; // DO NOT USE. Use canonicalNodes.length() instead.
+        uint8 canonicalNodesCount; // Not used, use canonicalNodes.length() instead.
         uint32 nodeCount;
         mapping(uint32 tokenId => Node node) nodes;
         string baseURI;
