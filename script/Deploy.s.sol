@@ -76,16 +76,12 @@ contract DeployScripts is Script {
 
     Utils.DeploymentData internal _deploymentData;
 
-    bool internal _isInGatewayTestingMode;
-
     string internal _environment;
 
     uint256 internal _privateKey;
     address internal _deployer;
 
     function setUp() external {
-        _isInGatewayTestingMode = vm.envOr("IS_GATEWAY_TESTING", false);
-
         _environment = vm.envString("ENVIRONMENT");
 
         if (bytes(_environment).length == 0) revert EnvironmentNotSet();
@@ -499,8 +495,6 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenImplementation() public {
-        if (_isInGatewayTestingMode) return;
-
         // Skip deployment if the mock underlying fee token implementation is not set.
         if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
 
@@ -535,8 +529,6 @@ contract DeployScripts is Script {
     }
 
     function deployMockUnderlyingFeeTokenProxy() public {
-        if (_isInGatewayTestingMode) return;
-
         // Skip deployment if the mock underlying fee token implementation is not set.
         if (_deploymentData.mockUnderlyingFeeTokenImplementation == address(0)) return;
 
@@ -573,8 +565,6 @@ contract DeployScripts is Script {
     }
 
     function deployFeeTokenImplementation() public {
-        if (_isInGatewayTestingMode) return;
-
         if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -618,8 +608,6 @@ contract DeployScripts is Script {
     }
 
     function deployFeeTokenProxy() public {
-        if (_isInGatewayTestingMode) return;
-
         if (_deploymentData.feeTokenProxy == address(0)) revert ProxyNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.feeTokenImplementation == address(0)) revert ImplementationNotSet();

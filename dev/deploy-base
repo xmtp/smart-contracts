@@ -6,12 +6,11 @@ source "$(dirname "$0")/utils"
 # Check if argument is provided
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <chain-name>"
-    echo "chain-name: The chain to deploy to (e.g. base_sepolia, base_mainnet, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_mainnet, xmtp_ropsten_gateway_tests)"
+    echo "chain-name: The chain to deploy to (e.g. base_sepolia, base_mainnet, xmtp_ropsten, xmtp_mainnet)"
     exit 1
 fi
 
 CHAIN_NAME=$1
-IS_GATEWAY_TESTING=false
 
 case "$CHAIN_NAME" in
     "base_sepolia")
@@ -22,12 +21,6 @@ case "$CHAIN_NAME" in
         DEPLOY_FUNC="deployBaseSettlementChainComponents()"
         ENVIRONMENT="mainnet"
         ;;
-    "base_sepolia_gateway_tests")
-        DEPLOY_FUNC="deployBaseSettlementChainComponents()"
-        ENVIRONMENT="testnet-gateways"
-        CHAIN_NAME="base_sepolia"
-        IS_GATEWAY_TESTING=true
-        ;;
     "xmtp_ropsten")
         DEPLOY_FUNC="deployBaseAppChainComponents()"
         ENVIRONMENT="testnet-dev"
@@ -36,20 +29,14 @@ case "$CHAIN_NAME" in
         DEPLOY_FUNC="deployBaseAppChainComponents()"
         ENVIRONMENT="mainnet"
         ;;
-    "xmtp_ropsten_gateway_tests")
-        DEPLOY_FUNC="deployBaseAppChainComponents()"
-        ENVIRONMENT="testnet-gateways"
-        CHAIN_NAME="xmtp_ropsten"
-        IS_GATEWAY_TESTING=true
-        ;;
     *)
-        echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, base_sepolia_gateway_tests, xmtp_ropsten, xmtp_mainnet, xmtp_ropsten_gateway_tests"
+        echo "Error: Invalid chain name. Must be one of: base_sepolia, base_mainnet, xmtp_ropsten, xmtp_mainnet"
         exit 1
         ;;
 esac
 
 echo "⧖ Deploying base contracts on $CHAIN_NAME."
 
-IS_GATEWAY_TESTING=$IS_GATEWAY_TESTING ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
+ENVIRONMENT=$ENVIRONMENT forge script script/Deploy.s.sol:DeployScripts --rpc-url "$CHAIN_NAME" --broadcast --slow --sig "$DEPLOY_FUNC"
 
 echo "✔ Done deploying base contracts on $CHAIN_NAME."
