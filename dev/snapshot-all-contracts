@@ -1,0 +1,92 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "$(dirname "$0")/utils"
+
+# Check if argument is provided
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    echo "Usage: $0 <environment> [output-file]"
+    echo "environment: The environment to snapshot (e.g. testnode, testnet-dev, testnet-staging, testnet, mainnet)"
+    echo "output-file: Optional output file path (default: export/<environment>-<timestamp>.json)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 testnet-dev"
+    echo "  $0 testnet-staging export/my-snapshot.json"
+    exit 1
+fi
+
+ENVIRONMENT=$1
+OUTPUT_FILE="${2:-export/${ENVIRONMENT}-$(date +%Y%m%d-%H%M%S).json}"
+SNAPSHOT_DIR=$(dirname "$OUTPUT_FILE")
+
+# Create export directory if it doesn't exist
+mkdir -p "$SNAPSHOT_DIR"
+
+# Validate environment and get chain names
+if ! SETTLEMENT_CHAIN=$(get_chain_name "$ENVIRONMENT" "settlement-chain" 2>&1); then
+    echo "Error: Invalid environment '$ENVIRONMENT'"
+    echo "Valid environments: testnode, testnet-dev, testnet-staging, testnet, mainnet"
+    exit 1
+fi
+APP_CHAIN=$(get_chain_name "$ENVIRONMENT" "app-chain")
+
+# Get chain IDs for display
+SETTLEMENT_CHAIN_ID=$(get_environment_value "$ENVIRONMENT" "settlementChainId")
+APP_CHAIN_ID=$(get_environment_value "$ENVIRONMENT" "appChainId")
+
+echo "⧖ Snapshotting contracts for $ENVIRONMENT."
+echo "  Settlement Chain: $SETTLEMENT_CHAIN (ID: $SETTLEMENT_CHAIN_ID)"
+echo "  App Chain: $APP_CHAIN (ID: $APP_CHAIN_ID)"
+echo "  Output: $OUTPUT_FILE"
+
+# Temporary files for snapshots
+SETTLEMENT_TEMP=$(mktemp)
+APP_TEMP=$(mktemp)
+trap 'rm -f "$SETTLEMENT_TEMP" "$APP_TEMP"' EXIT
+
+# Snapshot settlement chain
+if ! ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
+    --rpc-url "$SETTLEMENT_CHAIN" \
+    --sig "SnapshotSettlementChain()" \
+    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$SETTLEMENT_TEMP"; then
+    echo "Error: Failed to snapshot settlement chain"
+    exit 1
+fi
+
+# Validate settlement chain output is valid JSON
+if ! jq empty "$SETTLEMENT_TEMP" 2>/dev/null; then
+    echo "Error: Settlement chain snapshot is not valid JSON"
+    exit 1
+fi
+
+# Snapshot app chain
+if ! ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
+    --rpc-url "$APP_CHAIN" \
+    --sig "SnapshotAppChain()" \
+    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$APP_TEMP"; then
+    echo "Error: Failed to snapshot app chain"
+    exit 1
+fi
+
+# Validate app chain output is valid JSON
+if ! jq empty "$APP_TEMP" 2>/dev/null; then
+    echo "Error: App chain snapshot is not valid JSON"
+    exit 1
+fi
+
+# Combine snapshots
+cat > "$OUTPUT_FILE" << EOF
+{
+  "environment": "$ENVIRONMENT",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "settlement-chain": $(cat "$SETTLEMENT_TEMP"),
+  "app-chain": $(cat "$APP_TEMP")
+}
+EOF
+
+# Pretty-print with jq
+TEMP_FILE=$(mktemp)
+jq . "$OUTPUT_FILE" > "$TEMP_FILE" && mv "$TEMP_FILE" "$OUTPUT_FILE"
+
+echo "✔ Done snapshotting contracts for $ENVIRONMENT. Saved to: $OUTPUT_FILE"

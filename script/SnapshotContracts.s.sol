@@ -1,0 +1,538 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.28;
+
+import { Script, console } from "../lib/forge-std/src/Script.sol";
+import { Utils } from "./utils/Utils.sol";
+import { IERC1967 } from "../src/abstract/interfaces/IERC1967.sol";
+import { IIdentified } from "../src/abstract/interfaces/IIdentified.sol";
+
+// Settlement chain upgraders
+import { NodeRegistryUpgrader } from "./upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
+import { PayerRegistryUpgrader } from "./upgrades/settlement-chain/PayerRegistryUpgrader.s.sol";
+import { PayerReportManagerUpgrader } from "./upgrades/settlement-chain/PayerReportManagerUpgrader.s.sol";
+import { RateRegistryUpgrader } from "./upgrades/settlement-chain/RateRegistryUpgrader.s.sol";
+import { DistributionManagerUpgrader } from "./upgrades/settlement-chain/DistributionManagerUpgrader.s.sol";
+import { FeeTokenUpgrader } from "./upgrades/settlement-chain/FeeTokenUpgrader.s.sol";
+import { SettlementChainGatewayUpgrader } from "./upgrades/settlement-chain/SettlementChainGatewayUpgrader.s.sol";
+import {
+    SettlementChainParameterRegistryUpgrader
+} from "./upgrades/settlement-chain/SettlementChainParameterRegistryUpgrader.s.sol";
+
+// App chain upgraders
+import { AppChainGatewayUpgrader } from "./upgrades/app-chain/AppChainGatewayUpgrader.s.sol";
+import { AppChainParameterRegistryUpgrader } from "./upgrades/app-chain/AppChainParameterRegistryUpgrader.s.sol";
+import { GroupMessageBroadcasterUpgrader } from "./upgrades/app-chain/GroupMessageBroadcasterUpgrader.s.sol";
+import { IdentityUpdateBroadcasterUpgrader } from "./upgrades/app-chain/IdentityUpdateBroadcasterUpgrader.s.sol";
+
+/**
+ * @notice Snapshots the state of all contracts in an environment
+ * @dev This script captures the current state of all contracts by calling the
+ *      getContractState() function from each upgrader contract.
+ *
+ * Usage (for settlement chain contracts):
+ *   ENVIRONMENT=testnet-dev forge script SnapshotContracts --rpc-url base_sepolia --sig "SnapshotSettlementChain()"
+ *
+ * Usage (for app chain contracts):
+ *   ENVIRONMENT=testnet-dev forge script SnapshotContracts --rpc-url xmtp_ropsten --sig "SnapshotAppChain()"
+ *
+ * Note: The script outputs JSON-formatted data that can be piped to jq or redirected to a file.
+ */
+contract SnapshotContracts is Script {
+    error EnvironmentNotSet();
+
+    string internal _environment;
+    Utils.DeploymentData internal _deployment;
+
+    function setUp() external {
+        _environment = vm.envString("ENVIRONMENT");
+        if (bytes(_environment).length == 0) revert EnvironmentNotSet();
+        _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
+    }
+
+    /**
+     * @notice Helper to get implementation address from any EIP1967 proxy
+     */
+    function _getImplementation(address proxy_) internal view returns (address implementation_) {
+        return IERC1967(proxy_).implementation();
+    }
+
+    /**
+     * @notice Helper to check if a contract exists at an address
+     */
+    function _contractExists(address address_) internal view returns (bool exists_) {
+        return address_.code.length > 0;
+    }
+
+    /**
+     * @notice Snapshots all settlement chain contracts
+     * @dev Run this on the settlement chain RPC
+     */
+    function SnapshotSettlementChain() external {
+        console.log("{");
+        console.log('  "chain": "settlement-chain",');
+        console.log('  "chainId": %s,', _deployment.settlementChainId);
+        console.log('  "environment": "%s",', _environment);
+        console.log('  "contracts": {');
+
+        _snapshotNodeRegistry();
+        console.log(",");
+        _snapshotPayerRegistry();
+        console.log(",");
+        _snapshotPayerReportManager();
+        console.log(",");
+        _snapshotRateRegistry();
+        console.log(",");
+        _snapshotDistributionManager();
+        console.log(",");
+        _snapshotFeeToken();
+        console.log(",");
+        _snapshotDepositSplitter();
+        console.log(",");
+        _snapshotSettlementChainGateway();
+        console.log(",");
+        _snapshotSettlementChainParameterRegistry();
+
+        console.log("");
+        console.log("  }");
+        console.log("}");
+    }
+
+    /**
+     * @notice Snapshots all app chain contracts
+     * @dev Run this on the app chain RPC
+     */
+    function SnapshotAppChain() external {
+        console.log("{");
+        console.log('  "chain": "app-chain",');
+        console.log('  "chainId": %s,', _deployment.appChainId);
+        console.log('  "environment": "%s",', _environment);
+        console.log('  "contracts": {');
+
+        _snapshotAppChainGateway();
+        console.log(",");
+        _snapshotAppChainParameterRegistry();
+        console.log(",");
+        _snapshotGroupMessageBroadcaster();
+        console.log(",");
+        _snapshotIdentityUpdateBroadcaster();
+
+        console.log("");
+        console.log("  }");
+        console.log("}");
+    }
+
+    // ============ Settlement Chain Snapshots ============
+
+    function _snapshotNodeRegistry() internal {
+        console.log('    "nodeRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.nodeRegistryProxy);
+
+        if (!_contractExists(_deployment.nodeRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.nodeRegistryProxy));
+
+        NodeRegistryUpgrader upgrader = new NodeRegistryUpgrader();
+        NodeRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.nodeRegistryProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "maxCanonicalNodes": %s,', uint256(state.maxCanonicalNodes));
+        console.log('        "canonicalNodesCount": %s,', uint256(state.canonicalNodesCount));
+        console.log('        "nodeCount": %s,', uint256(state.nodeCount));
+
+        // Output canonical nodes array if available
+        if (state.hasGetCanonicalNodesFunction) {
+            console.log('        "canonicalNodes": [');
+            for (uint256 i = 0; i < state.canonicalNodes.length; i++) {
+                if (i < state.canonicalNodes.length - 1) {
+                    console.log("          %s,", uint256(state.canonicalNodes[i]));
+                } else {
+                    console.log("          %s", uint256(state.canonicalNodes[i]));
+                }
+            }
+            console.log("        ],");
+        }
+
+        // Output all nodes array
+        console.log('        "allNodes": [');
+        for (uint256 i = 0; i < state.allNodes.length; i++) {
+            console.log("          {");
+            console.log('            "nodeId": %s,', uint256(state.allNodes[i].nodeId));
+            console.log('            "signer": "%s",', state.allNodes[i].node.signer);
+            console.log('            "isCanonical": %s,', state.allNodes[i].node.isCanonical ? "true" : "false");
+            console.log('            "httpAddress": "%s"', state.allNodes[i].node.httpAddress);
+            if (i < state.allNodes.length - 1) {
+                console.log("          },");
+            } else {
+                console.log("          }");
+            }
+        }
+        console.log("        ],");
+
+        console.log('        "admin": "%s",', state.admin);
+        console.log('        "adminParameterKey": "%s",', state.adminParameterKey);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotPayerRegistry() internal {
+        console.log('    "payerRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.payerRegistryProxy);
+
+        if (!_contractExists(_deployment.payerRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerRegistryProxy));
+
+        PayerRegistryUpgrader upgrader = new PayerRegistryUpgrader();
+        PayerRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.payerRegistryProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "feeToken": "%s",', state.feeToken);
+        console.log('        "settler": "%s",', state.settler);
+        console.log('        "feeDistributor": "%s",', state.feeDistributor);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+
+        // Handle potentially negative totalDeposits
+        if (state.totalDeposits >= 0) {
+            console.log('        "totalDeposits": %s,', uint256(int256(state.totalDeposits)));
+        } else {
+            console.log('        "totalDeposits": -%s,', uint256(-int256(state.totalDeposits)));
+        }
+
+        console.log('        "totalDebt": %s,', state.totalDebt);
+        console.log('        "minimumDeposit": %s,', state.minimumDeposit);
+        console.log('        "withdrawLockPeriod": %s,', state.withdrawLockPeriod);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotPayerReportManager() internal {
+        console.log('    "payerReportManager": {');
+        console.log('      "proxy": "%s",', _deployment.payerReportManagerProxy);
+
+        if (!_contractExists(_deployment.payerReportManagerProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.payerReportManagerProxy));
+
+        PayerReportManagerUpgrader upgrader = new PayerReportManagerUpgrader();
+        PayerReportManagerUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.payerReportManagerProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "payerRegistry": "%s",', state.payerRegistry);
+        console.log('        "nodeRegistry": "%s",', state.nodeRegistry);
+        console.log('        "protocolFeeRate": %s,', state.protocolFeeRate);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotRateRegistry() internal {
+        console.log('    "rateRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.rateRegistryProxy);
+
+        if (!_contractExists(_deployment.rateRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.rateRegistryProxy));
+
+        RateRegistryUpgrader upgrader = new RateRegistryUpgrader();
+        RateRegistryUpgrader.ContractState memory state = upgrader.getContractState(_deployment.rateRegistryProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "ratesCount": %s,', state.ratesCount);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotDistributionManager() internal {
+        console.log('    "distributionManager": {');
+        console.log('      "proxy": "%s",', _deployment.distributionManagerProxy);
+
+        if (!_contractExists(_deployment.distributionManagerProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.distributionManagerProxy));
+
+        DistributionManagerUpgrader upgrader = new DistributionManagerUpgrader();
+        DistributionManagerUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.distributionManagerProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "nodeRegistry": "%s",', state.nodeRegistry);
+        console.log('        "payerReportManager": "%s",', state.payerReportManager);
+        console.log('        "payerRegistry": "%s",', state.payerRegistry);
+        console.log('        "feeToken": "%s",', state.feeToken);
+        console.log('        "protocolFeesRecipient": "%s",', state.protocolFeesRecipient);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+        console.log('        "owedProtocolFees": %s,', state.owedProtocolFees);
+        console.log('        "totalOwedFees": %s,', state.totalOwedFees);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotFeeToken() internal {
+        console.log('    "feeToken": {');
+        console.log('      "proxy": "%s",', _deployment.feeTokenProxy);
+
+        if (!_contractExists(_deployment.feeTokenProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.feeTokenProxy));
+
+        FeeTokenUpgrader upgrader = new FeeTokenUpgrader();
+        FeeTokenUpgrader.ContractState memory state = upgrader.getContractState(_deployment.feeTokenProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "underlying": "%s",', state.underlying);
+        console.log('        "name": "%s",', state.name);
+        console.log('        "symbol": "%s",', state.symbol);
+        console.log('        "decimals": %s,', uint256(state.decimals));
+        console.log('        "totalSupply": %s,', state.totalSupply);
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotDepositSplitter() internal {
+        console.log('    "depositSplitter": {');
+        console.log('      "address": "%s",', _deployment.depositSplitter);
+
+        if (!_contractExists(_deployment.depositSplitter)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+
+        string memory contractName_;
+        string memory version_;
+
+        try IIdentified(_deployment.depositSplitter).contractName() returns (string memory name_) {
+            contractName_ = name_;
+        } catch {
+            contractName_ = "";
+        }
+
+        try IIdentified(_deployment.depositSplitter).version() returns (string memory ver_) {
+            version_ = ver_;
+        } catch {
+            version_ = "";
+        }
+
+        console.log('      "contractName": "%s",', contractName_);
+        console.log('      "version": "%s"', version_);
+        console.log("    }");
+    }
+
+    function _snapshotSettlementChainGateway() internal {
+        console.log('    "settlementChainGateway": {');
+        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
+
+        if (!_contractExists(_deployment.gatewayProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
+
+        SettlementChainGatewayUpgrader upgrader = new SettlementChainGatewayUpgrader();
+        SettlementChainGatewayUpgrader.ContractState memory state = upgrader.getContractState(_deployment.gatewayProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "appChainGateway": "%s",', state.appChainGateway);
+        console.log('        "feeToken": "%s",', state.feeToken);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotSettlementChainParameterRegistry() internal {
+        console.log('    "settlementChainParameterRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
+
+        if (!_contractExists(_deployment.parameterRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
+
+        SettlementChainParameterRegistryUpgrader upgrader = new SettlementChainParameterRegistryUpgrader();
+        SettlementChainParameterRegistryUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.parameterRegistryProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    // ============ App Chain Snapshots ============
+
+    function _snapshotAppChainGateway() internal {
+        console.log('    "appChainGateway": {');
+        console.log('      "proxy": "%s",', _deployment.gatewayProxy);
+
+        if (!_contractExists(_deployment.gatewayProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.gatewayProxy));
+
+        AppChainGatewayUpgrader upgrader = new AppChainGatewayUpgrader();
+        AppChainGatewayUpgrader.ContractState memory state = upgrader.getContractState(_deployment.gatewayProxy);
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "settlementChainGateway": "%s",', state.settlementChainGateway);
+        console.log('        "settlementChainGatewayAlias": "%s",', state.settlementChainGatewayAlias);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotAppChainParameterRegistry() internal {
+        console.log('    "appChainParameterRegistry": {');
+        console.log('      "proxy": "%s",', _deployment.parameterRegistryProxy);
+
+        if (!_contractExists(_deployment.parameterRegistryProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.parameterRegistryProxy));
+
+        AppChainParameterRegistryUpgrader upgrader = new AppChainParameterRegistryUpgrader();
+        AppChainParameterRegistryUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.parameterRegistryProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotGroupMessageBroadcaster() internal {
+        console.log('    "groupMessageBroadcaster": {');
+        console.log('      "proxy": "%s",', _deployment.groupMessageBroadcasterProxy);
+
+        if (!_contractExists(_deployment.groupMessageBroadcasterProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.groupMessageBroadcasterProxy));
+
+        GroupMessageBroadcasterUpgrader upgrader = new GroupMessageBroadcasterUpgrader();
+        GroupMessageBroadcasterUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.groupMessageBroadcasterProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "minPayloadSize": %s,', state.minPayloadSize);
+        console.log('        "maxPayloadSize": %s,', state.maxPayloadSize);
+        console.log('        "payloadBootstrapper": "%s",', state.payloadBootstrapper);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotIdentityUpdateBroadcaster() internal {
+        console.log('    "identityUpdateBroadcaster": {');
+        console.log('      "proxy": "%s",', _deployment.identityUpdateBroadcasterProxy);
+
+        if (!_contractExists(_deployment.identityUpdateBroadcasterProxy)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+        console.log('      "implementation": "%s",', _getImplementation(_deployment.identityUpdateBroadcasterProxy));
+
+        IdentityUpdateBroadcasterUpgrader upgrader = new IdentityUpdateBroadcasterUpgrader();
+        IdentityUpdateBroadcasterUpgrader.ContractState memory state = upgrader.getContractState(
+            _deployment.identityUpdateBroadcasterProxy
+        );
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', state.parameterRegistry);
+        console.log('        "minPayloadSize": %s,', state.minPayloadSize);
+        console.log('        "maxPayloadSize": %s,', state.maxPayloadSize);
+        console.log('        "payloadBootstrapper": "%s",', state.payloadBootstrapper);
+        console.log('        "paused": %s,', state.paused ? "true" : "false");
+        console.log('        "contractName": "%s",', state.contractName);
+        console.log('        "version": "%s"', state.version);
+        console.log("      }");
+        console.log("    }");
+    }
+}

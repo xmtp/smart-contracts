@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import { console } from "../../../lib/forge-std/src/Script.sol";
-import { NodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
+import { NodeRegistry, INodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
 import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 
@@ -23,8 +23,14 @@ import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     struct ContractState {
         address parameterRegistry;
+        uint8 maxCanonicalNodes;
         uint8 canonicalNodesCount;
         uint32 nodeCount;
+        uint32[] canonicalNodes;
+        bool hasGetCanonicalNodesFunction;
+        INodeRegistry.NodeWithId[] allNodes;
+        address admin;
+        string adminParameterKey;
         string contractName;
         string version;
     }
@@ -72,6 +78,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
 
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
+            before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
             before.canonicalNodesCount == afterState.canonicalNodesCount &&
             before.nodeCount == afterState.nodeCount;
 
@@ -87,8 +94,20 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         ContractState memory state = abi.decode(state_, (ContractState));
         console.log("%s", title_);
         console.log("  Parameter registry: %s", state.parameterRegistry);
+        console.log("  Max canonical nodes: %s", uint256(state.maxCanonicalNodes));
         console.log("  Canonical nodes count: %s", uint256(state.canonicalNodesCount));
         console.log("  Node count: %s", uint256(state.nodeCount));
+        console.log("  All nodes array length: %s", state.allNodes.length);
+
+        if (state.hasGetCanonicalNodesFunction) {
+            console.log("  Canonical nodes array length: %s", state.canonicalNodes.length);
+            if (state.canonicalNodes.length == 0 && state.nodeCount > 0) {
+                console.log("  WARNING: Canonical nodes array is empty but node count is %s", uint256(state.nodeCount));
+            }
+        }
+
+        console.log("  Admin: %s", state.admin);
+        console.log("  Admin parameter key: %s", state.adminParameterKey);
         console.log("  Name: %s", state.contractName);
         console.log("  Version: %s", state.version);
     }
@@ -96,8 +115,23 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     function _getNodeRegistryState(address proxy_) internal view returns (ContractState memory state_) {
         NodeRegistry nodeRegistry = NodeRegistry(proxy_);
         state_.parameterRegistry = nodeRegistry.parameterRegistry();
+        state_.maxCanonicalNodes = nodeRegistry.maxCanonicalNodes();
         state_.canonicalNodesCount = nodeRegistry.canonicalNodesCount();
         state_.nodeCount = nodeRegistry.getAllNodesCount();
+        state_.allNodes = nodeRegistry.getAllNodes();
+
+        // Try to get canonical nodes array, which may not exist in older implementations
+        try nodeRegistry.getCanonicalNodes() returns (uint32[] memory canonicalNodes_) {
+            state_.canonicalNodes = canonicalNodes_;
+            state_.hasGetCanonicalNodesFunction = true;
+        } catch {
+            state_.canonicalNodes = new uint32[](0);
+            state_.hasGetCanonicalNodesFunction = false;
+        }
+
+        // Admin and adminParameterKey are always present (per user)
+        state_.admin = nodeRegistry.admin();
+        state_.adminParameterKey = nodeRegistry.adminParameterKey();
 
         // Try to get contractName and version, which may not exist in older implementations
         try nodeRegistry.contractName() returns (string memory contractName_) {
@@ -124,6 +158,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
     ) public pure returns (bool isEqual_) {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
+            before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
             before_.canonicalNodesCount == afterState_.canonicalNodesCount &&
             before_.nodeCount == afterState_.nodeCount;
 
