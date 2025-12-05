@@ -38,6 +38,10 @@ contract NodeRegistryUpgradeForkTest is Test {
         // Get state before upgrade using script's getContractState
         NodeRegistryUpgrader.ContractState memory stateBefore = upgrader.getContractState(proxy);
 
+        // Check if the storage variable and enumerable set are in sync BEFORE upgrade
+        uint32[] memory canonicalNodesBeforeUpgrade = NodeRegistry(proxy).getCanonicalNodes();
+        bool wasInSyncBefore = stateBefore.canonicalNodesCount == uint8(canonicalNodesBeforeUpgrade.length);
+
         // Compute the implementation address
         address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
 
@@ -72,8 +76,22 @@ contract NodeRegistryUpgradeForkTest is Test {
         // Get state after upgrade using script's getContractState
         NodeRegistryUpgrader.ContractState memory stateAfter = upgrader.getContractState(proxy);
 
-        // Validate state using script's isContractStateEqual
-        bool statesMatch = upgrader.isContractStateEqual(stateBefore, stateAfter);
-        assertTrue(statesMatch, "State mismatch after upgrade");
+        // Validate state - check basics always
+        assertEq(stateAfter.parameterRegistry, stateBefore.parameterRegistry, "Parameter registry changed");
+        assertEq(stateAfter.nodeCount, stateBefore.nodeCount, "Node count changed");
+
+        // Only check canonicalNodesCount if it was in sync before the upgrade
+        // If it was already out of sync, the upgrade fixes it by making canonicalNodesCount() return canonicalNodes.length()
+        if (wasInSyncBefore) {
+            assertEq(stateAfter.canonicalNodesCount, stateBefore.canonicalNodesCount, "Canonical nodes count changed");
+        }
+
+        // After upgrade, canonicalNodesCount() should always equal the enumerable set length
+        uint32[] memory canonicalNodesAfter = NodeRegistry(proxy).getCanonicalNodes();
+        assertEq(
+            stateAfter.canonicalNodesCount,
+            canonicalNodesAfter.length,
+            "canonicalNodesCount() does not match enumerable set length after upgrade"
+        );
     }
 }
