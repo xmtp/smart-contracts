@@ -7,6 +7,8 @@ import { ParameterSnapshotter } from "./utils/ParameterSnapshotter.sol";
 import { IERC1967 } from "../src/abstract/interfaces/IERC1967.sol";
 import { IIdentified } from "../src/abstract/interfaces/IIdentified.sol";
 import { IParameterRegistry } from "../src/abstract/interfaces/IParameterRegistry.sol";
+import { IDepositSplitter } from "../src/settlement-chain/interfaces/IDepositSplitter.sol";
+import { IFactory } from "../src/any-chain/interfaces/IFactory.sol";
 
 // Settlement chain upgraders
 import { NodeRegistryUpgrader } from "./upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
@@ -96,6 +98,8 @@ contract SnapshotContracts is Script {
         _snapshotFeeToken();
         console.log(",");
         _snapshotDepositSplitter();
+        console.log(",");
+        _snapshotFactory();
         console.log(",");
         _snapshotSettlementChainGateway();
         console.log(",");
@@ -395,8 +399,39 @@ contract SnapshotContracts is Script {
 
         console.log('      "exists": true,');
 
+        IDepositSplitter depositSplitter = IDepositSplitter(_deployment.depositSplitter);
+
+        // Query contract state fields
+        address feeToken_;
+        address payerRegistry_;
+        address settlementChainGateway_;
+        uint256 appChainId_;
         string memory contractName_;
         string memory version_;
+
+        try depositSplitter.feeToken() returns (address ft) {
+            feeToken_ = ft;
+        } catch {
+            feeToken_ = address(0);
+        }
+
+        try depositSplitter.payerRegistry() returns (address pr) {
+            payerRegistry_ = pr;
+        } catch {
+            payerRegistry_ = address(0);
+        }
+
+        try depositSplitter.settlementChainGateway() returns (address scg) {
+            settlementChainGateway_ = scg;
+        } catch {
+            settlementChainGateway_ = address(0);
+        }
+
+        try depositSplitter.appChainId() returns (uint256 aci) {
+            appChainId_ = aci;
+        } catch {
+            appChainId_ = 0;
+        }
 
         try IIdentified(_deployment.depositSplitter).contractName() returns (string memory name_) {
             contractName_ = name_;
@@ -410,8 +445,98 @@ contract SnapshotContracts is Script {
             version_ = "";
         }
 
-        console.log('      "contractName": "%s",', contractName_);
-        console.log('      "version": "%s"', version_);
+        console.log('      "state": {');
+        console.log('        "feeToken": "%s",', feeToken_);
+        console.log('        "payerRegistry": "%s",', payerRegistry_);
+        console.log('        "settlementChainGateway": "%s",', settlementChainGateway_);
+        console.log('        "appChainId": %s,', appChainId_);
+        console.log('        "contractName": "%s",', contractName_);
+        console.log('        "version": "%s"', version_);
+        console.log("      }");
+        console.log("    }");
+    }
+
+    function _snapshotFactory() internal {
+        console.log('    "factory": {');
+        console.log('      "address": "%s",', _deployment.factory);
+
+        if (!_contractExists(_deployment.factory)) {
+            console.log('      "exists": false');
+            console.log("    }");
+            return;
+        }
+
+        console.log('      "exists": true,');
+
+        // Check if factory has a proxy (by trying to get implementation)
+        address impl = _getImplementation(_deployment.factory);
+        address targetAddress = _deployment.factory;
+
+        // If factory doesn't have a proxy but has an implementation address, use the implementation
+        if (
+            impl == address(0) &&
+            _deployment.factoryImplementation != address(0) &&
+            _contractExists(_deployment.factoryImplementation)
+        ) {
+            console.log('      "proxy": null,');
+            console.log('      "implementation": "%s",', _deployment.factoryImplementation);
+            targetAddress = _deployment.factoryImplementation;
+        } else if (impl != address(0)) {
+            console.log('      "proxy": "%s",', _deployment.factory);
+            console.log('      "implementation": "%s",', impl);
+            targetAddress = _deployment.factory;
+        } else {
+            // Direct deployment, no proxy
+            console.log('      "proxy": null,');
+            console.log('      "implementation": null,');
+        }
+
+        IFactory factory = IFactory(targetAddress);
+
+        // Query contract state fields
+        address parameterRegistry_;
+        bool paused_;
+        address initializableImplementation_;
+        string memory contractName_;
+        string memory version_;
+
+        try factory.parameterRegistry() returns (address pr) {
+            parameterRegistry_ = pr;
+        } catch {
+            parameterRegistry_ = address(0);
+        }
+
+        try factory.paused() returns (bool p) {
+            paused_ = p;
+        } catch {
+            paused_ = false;
+        }
+
+        try factory.initializableImplementation() returns (address ii) {
+            initializableImplementation_ = ii;
+        } catch {
+            initializableImplementation_ = address(0);
+        }
+
+        try IIdentified(targetAddress).contractName() returns (string memory name_) {
+            contractName_ = name_;
+        } catch {
+            contractName_ = "";
+        }
+
+        try IIdentified(targetAddress).version() returns (string memory ver_) {
+            version_ = ver_;
+        } catch {
+            version_ = "";
+        }
+
+        console.log('      "state": {');
+        console.log('        "parameterRegistry": "%s",', parameterRegistry_);
+        console.log('        "paused": %s,', paused_ ? "true" : "false");
+        console.log('        "initializableImplementation": "%s",', initializableImplementation_);
+        console.log('        "contractName": "%s",', contractName_);
+        console.log('        "version": "%s"', version_);
+        console.log("      }");
         console.log("    }");
     }
 
