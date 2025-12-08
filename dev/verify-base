@@ -15,7 +15,7 @@ fi
 # Check if all arguments are provided
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <chain-name> <explorer>"
-    echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, xmtp_ropsten)"
+    echo "chain-name: The chain to verify (e.g. base_mainnet, base_sepolia, xmtp_ropsten, xmtp_mainnet)"
     echo "explorer: The explorer to use (e.g. basescan, blockscout, alchemy)"
     exit 1
 fi
@@ -24,8 +24,8 @@ CHAIN_NAME=$1
 EXPLORER=$2
 
 # Validate chain name
-if [[ ! "$CHAIN_NAME" =~ ^(base_mainnet|base_sepolia|xmtp_ropsten)$ ]]; then
-    echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten"
+if [[ ! "$CHAIN_NAME" =~ ^(base_mainnet|base_sepolia|xmtp_ropsten|xmtp_mainnet)$ ]]; then
+    echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten, xmtp_mainnet"
     exit 1
 fi
 
@@ -46,8 +46,13 @@ case "$CHAIN_NAME" in
         CHAIN_ID="351243127"
         CHAIN_TYPE="app-chain"
         ;;
+    "xmtp_mainnet")
+        ENVIRONMENT="mainnet"
+        CHAIN_ID="24132016"
+        CHAIN_TYPE="app-chain"
+        ;;
     *)
-        echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten"
+        echo "Error: Invalid chain name. Must be one of: base_mainnet, base_sepolia, xmtp_ropsten, xmtp_mainnet"
         exit 1
         ;;
 esac

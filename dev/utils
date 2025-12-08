@@ -35,9 +35,9 @@ get_chain_name() {
         fi
     elif [ "$environment" = "mainnet" ]; then
         if [ "$chain_type" = "settlement-chain" ]; then
-            echo "base"
+            echo "base_mainnet"
         else
-            echo "xmtp"
+            echo "xmtp_mainnet"
         fi
     else
         if [ "$chain_type" = "settlement-chain" ]; then

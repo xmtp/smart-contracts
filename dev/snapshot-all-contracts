@@ -46,32 +46,40 @@ APP_TEMP=$(mktemp)
 trap 'rm -f "$SETTLEMENT_TEMP" "$APP_TEMP"' EXIT
 
 # Snapshot settlement chain
-if ! ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
+ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
     --rpc-url "$SETTLEMENT_CHAIN" \
     --sig "SnapshotSettlementChain()" \
-    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$SETTLEMENT_TEMP"; then
-    echo "Error: Failed to snapshot settlement chain"
-    exit 1
+    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$SETTLEMENT_TEMP" || true
+
+# If output is empty, use empty JSON object
+if [ ! -s "$SETTLEMENT_TEMP" ]; then
+    echo '{}' > "$SETTLEMENT_TEMP"
 fi
 
 # Validate settlement chain output is valid JSON
 if ! jq empty "$SETTLEMENT_TEMP" 2>/dev/null; then
     echo "Error: Settlement chain snapshot is not valid JSON"
+    echo "Raw output:"
+    cat "$SETTLEMENT_TEMP" >&2
     exit 1
 fi
 
 # Snapshot app chain
-if ! ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
+ENVIRONMENT=$ENVIRONMENT forge script SnapshotContracts \
     --rpc-url "$APP_CHAIN" \
     --sig "SnapshotAppChain()" \
-    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$APP_TEMP"; then
-    echo "Error: Failed to snapshot app chain"
-    exit 1
+    2>&1 | awk '/^== Logs ==$/{flag=1; next} flag' > "$APP_TEMP" || true
+
+# If output is empty, use empty JSON object
+if [ ! -s "$APP_TEMP" ]; then
+    echo '{}' > "$APP_TEMP"
 fi
 
 # Validate app chain output is valid JSON
 if ! jq empty "$APP_TEMP" 2>/dev/null; then
     echo "Error: App chain snapshot is not valid JSON"
+    echo "Raw output:"
+    cat "$APP_TEMP" >&2
     exit 1
 fi
 
