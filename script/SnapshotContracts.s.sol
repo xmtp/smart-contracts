@@ -3,8 +3,10 @@ pragma solidity 0.8.28;
 
 import { Script, console } from "../lib/forge-std/src/Script.sol";
 import { Utils } from "./utils/Utils.sol";
+import { ParameterSnapshotter } from "./utils/ParameterSnapshotter.sol";
 import { IERC1967 } from "../src/abstract/interfaces/IERC1967.sol";
 import { IIdentified } from "../src/abstract/interfaces/IIdentified.sol";
+import { IParameterRegistry } from "../src/abstract/interfaces/IParameterRegistry.sol";
 
 // Settlement chain upgraders
 import { NodeRegistryUpgrader } from "./upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
@@ -25,9 +27,10 @@ import { GroupMessageBroadcasterUpgrader } from "./upgrades/app-chain/GroupMessa
 import { IdentityUpdateBroadcasterUpgrader } from "./upgrades/app-chain/IdentityUpdateBroadcasterUpgrader.s.sol";
 
 /**
- * @notice Snapshots the state of all contracts in an environment
+ * @notice Snapshots the state of all contracts and parameters in an environment
  * @dev This script captures the current state of all contracts by calling the
- *      getContractState() function from each upgrader contract.
+ *      getContractState() function from each upgrader contract, and also snapshots
+ *      all parameter keys and their values from the parameter registry.
  *
  * Usage (for settlement chain contracts):
  *   ENVIRONMENT=testnet-dev forge script SnapshotContracts --rpc-url base_sepolia --sig "SnapshotSettlementChain()"
@@ -36,6 +39,7 @@ import { IdentityUpdateBroadcasterUpgrader } from "./upgrades/app-chain/Identity
  *   ENVIRONMENT=testnet-dev forge script SnapshotContracts --rpc-url xmtp_ropsten --sig "SnapshotAppChain()"
  *
  * Note: The script outputs JSON-formatted data that can be piped to jq or redirected to a file.
+ *       The output includes both contract states and parameter registry values.
  */
 contract SnapshotContracts is Script {
     error EnvironmentNotSet();
@@ -93,7 +97,10 @@ contract SnapshotContracts is Script {
         _snapshotSettlementChainParameterRegistry();
 
         console.log("");
-        console.log("  }");
+        console.log("  },");
+        _snapshotParameters();
+
+        console.log("");
         console.log("}");
     }
 
@@ -117,7 +124,10 @@ contract SnapshotContracts is Script {
         _snapshotIdentityUpdateBroadcaster();
 
         console.log("");
-        console.log("  }");
+        console.log("  },");
+        _snapshotParameters();
+
+        console.log("");
         console.log("}");
     }
 
@@ -534,5 +544,46 @@ contract SnapshotContracts is Script {
         console.log('        "version": "%s"', state.version);
         console.log("      }");
         console.log("    }");
+    }
+
+    // ============ Parameter Snapshotting ============
+
+    /**
+     * @notice Snapshots all parameter keys and their values from the parameter registry
+     */
+    function _snapshotParameters() internal view {
+        console.log('  "parameters": {');
+        console.log('    "parameterRegistry": "%s",', _deployment.parameterRegistryProxy);
+
+        if (!_contractExists(_deployment.parameterRegistryProxy)) {
+            console.log('    "exists": false,');
+            console.log('    "values": {}');
+            console.log("  }");
+            return;
+        }
+
+        console.log('    "exists": true,');
+        console.log('    "values": {');
+
+        // Get all known keys and sort them
+        string[] memory keys = ParameterSnapshotter.getAllKnownKeys();
+        ParameterSnapshotter.sortKeys(keys);
+
+        // Query values from parameter registry
+        IParameterRegistry parameterRegistry = IParameterRegistry(_deployment.parameterRegistryProxy);
+        bytes32[] memory values = ParameterSnapshotter.queryParameterValues(parameterRegistry, keys);
+
+        // Output all keys with their values
+        for (uint256 i = 0; i < keys.length; i++) {
+            string memory jsonLine = ParameterSnapshotter.formatValueAsJson(vm, keys[i], values[i]);
+            if (i < keys.length - 1) {
+                console.log("%s,", jsonLine);
+            } else {
+                console.log("%s", jsonLine);
+            }
+        }
+
+        console.log("    }");
+        console.log("  }");
     }
 }

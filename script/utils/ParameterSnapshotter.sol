@@ -1,104 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script, console } from "../lib/forge-std/src/Script.sol";
-import { stdJson } from "../lib/forge-std/src/StdJson.sol";
-import { IParameterRegistry } from "../src/abstract/interfaces/IParameterRegistry.sol";
-import { RegistryParameters } from "../src/libraries/RegistryParameters.sol";
-import { Formatting } from "./utils/Formatting.sol";
+import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
+import { Formatting } from "./Formatting.sol";
+import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 
 /**
- * @title  Script to list all known parameter keys and their values
- * @notice This script extracts all known parameter keys from both settlement chain
- *         and app chain contracts, based on static code analysis, and queries their
- *         current values from the appropriate parameter registry.
- * @dev    Run with: forge script script/ListParameterKeys.s.sol:ListParameterKeys --sig "run(string)" <environment> --rpc-url <rpc-url>
- *         Example: forge script script/ListParameterKeys.s.sol:ListParameterKeys --sig "run(string)" testnet-dev --rpc-url base_sepolia
+ * @title  Parameter Snapshotter Utility
+ * @notice Provides reusable functions for querying and formatting parameter registry values
+ * @dev    This utility encapsulates all parameter-related logic for clean separation of concerns
  */
-contract ListParameterKeys is Script {
-    function run(string memory environment_) external {
-        // Read config to determine chain type
-        string memory configPath = string.concat("./config/", environment_, ".json");
-        string memory json_ = vm.readFile(configPath);
-
-        uint256 settlementChainId = stdJson.readUint(json_, ".settlementChainId");
-        uint256 appChainId = stdJson.readUint(json_, ".appChainId");
-
-        // Get current chain ID from RPC
-        uint256 currentChainId = block.chainid;
-
-        bool isSettlementChain = (currentChainId == settlementChainId);
-        bool isAppChain = (currentChainId == appChainId);
-
-        string memory chainType = "Unknown";
-        if (isSettlementChain) {
-            chainType = "Settlement Chain";
-        } else if (isAppChain) {
-            chainType = "App Chain";
-        }
-
-        // Get parameter registry address based on chain type
-        // Both settlement and app chain use the same config key for now
-        address parameterRegistryAddress = stdJson.readAddress(json_, ".parameterRegistryProxy");
-
-        IParameterRegistry parameterRegistry = IParameterRegistry(parameterRegistryAddress);
-
-        console.log("Environment: %s", environment_);
-        console.log("Current Chain ID: %d", currentChainId);
-        console.log("Settlement Chain ID: %d", settlementChainId);
-        console.log("App Chain ID: %d", appChainId);
-        console.log("Chain Type: %s", chainType);
-        console.log("Parameter Registry: %s", vm.toString(parameterRegistryAddress));
-        console.log("");
-        console.log("=== PARAMETER KEYS AND VALUES ===");        
-        console.log("");
-
-        // Get all known keys (union of both chains)
-        string[] memory allKeys = _getAllKnownKeys();
-
-        // Sort keys for better readability
-        _sortKeys(allKeys);
-
-        // Query values from parameter registry
-        bytes32[] memory values;
-        if (parameterRegistryAddress != address(0)) {
-            try parameterRegistry.get(allKeys) returns (bytes32[] memory vals) {
-                values = vals;
-            } catch {
-                // If batch get fails, query individually
-                values = new bytes32[](allKeys.length);
-                for (uint256 i = 0; i < allKeys.length; i++) {
-                    try parameterRegistry.get(allKeys[i]) returns (bytes32 val) {
-                        values[i] = val;
-                    } catch {
-                        values[i] = bytes32(0);
-                    }
-                }
-            }
-        } else {
-            values = new bytes32[](allKeys.length);
-        }
-
-        // Print all keys with their values
-        for (uint256 i = 0; i < allKeys.length; i++) {
-            string memory valueStr = _formatValue(allKeys[i], values[i]);
-            console.log("%s = %s", allKeys[i], valueStr);
-        }
-
-        console.log("");
-        console.log("Total known keys: %d", allKeys.length);
-        console.log("");
-        console.log("Excluded dynamic keys:");
-        console.log("  - xmtp.appChainParameterRegistry.isAdmin.{address}");
-        console.log("  - xmtp.settlementChainGateway.inbox.{chainId}");
-        console.log("  - xmtp.settlementChainParameterRegistry.isAdmin.{address}");
-    }
-
+library ParameterSnapshotter {
     /**
      * @notice Returns all known parameter keys from both settlement and app chain contracts
      * @return keys_ Array of all known parameter keys
      */
-    function _getAllKnownKeys() internal pure returns (string[] memory keys_) {
+    function getAllKnownKeys() internal pure returns (string[] memory keys_) {
         // Count total keys
         uint256 count = 0;
 
@@ -191,11 +108,11 @@ contract ListParameterKeys is Script {
      * @notice Sorts an array of strings in place using bubble sort
      * @param keys_ Array of keys to sort
      */
-    function _sortKeys(string[] memory keys_) internal pure {
+    function sortKeys(string[] memory keys_) internal pure {
         uint256 n = keys_.length;
         for (uint256 i = 0; i < n - 1; i++) {
             for (uint256 j = 0; j < n - i - 1; j++) {
-                if (_compareStrings(keys_[j], keys_[j + 1]) > 0) {
+                if (compareStrings(keys_[j], keys_[j + 1]) > 0) {
                     string memory temp = keys_[j];
                     keys_[j] = keys_[j + 1];
                     keys_[j + 1] = temp;
@@ -210,7 +127,7 @@ contract ListParameterKeys is Script {
      * @param b_ Second string
      * @return result_ Negative if a_ < b_, zero if equal, positive if a_ > b_
      */
-    function _compareStrings(string memory a_, string memory b_) internal pure returns (int256 result_) {
+    function compareStrings(string memory a_, string memory b_) internal pure returns (int256 result_) {
         bytes memory aBytes = bytes(a_);
         bytes memory bBytes = bytes(b_);
         uint256 minLength = aBytes.length < bBytes.length ? aBytes.length : bBytes.length;
@@ -233,51 +150,124 @@ contract ListParameterKeys is Script {
     }
 
     /**
+     * @notice Queries parameter values from the parameter registry
+     * @param parameterRegistry_ The parameter registry contract
+     * @param keys_ Array of parameter keys to query
+     * @return values_ Array of parameter values corresponding to the keys
+     */
+    function queryParameterValues(
+        IParameterRegistry parameterRegistry_,
+        string[] memory keys_
+    ) internal view returns (bytes32[] memory values_) {
+        if (address(parameterRegistry_) == address(0)) {
+            values_ = new bytes32[](keys_.length);
+            return values_;
+        }
+
+        // Try batch get first
+        try parameterRegistry_.get(keys_) returns (bytes32[] memory vals) {
+            return vals;
+        } catch {
+            // If batch get fails, query individually
+            values_ = new bytes32[](keys_.length);
+            for (uint256 i = 0; i < keys_.length; i++) {
+                try parameterRegistry_.get(keys_[i]) returns (bytes32 val) {
+                    values_[i] = val;
+                } catch {
+                    values_[i] = bytes32(0);
+                }
+            }
+        }
+    }
+
+    /**
      * @notice Formats a bytes32 value based on the key type
+     * @param vm_ The Vm instance for string conversion
      * @param key_ The parameter key
      * @param value_ The bytes32 value
      * @return formatted_ Formatted string representation of the value
      */
-    function _formatValue(string memory key_, bytes32 value_) internal view returns (string memory formatted_) {
+    function formatValue(
+        VmSafe vm_,
+        string memory key_,
+        bytes32 value_
+    ) internal view returns (string memory formatted_) {
         if (value_ == bytes32(0)) {
             return "0x0 (not set)";
         }
 
         // Check if it's a boolean parameter
-        if (_isBoolKey(key_)) {
+        if (isBoolKey(key_)) {
             uint256 boolVal = uint256(value_);
             if (boolVal > 1) {
-                return string.concat(vm.toString(value_), " (invalid bool)");
+                return string.concat(vm_.toString(value_), " (invalid bool)");
             }
             return boolVal == 0 ? "false" : "true";
         }
 
         // Check if it's an address parameter
-        if (_isAddressKey(key_) || _isMigratorKey(key_)) {
+        if (isAddressKey(key_) || isMigratorKey(key_)) {
             address addr = address(uint160(uint256(value_)));
             if (addr == address(0)) {
                 return "0x0 (not set)";
             }
-            return vm.toString(addr);
+            return vm_.toString(addr);
         }
 
         // Otherwise, treat as uint - strip leading zeros from hex
         uint256 uintVal = uint256(value_);
-        string memory hexStr = Formatting.stripLeadingZeros(vm.toString(value_));
-        return string.concat(hexStr, " (", vm.toString(uintVal), ")");
+        string memory hexStr = Formatting.stripLeadingZeros(vm_.toString(value_));
+        return string.concat(hexStr, " (", vm_.toString(uintVal), ")");
+    }
+
+    /**
+     * @notice Formats a bytes32 value as JSON for snapshot output
+     * @param vm_ The Vm instance for string conversion
+     * @param key_ The parameter key
+     * @param value_ The bytes32 value
+     * @return json_ JSON-formatted string with key and formatted value
+     */
+    function formatValueAsJson(
+        VmSafe vm_,
+        string memory key_,
+        bytes32 value_
+    ) internal view returns (string memory json_) {
+        // Determine the JSON value type based on the key type
+        if (isBoolKey(key_)) {
+            // Boolean values are already formatted as "true" or "false"
+            if (value_ == bytes32(0)) {
+                return string.concat('        "', key_, '": null');
+            }
+            uint256 boolVal = uint256(value_);
+            return string.concat('        "', key_, '": ', boolVal == 0 ? "false" : "true");
+        } else if (isAddressKey(key_) || isMigratorKey(key_)) {
+            // Address values - output as string
+            address addr = address(uint160(uint256(value_)));
+            if (addr == address(0)) {
+                return string.concat('        "', key_, '": null');
+            }
+            return string.concat('        "', key_, '": "', vm_.toString(addr), '"');
+        } else {
+            // Uint values - output as number
+            if (value_ == bytes32(0)) {
+                return string.concat('        "', key_, '": null');
+            }
+            uint256 uintVal = uint256(value_);
+            return string.concat('        "', key_, '": ', vm_.toString(uintVal));
+        }
     }
 
     /**
      * @notice Checks if a key represents a boolean parameter
      */
-    function _isBoolKey(string memory key_) internal pure returns (bool) {
+    function isBoolKey(string memory key_) internal pure returns (bool) {
         return Formatting.endsWith(key_, ".paused");
     }
 
     /**
      * @notice Checks if a key represents an address parameter
      */
-    function _isAddressKey(string memory key_) internal pure returns (bool) {
+    function isAddressKey(string memory key_) internal pure returns (bool) {
         return
             Formatting.endsWith(key_, ".admin") ||
             Formatting.endsWith(key_, ".settler") ||
@@ -289,7 +279,7 @@ contract ListParameterKeys is Script {
     /**
      * @notice Checks if a key represents a migrator parameter (address)
      */
-    function _isMigratorKey(string memory key_) internal pure returns (bool) {
+    function isMigratorKey(string memory key_) internal pure returns (bool) {
         return Formatting.endsWith(key_, ".migrator");
     }
 }

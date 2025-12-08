@@ -68,4 +68,3 @@ library Formatting {
         return string(result);
     }
 }
-
