@@ -8,7 +8,7 @@
   "distributionManagerProxy": "0xcc66BB4c08F3aB6DCa12F8F866bd6301c07849f7",
   "distributionManagerProxySalt": "DistributionManager_0",
   "factory": "0xD7Ec545A625B263EC9db9742cFC9933A0B1840d9",
-  "factoryImplementation": "0x761959932Ec62F2922d10c539f3e5Cffe3A100e3",
+  "factoryImplementation": "0x0000000000000000000000000000000000000000",
   "feeTokenImplementation": "0xcB8EC5cc193CEB0775DCaf4Ad3B78D575e6149B7",
   "feeTokenProxy": "0x6Cc89D86c6c4220aB988954CFA622d472287251D",
   "feeTokenProxySalt": "FeeToken_0",
@@ -20,7 +20,7 @@
   "identityUpdateBroadcasterImplementation": "0x0ba6b4087a961bF029F1F9439f94c9A0a1740925",
   "identityUpdateBroadcasterProxy": "0x0F3bb242AaC0D8d32c83aa6c2fEC354b9757374d",
   "identityUpdateBroadcasterProxySalt": "IdentityUpdateBroadcaster_0",
-  "initializableImplementation": "0x8a5b177657b9B0dd469f7C61e3c34C841883772C",
+  "initializableImplementation": "0x0000000000000000000000000000000000000000",
   "nodeRegistryImplementation": "0x532E8660a3af131B2E18E83Ede724567AE73DAb2",
   "nodeRegistryProxy": "0xC5742B5F2e19B859eaE03A9c44531C33fA8e75F8",
   "nodeRegistryProxySalt": "NodeRegistry_0",
@@ -35,12 +35,12 @@
   "rateRegistryImplementation": "0x78bF11D8afAbE9cef89FaDE282b502706896bfa3",
   "rateRegistryProxy": "0xa72d7b979349E203777f80C458DBa5543bccc815",
   "rateRegistryProxySalt": "RateRegistry_0",
-  "settlementChainGatewayImplementation": "0x3d467De3d786758b571A7Bc78A4820dbF915c60D",
+  "settlementChainGatewayImplementation": "0x0000000000000000000000000000000000000000",
   "settlementChainId": "8453",
   "settlementChainParameterRegistryAdmin1": "0x25943B130E3871273D389545178151878e3cac3e",
   "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
   "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
-  "settlementChainParameterRegistryImplementation": "0xA7B0cC3E2F94E921EC7F93ee1055a60EBa4EcB93",
+  "settlementChainParameterRegistryImplementation": "0x0000000000000000000000000000000000000000",
   "startingParameters": {
     "xmtp": {
       "settlementChainGateway": {
