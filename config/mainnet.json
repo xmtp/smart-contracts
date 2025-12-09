@@ -45,35 +45,39 @@
     "xmtp": {
       "settlementChainGateway": {
         "inbox": {
-          "241320162": "0x0000000000000000000000000000000000000000"
+          "241320162": "0x249D5D37502f26c5286De3096e0120FeAFa6772a"
         }
       },
       "nodeRegistry": {
         "admin": "0x25943B130E3871273D389545178151878e3cac3e",
-        "maxCanonicalNodes": "0"
+        "maxCanonicalNodes": "100"
       },
       "payerRegistry": {
-        "settler": "0xB148b7bC74a651e70eD27140040fD997560341CF",
-        "feeDistributor": "0x4E64E899cacFD5b0E9014b11867e90A0d8e83B3d",
+        "settler": "0xEf3E4F3606A297eE0E7D2346A3b0EcfA69eDb457",
+        "feeDistributor": "0xcc66BB4c08F3aB6DCa12F8F866bd6301c07849f7",
         "minimumDeposit": "10000000",
         "withdrawLockPeriod": "172800"
       },
       "payerReportManager": {
-        "protocolFeeRate": "0"
+        "protocolFeeRate": "100"
       },
       "rateRegistry": {
-        "messageFee": "0",
-        "storageFee": "0",
-        "congestionFee": "0",
-        "targetRatePerMinute": "0"
+        "messageFee": "100",
+        "storageFee": "200",
+        "congestionFee": "300",
+        "targetRatePerMinute": "6000"
       },
       "groupMessageBroadcaster": {
-        "minPayloadSize": "0",
-        "maxPayloadSize": "0"
+        "minPayloadSize": "78",
+        "maxPayloadSize": "262144",
+        "payloadBootstrapper": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
+        "paused": true
       },
       "identityUpdateBroadcaster": {
-        "minPayloadSize": "0",
-        "maxPayloadSize": "0"
+        "minPayloadSize": "78",
+        "maxPayloadSize": "262144",
+        "payloadBootstrapper": "0x96d2bdc2A14c1075F86918E2E6385CB85917c569",
+        "paused": true
       }
     }
   },
