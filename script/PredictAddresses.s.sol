@@ -339,7 +339,11 @@ contract PredictAddressesScript is DeployScripts {
         return Create2.computeAddress(proxySalt_, proxyInitCodeHash_, factory_);
     }
 
-    function _printPayerReportManager(address factory_, bytes32 proxyInitCodeHash_, address paramRegProxy_) internal view {
+    function _printPayerReportManager(
+        address factory_,
+        bytes32 proxyInitCodeHash_,
+        address paramRegProxy_
+    ) internal view {
         address nodeRegistryProxy_ = _computeProxyAddress(
             factory_,
             _deployer,
