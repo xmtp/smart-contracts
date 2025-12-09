@@ -1,6 +1,6 @@
 {
   "appChainGatewayImplementation": "0x5b4670FA1bE37350b7253f93414ea792fC85C4D5",
-  "appChainId": "24132016",
+  "appChainId": "241320162",
   "appChainParameterRegistryImplementation": "0x6e2e157cEfbc122DAd6d3EB904480f645352f905",
   "deployer": "0xD0d217d895372793900898183D18d10d3261984F",
   "depositSplitter": "0x1ec8a95eE130862a4EC6329b588D5753f1C115CA",
@@ -45,7 +45,7 @@
     "xmtp": {
       "settlementChainGateway": {
         "inbox": {
-          "24132016": "0x0000000000000000000000000000000000000000"
+          "241320162": "0x0000000000000000000000000000000000000000"
         }
       },
       "nodeRegistry": {
