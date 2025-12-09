@@ -1,4 +1,15 @@
 {
   "deployer": "0xD0d217d895372793900898183D18d10d3261984F",
-  "feeToken": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8"
+  "feeToken": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
+  "settlementChainId": 8453,
+  "settlementChainDeploymentBlock": 39248435,
+  "settlementChainFactory": "0xD7Ec545A625B263EC9db9742cFC9933A0B1840d9",
+  "settlementChainParameterRegistry": "0x1fe3B81F281872354f846930Da5D49263080eBB8",
+  "settlementChainGateway": "0x18f4aA7E0Af2A102549986b2F53e727C0CC24EB7",
+  "underlyingFeeToken": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "appChainId": 241320162,
+  "appChainDeploymentBlock": 38856,
+  "appChainFactory": "0xD7Ec545A625B263EC9db9742cFC9933A0B1840d9",
+  "appChainParameterRegistry": "0x1fe3B81F281872354f846930Da5D49263080eBB8",
+  "appChainGateway": "0x18f4aA7E0Af2A102549986b2F53e727C0CC24EB7"
 }
