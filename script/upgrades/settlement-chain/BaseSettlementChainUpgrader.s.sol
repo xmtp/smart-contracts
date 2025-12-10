@@ -27,6 +27,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
     uint256 internal _privateKey;
     address internal _admin;
     Utils.DeploymentData internal _deployment;
+    bool internal _skipStateCheck;
 
     function setUp() external {
         // Environment
@@ -40,6 +41,16 @@ abstract contract BaseSettlementChainUpgrader is Script {
         if (_privateKey == 0) revert PrivateKeyNotSet();
         _admin = vm.addr(_privateKey);
         console.log("Admin: %s", _admin);
+
+        // Optional: Skip state check flag (for intentional state changes like parameter registry updates)
+        try vm.envBool("SKIP_STATE_CHECK") returns (bool skip_) {
+            _skipStateCheck = skip_;
+            if (_skipStateCheck) {
+                console.log("WARNING: State check is DISABLED - proceeding with upgrade even if state mismatches");
+            }
+        } catch {
+            _skipStateCheck = false;
+        }
     }
 
     /**
@@ -90,7 +101,16 @@ abstract contract BaseSettlementChainUpgrader is Script {
         }
         _logContractState("State before upgrade:", stateBefore);
         _logContractState("State after upgrade:", stateAfter);
-        if (!_isContractStateEqual(stateBefore, stateAfter)) revert StateMismatch();
+        bool statesEqual = _isContractStateEqual(stateBefore, stateAfter);
+        if (!statesEqual) {
+            if (_skipStateCheck) {
+                console.log("WARNING: State mismatch detected but SKIP_STATE_CHECK is enabled - proceeding anyway");
+            } else {
+                revert StateMismatch();
+            }
+        } else {
+            console.log("State check passed: all state values match");
+        }
     }
 
     /**

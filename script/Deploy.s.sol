@@ -121,8 +121,8 @@ contract DeployScripts is Script {
         deploySettlementChainParameterRegistryProxy();
         deployMockUnderlyingFeeTokenImplementation();
         deployMockUnderlyingFeeTokenProxy();
-        deployFeeTokenImplementation();
-        deployFeeTokenProxy();
+        //deployFeeTokenImplementation(); // NOTE: removed since Fee token is a singleton tied to L3
+        //deployFeeTokenProxy(); // NOTE: removed since Fee token is a singleton tied to L3
         deploySettlementChainGatewayImplementation();
         deploySettlementChainGatewayProxy();
     }
