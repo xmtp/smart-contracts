@@ -9,7 +9,7 @@
   "distributionManagerProxySalt": "DistributionManager_0",
   "factory": "0xD7Ec545A625B263EC9db9742cFC9933A0B1840d9",
   "factoryImplementation": "0x013f1a7f456856eb0f7AAdDE4203E39ed00781b7",
-  "feeTokenImplementation": "0x644f165B4232F9197b715d942653dEC8f1e1d854",
+  "feeTokenImplementation": "0xcB8EC5cc193CEB0775DCaf4Ad3B78D575e6149B7",
   "feeTokenProxy": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
   "feeTokenProxySalt": "FeeToken_0_NB_is_dummy",
   "gatewayProxy": "0x18f4aA7E0Af2A102549986b2F53e727C0CC24EB7",
