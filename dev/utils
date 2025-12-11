@@ -107,7 +107,7 @@ get_explorer_url() {
         fi
     elif [ "$explorer" = "alchemy" ]; then
         if [ "$environment" = "mainnet" ]; then
-            echo "https://xmtp.explorer.alchemy.com/api/"
+            echo "https://xmtp-mainnet.explorer.alchemy.com/api/"
         else
             echo "https://xmtp-ropsten.explorer.alchemy.com/api/"
         fi
