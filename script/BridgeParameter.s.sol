@@ -7,19 +7,12 @@ import { IERC20Like } from "./Interfaces.sol";
 import { BaseAppChainUpgrader } from "./upgrades/app-chain/BaseAppChainUpgrader.s.sol";
 
 /**
- * @title  Script to bridge a parameter from settlement chain to app chain
- * @notice This script bridges a parameter key-value pair from the SettlementChainParameterRegistry
- *         to the AppChainParameterRegistry via the SettlementChainGateway.
- * @dev    The parameter value is read from the settlement chain parameter registry and sent
- *         across the bridge. The caller must have sufficient fee token balance and approval.
- *         This script leverages the setup and bridge logic from BaseAppChainUpgrader.
+ * @title  Push a single parameter from settlement chain parameter registry to app chain parameter registry
+ * @notice Pushes a single parameter key-value pair from the SettlementChainParameterRegistry to the
+ *         AppChainParameterRegistry via the SettlementChainGateway. The caller must have sufficient token balances.
  */
 contract BridgeParameter is BaseAppChainUpgrader {
-    /**
-     * @notice Bridges a parameter key from settlement chain to app chain
-     * @param key_ The parameter key to bridge (e.g., "xmtp.groupMessageBroadcaster.paused")
-     */
-    function bridge(string memory key_) external {
+    function push(string memory key_) external {
         if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
 
@@ -31,8 +24,8 @@ contract BridgeParameter is BaseAppChainUpgrader {
         console.log("App Chain ID: %s", _deployment.appChainId);
         console.log("Parameter key: %s", key_);
 
-        // Calculate gas and cost for bridging (reusing constants from BaseAppChainUpgrader)
-        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1);
+        // Calculate gas and cost for bridging
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1); // 1 key to push
 
         // Convert from 18 decimals (app chain gas token) to 6 decimals (fee token).
         uint256 cost_ = ((_APP_CHAIN_GAS_PRICE * gasLimit_) * 1e6) / 1e18;
@@ -52,7 +45,7 @@ contract BridgeParameter is BaseAppChainUpgrader {
         IERC20Like(feeToken).approve(proxy, cost_);
         console.log("Approved fee token");
 
-        // Bridge the parameter (reusing the same pattern as BaseAppChainUpgrader.Bridge)
+        // Bridge the parameter
         uint256[] memory chainIds_ = new uint256[](1);
         chainIds_[0] = _deployment.appChainId;
 

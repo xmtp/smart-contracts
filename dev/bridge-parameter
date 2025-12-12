@@ -6,13 +6,14 @@ source "$(dirname "$0")/utils"
 
 # Check if arguments are provided
 if [ $# -ne 2 ]; then
+    echo "Push a single existing parameter from the settlement chain parameter registry to the app chain parameter registry."
     echo "Usage: $0 <environment> <parameter-key>"
     echo ""
     echo "Example:"
-    echo "  $0 testnet-staging xmtp.groupMessageBroadcaster.paused"
+    echo "  $0 testnet xmtp.groupMessageBroadcaster.paused"
     echo ""
     echo "environment: The environment to bridge to (e.g. testnet-dev, testnet-staging, testnet, mainnet)"
-    echo "parameter-key: The parameter key to bridge from settlement chain to app chain"
+    echo "parameter-key: The parameter key to push from settlement chain to app chain"
     exit 1
 fi
 
