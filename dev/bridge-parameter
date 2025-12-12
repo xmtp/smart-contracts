@@ -29,7 +29,7 @@ ENVIRONMENT=$ENVIRONMENT forge script script/BridgeParameter.s.sol:BridgeParamet
     --rpc-url "$CHAIN_NAME" \
     --broadcast \
     --slow \
-    --sig "bridge(string)" \
+    --sig "push(string)" \
     "$PARAM_KEY"
 
 echo "✔ Done bridging parameter for $ENVIRONMENT."
