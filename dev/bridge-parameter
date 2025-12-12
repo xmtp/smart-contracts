@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+# shellcheck disable=SC1091
+source "$(dirname "$0")/utils"
+
+# Check if arguments are provided
+if [ $# -ne 2 ]; then
+    echo "Push a single existing parameter from the settlement chain parameter registry to the app chain parameter registry."
+    echo "Usage: $0 <environment> <parameter-key>"
+    echo ""
+    echo "Example:"
+    echo "  $0 testnet xmtp.groupMessageBroadcaster.paused"
+    echo ""
+    echo "environment: The environment to bridge to (e.g. testnet-dev, testnet-staging, testnet, mainnet)"
+    echo "parameter-key: The parameter key to push from settlement chain to app chain"
+    exit 1
+fi
+
+ENVIRONMENT=$1
+PARAM_KEY="$2"
+
+CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
+
+echo "⧖ Bridging parameter for $ENVIRONMENT."
+echo "Parameter key: $PARAM_KEY"
+
+ENVIRONMENT=$ENVIRONMENT forge script script/BridgeParameter.s.sol:BridgeParameter \
+    --rpc-url "$CHAIN_NAME" \
+    --broadcast \
+    --slow \
+    --sig "push(string)" \
+    "$PARAM_KEY"
+
+echo "✔ Done bridging parameter for $ENVIRONMENT."
