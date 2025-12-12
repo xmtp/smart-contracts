@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import { Script, console } from "../lib/forge-std/src/Script.sol";
 import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
 import { IERC20Like } from "./Interfaces.sol";
-import { BaseAppChainUpgrader } from "./upgrades/app-chain/BaseAppChainUpgrader.sol";
+import { BaseAppChainUpgrader } from "./upgrades/app-chain/BaseAppChainUpgrader.s.sol";
 
 /**
  * @title  Script to bridge a parameter from settlement chain to app chain
