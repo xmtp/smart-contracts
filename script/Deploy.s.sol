@@ -78,7 +78,7 @@ contract DeployScripts is Script {
 
     string internal _environment;
 
-    uint256 internal _privateKey;
+    uint256 internal _deployerPrivateKey;
     address internal _deployer;
 
     function setUp() external {
@@ -92,15 +92,15 @@ contract DeployScripts is Script {
 
         if (_deploymentData.deployer == address(0)) revert DeployerNotSet();
 
-        _privateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
+        _deployerPrivateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
 
-        if (_privateKey == 0) revert PrivateKeyNotSet();
+        if (_deployerPrivateKey == 0) revert PrivateKeyNotSet();
 
         address deployer_ = vm.envAddress("DEPLOYER");
 
         if (deployer_ == address(0)) revert DeployerNotSet();
 
-        _deployer = vm.addr(_privateKey);
+        _deployer = vm.addr(_deployerPrivateKey);
 
         console.log("Deployer: %s", _deployer);
 
@@ -297,7 +297,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.factoryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = FactoryDeployer.deployImplementation(_deploymentData.parameterRegistryProxy);
 
@@ -328,7 +328,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.factoryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = FactoryDeployer.deployImplementationViaFactory(
                 _deploymentData.factory,
@@ -361,7 +361,7 @@ contract DeployScripts is Script {
         address proxy_ = _deploymentData.factory;
 
         if (proxy_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = FactoryDeployer.deployProxy(_deploymentData.factoryImplementation);
 
@@ -382,7 +382,7 @@ contract DeployScripts is Script {
 
         // If `initializableImplementation` is nonzero, the factory is already deployed it in a previous initialization.
         if (IFactory(_deploymentData.factory).initializableImplementation() == address(0)) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             IFactory(_deploymentData.factory).initialize();
 
@@ -416,7 +416,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.settlementChainParameterRegistryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = SettlementChainParameterRegistryDeployer.deployImplementation(
                 _deploymentData.factory
@@ -459,7 +459,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.parameterRegistryProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = SettlementChainParameterRegistryDeployer.deployProxy(
                 _deploymentData.factory,
@@ -504,7 +504,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.mockUnderlyingFeeTokenImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = MockUnderlyingFeeTokenDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -539,7 +539,7 @@ contract DeployScripts is Script {
         address proxy_ = _deploymentData.underlyingFeeToken;
 
         if (proxy_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = MockUnderlyingFeeTokenDeployer.deployProxy(
                 _deploymentData.factory,
@@ -573,7 +573,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.feeTokenImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = FeeTokenDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -616,7 +616,7 @@ contract DeployScripts is Script {
         address proxy_ = _deploymentData.feeTokenProxy;
 
         if (proxy_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = FeeTokenDeployer.deployProxy(
                 _deploymentData.factory,
@@ -648,7 +648,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.settlementChainGatewayImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = SettlementChainGatewayDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -710,7 +710,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.gatewayProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = SettlementChainGatewayDeployer.deployProxy(
                 _deploymentData.factory,
@@ -744,7 +744,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.payerRegistryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = PayerRegistryDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -786,7 +786,7 @@ contract DeployScripts is Script {
         if (proxy_.code.length == 0) {
             console.log("PayerRegistry Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.payerRegistryProxySalt));
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = PayerRegistryDeployer.deployProxy(
                 _deploymentData.factory,
@@ -819,7 +819,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.rateRegistryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = RateRegistryDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -856,7 +856,7 @@ contract DeployScripts is Script {
         if (proxy_.code.length == 0) {
             console.log("RateRegistry Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.rateRegistryProxySalt));
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = RateRegistryDeployer.deployProxy(
                 _deploymentData.factory,
@@ -889,7 +889,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.nodeRegistryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = NodeRegistryDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -928,7 +928,7 @@ contract DeployScripts is Script {
         if (!proxyAlreadyExists) {
             console.log("NodeRegistry Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.nodeRegistryProxySalt));
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = NodeRegistryDeployer.deployProxy(
                 _deploymentData.factory,
@@ -966,7 +966,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.payerReportManagerImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = PayerReportManagerDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1030,7 +1030,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.payerReportManagerProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = PayerReportManagerDeployer.deployProxy(
                 _deploymentData.factory,
@@ -1070,7 +1070,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.distributionManagerImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = DistributionManagerDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1150,7 +1150,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.distributionManagerProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = DistributionManagerDeployer.deployProxy(
                 _deploymentData.factory,
@@ -1189,7 +1189,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.depositSplitter;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = DepositSplitterDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1241,7 +1241,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.appChainParameterRegistryImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = AppChainParameterRegistryDeployer.deployImplementation(_deploymentData.factory);
 
@@ -1281,7 +1281,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.parameterRegistryProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = AppChainParameterRegistryDeployer.deployProxy(
                 _deploymentData.factory,
@@ -1323,7 +1323,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.appChainGatewayImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = AppChainGatewayDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1378,7 +1378,7 @@ contract DeployScripts is Script {
         if (proxy_.code.length == 0) {
             console.log("AppChainGateway Proxy Salt: %s", Utils.bytes32ToString(_deploymentData.gatewayProxySalt));
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = AppChainGatewayDeployer.deployProxy(
                 _deploymentData.factory,
@@ -1411,7 +1411,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.groupMessageBroadcasterImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = GroupMessageBroadcasterDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1457,7 +1457,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.groupMessageBroadcasterProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = GroupMessageBroadcasterDeployer.deployProxy(
                 _deploymentData.factory,
@@ -1492,7 +1492,7 @@ contract DeployScripts is Script {
         address implementation_ = _deploymentData.identityUpdateBroadcasterImplementation;
 
         if (implementation_.code.length == 0) {
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (implementation_, ) = IdentityUpdateBroadcasterDeployer.deployImplementation(
                 _deploymentData.factory,
@@ -1538,7 +1538,7 @@ contract DeployScripts is Script {
                 Utils.bytes32ToString(_deploymentData.identityUpdateBroadcasterProxySalt)
             );
 
-            vm.startBroadcast(_privateKey);
+            vm.startBroadcast(_deployerPrivateKey);
 
             (proxy_, , ) = IdentityUpdateBroadcasterDeployer.deployProxy(
                 _deploymentData.factory,
