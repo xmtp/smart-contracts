@@ -10,12 +10,12 @@ All examples below use the environment `staging`, so config files are named `tes
 
 ## Token Requirements
 
-| Step       | Executed on      | Address | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
-| ---------- | ---------------- | ------- | --------------------- | --------------------- | ------------------------- |
-| 1. Prepare | App Chain        | DEPLOYER| -                     | -                     | yes for deployment tx gas |
-| 2. Bridge  | Settlement Chain | ADMIN   | yes for param reg tx  | -                     | -                         |
-| 2. Bridge  | Settlement Chain | DEPLOYER| yes for bridge tx gas | yes to give to bridge | -                         |
-| 3. Upgrade | App Chain        | DEPLOYER| -                     | -                     | yes for upgrade tx gas    |
+| Step       | Executed on      | Address  | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
+| ---------- | ---------------- | -------- | --------------------- | --------------------- | ------------------------- |
+| 1. Prepare | App Chain        | DEPLOYER | -                     | -                     | yes for deployment tx gas |
+| 2. Bridge  | Settlement Chain | ADMIN    | yes for param reg tx  | -                     | -                         |
+| 2. Bridge  | Settlement Chain | DEPLOYER | yes for bridge tx gas | yes to give to bridge | -                         |
+| 3. Upgrade | App Chain        | DEPLOYER | -                     | -                     | yes for upgrade tx gas    |
 
 ## STAGE 1 - Setup
 
