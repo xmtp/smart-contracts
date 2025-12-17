@@ -6,7 +6,8 @@ An **upgrade** refers to upgrading an existing **proxy** to point to a new **imp
 
 ### 1. Maintain the root `.env` file to have:
 
-- [ ] `ADMIN_PRIVATE_KEY`. This address must be an admin of the contract being upgraded.
+- [ ] `ADMIN_PRIVATE_KEY` used only for writing migrator parameter to parameter registry
+- [ ] `DEPLOYER_PRIVATE_KEY` used for deploying implementations, migrators, and executing migrations
 - [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider.
 - [ ] `ETHERSCAN_API_KEY` your etherscan API key.
 - [ ] `ETHERSCAN_API_URL` '`https://api-sepolia.basescan.org/api`'
@@ -25,7 +26,7 @@ In this example we are upgrading `NodeRegistry`.
 
 ### 1. Execute the upgrade script:
 
-The upgrade script performs an end-to-end upgrade (deploy implementation or no-op if it exists, deploy migrator, set parameter, execute upgrade):
+The upgrade script performs an end-to-end upgrade (deploy implementation or no-op if it exists, deploy migrator, set parameter, execute upgrade). It uses the ADMIN and the DEPLOYER address as appropriate for each step internally:
 
 ```bash
 ENVIRONMENT=testnet-staging forge script NodeRegistryUpgrader --rpc-url base_sepolia --sig "UpgradeNodeRegistry()" --broadcast
