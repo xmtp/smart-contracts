@@ -17,9 +17,17 @@
     - [Partial settlement support](#partial-settlement-support)
   - [Error handling](#error-handling)
 
-As described in the [architecture](./architecture.md) document, the MLS standard defines multiple message types. In the XMTP network, two of those types are directly published to the blockchain, and payers through the `Gateway` service pay directly for the gas used to publish them.
 
-The other three types of messages are published to `xmtpd` nodes through offchain APIs, and each `xmtpd` node tracks all the messages published through them and creates a detailed report every 12 hours. This is called a `PayerReport`, and it's essential to the economic model and sustainability of the network. These reports are managed through the [PayerReportManager contract](../src/settlement-chain/PayerReportManager.sol).
+As described in the [architecture](./architecture.md) document, the MLS standard defines multiple message types. In the XMTP network:
+- Two MLS message types are published directly onchain, and payers interacting through the Gateway service pay gas costs directly.
+- Three MLS message types are published offchain to xmtpd nodes via APIs.
+
+For the offchain message types, _fees are accounted for and settled asynchronously_. 
+Each xmtpd node tracks all billable messages it processes and periodically produces a cryptographically verifiable accounting artifact called a **PayerReport**.
+
+Payer reports are the backbone of the XMTP network’s economic model: they reconcile offchain usage with onchain balances, ensure consensus among nodes, and ultimately drive node operator payouts.
+
+Payer reports are managed onchain by the `PayerReportManager` contract and interact with the `PayerRegistry` and `DistributionManager` contracts during settlement and distribution.
 
 ## PayerReport structure
 
@@ -39,6 +47,7 @@ A complete `PayerReport` contains the following fields:
   "nodeIds": [100, 200, 300]
 }
 ```
+> **Important**: The exact field order and types are part of the onchain ABI contract. Any mismatch between offchain code, interfaces, or consuming contracts will result in incorrect decoding and may cause settlement or distribution to fail.
 
 ### Field descriptions
 
@@ -115,14 +124,14 @@ sequenceDiagram
 
 Before submission, PayerReports must be signed by a majority of canonical nodes:
 
-**Signature requirements:**
+#### Signature requirements:
 
 - Must have signatures from `(canonicalNodeCount / 2) + 1` nodes
 - Only signatures from canonical nodes are valid
-- Signing node IDs must be ordered and unique
+- Signing node IDs must be **ordered and unique**
 - Each signature is verified against the node's registered signer address
 
-**Signature structure:**
+#### Signature structure:
 
 ```solidity
 struct PayerReportSignature {
@@ -132,6 +141,7 @@ struct PayerReportSignature {
 ```
 
 ### 3. Report submission
+Once sufficient signatures are collected, the report is submitted onchain:
 
 ```mermaid
 sequenceDiagram
@@ -163,9 +173,14 @@ sequenceDiagram
     deactivate PRM
 ```
 
+Submission locks in:
+- The reporting window
+- The protocol fee rate
+- The canonical node set
+
 ### 4. Settlement process
 
-Settlement can occur in batches, allowing large reports to be processed incrementally:
+Settlement converts the Merkle-committed payer fees into actual balance deductions:
 
 ```mermaid
 sequenceDiagram
@@ -197,6 +212,109 @@ sequenceDiagram
     PRM->>Settler: Emit PayerReportSubsetSettled event
     deactivate PRM
 ```
+Settlement may occur in multiple batches.
+
+When all leaves are processed, isSettled is set to true.
+
+## Node Payout
+Node payouts are the final step in the XMTP economic lifecycle, converting **settled payer fees** into rewards for node operators.
+This process is fully onchain, deterministic, and pull-based: node operators must explicitly claim and withdraw their rewards.
+
+Payouts are managed by the DistributionManager  contract and are strictly gated by:
+- report settlement status,
+- node participation in the report, and
+- node ownership via the NodeRegistry.
+
+### Overview
+
+At a high level, node payouts follow this flow:
+
+```mermaid
+sequenceDiagram
+participant NodeOp as Node Operator
+participant DM as DistributionManager
+participant PRM as PayerReportManager
+participant NR as NodeRegistry
+participant FT as Fee Token
+
+    Note over PRM: Report fully settled
+    NodeOp->>DM: claim(nodeId, originatorNodeId, payerReportIndex)
+    DM->>PRM: fetch PayerReport
+    DM->>NR: verify node ownership
+    DM->>DM: accrue owedFees[nodeId]
+
+    NodeOp->>DM: withdraw(nodeId, recipient)
+    DM->>FT: transfer / unwrap tokens
+    FT->>NodeOp: payout
+```
+
+### Preconditions for payout
+
+A node cannot receive fees unless all of the following are true:
+1. The payer report is fully settled
+- PayerReport.isSettled == true
+- Partial settlements do not enable payouts.
+2. The node participated in the reporting period
+- nodeId must be present in PayerReport.nodeIds.
+3. The caller owns the node
+- Ownership is verified via NodeRegistry.ownerOf(nodeId).
+4. The report has not already been claimed by this node
+- Claims are tracked per (nodeId, originatorNodeId, payerReportIndex).
+
+### Claiming fees
+
+Once the above conditions are met, a node operator may claim their share of a settled report:
+```solidity
+claim(
+uint32 nodeId,
+uint32[] originatorNodeIds,
+uint256[] payerReportIndices
+) returns (uint96 claimed)
+```
+
+What claim does? For each (originatorNodeId, payerReportIndex) pair:
+- Fetches the PayerReport from PayerReportManager
+- Verifies isSettled == true
+- Verifies nodeId ∈ nodeIds
+- Verifies the claim has not already occurred
+- Computes the protocol fee
+- Computes the node’s equal share of remaining fees
+- Accrues the result to owedFees\[nodeId\]
+
+> **Important**: claim does not transfer tokens.
+It only records an accounting entry inside DistributionManager.
+
+### Withdrawing fees
+
+After claiming, node operators must explicitly withdraw their accrued balance:
+```solidity
+withdraw(uint32 nodeId, address recipient) returns (uint96 withdrawn)
+withdrawIntoUnderlying(uint32 nodeId, address recipient) returns (uint96 withdrawn)
+```
+
+Withdrawal behavior
+- Only the node owner may withdraw.
+- Withdrawals are capped by the contract’s available balance.
+- If insufficient funds are present:
+  - DistributionManager pulls excess funds from PayerRegistry.
+- Withdrawals reduce:
+  - owedFees\[nodeId\]
+  - totalOwedFees
+- A withdrawal reverts with `NoFeesOwed()` if the node has not successfully claimed any reports.
+
+### Protocol fees
+
+Protocol fees are handled separately from node rewards:
+- Protocol fees are accrued during settlement.
+- Anyone may trigger:
+```solidity
+claimProtocolFees(...)
+withdrawProtocolFees()
+withdrawProtocolFeesIntoUnderlying()
+```
+- Funds are sent to the configured `protocolFeesRecipient`.
+
+Protocol fees are **not** claimable by nodes and are not included in owedFees.
 
 ## Key features
 
