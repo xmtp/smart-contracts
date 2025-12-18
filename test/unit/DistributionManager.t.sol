@@ -8,7 +8,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
-import { IPayerReportManagerLike } from "../../src/settlement-chain/interfaces/External.sol";
+import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
 import { Proxy } from "../../src/any-chain/Proxy.sol";
@@ -105,7 +105,7 @@ contract DistributionManagerTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_manager.version(), "1.0.0");
+        assertEq(_manager.version(), "1.0.1");
     }
 
     /* ============ contractName ============ */
@@ -144,11 +144,12 @@ contract DistributionManagerTests is Test {
         payerReportIndices_[0] = 0;
         payerReportIndices_[1] = 0;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -157,9 +158,10 @@ contract DistributionManagerTests is Test {
             nodeIds: new uint32[](0)
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -190,11 +192,12 @@ contract DistributionManagerTests is Test {
         payerReportIndices_[0] = 0;
         payerReportIndices_[1] = 0;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -203,9 +206,10 @@ contract DistributionManagerTests is Test {
             nodeIds: new uint32[](0)
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: false, // Second payer report is not settled.
@@ -236,11 +240,12 @@ contract DistributionManagerTests is Test {
         payerReportIndices_[0] = 0;
         payerReportIndices_[1] = 1;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 100,
             offset: 0,
             isSettled: true,
@@ -249,9 +254,10 @@ contract DistributionManagerTests is Test {
             nodeIds: new uint32[](3)
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 200,
             offset: 0,
             isSettled: true,
@@ -319,11 +325,12 @@ contract DistributionManagerTests is Test {
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -332,9 +339,10 @@ contract DistributionManagerTests is Test {
             nodeIds: nodeIds_
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -373,11 +381,12 @@ contract DistributionManagerTests is Test {
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -386,9 +395,10 @@ contract DistributionManagerTests is Test {
             nodeIds: nodeIds_
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: false, // Second payer report is not settled.
@@ -429,11 +439,12 @@ contract DistributionManagerTests is Test {
         nodeIdsNotContainingNode1_[0] = 2;
         nodeIdsNotContainingNode1_[1] = 3;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -442,9 +453,10 @@ contract DistributionManagerTests is Test {
             nodeIds: nodeIdsContainingNode1_
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 0,
             offset: 0,
             isSettled: true,
@@ -484,11 +496,12 @@ contract DistributionManagerTests is Test {
         nodeIds_[1] = 2;
         nodeIds_[2] = 3;
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = new IPayerReportManagerLike.PayerReport[](2);
+        IPayerReportManager.PayerReport[] memory payerReports_ = new IPayerReportManager.PayerReport[](2);
 
-        payerReports_[0] = IPayerReportManagerLike.PayerReport({
+        payerReports_[0] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 100,
             offset: 0,
             isSettled: true,
@@ -497,9 +510,10 @@ contract DistributionManagerTests is Test {
             nodeIds: nodeIds_
         });
 
-        payerReports_[1] = IPayerReportManagerLike.PayerReport({
+        payerReports_[1] = IPayerReportManager.PayerReport({
             startSequenceId: 0,
             endSequenceId: 0,
+            endMinuteSinceEpoch: 0,
             feesSettled: 200,
             offset: 0,
             isSettled: true,
