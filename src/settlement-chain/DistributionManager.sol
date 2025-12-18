@@ -14,6 +14,7 @@ import {
     IPayerRegistryLike,
     IPayerReportManagerLike
 } from "./interfaces/External.sol";
+import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
@@ -125,7 +126,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint32[] calldata originatorNodeIds_,
         uint256[] calldata payerReportIndices_
     ) external whenNotPaused returns (uint96 claimed_) {
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = _getPayerReports(
+        IPayerReportManager.PayerReport[] memory payerReports_ = _getPayerReports(
             originatorNodeIds_,
             payerReportIndices_
         );
@@ -142,7 +143,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
                 revert AlreadyClaimed(originatorNodeId_, payerReportIndex_);
             }
 
-            IPayerReportManagerLike.PayerReport memory payerReport_ = payerReports_[index_];
+            IPayerReportManager.PayerReport memory payerReport_ = payerReports_[index_];
 
             if (!payerReport_.isSettled) revert PayerReportNotSettled(originatorNodeId_, payerReportIndex_);
 
@@ -174,7 +175,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     ) external whenNotPaused returns (uint96 claimed_) {
         _revertIfNotNodeOwner(nodeId_);
 
-        IPayerReportManagerLike.PayerReport[] memory payerReports_ = _getPayerReports(
+        IPayerReportManager.PayerReport[] memory payerReports_ = _getPayerReports(
             originatorNodeIds_,
             payerReportIndices_
         );
@@ -191,7 +192,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
                 revert AlreadyClaimed(originatorNodeId_, payerReportIndex_);
             }
 
-            IPayerReportManagerLike.PayerReport memory payerReport_ = payerReports_[index_];
+            IPayerReportManager.PayerReport memory payerReport_ = payerReports_[index_];
 
             if (!payerReport_.isSettled) revert PayerReportNotSettled(originatorNodeId_, payerReportIndex_);
 
@@ -356,7 +357,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     /// @inheritdoc IIdentified
@@ -436,7 +437,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
     function _getPayerReports(
         uint32[] calldata originatorNodeIds_,
         uint256[] calldata payerReportIndices_
-    ) internal view returns (IPayerReportManagerLike.PayerReport[] memory payerReports_) {
+    ) internal view returns (IPayerReportManager.PayerReport[] memory payerReports_) {
         if (originatorNodeIds_.length != payerReportIndices_.length) revert ArrayLengthMismatch();
 
         return IPayerReportManagerLike(payerReportManager).getPayerReports(originatorNodeIds_, payerReportIndices_);

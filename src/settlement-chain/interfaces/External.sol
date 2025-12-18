@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import { IPayerRegistry } from "./IPayerRegistry.sol";
+import { IPayerReportManager } from "./IPayerReportManager.sol";
+
 /**
  * @title  Subset interface for ERC20 tokens.
  * @notice This is the minimal interface needed by contracts within this subdirectory.
@@ -114,14 +117,12 @@ interface INodeRegistryLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IPayerRegistryLike {
-    struct PayerFee {
-        address payer;
-        uint96 fee;
-    }
-
     function deposit(address payer_, uint96 amount_) external;
 
-    function settleUsage(bytes32 payerReportId_, PayerFee[] calldata payerFees_) external returns (uint96 feesSettled_);
+    function settleUsage(
+        bytes32 payerReportId_,
+        IPayerRegistry.PayerFee[] calldata payerFees_
+    ) external returns (uint96 feesSettled_);
 
     function sendExcessToFeeDistributor() external returns (uint96 excess_);
 }
@@ -131,21 +132,10 @@ interface IPayerRegistryLike {
  * @notice This is the minimal interface needed by contracts within this subdirectory.
  */
 interface IPayerReportManagerLike {
-    struct PayerReport {
-        uint64 startSequenceId;
-        uint64 endSequenceId;
-        uint96 feesSettled;
-        uint32 offset;
-        bool isSettled;
-        uint16 protocolFeeRate;
-        bytes32 payersMerkleRoot;
-        uint32[] nodeIds;
-    }
-
     function getPayerReports(
         uint32[] calldata originatorNodeIds_,
         uint256[] calldata payerReportIndices_
-    ) external view returns (PayerReport[] memory payerReports_);
+    ) external view returns (IPayerReportManager.PayerReport[] memory payerReports_);
 }
 
 /**
