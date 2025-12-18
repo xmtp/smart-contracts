@@ -11,6 +11,7 @@ import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
 import { IIdentified } from "../abstract/interfaces/IIdentified.sol";
 import { INodeRegistryLike, IPayerRegistryLike } from "./interfaces/External.sol";
 import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
+import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 
 import { ERC5267 } from "../abstract/ERC5267.sol";
 import { Migratable } from "../abstract/Migratable.sol";
@@ -569,11 +570,11 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
         uint256 length = payerFees_.length;
 
-        IPayerRegistryLike.PayerFee[] memory decodedPayerFees = new IPayerRegistryLike.PayerFee[](length);
+        IPayerRegistry.PayerFee[] memory decodedPayerFees = new IPayerRegistry.PayerFee[](length);
 
         // Each payerFee is 64 bytes of ABI-encoded data containing the address and uint96. Decode each one into a PayerFee struct.
         for (uint256 i = 0; i < length; i++) {
-            decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistryLike.PayerFee));
+            decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistry.PayerFee));
         }
 
         return IPayerRegistryLike(payerRegistry).settleUsage(digest_, decodedPayerFees);
