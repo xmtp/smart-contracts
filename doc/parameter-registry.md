@@ -1,23 +1,23 @@
 # XMTP network contracts - Parameter registry
 
 - [XMTP network contracts - Parameter registry](#xmtp-network-contracts---parameter-registry)
-  - [Available Configuration](#available-configuration)
-    - [Settlement Chain Parameters](#settlement-chain-parameters)
-      - [Settlement Chain Parameter Registry](#settlement-chain-parameter-registry)
-      - [Fee Token](#fee-token)
-      - [Node Registry](#node-registry)
-      - [Payer Registry](#payer-registry)
-      - [Payer Report Manager](#payer-report-manager)
-      - [Distribution Manager](#distribution-manager)
-      - [Rate Registry](#rate-registry)
-      - [Settlement Chain Gateway](#settlement-chain-gateway)
-      - [Factory (Any Chain)](#factory-any-chain)
-    - [App Chain Parameters](#app-chain-parameters)
-      - [App Chain Parameter Registry](#app-chain-parameter-registry)
-      - [App Chain Gateway](#app-chain-gateway)
-      - [Group Message Broadcaster](#group-message-broadcaster)
-      - [Identity Update Broadcaster](#identity-update-broadcaster)
-    - [Parameter Types and Validation](#parameter-types-and-validation)
+  - [Available configuration](#available-configuration)
+    - [XMTP Settlement Chain parameters](#xmtp-settlement-chain-parameters)
+      - [XMTP Settlement Chain parameter registry](#xmtp-settlement-chain-parameter-registry)
+      - [Fee token](#fee-token)
+      - [Node registry](#node-registry)
+      - [Payer registry](#payer-registry)
+      - [Payer report manager](#payer-report-manager)
+      - [Distribution manager](#distribution-manager)
+      - [Rate registry](#rate-registry)
+      - [XMTP Settlement Chain gateway](#xmtp-settlement-chain-gateway)
+      - [Factory (any chain)](#factory-any-chain)
+    - [XMTP App Chain parameters](#xmtp-app-chain-parameters)
+      - [XMTP App Chain parameter registry](#xmtp-app-chain-parameter-registry)
+      - [XMTP App Chain gateway](#xmtp-app-chain-gateway)
+      - [Group message broadcaster](#group-message-broadcaster)
+      - [Identity update broadcaster](#identity-update-broadcaster)
+    - [Parameter types and validation](#parameter-types-and-validation)
   - [PlantUML version](#plantuml-version)
   - [Mermaid version](#mermaid-version)
   - [Explanation of parameter flow steps](#explanation-of-parameter-flow-steps)
@@ -49,7 +49,7 @@ XMTP uses a comprehensive parameter system to manage configuration across all co
 
 - **`xmtp.payerRegistry.settler`**: Address authorized to settle usage fees
 - **`xmtp.payerRegistry.feeDistributor`**: Address of the fee distribution contract
-- **`xmtp.payerRegistry.minimumDeposit`**: Minimum deposit amount required for payers
+- **`xmtp.payerRegistry.minimumDeposit`**: Minimum deposit amount in wei required for payers
 - **`xmtp.payerRegistry.withdrawLockPeriod`**: Time lock period for withdrawals (in seconds)
 - **`xmtp.payerRegistry.paused`**: Pause status for payer operations
 - **`xmtp.payerRegistry.migrator`**: Address of the migrator contract for upgrades
@@ -67,9 +67,9 @@ XMTP uses a comprehensive parameter system to manage configuration across all co
 
 #### Rate registry
 
-- **`xmtp.rateRegistry.messageFee`**: Fee per message in protocol units
-- **`xmtp.rateRegistry.storageFee`**: Fee per storage unit in protocol units
-- **`xmtp.rateRegistry.congestionFee`**: Additional fee during network congestion
+- **`xmtp.rateRegistry.messageFee`**: Fee per message in picodollars
+- **`xmtp.rateRegistry.storageFee`**: Fee per storage unit in picodollars
+- **`xmtp.rateRegistry.congestionFee`**: Additional fee multiplier during network congestion, must be between 0 and 100
 - **`xmtp.rateRegistry.targetRatePerMinute`**: Target processing rate per minute
 - **`xmtp.rateRegistry.migrator`**: Address of the migrator contract for upgrades
 
