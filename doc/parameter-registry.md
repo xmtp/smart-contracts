@@ -49,7 +49,7 @@ XMTP uses a comprehensive parameter system to manage configuration across all co
 
 - **`xmtp.payerRegistry.settler`**: Address authorized to settle usage fees
 - **`xmtp.payerRegistry.feeDistributor`**: Address of the fee distribution contract
-- **`xmtp.payerRegistry.minimumDeposit`**: Minimum deposit amount in wei required for payers
+- **`xmtp.payerRegistry.minimumDeposit`**: Minimum deposit amount in wei units (of the underlying token) required for payers
 - **`xmtp.payerRegistry.withdrawLockPeriod`**: Time lock period for withdrawals (in seconds)
 - **`xmtp.payerRegistry.paused`**: Pause status for payer operations
 - **`xmtp.payerRegistry.migrator`**: Address of the migrator contract for upgrades
@@ -69,7 +69,7 @@ XMTP uses a comprehensive parameter system to manage configuration across all co
 
 - **`xmtp.rateRegistry.messageFee`**: Fee per message in picodollars
 - **`xmtp.rateRegistry.storageFee`**: Fee per storage unit in picodollars
-- **`xmtp.rateRegistry.congestionFee`**: Additional fee multiplier during network congestion, must be between 0 and 100
+- **`xmtp.rateRegistry.congestionFee`**: Fee per congestion unit in picodollars
 - **`xmtp.rateRegistry.targetRatePerMinute`**: Target processing rate per minute
 - **`xmtp.rateRegistry.migrator`**: Address of the migrator contract for upgrades
 
