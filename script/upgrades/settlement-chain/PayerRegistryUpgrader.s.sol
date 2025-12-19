@@ -8,16 +8,23 @@ import { PayerRegistryDeployer } from "../../deployers/PayerRegistryDeployer.sol
 
 /**
  * @notice Upgrades the PayerRegistry proxy to a new implementation
- * @dev This script:
- *      - Reads addresses for: factory, parameter registry and payer registry proxy from config JSON file
- *      - Deploys a new PayerRegistry implementation via the Factory (no-ops if it exists)
- *      - Creates a GenericEIP1967Migrator with the new implementation
- *      - Sets the migrator address in the Parameter Registry
- *      - Executes the migration on the proxy
- *      - Compares the state before and after upgrade
+ * @dev This script provides two upgrade paths:
  *
- * Usage:
- *   ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "UpgradePayerRegistry()" --broadcast
+ *   Path 1 (All-in-one, for non-Fireblocks environments):
+ *     - Upgrade(): Performs all steps in a single transaction batch
+ *
+ *   Path 2 (Three-step, for Fireblocks environments):
+ *     - DeployImplementationAndMigrator(): Step 1 - Deploy implementation and migrator (non-Fireblocks)
+ *     - SetMigratorInParameterRegistry(address): Step 2 - Set migrator in parameter registry (Fireblocks)
+ *     - PerformMigration(): Step 3 - Execute migration and verify state (non-Fireblocks)
+ *
+ * Usage (non-Fireblocks):
+ *   ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "Upgrade()" --broadcast
+ *
+ * Usage (Fireblocks):
+ *   Step 1: ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "DeployImplementationAndMigrator()" --broadcast
+ *   Step 2: ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script PayerRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 3: ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "PerformMigration()" --broadcast
  *
  */
 contract PayerRegistryUpgrader is BaseSettlementChainUpgrader {
@@ -35,9 +42,9 @@ contract PayerRegistryUpgrader is BaseSettlementChainUpgrader {
         string version;
     }
 
-    function UpgradePayerRegistry() external {
-        _upgrade();
-    }
+    // The all-in-one function (Upgrade) and three-step functions (DeployImplementationAndMigrator,
+    // SetMigratorInParameterRegistry, PerformMigration) are inherited from BaseSettlementChainUpgrader
+    // and can be called directly via forge script --sig
 
     function _getProxy() internal view override returns (address proxy_) {
         return _deployment.payerRegistryProxy;
