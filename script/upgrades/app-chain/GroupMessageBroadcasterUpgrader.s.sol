@@ -34,10 +34,6 @@ contract GroupMessageBroadcasterUpgrader is BaseAppChainUpgrader {
         return _deployment.groupMessageBroadcasterProxy;
     }
 
-    function _getContractName() internal pure override returns (string memory name_) {
-        return "groupMessageBroadcaster";
-    }
-
     function _getImplementationAddress(address proxy_) internal view override returns (address impl_) {
         return GroupMessageBroadcaster(proxy_).implementation();
     }

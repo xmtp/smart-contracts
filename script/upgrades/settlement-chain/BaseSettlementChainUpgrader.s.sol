@@ -6,6 +6,7 @@ import { GenericEIP1967Migrator } from "../../../src/any-chain/GenericEIP1967Mig
 import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { IMigratable } from "../../../src/abstract/interfaces/IMigratable.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { FireblocksNote } from "../../utils/FireblocksNote.sol";
 
 /**
  * @notice Abstract base contract for upgrading proxy contracts
@@ -16,23 +17,37 @@ import { Utils } from "../../utils/Utils.sol";
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
- * @dev Requires both ADMIN_PRIVATE_KEY and DEPLOYER_PRIVATE_KEY environment variables:
- *      - ADMIN_PRIVATE_KEY: Used only for setting the migrator parameter in the parameter registry
- *      - DEPLOYER_PRIVATE_KEY: Used for deploying implementations, migrators, and executing migrations
+ * @dev Admin address type is determined by environment with optional ADMIN_ADDRESS_TYPE override:
+ *      - testnet-dev: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
+ *      - testnet-staging: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
+ *      - testnet: default FIREBLOCKS, can override with ADMIN_ADDRESS_TYPE=PRIVATE_KEY
+ *      - mainnet: always FIREBLOCKS (override ignored, requires ADMIN address)
+ * @dev Environment variables:
+ *      - ADMIN_PRIVATE_KEY: Required when using PRIVATE_KEY mode (for setting migrator in parameter registry)
+ *      - ADMIN: Required when using FIREBLOCKS mode (must match Fireblocks vault account address)
+ *      - DEPLOYER_PRIVATE_KEY: Always required (for deploying implementations, migrators, and executing migrations)
  */
 abstract contract BaseSettlementChainUpgrader is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
+    error AdminNotSet();
     error StateMismatch();
     error StateComparisonNotImplemented();
+
+    enum AdminAddressType {
+        PrivateKey,
+        Fireblocks
+    }
 
     string internal _environment;
     uint256 internal _adminPrivateKey;
     address internal _admin;
+    AdminAddressType internal _adminAddressType;
     uint256 internal _deployerPrivateKey;
     address internal _deployer;
     Utils.DeploymentData internal _deployment;
     bool internal _skipStateCheck;
+    string internal _fireblocksNote;
 
     function setUp() external {
         // Environment
@@ -43,11 +58,22 @@ abstract contract BaseSettlementChainUpgrader is Script {
         // Deployment data
         _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
 
-        // Admin private key (for setting migrator in parameter registry)
-        _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
-        _admin = vm.addr(_adminPrivateKey);
-        console.log("Admin: %s", _admin);
+        // Determine admin address type based on environment with optional override
+        _adminAddressType = _getAdminAddressType(_environment);
+
+        // Admin setup (for setting migrator in parameter registry)
+        if (_adminAddressType == AdminAddressType.PrivateKey) {
+            // Private key mode: require ADMIN_PRIVATE_KEY
+            _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+            if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+            _admin = vm.addr(_adminPrivateKey);
+            console.log("Admin (Private Key): %s", _admin);
+        } else {
+            // Fireblocks mode: require ADMIN address (private key not needed)
+            _admin = vm.envAddress("ADMIN");
+            if (_admin == address(0)) revert AdminNotSet();
+            console.log("Admin (Fireblocks): %s", _admin);
+        }
 
         // Deployer private key (for deploying implementations, migrators, and executing migrations)
         _deployerPrivateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
@@ -64,6 +90,78 @@ abstract contract BaseSettlementChainUpgrader is Script {
         } catch {
             _skipStateCheck = false;
         }
+
+        // Fireblocks note for transaction tracking
+        _fireblocksNote = _getFireblocksNote("upgrade");
+        if (_adminAddressType == AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
+    }
+
+    /**
+     * @notice Determines admin address type based on environment with optional override
+     * @param environment_ The environment name
+     * @return adminAddressType_ The admin address type to use
+     * @dev Environment-specific defaults:
+     *      - testnet-dev: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
+     *      - testnet-staging: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
+     *      - testnet: default FIREBLOCKS, can override with ADMIN_ADDRESS_TYPE=PRIVATE_KEY
+     *      - mainnet: always FIREBLOCKS (override ignored)
+     */
+    function _getAdminAddressType(
+        string memory environment_
+    ) internal view returns (AdminAddressType adminAddressType_) {
+        // mainnet: always fireblocks (override ignored)
+        if (keccak256(bytes(environment_)) == keccak256(bytes("mainnet"))) {
+            return AdminAddressType.Fireblocks;
+        }
+
+        // Check for explicit override for other environments
+        try vm.envString("ADMIN_ADDRESS_TYPE") returns (string memory override_) {
+            if (keccak256(bytes(override_)) == keccak256(bytes("FIREBLOCKS"))) {
+                return AdminAddressType.Fireblocks;
+            } else if (keccak256(bytes(override_)) == keccak256(bytes("PRIVATE_KEY"))) {
+                return AdminAddressType.PrivateKey;
+            }
+        } catch {}
+
+        // Apply environment-specific defaults
+        if (keccak256(bytes(environment_)) == keccak256(bytes("testnet-dev"))) {
+            // testnet-dev: default private key, can override
+            return AdminAddressType.PrivateKey;
+        } else if (keccak256(bytes(environment_)) == keccak256(bytes("testnet-staging"))) {
+            // testnet-staging: default private key, can override
+            return AdminAddressType.PrivateKey;
+        } else if (keccak256(bytes(environment_)) == keccak256(bytes("testnet"))) {
+            // testnet: default fireblocks, can override
+            return AdminAddressType.Fireblocks;
+        }
+
+        // Default to private key for unknown environments
+        return AdminAddressType.PrivateKey;
+    }
+
+    /**
+     * @notice Gets or generates a Fireblocks note for transaction tracking
+     * @param operation_ The operation being performed (e.g., "upgrade")
+     * @return note_ The Fireblocks note to use
+     * @dev If FIREBLOCKS_NOTE env var is set, uses that. Otherwise generates a default note
+     *      based on environment, contract name, and operation.
+     */
+    function _getFireblocksNote(string memory operation_) internal view returns (string memory note_) {
+        string memory contractName = _getContractName();
+        return FireblocksNote.getNote(_environment, operation_, contractName);
+    }
+
+    /**
+     * @notice Gets the contract name for Fireblocks notes
+     * @return name_ The contract name (e.g., "NodeRegistry")
+     * @dev Tries to read contractName() from the proxy. Falls back to a default message
+     *      if the function doesn't exist (older implementations).
+     */
+    function _getContractName() internal view returns (string memory name_) {
+        address proxy = _getProxy();
+        return FireblocksNote.getContractName(proxy);
     }
 
     /**
@@ -71,7 +169,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @dev This function handles the common upgrade flow:
      *      1. Deploys or gets the implementation (using DEPLOYER_PRIVATE_KEY)
      *      2. Creates a GenericEIP1967Migrator (using DEPLOYER_PRIVATE_KEY)
-     *      3. Sets the migrator in the parameter registry (using ADMIN_PRIVATE_KEY)
+     *      3. Sets the migrator in the parameter registry (using ADMIN - PRIVATE_KEY or FIREBLOCKS based on environment)
      *      4. Executes the migration (using DEPLOYER_PRIVATE_KEY)
      *      5. Compares state before and after
      */
@@ -99,7 +197,11 @@ abstract contract BaseSettlementChainUpgrader is Script {
 
         // Set migrator in parameter registry (using ADMIN)
         string memory key = _getMigratorParameterKey(proxy);
-        vm.startBroadcast(_adminPrivateKey);
+        if (_adminAddressType == AdminAddressType.PrivateKey) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         console.log("param reg migrator key %s", key);
         vm.stopBroadcast();

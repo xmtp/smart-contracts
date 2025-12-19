@@ -21,16 +21,38 @@ All examples below use the environment `staging`, so config files are named `tes
 
 ### 1. Maintain the root `.env` file to have:
 
+**Admin Configuration (Environment-Specific):**
+
+Admin address type is determined by environment with optional override:
+
+- **testnet-dev**: Defaults to `ADMIN_PRIVATE_KEY`, can override with `ADMIN_ADDRESS_TYPE=FIREBLOCKS`
+- **testnet-staging**: Defaults to `ADMIN_PRIVATE_KEY`, can override with `ADMIN_ADDRESS_TYPE=FIREBLOCKS`
+- **testnet**: Defaults to Fireblocks (requires `ADMIN` address), can override with `ADMIN_ADDRESS_TYPE=PRIVATE_KEY`
+- **mainnet**: Always uses Fireblocks (requires `ADMIN` address, override ignored)
+
+**For Private Key Mode:**
+
 - [ ] `ADMIN_PRIVATE_KEY` used only for writing migrator parameter to parameter registry
+
+**For Fireblocks Mode:**
+
+- [ ] `ADMIN` address (must match Fireblocks vault account address)
+- [ ] Fireblocks environment variables (API key, private key path, RPC URL, vault account IDs) all need set as per `.env.template`.
+
+**Deployer Configuration (Always Required):**
+
 - [ ] `DEPLOYER_PRIVATE_KEY` used for deploying implementations, migrators, bridging, and executing migrations
+
+**Other Required:**
+
 - [ ] `BASE_SEPOLIA_RPC_URL` the RPC provider for the settlement chain.
 - [ ] `XMTP_ROPSTEN_RPC_URL` the RPC for the app chain.
 
-### 2. Maintain `config/testnet-staging.json` to have:
+### 2. Maintain `config/testnet-staging.json` to ensure these have values:
 
-- [ ] `factory` (used for creating new contracts)
-- [ ] `parameterRegistryProxy` (used to set migrator address)
-- [ ] `<contract-being-upgraded>Proxy` (this is what gets upgraded)
+- [ ] `factory` used for creating new contracts
+- [ ] `parameterRegistryProxy` used to set migrator address
+- [ ] `<contract-being-upgraded>Proxy` this is what gets upgraded
 
 Note: There are no dependencies on `environments/testnet-staging.json` for upgrades.
 
@@ -44,23 +66,88 @@ App chain upgrades require three steps that execute on different chains.
 
 #### Step 1 - Prepare new implementation on app chain (uses DEPLOYER)
 
-Deploy the new implementation and migrator on the app chain:
+Deploy the new implementation and migrator on the app chain. This step always uses `DEPLOYER_PRIVATE_KEY`:
+
+**For testnet-dev (default private key):**
 
 ```bash
+# Default (private key)
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+
+# Override to use Fireblocks
+ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+```
+
+**For testnet-staging (default private key):**
+
+```bash
+# Default (private key)
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+
+# Override to use Fireblocks
+ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+```
+
+**For testnet (default Fireblocks):**
+
+```bash
+ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+```
+
+**For mainnet (always Fireblocks):**
+
+```bash
+ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_mainnet --slow --sig "Prepare()" --broadcast
 ```
 
 - [ ] Note the migrator address from the output. This will be used in Step 2.
 
 #### Step 2 - Bridge the migrator parameter (uses ADMIN and DEPLOYER)
 
-Bridge the migrator parameter from the settlement chain to the app chain. ADMIN sets the migrator in parameter registry, then DEPLOYER approves fee token and bridges:
+Bridge the migrator parameter from the settlement chain to the app chain. ADMIN sets the migrator in parameter registry (uses Fireblocks if configured), then DEPLOYER approves fee token and bridges:
+
+**For testnet-dev (default private key):**
 
 ```bash
+# Default (private key)
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+
+# Override to use Fireblocks
+ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+```
+
+**For testnet-staging (default private key):**
+
+```bash
+# Default (private key)
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+
+# Override to use Fireblocks
+ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+```
+
+**For testnet (default Fireblocks):**
+
+```bash
+ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+```
+
+**For mainnet (always Fireblocks):**
+
+```bash
+ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_mainnet --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 - [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.identityUpdateBroadcaster.migrator`).
+- [ ] **If using Fireblocks**: Check Fireblocks dashboard for transaction approval request for the admin operation.
 
 #### Step 3 - Verify bridge and execute upgrade (uses DEPLOYER)
 
@@ -72,10 +159,34 @@ Example verification URL:
 https://xmtp-ropsten.explorer.alchemy.com/address/0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D?tab=read_write_proxy
 ```
 
-Execute the upgrade on the app chain:
+Execute the upgrade on the app chain. This step always uses `DEPLOYER_PRIVATE_KEY`:
+
+**For testnet-dev:**
+
+```bash
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+```
+
+**For testnet-staging:**
 
 ```bash
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+```
+
+**Note:** Step 3 (Upgrade) always uses `DEPLOYER_PRIVATE_KEY` regardless of admin address type configuration.
+
+**For testnet:**
+
+```bash
+ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+```
+
+**For mainnet:**
+
+```bash
+ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_mainnet --slow --sig "Upgrade()" --broadcast
 ```
 
 - [ ] Note the new implementation address from the output.
