@@ -86,6 +86,7 @@ contract DeployDistributionManagerScript is DeployScripts {
         console.log("  Key: %s", feeDistributorKey_);
         console.log("  Value (DistributionManager proxy): %s", distributionManagerProxy_);
 
+        // Set parameter in parameter registry (using ADMIN)
         vm.startBroadcast(_adminPrivateKey);
         ISettlementChainParameterRegistry(_deploymentData.parameterRegistryProxy).set(
             feeDistributorKey_,
@@ -95,11 +96,11 @@ contract DeployDistributionManagerScript is DeployScripts {
 
         console.log("Successfully updated SettlementChainParameterRegistry parameter");
 
-        // Call PayerRegistry.updateFeeDistributor()
+        // Call PayerRegistry.updateFeeDistributor() (using DEPLOYER)
         console.log("Calling PayerRegistry.updateFeeDistributor()");
         console.log("  PayerRegistry proxy: %s", _deploymentData.payerRegistryProxy);
 
-        vm.startBroadcast(_adminPrivateKey);
+        vm.startBroadcast(_deployerPrivateKey);
         IPayerRegistry(_deploymentData.payerRegistryProxy).updateFeeDistributor();
         vm.stopBroadcast();
 

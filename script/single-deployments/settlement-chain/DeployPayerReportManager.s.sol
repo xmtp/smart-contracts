@@ -86,17 +86,18 @@ contract DeployPayerReportManagerScript is DeployScripts {
         console.log("  Key: %s", settlerKey_);
         console.log("  Value (PayerReportManager proxy): %s", payerReportManagerProxy_);
 
+        // Set parameter in parameter registry (using ADMIN)
         vm.startBroadcast(_adminPrivateKey);
         ISettlementChainParameterRegistry(_deploymentData.parameterRegistryProxy).set(settlerKey_, settlerValue_);
         vm.stopBroadcast();
 
         console.log("Successfully updated SettlementChainParameterRegistry parameter");
 
-        // Call PayerRegistry.updateSettler()
+        // Call PayerRegistry.updateSettler() (using DEPLOYER)
         console.log("Calling PayerRegistry.updateSettler()");
         console.log("  PayerRegistry proxy: %s", _deploymentData.payerRegistryProxy);
 
-        vm.startBroadcast(_adminPrivateKey);
+        vm.startBroadcast(_deployerPrivateKey);
         IPayerRegistry(_deploymentData.payerRegistryProxy).updateSettler();
         vm.stopBroadcast();
 

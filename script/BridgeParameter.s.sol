@@ -39,7 +39,7 @@ contract BridgeParameter is BaseAppChainUpgrader {
 
         if (balance < cost_) revert InsufficientBalance();
 
-        vm.startBroadcast(_privateKey);
+        vm.startBroadcast(_deployerPrivateKey);
 
         // Approve fee token
         IERC20Like(feeToken).approve(proxy, cost_);

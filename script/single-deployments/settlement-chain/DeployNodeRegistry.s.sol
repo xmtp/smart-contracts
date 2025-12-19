@@ -58,7 +58,7 @@ contract DeployNodeRegistryScript is DeployScripts {
 
         console.log("Updating NodeRegistry dependencies");
 
-        vm.startBroadcast(_privateKey);
+        vm.startBroadcast(_deployerPrivateKey);
         INodeRegistry(_deploymentData.nodeRegistryProxy).updateAdmin();
         INodeRegistry(_deploymentData.nodeRegistryProxy).updateMaxCanonicalNodes();
         vm.stopBroadcast();

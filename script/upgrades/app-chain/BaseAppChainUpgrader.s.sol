@@ -19,6 +19,9 @@ import { Utils } from "../../utils/Utils.sol";
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
+ * @dev Requires both ADMIN_PRIVATE_KEY and DEPLOYER_PRIVATE_KEY environment variables:
+ *      - ADMIN_PRIVATE_KEY: Used only for setting the migrator parameter in the parameter registry
+ *      - DEPLOYER_PRIVATE_KEY: Used for deploying implementations, migrators, executing migrations, and bridging parameters
  */
 abstract contract BaseAppChainUpgrader is Script {
     error PrivateKeyNotSet();
@@ -37,8 +40,10 @@ abstract contract BaseAppChainUpgrader is Script {
     uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000;
 
     string internal _environment;
-    uint256 internal _privateKey;
+    uint256 internal _adminPrivateKey;
     address internal _admin;
+    uint256 internal _deployerPrivateKey;
+    address internal _deployer;
     Utils.DeploymentData internal _deployment;
 
     function setUp() external {
@@ -47,17 +52,25 @@ abstract contract BaseAppChainUpgrader is Script {
         if (bytes(_environment).length == 0) revert EnvironmentNotSet();
         console.log("Environment: %s", _environment);
 
-        // Admin private key
+        // Deployment data
         _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
-        _privateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_privateKey == 0) revert PrivateKeyNotSet();
-        _admin = vm.addr(_privateKey);
+
+        // Admin private key (for setting migrator in parameter registry)
+        _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+        if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+        _admin = vm.addr(_adminPrivateKey);
         console.log("Admin: %s", _admin);
+
+        // Deployer private key (for deploying implementations, migrators, and executing migrations)
+        _deployerPrivateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
+        if (_deployerPrivateKey == 0) revert PrivateKeyNotSet();
+        _deployer = vm.addr(_deployerPrivateKey);
+        console.log("Deployer: %s", _deployer);
     }
 
     /**
      * @notice Step 1 of 3: Prepare the upgrade on the app chain
-     * @dev Deploys or gets the implementation and creates a migrator
+     * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
      */
     function Prepare() external {
         if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
@@ -70,7 +83,7 @@ abstract contract BaseAppChainUpgrader is Script {
         console.log("paramRegistry: %s", paramRegistry);
         console.log("proxy: %s", proxy);
 
-        vm.startBroadcast(_privateKey);
+        vm.startBroadcast(_deployerPrivateKey);
 
         // Deploy or get implementation
         address newImpl = _deployOrGetImplementation(factory, paramRegistry, proxy);
@@ -91,6 +104,8 @@ abstract contract BaseAppChainUpgrader is Script {
     /**
      * @notice Step 2 of 3: Bridge the migrator parameter from settlement chain to app chain
      * @param migrator_ The migrator address from step 1
+     * @dev Sets the migrator in parameter registry using ADMIN_PRIVATE_KEY,
+     *      then approves fee token and bridges the parameter using DEPLOYER_PRIVATE_KEY
      */
     function Bridge(address migrator_) external {
         if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
@@ -108,11 +123,11 @@ abstract contract BaseAppChainUpgrader is Script {
         string memory key = _getMigratorParameterKey();
         console.log("migratorParameterKey: %s", key);
 
-        vm.startBroadcast(_privateKey);
-
-        // Set migrator in parameter registry
+        // Set migrator in parameter registry (using ADMIN)
+        vm.startBroadcast(_adminPrivateKey);
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator_))));
         console.log("Set migrator in parameter registry");
+        vm.stopBroadcast();
 
         // Calculate gas and cost for bridging
         // The value 1 below is the number of parameter keys being bridged
@@ -124,7 +139,9 @@ abstract contract BaseAppChainUpgrader is Script {
         console.log("gasLimit: %s", gasLimit_);
         console.log("cost (fee token, 6 decimals): %s", cost_);
 
-        if (IERC20Like(_deployment.feeTokenProxy).balanceOf(_admin) < cost_) revert InsufficientBalance();
+        // Approve fee token and bridge (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
+        if (IERC20Like(_deployment.feeTokenProxy).balanceOf(_deployer) < cost_) revert InsufficientBalance();
 
         // Approve fee token
         IERC20Like(_deployment.feeTokenProxy).approve(proxy, cost_);
@@ -145,7 +162,7 @@ abstract contract BaseAppChainUpgrader is Script {
 
     /**
      * @notice Step 3 of 3: Perform the upgrade on the app chain
-     * @dev Executes the migration and verifies state preservation
+     * @dev Executes the migration and verifies state preservation (using DEPLOYER_PRIVATE_KEY)
      */
     function Upgrade() external {
         address proxy = _getProxy();
@@ -160,7 +177,7 @@ abstract contract BaseAppChainUpgrader is Script {
         bytes memory stateBefore = _getContractState(proxy);
         _logContractState("State before upgrade:", stateBefore);
 
-        vm.startBroadcast(_privateKey);
+        vm.startBroadcast(_deployerPrivateKey);
 
         // Perform migration
         IMigratable(proxy).migrate();

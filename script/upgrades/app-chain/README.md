@@ -10,19 +10,19 @@ All examples below use the environment `staging`, so config files are named `tes
 
 ## Token Requirements
 
-The ADMIN address must have the following tokens funded:
-
-| Step       | Executed on      | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
-| ---------- | ---------------- | --------------------- | --------------------- | ------------------------- |
-| 1. Prepare | App Chain        | -                     | -                     | yes for deployment tx gas |
-| 2. Bridge  | Settlement Chain | yes for bridge tx gas | yes to give to bridge | -                         |
-| 3. Upgrade | App Chain        | -                     | -                     | yes for upgrade tx gas    |
+| Step       | Executed on      | Address  | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
+| ---------- | ---------------- | -------- | --------------------- | --------------------- | ------------------------- |
+| 1. Prepare | App Chain        | DEPLOYER | -                     | -                     | yes for deployment tx gas |
+| 2. Bridge  | Settlement Chain | ADMIN    | yes for param reg tx  | -                     | -                         |
+| 2. Bridge  | Settlement Chain | DEPLOYER | yes for bridge tx gas | yes to give to bridge | -                         |
+| 3. Upgrade | App Chain        | DEPLOYER | -                     | -                     | yes for upgrade tx gas    |
 
 ## STAGE 1 - Setup
 
 ### 1. Maintain the root `.env` file to have:
 
-- [ ] `ADMIN_PRIVATE_KEY`. This address must be an admin of the contract being upgraded.
+- [ ] `ADMIN_PRIVATE_KEY` used only for writing migrator parameter to parameter registry
+- [ ] `DEPLOYER_PRIVATE_KEY` used for deploying implementations, migrators, bridging, and executing migrations
 - [ ] `BASE_SEPOLIA_RPC_URL` the RPC provider for the settlement chain.
 - [ ] `XMTP_ROPSTEN_RPC_URL` the RPC for the app chain.
 
@@ -42,7 +42,7 @@ App chain upgrades require three steps that execute on different chains.
 
 ### Example: Upgrade Identity Update Broadcaster
 
-#### Step 1 - Prepare new implementation on app chain
+#### Step 1 - Prepare new implementation on app chain (uses DEPLOYER)
 
 Deploy the new implementation and migrator on the app chain:
 
@@ -52,9 +52,9 @@ ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc
 
 - [ ] Note the migrator address from the output. This will be used in Step 2.
 
-#### Step 2 - Bridge the migrator parameter
+#### Step 2 - Bridge the migrator parameter (uses ADMIN and DEPLOYER)
 
-Bridge the migrator parameter from the settlement chain to the app chain:
+Bridge the migrator parameter from the settlement chain to the app chain. ADMIN sets the migrator in parameter registry, then DEPLOYER approves fee token and bridges:
 
 ```bash
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
@@ -62,7 +62,7 @@ ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc
 
 - [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.identityUpdateBroadcaster.migrator`).
 
-#### Step 3 - Verify bridge and execute upgrade
+#### Step 3 - Verify bridge and execute upgrade (uses DEPLOYER)
 
 - [ ] Manually verify the bridge completed successfully by checking the parameter registry on the app chain. The parameter key from Step 2 should show the migrator address from Step 1.
 

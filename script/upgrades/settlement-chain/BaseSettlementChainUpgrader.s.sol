@@ -16,6 +16,9 @@ import { Utils } from "../../utils/Utils.sol";
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
+ * @dev Requires both ADMIN_PRIVATE_KEY and DEPLOYER_PRIVATE_KEY environment variables:
+ *      - ADMIN_PRIVATE_KEY: Used only for setting the migrator parameter in the parameter registry
+ *      - DEPLOYER_PRIVATE_KEY: Used for deploying implementations, migrators, and executing migrations
  */
 abstract contract BaseSettlementChainUpgrader is Script {
     error PrivateKeyNotSet();
@@ -24,8 +27,10 @@ abstract contract BaseSettlementChainUpgrader is Script {
     error StateComparisonNotImplemented();
 
     string internal _environment;
-    uint256 internal _privateKey;
+    uint256 internal _adminPrivateKey;
     address internal _admin;
+    uint256 internal _deployerPrivateKey;
+    address internal _deployer;
     Utils.DeploymentData internal _deployment;
     bool internal _skipStateCheck;
 
@@ -35,12 +40,20 @@ abstract contract BaseSettlementChainUpgrader is Script {
         if (bytes(_environment).length == 0) revert EnvironmentNotSet();
         console.log("Environment: %s", _environment);
 
-        // Admin private key
+        // Deployment data
         _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
-        _privateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_privateKey == 0) revert PrivateKeyNotSet();
-        _admin = vm.addr(_privateKey);
+
+        // Admin private key (for setting migrator in parameter registry)
+        _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+        if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+        _admin = vm.addr(_adminPrivateKey);
         console.log("Admin: %s", _admin);
+
+        // Deployer private key (for deploying implementations, migrators, and executing migrations)
+        _deployerPrivateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
+        if (_deployerPrivateKey == 0) revert PrivateKeyNotSet();
+        _deployer = vm.addr(_deployerPrivateKey);
+        console.log("Deployer: %s", _deployer);
 
         // Optional: Skip state check flag (for intentional state changes like parameter registry updates)
         try vm.envBool("SKIP_STATE_CHECK") returns (bool skip_) {
@@ -56,10 +69,10 @@ abstract contract BaseSettlementChainUpgrader is Script {
     /**
      * @notice Performs the upgrade process
      * @dev This function handles the common upgrade flow:
-     *      1. Deploys or gets the implementation
-     *      2. Creates a GenericEIP1967Migrator
-     *      3. Sets the migrator in the parameter registry
-     *      4. Executes the migration
+     *      1. Deploys or gets the implementation (using DEPLOYER_PRIVATE_KEY)
+     *      2. Creates a GenericEIP1967Migrator (using DEPLOYER_PRIVATE_KEY)
+     *      3. Sets the migrator in the parameter registry (using ADMIN_PRIVATE_KEY)
+     *      4. Executes the migration (using DEPLOYER_PRIVATE_KEY)
      *      5. Compares state before and after
      */
     function _upgrade() internal {
@@ -74,24 +87,26 @@ abstract contract BaseSettlementChainUpgrader is Script {
         // Get contract state before upgrade
         bytes memory stateBefore = _getContractState(proxy);
 
-        vm.startBroadcast(_privateKey);
-
-        // Deploy or get implementation
+        // Deploy or get implementation (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
         address newImpl = _deployOrGetImplementation();
         console.log("newImpl %s", newImpl);
 
-        // Deploy generic migrator
+        // Deploy generic migrator (using DEPLOYER)
         GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
         console.log("migrator (also param reg migrator value) %s", address(migrator));
+        vm.stopBroadcast();
 
-        // Set migrator in parameter registry
+        // Set migrator in parameter registry (using ADMIN)
         string memory key = _getMigratorParameterKey(proxy);
+        vm.startBroadcast(_adminPrivateKey);
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
         console.log("param reg migrator key %s", key);
+        vm.stopBroadcast();
 
-        // Perform migration
+        // Perform migration (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
         IMigratable(proxy).migrate();
-
         vm.stopBroadcast();
 
         // Compare state before and after upgrade
