@@ -37,7 +37,11 @@ Admin address type is determined by environment with optional override:
 **For Fireblocks Mode:**
 
 - [ ] `ADMIN` address (must match Fireblocks vault account address)
-- [ ] Fireblocks environment variables (API key, private key path, RPC URL, vault account IDs) all need set as per `.env.template`.
+- [ ] Fireblocks environment variables (API key, private key path, vault account IDs) all need set as per `.env.template`. Omit the `FIREBLOCKS_NOTE` to let the system generate a note.
+- [ ] Prefix your forge script command with `npx fireblocks-json-rpc --http --` and use `--rpc-url {}` (the `{}` gets automatically replaced with the proxy URL)
+- [ ] Use `--sender <ADMIN_ADDRESS>` flag in forge script commands to specify which address should sign via Fireblocks
+- [ ] Use `--unlocked` flag to indicate the sender address is managed by Fireblocks
+- [ ] The Fireblocks proxy will forward requests to your actual chain RPC (e.g., Alchemy) while intercepting admin transactions for Fireblocks signing
 
 **Deployer Configuration (Always Required):**
 
@@ -74,7 +78,7 @@ Deploy the new implementation and migrator on the app chain. This step always us
 # Default (private key)
 ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 
-# Override to use Fireblocks
+# Override to use Fireblocks (Note: Prepare step uses DEPLOYER, so Fireblocks not needed here)
 ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
   forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 ```
@@ -85,7 +89,7 @@ ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-ad
 # Default (private key)
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 
-# Override to use Fireblocks
+# Override to use Fireblocks (Note: Prepare step uses DEPLOYER, so Fireblocks not needed here)
 ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
   forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 ```
@@ -93,6 +97,7 @@ ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admi
 **For testnet (default Fireblocks):**
 
 ```bash
+# Note: Prepare step uses DEPLOYER, so Fireblocks not needed here
 ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
   forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 ```
@@ -100,6 +105,7 @@ ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
 **For mainnet (always Fireblocks):**
 
 ```bash
+# Note: Prepare step uses DEPLOYER, so Fireblocks not needed here
 ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
   forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_mainnet --slow --sig "Prepare()" --broadcast
 ```
@@ -117,8 +123,9 @@ Bridge the migrator parameter from the settlement chain to the app chain. ADMIN 
 ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 
 # Override to use Fireblocks
-ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
-  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+npx fireblocks-json-rpc --http -- \
+  ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --sender <fireblocks-admin-address> --slow --unlocked --rpc-url {} --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 **For testnet-staging (default private key):**
@@ -128,26 +135,37 @@ ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-ad
 ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 
 # Override to use Fireblocks
-ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
-  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+npx fireblocks-json-rpc --http -- \
+  ENVIRONMENT=testnet-staging ADMIN_ADDRESS_TYPE=FIREBLOCKS ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --sender <fireblocks-admin-address> --slow --unlocked --rpc-url {} --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 **For testnet (default Fireblocks):**
 
 ```bash
-ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
-  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+npx fireblocks-json-rpc --http -- \
+  ENVIRONMENT=testnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --sender <fireblocks-admin-address> --slow --unlocked --rpc-url {} --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 **For mainnet (always Fireblocks):**
 
 ```bash
-ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
-  forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_mainnet --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
+npx fireblocks-json-rpc --http -- \
+  ENVIRONMENT=mainnet ADMIN=<fireblocks-admin-address> \
+  forge script IdentityUpdateBroadcasterUpgrader --sender <fireblocks-admin-address> --slow --unlocked --rpc-url {} --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
 ```
 
 - [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.identityUpdateBroadcaster.migrator`).
-- [ ] **If using Fireblocks**: Check Fireblocks dashboard for transaction approval request for the admin operation.
+- [ ] **If using Fireblocks**:
+  - Prefix your forge script command with `npx fireblocks-json-rpc --http --` (this starts the proxy and runs your command)
+  - Use `--rpc-url {}` in your forge command (the `{}` gets automatically replaced with the proxy URL)
+  - Use `--sender <ADMIN_ADDRESS>` to specify which address should sign via Fireblocks for admin operations
+  - Use `--unlocked` flag to indicate the sender address is managed by Fireblocks
+  - The Fireblocks proxy intercepts transactions from the `--sender` address and routes them through Fireblocks for signing
+  - The proxy forwards all other requests (including deployer operations) to your actual chain RPC (e.g., Alchemy)
+  - Check Fireblocks dashboard for transaction approval request for the admin operation
+  - The deployer operations (fee token approval and bridging) will still use `DEPLOYER_PRIVATE_KEY` and sign normally - they bypass Fireblocks
 
 #### Step 3 - Verify bridge and execute upgrade (uses DEPLOYER)
 

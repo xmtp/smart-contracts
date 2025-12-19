@@ -91,10 +91,9 @@ abstract contract BaseSettlementChainUpgrader is Script {
             _skipStateCheck = false;
         }
 
-        // Fireblocks note for transaction tracking
-        _fireblocksNote = _getFireblocksNote("upgrade");
+        // Fireblocks note will be set per operation (Deploy/SetMigrator/PerformMigration)
         if (_adminAddressType == AdminAddressType.Fireblocks) {
-            console.log("Fireblocks Note: %s", _fireblocksNote);
+            console.log("Fireblocks Note: Will be set per operation (Deploy/SetMigrator/PerformMigration)");
         }
     }
 
@@ -165,13 +164,134 @@ abstract contract BaseSettlementChainUpgrader is Script {
     }
 
     /**
-     * @notice Performs the upgrade process
+     * @notice Step 1 of 3: Deploy implementation and migrator
+     * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
+     * @dev This step never uses Fireblocks, so no Fireblocks note is needed
+     * @return migrator_ The deployed migrator address
+     */
+    function DeployImplementationAndMigrator() external returns (address migrator_) {
+        address factory = _deployment.factory;
+        address paramRegistry = _deployment.parameterRegistryProxy;
+        address proxy = _getProxy();
+
+        console.log("factory %s", factory);
+        console.log("paramRegistry %s", paramRegistry);
+        console.log("proxy %s", proxy);
+
+        vm.startBroadcast(_deployerPrivateKey);
+
+        // Deploy or get implementation
+        address newImpl = _deployOrGetImplementation();
+        console.log("newImpl %s", newImpl);
+
+        // Deploy generic migrator
+        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
+        console.log("migrator (also param reg migrator value) %s", address(migrator));
+
+        vm.stopBroadcast();
+
+        // Output migrator address and Fireblocks note for step 2
+        // Always output the note, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
+        string memory fireblocksNote = _getFireblocksNote("setMigrator");
+        console.log("==========================================");
+        console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));
+        console.log("FIREBLOCKS_NOTE_FOR_STEP_2: %s", fireblocksNote);
+        console.log("Export these values before running Step 2:");
+        console.log("  export MIGRATOR_ADDRESS=%s", address(migrator));
+        console.log("  export FIREBLOCKS_NOTE=\"%s\"", fireblocksNote);
+        console.log("==========================================");
+
+        return address(migrator);
+    }
+
+    /**
+     * @notice Step 2 of 3: Set migrator in parameter registry
+     * @param migrator_ The migrator address from step 1
+     * @dev Sets the migrator in parameter registry using ADMIN (PRIVATE_KEY or FIREBLOCKS based on environment)
+     */
+    function SetMigratorInParameterRegistry(address migrator_) external {
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("setMigrator");
+        if (_adminAddressType == AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
+
+        address paramRegistry = _deployment.parameterRegistryProxy;
+        address proxy = _getProxy();
+
+        console.log("paramRegistry %s", paramRegistry);
+        console.log("proxy %s", proxy);
+        console.log("migrator %s", migrator_);
+
+        // Set migrator in parameter registry (using ADMIN)
+        string memory key = _getMigratorParameterKey(proxy);
+        if (_adminAddressType == AdminAddressType.PrivateKey) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
+        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator_))));
+        console.log("param reg migrator key %s", key);
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Step 3 of 3: Perform migration
+     * @dev Executes the migration and verifies state preservation (using DEPLOYER_PRIVATE_KEY)
+     * @dev This step never uses Fireblocks, so no Fireblocks note is needed
+     */
+    function PerformMigration() external {
+        address proxy = _getProxy();
+
+        console.log("proxy %s", proxy);
+
+        // Get contract state before upgrade
+        bytes memory stateBefore = _getContractState(proxy);
+        _logContractState("State before upgrade:", stateBefore);
+
+        // Perform migration (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
+        IMigratable(proxy).migrate();
+        vm.stopBroadcast();
+
+        // Compare state before and after upgrade
+        bytes memory stateAfter = _getContractState(proxy);
+        if (stateBefore.length == 0 || stateAfter.length == 0) {
+            revert StateComparisonNotImplemented();
+        }
+        _logContractState("State after upgrade:", stateAfter);
+        bool statesEqual = _isContractStateEqual(stateBefore, stateAfter);
+        if (!statesEqual) {
+            if (_skipStateCheck) {
+                console.log("WARNING: State mismatch detected but SKIP_STATE_CHECK is enabled - proceeding anyway");
+            } else {
+                revert StateMismatch();
+            }
+        } else {
+            console.log("State check passed: all state values match");
+        }
+    }
+
+    /**
+     * @notice Performs the upgrade process (all-in-one for non-Fireblocks environments)
      * @dev This function handles the common upgrade flow:
      *      1. Deploys or gets the implementation (using DEPLOYER_PRIVATE_KEY)
      *      2. Creates a GenericEIP1967Migrator (using DEPLOYER_PRIVATE_KEY)
      *      3. Sets the migrator in the parameter registry (using ADMIN - PRIVATE_KEY or FIREBLOCKS based on environment)
      *      4. Executes the migration (using DEPLOYER_PRIVATE_KEY)
      *      5. Compares state before and after
+     * @dev For Fireblocks environments, use the three-step process instead:
+     *      - DeployImplementationAndMigrator()
+     *      - SetMigratorInParameterRegistry(address)
+     *      - PerformMigration()
+     */
+    function Upgrade() external {
+        _upgrade();
+    }
+
+    /**
+     * @notice Internal upgrade function that performs all upgrade steps
+     * @dev This is called by Upgrade() and can be overridden by child contracts if needed
      */
     function _upgrade() internal {
         address factory = _deployment.factory;
