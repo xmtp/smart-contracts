@@ -28,6 +28,8 @@ This document illustrates the complete process of setting a parameter in the XMT
 
 XMTP uses a comprehensive parameter system to manage configuration across all contracts. Parameters are organized by contract and functionality, using a hierarchical key structure. All parameter keys follow the pattern `xmtp.{contract}.{parameter}`.
 
+Some parameters are amounts denominated in picodollars. Note that 1 dollar = 1,000,000,000,000 (10¹²) picodollars.
+
 ### XMTP Settlement Chain parameters
 
 #### XMTP Settlement Chain parameter registry
