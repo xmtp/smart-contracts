@@ -198,7 +198,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
         console.log("FIREBLOCKS_NOTE_FOR_STEP_2: %s", fireblocksNote);
         console.log("Export these values before running Step 2:");
         console.log("  export MIGRATOR_ADDRESS=%s", address(migrator));
-        console.log("  export FIREBLOCKS_NOTE=\"%s\"", fireblocksNote);
+        console.log('  export FIREBLOCKS_NOTE="%s"', fireblocksNote);
         console.log("==========================================");
 
         return address(migrator);
