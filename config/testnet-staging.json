@@ -23,7 +23,7 @@
   "initializableImplementation": "0x8a5b177657b9B0dd469f7C61e3c34C841883772C",
   "mockUnderlyingFeeTokenImplementation": "0x78007e6CBc32667Aad1968502E1c7c581Cc7B195",
   "mockUnderlyingFeeTokenProxySalt": "MockUnderlyingFeeToken_0",
-  "nodeRegistryImplementation": "0xb6dffB20296422b82f430FBa35Ad95b8957D6f48",
+  "nodeRegistryImplementation": "0x2CB098bBFfAeB693133f6875C4287995cbd6AB29",
   "nodeRegistryProxy": "0xFac49258e9F06f321d992EFe1ea289308002a1E4",
   "nodeRegistryProxySalt": "NodeRegistry_1_0",
   "parameterRegistryProxy": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
