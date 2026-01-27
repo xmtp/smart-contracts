@@ -80,9 +80,9 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
             targetRatePerMinuteParameterKey()
         );
 
-        _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        uint64 startTime_ = RegistryParameters.getUint64Parameter(parameterRegistry, ratesInEffectAfterParameterKey());
 
-        uint64 startTime_ = uint64(block.timestamp);
+        _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
@@ -115,6 +115,11 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     /// @inheritdoc IRateRegistry
     function targetRatePerMinuteParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.targetRatePerMinute";
+    }
+
+    /// @inheritdoc IRateRegistry
+    function ratesInEffectAfterParameterKey() public pure returns (string memory key_) {
+        return "xmtp.rateRegistry.ratesInEffectAfter";
     }
 
     /// @inheritdoc IRateRegistry

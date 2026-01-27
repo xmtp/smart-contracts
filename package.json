@@ -1,52 +1,52 @@
 {
-    "name": "@xmtp/smart-contracts",
-    "version": "0.5.6",
-    "description": "XMTP Smart Contracts",
-    "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/xmtp/smart-contracts.git"
-    },
-    "bugs": {
-        "url": "https://github.com/xmtp/smart-contracts/issues"
-    },
-    "homepage": "https://github.com/xmtp/smart-contracts#readme",
-    "scripts": {
-        "build": "forge build",
-        "clean": "forge clean",
-        "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 3000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml --ignore-errors inconsistent lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
-        "gas-report": "forge test --fuzz-seed 10101 --gas-report --gas-limit 3000000000 > gasreport.ansi",
-        "doc": "forge doc --serve --port 4000",
-        "lint-staged": "lint-staged",
-        "prettier": "prettier --write 'script/**/*' 'src/**/*' 'test/**/*' 'config/**/*' 'environments/**/*'",
-        "prettier-check": "prettier --check 'script/**/*' 'src/**/*' 'test/**/*' 'config/**/*' 'environments/**/*'",
-        "slither": "rm -rf output.sarif && forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --exclude low-level-calls --sarif output.sarif --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
-        "solhint": "solhint -f stylish 'src/**/*.sol'",
-        "solhint-fix": "solhint --fix 'src/**/*.sol'",
-        "test": "forge test",
-        "anvil": "anvil",
-        "gen-anvil-state": "./dev/gen-anvil-state",
-        "gen-artifacts": "./dev/gen-artifacts",
-        "deploy-local": "./dev/deploy-local",
-        "check-deployments-local": "./dev/check-local-deployment"
-    },
-    "devDependencies": {
-        "@arbitrum/sdk": "^4.0.4",
-        "@ethersproject/bignumber": "^5.8.0",
-        "@fireblocks/fireblocks-json-rpc": "^0.2.2",
-        "dotenv": "^16.5.0",
-        "ethers": "5.8.0",
-        "lint-staged": "^15.5.2",
-        "prettier": "^3.5.3",
-        "prettier-plugin-solidity": "^1.4.3",
-        "solhint": "^5.1.0",
-        "solhint-plugin-prettier": "^0.1.0"
-    },
-    "engines": {
-        "node": ">=23"
-    },
-    "files": [
-        "src/**",
-        "out/**"
-    ]
+  "name": "@xmtp/smart-contracts",
+  "version": "0.5.6",
+  "description": "XMTP Smart Contracts",
+  "author": "Ephemera Engineering Team <eng@ephemerahq.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xmtp/smart-contracts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xmtp/smart-contracts/issues"
+  },
+  "homepage": "https://github.com/xmtp/smart-contracts#readme",
+  "scripts": {
+    "build": "forge build",
+    "clean": "forge clean",
+    "coverage": "forge coverage --no-match-coverage '(script|test)' --gas-limit 3000000000 --report lcov && lcov --ignore-errors inconsistent --extract lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o lcov.info 'src/*' && genhtml --ignore-errors inconsistent lcov.info --rc branch_coverage=1 --rc derive_function_end_line=0 -o coverage",
+    "gas-report": "forge test --fuzz-seed 10101 --gas-report --gas-limit 3000000000 > gasreport.ansi",
+    "doc": "forge doc --serve --port 4000",
+    "lint-staged": "lint-staged",
+    "prettier": "prettier --write 'script/**/*' 'src/**/*' 'test/**/*' 'config/**/*' 'environments/**/*'",
+    "prettier-check": "prettier --check 'script/**/*' 'src/**/*' 'test/**/*' 'config/**/*' 'environments/**/*'",
+    "slither": "rm -rf output.sarif && forge build --build-info --skip '*/test/**' --skip '*/script/**' --force && slither --exclude low-level-calls --sarif output.sarif --compile-force-framework foundry --ignore-compile --config-file slither.config.json --fail-high .",
+    "solhint": "solhint -f stylish 'src/**/*.sol'",
+    "solhint-fix": "solhint --fix 'src/**/*.sol'",
+    "test": "forge test",
+    "anvil": "anvil",
+    "gen-anvil-state": "./dev/gen-anvil-state",
+    "gen-artifacts": "./dev/gen-artifacts",
+    "deploy-local": "./dev/deploy-local",
+    "check-deployments-local": "./dev/check-local-deployment"
+  },
+  "devDependencies": {
+    "@arbitrum/sdk": "^4.0.4",
+    "@ethersproject/bignumber": "^5.8.0",
+    "@fireblocks/fireblocks-json-rpc": "^0.2.2",
+    "dotenv": "^16.5.0",
+    "ethers": "5.8.0",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.5.3",
+    "prettier-plugin-solidity": "^1.4.3",
+    "solhint": "^5.1.0",
+    "solhint-plugin-prettier": "^0.1.0"
+  },
+  "engines": {
+    "node": ">=23"
+  },
+  "files": [
+    "src/**",
+    "out/**"
+  ]
 }

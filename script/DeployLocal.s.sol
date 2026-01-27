@@ -70,6 +70,7 @@ contract DeployLocalScripts is Script {
     string internal constant _RATE_REGISTRY_STORAGE_FEE_KEY = "xmtp.rateRegistry.storageFee";
     string internal constant _RATE_REGISTRY_CONGESTION_FEE_KEY = "xmtp.rateRegistry.congestionFee";
     string internal constant _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY = "xmtp.rateRegistry.targetRatePerMinute";
+    string internal constant _RATE_REGISTRY_RATES_IN_EFFECT_AFTER_KEY = "xmtp.rateRegistry.ratesInEffectAfter";
 
     string internal constant _NODE_REGISTRY_ADMIN_KEY = "xmtp.nodeRegistry.admin";
     string internal constant _NODE_REGISTRY_MAX_CANONICAL_NODES_KEY = "xmtp.nodeRegistry.maxCanonicalNodes";
@@ -791,17 +792,19 @@ contract DeployLocalScripts is Script {
     }
 
     function _setRateRegistryStartingRates() internal {
-        string[] memory keys_ = new string[](4);
+        string[] memory keys_ = new string[](5);
         keys_[0] = _RATE_REGISTRY_MESSAGE_FEE_KEY;
         keys_[1] = _RATE_REGISTRY_STORAGE_FEE_KEY;
         keys_[2] = _RATE_REGISTRY_CONGESTION_FEE_KEY;
         keys_[3] = _RATE_REGISTRY_TARGET_RATE_PER_MINUTE_KEY;
+        keys_[4] = _RATE_REGISTRY_RATES_IN_EFFECT_AFTER_KEY;
 
-        bytes32[] memory values_ = new bytes32[](4);
+        bytes32[] memory values_ = new bytes32[](5);
         values_[0] = bytes32(_RATE_REGISTRY_STARTING_MESSAGE_FEE);
         values_[1] = bytes32(_RATE_REGISTRY_STARTING_STORAGE_FEE);
         values_[2] = bytes32(_RATE_REGISTRY_STARTING_CONGESTION_FEE);
         values_[3] = bytes32(_RATE_REGISTRY_STARTING_TARGET_RATE_PER_MINUTE);
+        values_[4] = bytes32(uint256(block.timestamp));
 
         vm.startBroadcast(_privateKey);
         _parameterRegistryProxy.set(keys_, values_);
@@ -816,6 +819,10 @@ contract DeployLocalScripts is Script {
 
         if (_parameterRegistryProxy.get(keys_[3]) != values_[3]) {
             revert("Rate registry target rate per minute not set correctly");
+        }
+
+        if (_parameterRegistryProxy.get(keys_[4]) != values_[4]) {
+            revert("Rate registry rates in effect after not set correctly");
         }
     }
 
@@ -841,7 +848,11 @@ contract DeployLocalScripts is Script {
             revert("Rate registry target rate per minute mismatch");
         }
 
-        if (rates_[0].startTime != uint64(vm.getBlockTimestamp())) revert("Rate registry start time mismatch");
+        uint64 expectedStartTime_ = uint64(
+            uint256(_parameterRegistryProxy.get(_RATE_REGISTRY_RATES_IN_EFFECT_AFTER_KEY))
+        );
+
+        if (rates_[0].startTime != expectedStartTime_) revert("Rate registry start time mismatch");
     }
 
     /* ============ Node Registry Helpers ============ */

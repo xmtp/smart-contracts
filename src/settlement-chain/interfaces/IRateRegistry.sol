@@ -95,6 +95,9 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
     /// @notice The parameter registry key used to fetch the target rate per minute.
     function targetRatePerMinuteParameterKey() external pure returns (string memory key_);
 
+    /// @notice The parameter registry key used to fetch the rates in effect after timestamp.
+    function ratesInEffectAfterParameterKey() external pure returns (string memory key_);
+
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (string memory key_);
 
