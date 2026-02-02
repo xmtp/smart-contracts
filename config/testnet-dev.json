@@ -4,7 +4,7 @@
   "appChainParameterRegistryImplementation": "0xaE05c73698450266FB5889bd72e906Be26819B5d",
   "deployer": "0xE4b610ac9E75F98eaa1CC83eC1ac6A9eCaEe1e9f",
   "depositSplitter": "0x20B7B4a368b78eD53843736f0b02295C8AE93988",
-  "distributionManagerImplementation": "0x709134f034b983E4007d4D83D767223c157E6860",
+  "distributionManagerImplementation": "0x319457fd7713079707C48bb446c7048CE08B9319",
   "distributionManagerProxy": "0xe6dFd753AE0028FE85DEC586CF2d60BFF4C91B4F",
   "distributionManagerProxySalt": "DistributionManager_0_3",
   "factory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
