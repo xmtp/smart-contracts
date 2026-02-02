@@ -71,6 +71,10 @@ contract BridgeParameter is BaseAppChainUpgrader {
         return address(0);
     }
 
+    function _getContractName() internal pure override returns (string memory name_) {
+        return "bridgeParameter";
+    }
+
     function _getImplementationAddress(address) internal pure override returns (address impl_) {
         return address(0);
     }

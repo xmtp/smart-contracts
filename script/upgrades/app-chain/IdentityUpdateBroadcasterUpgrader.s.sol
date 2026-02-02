@@ -34,6 +34,10 @@ contract IdentityUpdateBroadcasterUpgrader is BaseAppChainUpgrader {
         return _deployment.identityUpdateBroadcasterProxy;
     }
 
+    function _getContractName() internal pure override returns (string memory name_) {
+        return "identityUpdateBroadcaster";
+    }
+
     function _getImplementationAddress(address proxy_) internal view override returns (address impl_) {
         return IdentityUpdateBroadcaster(proxy_).implementation();
     }

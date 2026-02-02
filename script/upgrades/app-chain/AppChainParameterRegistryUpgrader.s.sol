@@ -29,6 +29,10 @@ contract AppChainParameterRegistryUpgrader is BaseAppChainUpgrader {
         return _deployment.parameterRegistryProxy;
     }
 
+    function _getContractName() internal pure override returns (string memory name_) {
+        return "appChainParameterRegistry";
+    }
+
     function _getImplementationAddress(address proxy_) internal view override returns (address impl_) {
         return AppChainParameterRegistry(proxy_).implementation();
     }

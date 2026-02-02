@@ -33,6 +33,10 @@ contract AppChainGatewayUpgrader is BaseAppChainUpgrader {
         return _deployment.gatewayProxy;
     }
 
+    function _getContractName() internal pure override returns (string memory name_) {
+        return "appChainGateway";
+    }
+
     function _getImplementationAddress(address proxy_) internal view override returns (address impl_) {
         return AppChainGateway(proxy_).implementation();
     }

@@ -14,6 +14,7 @@ import { FireblocksNote } from "../../utils/FireblocksNote.sol";
  * @notice Base contract for app chain upgrade scripts
  * @dev Concrete upgraders must implement:
  *      - `_getProxy()` to return the proxy address from deployment data
+ *      - `_getContractName()` to return the contract name for parameter keys
  *      - `_getImplementationAddress()` to get the implementation address from the proxy
  *      - `_deployOrGetImplementation()` to deploy or get the implementation address
  *      - `_getContractState()` to capture contract state
@@ -149,19 +150,7 @@ abstract contract BaseAppChainUpgrader is Script {
      *      based on environment, contract name, and operation.
      */
     function _getFireblocksNote(string memory operation_) internal view returns (string memory note_) {
-        string memory contractName = _getContractName();
-        return FireblocksNote.getNote(_environment, operation_, contractName);
-    }
-
-    /**
-     * @notice Gets the contract name for Fireblocks notes
-     * @return name_ The contract name (e.g., "appChainGateway")
-     * @dev Tries to read contractName() from the proxy. Falls back to a default message
-     *      if the function doesn't exist (older implementations).
-     */
-    function _getContractName() internal view returns (string memory name_) {
-        address proxy = _getProxy();
-        return FireblocksNote.getContractName(proxy);
+        return FireblocksNote.getNote(_environment, operation_, _getContractName());
     }
 
     /**
@@ -323,12 +312,17 @@ abstract contract BaseAppChainUpgrader is Script {
     function _getProxy() internal view virtual returns (address proxy_);
 
     /**
+     * @notice Gets the contract name for parameter key generation
+     * @return name_ The contract name (e.g., "appChainGateway")
+     */
+    function _getContractName() internal pure virtual returns (string memory name_);
+
+    /**
      * @notice Gets the migrator parameter key
      * @return key_ The migrator parameter key (e.g., "xmtp.appChainGateway.migrator")
      */
-    function _getMigratorParameterKey() internal view returns (string memory key_) {
-        string memory contractName = _getContractName();
-        return string.concat("xmtp.", contractName, ".migrator");
+    function _getMigratorParameterKey() internal pure returns (string memory key_) {
+        return string.concat("xmtp.", _getContractName(), ".migrator");
     }
 
     /**
