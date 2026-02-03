@@ -17,7 +17,7 @@
 
 ## 1. Overview
 
-Use this workflow when the [environment defaults](README.md#2-environment-defaults) to Fireblocks or when overriding to use Fireblocks.
+Use this workflow to send admin transactions via the Fireblocks-managed admin address. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
 Fireblocks requires a **three-step process** because only Step 2 (setting the migrator) routes through Fireblocks signing. Steps 1 and 3 use the deployer key directly.
 
@@ -63,11 +63,8 @@ The following example upgrades `NodeRegistry` on `testnet`.
 This step deploys the new implementation and creates a migrator contract:
 
 ```bash
-ENVIRONMENT=testnet forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia \
-  --slow \
-  --sig "DeployImplementationAndMigrator()" \
-  --broadcast
+ENVIRONMENT=testnet forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+  --sig "DeployImplementationAndMigrator()" --broadcast
 ```
 
 **Important:** Note the output values — you will need them for Step 2:
@@ -84,13 +81,8 @@ export MIGRATOR_ADDRESS=<value from Step 1>
 export FIREBLOCKS_NOTE=<value from Step 1>
 
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script NodeRegistryUpgrader \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "SetMigratorInParameterRegistry(address)" $MIGRATOR_ADDRESS \
-  --broadcast
+  forge script NodeRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "SetMigratorInParameterRegistry(address)" $MIGRATOR_ADDRESS --broadcast
 ```
 
 Approve the transaction in the Fireblocks dashboard.
@@ -100,11 +92,8 @@ Approve the transaction in the Fireblocks dashboard.
 After the Fireblocks transaction is confirmed, execute the migration:
 
 ```bash
-ENVIRONMENT=testnet forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia \
-  --slow \
-  --sig "PerformMigration()" \
-  --broadcast
+ENVIRONMENT=testnet forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+  --sig "PerformMigration()" --broadcast
 ```
 
 The script will verify that contract state is preserved after the upgrade.
@@ -134,8 +123,5 @@ After a successful upgrade:
 2. Verify the implementation contract on the block explorer:
 
 ```bash
-forge verify-contract \
-  --chain-id 84532 \
-  <impl-address> \
-  src/settlement-chain/NodeRegistry.sol:NodeRegistry
+forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/NodeRegistry.sol:NodeRegistry
 ```

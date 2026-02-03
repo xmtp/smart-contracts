@@ -19,9 +19,9 @@
 
 ## 1. Overview
 
-Use this workflow when the [environment defaults](README.md#2-environment-defaults) to Fireblocks or when overriding to use Fireblocks.
+Use this workflow to send admin transactions via the Fireblocks-managed admin address. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-Each parameter set operation requires approval in the Fireblocks dashboard.
+Each parameter set operation requires approval in Fireblocks.
 
 ## 2. Prerequisites
 
@@ -47,22 +47,25 @@ Ensure the following field is defined correctly for your chosen environment:
 
 ## 3. Setting Parameters
 
+If the [environment defaults](README.md#2-environment-defaults) are using an `ADMIN_PRIVATE_KEY` from `.env` but you want to use Fireblocks, add the `ADMIN_ADDRESS_TYPE=FIREBLOCKS` parameter just before the `npx` call:
+
+```bash
+ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS npx ...
+```
+
+Where the `npx` command is one of those shown below.
+
 ### 3.1 Set a bytes32 value
 
 Use this for raw bytes32 values:
 
 ```bash
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script SetParameter \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "set(string,bytes32)" "xmtp.example.key" 0x0000000000000000000000000000000000000000000000000000000000000001 \
-  --broadcast
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "set(string,bytes32)" "xmtp.example.key" 0x0000000000000000000000000000000000000000000000000000000000000001 --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard.
+Approve the transaction in Fireblocks.
 
 ### 3.2 Set an address value
 
@@ -70,16 +73,11 @@ Use this for address parameters (automatically right-justified to bytes32):
 
 ```bash
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script SetParameter \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "setAddress(string,address)" "xmtp.nodeRegistry.admin" 0x1234567890123456789012345678901234567890 \
-  --broadcast
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "setAddress(string,address)" "xmtp.nodeRegistry.admin" 0x1234567890123456789012345678901234567890 --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard.
+Approve the transaction in Fireblocks.
 
 ### 3.3 Set a uint256 value
 
@@ -87,16 +85,11 @@ Use this for numeric parameters (automatically converted to bytes32):
 
 ```bash
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script SetParameter \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" 100 \
-  --broadcast
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" 100 --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard.
+Approve the transaction in Fireblocks.
 
 ### 3.4 Set a boolean value
 
@@ -104,24 +97,18 @@ Use this for boolean parameters (encoded as 1 for true, 0 for false):
 
 ```bash
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script SetParameter \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "setBool(string,bool)" "xmtp.groupMessageBroadcaster.paused" true \
-  --broadcast
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "setBool(string,bool)" "xmtp.groupMessageBroadcaster.paused" true --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard.
+Approve the transaction in Fireblocks.
 
 ## 4. Reading Parameters
 
 To read the current value of a parameter (no transaction or Fireblocks approval required):
 
 ```bash
-ENVIRONMENT=testnet forge script SetParameter \
-  --rpc-url base_sepolia \
+ENVIRONMENT=testnet forge script SetParameter --rpc-url base_sepolia \
   --sig "get(string)" "xmtp.nodeRegistry.maxCanonicalNodes"
 ```
 

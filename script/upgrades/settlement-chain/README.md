@@ -17,12 +17,14 @@ The goals for testnets are minimal friction, whilst still proving out the Firebl
 
 ## 2. Environment Defaults
 
-| Environment       | Default Signing     | Override Allowed       |
-| ----------------- | ------------------- | ---------------------- |
-| `testnet-dev`     | `ADMIN_PRIVATE_KEY` | Yes (to `FIREBLOCKS`)  |
-| `testnet-staging` | `ADMIN_PRIVATE_KEY` | Yes (to `FIREBLOCKS`)  |
-| `testnet`         | `FIREBLOCKS`        | Yes (to `PRIVATE_KEY`) |
-| `mainnet`         | `FIREBLOCKS`        | No                     |
+| Environment       | Default             | To Override                      |
+| ----------------- | ------------------- | -------------------------------- |
+| `testnet-dev`     | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
+| `testnet-staging` | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
+| `testnet`         | `FIREBLOCKS`        | `ADMIN_ADDRESS_TYPE=PRIVATE_KEY` |
+| `mainnet`         | `FIREBLOCKS`        | —                                |
+
+Add the override variable to your command when you need to use the non-default signing method.
 
 ## 3. Choose Your Workflow
 

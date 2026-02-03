@@ -14,7 +14,7 @@
 
 ## 1. Overview
 
-Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
+Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
 This is the simpler workflow — the `Upgrade()` function performs all steps in a single transaction batch.
 
@@ -57,21 +57,15 @@ The `Upgrade()` function performs all steps in a single transaction batch:
 **testnet-dev or testnet-staging (uses private key by default):**
 
 ```bash
-ENVIRONMENT=testnet-dev forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia \
-  --slow \
-  --sig "Upgrade()" \
-  --broadcast
+ENVIRONMENT=testnet-dev forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+  --sig "Upgrade()" --broadcast
 ```
 
 **testnet (override to use private key instead of Fireblocks):**
 
 ```bash
-ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia \
-  --slow \
-  --sig "Upgrade()" \
-  --broadcast
+ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+  --sig "Upgrade()" --broadcast
 ```
 
 ## 4. Post-Upgrade
@@ -82,8 +76,5 @@ After a successful upgrade:
 2. Verify the implementation contract on the block explorer:
 
 ```bash
-forge verify-contract \
-  --chain-id 84532 \
-  <impl-address> \
-  src/settlement-chain/NodeRegistry.sol:NodeRegistry
+forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/NodeRegistry.sol:NodeRegistry
 ```

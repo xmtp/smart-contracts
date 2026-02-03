@@ -17,7 +17,7 @@
 
 ## 1. Overview
 
-Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
+Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
 App chain upgrades are **always three steps** (regardless of signing method) because they span two chains. The migrator address must be bridged from the settlement chain to the app chain.
 
@@ -62,11 +62,8 @@ The following example upgrades `IdentityUpdateBroadcaster` on `testnet-dev`.
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten \
-  --slow \
-  --sig "Prepare()" \
-  --broadcast
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+  --sig "Prepare()" --broadcast
 ```
 
 **Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
@@ -76,11 +73,8 @@ ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
 Set the migrator in the settlement chain parameter registry and bridge it to the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url base_sepolia \
-  --slow \
-  --sig "Bridge(address)" <MIGRATOR_ADDRESS> \
-  --broadcast
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow \
+  --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
 ```
 
 Wait for the bridge transaction to finalize. You can verify the migrator arrived on the app chain by checking the app chain parameter registry.
@@ -90,11 +84,8 @@ Wait for the bridge transaction to finalize. You can verify the migrator arrived
 Execute the migration on the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten \
-  --slow \
-  --sig "Upgrade()" \
-  --broadcast
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+  --sig "Upgrade()" --broadcast
 ```
 
 The script will verify that contract state is preserved after the upgrade.

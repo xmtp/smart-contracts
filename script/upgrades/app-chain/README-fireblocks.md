@@ -18,7 +18,7 @@
 
 ## 1. Overview
 
-Use this workflow when the [environment defaults](README.md#2-environment-defaults) to Fireblocks or when overriding to use Fireblocks.
+Use this workflow to send admin transactions via the Fireblocks-managed admin address. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
 App chain upgrades are **always three steps** because they span two chains. Only **Step 2** (setting and bridging the migrator) routes through Fireblocks signing.
 
@@ -74,11 +74,8 @@ The following example upgrades `IdentityUpdateBroadcaster` on `testnet`.
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten \
-  --slow \
-  --sig "Prepare()" \
-  --broadcast
+ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+  --sig "Prepare()" --broadcast
 ```
 
 **Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
@@ -91,13 +88,8 @@ Set the migrator in the settlement chain parameter registry and bridge it to the
 export FIREBLOCKS_NOTE="bridge IdentityUpdateBroadcaster on testnet"
 
 ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script IdentityUpdateBroadcasterUpgrader \
-  --sender $ADMIN \
-  --slow \
-  --unlocked \
-  --rpc-url {} \
-  --sig "Bridge(address)" <MIGRATOR_ADDRESS> \
-  --broadcast
+  forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} \
+  --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
 ```
 
 Approve the transaction in the Fireblocks dashboard, then wait for the bridge to complete.
@@ -107,11 +99,8 @@ Approve the transaction in the Fireblocks dashboard, then wait for the bridge to
 After the bridge transaction finalizes, execute the migration on the app chain:
 
 ```bash
-ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten \
-  --slow \
-  --sig "Upgrade()" \
-  --broadcast
+ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+  --sig "Upgrade()" --broadcast
 ```
 
 The script will verify that contract state is preserved after the upgrade.
