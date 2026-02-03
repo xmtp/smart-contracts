@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import { Script, console } from "../lib/forge-std/src/Script.sol";
-import { ISettlementChainGateway } from "../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
-import { IERC20Like } from "./Interfaces.sol";
-import { BaseAppChainUpgrader } from "./upgrades/app-chain/BaseAppChainUpgrader.s.sol";
+import { Script, console } from "../../../lib/forge-std/src/Script.sol";
+import { ISettlementChainGateway } from "../../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
+import { IERC20Like } from "../../Interfaces.sol";
+import { BaseAppChainUpgrader } from "../../upgrades/app-chain/BaseAppChainUpgrader.s.sol";
 
 /**
  * @title  Push a single parameter from settlement chain parameter registry to app chain parameter registry
@@ -34,8 +34,8 @@ contract BridgeParameter is BaseAppChainUpgrader {
         console.log("Max fee per gas: %s (2 gwei)", _APP_CHAIN_GAS_PRICE);
         console.log("Cost (fee token, 6 decimals): %s", cost_);
 
-        uint256 balance = IERC20Like(feeToken).balanceOf(_admin);
-        console.log("Fee token balance: %s", balance);
+        uint256 balance = IERC20Like(feeToken).balanceOf(_deployer);
+        console.log("Fee token balance (deployer): %s", balance);
 
         if (balance < cost_) revert InsufficientBalance();
 

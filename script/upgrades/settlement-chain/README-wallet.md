@@ -2,31 +2,37 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Prerequisites](#2-prerequisites)
-  - [2.1 `.env` file](#21-env-file)
-  - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-- [3. Upgrade Process (All-in-One)](#3-upgrade-process-all-in-one)
-  - [3.1 Example: Upgrade NodeRegistry](#31-example-upgrade-noderegistry)
-- [4. Post-Upgrade](#4-post-upgrade)
+- [Settlement Chain Upgrades — Wallet (Private Key)](#settlement-chain-upgrades--wallet-private-key)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Prerequisites](#2-prerequisites)
+    - [2.1 `.env` file](#21-env-file)
+    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
+  - [3. Upgrade Process (All-in-One)](#3-upgrade-process-all-in-one)
+    - [3.1 Example: Upgrade NodeRegistry on testnet-dev](#31-example-upgrade-noderegistry-on-testnet-dev)
+  - [4. Post-Upgrade](#4-post-upgrade)
 
 ## 1. Overview
 
-Use this workflow when the environment defaults to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
+Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
+
+This is the simpler workflow — the `Upgrade()` function performs all steps in a single transaction batch.
 
 ## 2. Prerequisites
 
 ### 2.1 `.env` file
 
 ```bash
-ADMIN_PRIVATE_KEY=...        # Admin key for setting migrator in parameter registry
-DEPLOYER_PRIVATE_KEY=...     # Deployer key for implementations, migrators, migrations
-BASE_SEPOLIA_RPC_URL=...     # RPC provider
-ETHERSCAN_API_KEY=...        # For verification
+ADMIN_PRIVATE_KEY=...        # Admin private key (for setting migrator in parameter registry)
+BASE_SEPOLIA_RPC_URL=...     # Settlement chain RPC endpoint
+DEPLOYER_PRIVATE_KEY=...     # Deployer private key (for implementations, migrators, migrations)
+ETHERSCAN_API_KEY=...        # For contract verification
 ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 ```
 
 ### 2.2 `config/<environment>.json`
+
+Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
@@ -38,29 +44,46 @@ ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 
 ## 3. Upgrade Process (All-in-One)
 
-The `Upgrade()` function performs all steps in a single transaction batch.
+The `Upgrade()` function performs all steps in a single transaction batch:
 
-### 3.1 Example: Upgrade NodeRegistry
+1. Deploys the new implementation contract
+2. Deploys a migrator contract
+3. Sets the migrator in the parameter registry
+4. Executes the migration
+5. Verifies state is preserved
 
-**testnet-dev or testnet-staging (default):**
+### 3.1 Example: Upgrade NodeRegistry on testnet-dev
+
+**testnet-dev or testnet-staging (uses private key by default):**
 
 ```bash
 ENVIRONMENT=testnet-dev forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia --slow --sig "Upgrade()" --broadcast
+  --rpc-url base_sepolia \
+  --slow \
+  --sig "Upgrade()" \
+  --broadcast
 ```
 
-**testnet (override to private key):**
+**testnet (override to use private key instead of Fireblocks):**
 
 ```bash
 ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script NodeRegistryUpgrader \
-  --rpc-url base_sepolia --slow --sig "Upgrade()" --broadcast
+  --rpc-url base_sepolia \
+  --slow \
+  --sig "Upgrade()" \
+  --broadcast
 ```
 
 ## 4. Post-Upgrade
 
-1. Copy the `newImpl` address from output to `config/<environment>.json`
-2. Verify the implementation:
+After a successful upgrade:
+
+1. Copy the `newImpl` address from the script output to `config/<environment>.json`
+2. Verify the implementation contract on the block explorer:
 
 ```bash
-forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/NodeRegistry.sol:NodeRegistry
+forge verify-contract \
+  --chain-id 84532 \
+  <impl-address> \
+  src/settlement-chain/NodeRegistry.sol:NodeRegistry
 ```

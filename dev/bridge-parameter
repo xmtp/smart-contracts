@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Bridging parameters is permissionless — only requires DEPLOYER_PRIVATE_KEY with fee tokens.
+# See: script/parameters/app-chain/README.md
+
 # shellcheck disable=SC1091
 source "$(dirname "$0")/utils"
 
@@ -25,7 +28,7 @@ CHAIN_NAME=$(get_chain_name "$ENVIRONMENT" "settlement-chain")
 echo "⧖ Bridging parameter for $ENVIRONMENT."
 echo "Parameter key: $PARAM_KEY"
 
-ENVIRONMENT=$ENVIRONMENT forge script script/BridgeParameter.s.sol:BridgeParameter \
+ENVIRONMENT=$ENVIRONMENT forge script script/parameters/app-chain/BridgeParameter.s.sol:BridgeParameter \
     --rpc-url "$CHAIN_NAME" \
     --broadcast \
     --slow \

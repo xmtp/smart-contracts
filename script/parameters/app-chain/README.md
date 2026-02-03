@@ -1,0 +1,87 @@
+# App Chain Parameters
+
+## Table of Contents
+
+- [1. Overview](#1-overview)
+- [2. Workflow Summary](#2-workflow-summary)
+- [3. Prerequisites](#3-prerequisites)
+  - [3.1 `.env` file](#31-env-file)
+  - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
+- [4. Bridging Parameters](#4-bridging-parameters)
+  - [4.1 Using the helper script](#41-using-the-helper-script)
+  - [4.2 Using forge directly](#42-using-forge-directly)
+
+## 1. Overview
+
+This folder contains scripts for bridging parameters from the Settlement Chain Parameter Registry to the App Chain Parameter Registry.
+
+Bridging is **permissionless** — anyone with fee tokens can bridge parameters. No admin signature or Fireblocks approval is required for the bridge step itself.
+
+## 2. Workflow Summary
+
+Setting a parameter on the app chain is a two-step process:
+
+| Step | Action              | Location                             | Admin Required?               |
+| ---- | ------------------- | ------------------------------------ | ----------------------------- |
+| 1    | Set parameter value | Settlement chain param registry      | **Yes** (may need Fireblocks) |
+| 2    | Bridge parameter    | Settlement chain gateway → App chain | No (permissionless)           |
+
+**Step 1** is documented in `script/parameters/settlement-chain/` and may require Fireblocks approval depending on your environment.
+
+**Step 2** (this folder) only requires DEPLOYER with fee tokens — no admin signature needed.
+
+## 3. Prerequisites
+
+### 3.1 `.env` file
+
+```bash
+BASE_SEPOLIA_RPC_URL=...     # Settlement chain RPC endpoint
+DEPLOYER_PRIVATE_KEY=...     # Deployer private key (must have fee tokens for bridging)
+```
+
+### 3.2 `config/<environment>.json`
+
+Ensure the following fields are defined correctly for your chosen environment:
+
+```json
+{
+  "gatewayProxy": "0x...", // Settlement chain gateway address
+  "feeTokenProxy": "0x...", // Fee token contract address
+  "appChainId": 12345, // Target app chain ID
+  "settlementChainId": 84532 // Settlement chain ID (e.g., Base Sepolia)
+}
+```
+
+## 4. Bridging Parameters
+
+### 4.1 Using the helper script
+
+The easiest way to bridge a parameter is using the helper script:
+
+```bash
+./dev/bridge-parameter <environment> <parameter-key>
+```
+
+**Example:**
+
+```bash
+./dev/bridge-parameter testnet-dev xmtp.groupMessageBroadcaster.paused
+```
+
+### 4.2 Using forge directly
+
+```bash
+ENVIRONMENT=testnet-dev forge script BridgeParameter \
+  --rpc-url base_sepolia \
+  --slow \
+  --sig "push(string)" "xmtp.groupMessageBroadcaster.paused" \
+  --broadcast
+```
+
+The script will:
+
+1. Calculate the gas cost for bridging
+2. Check that DEPLOYER has sufficient fee tokens
+3. Approve the fee token transfer
+4. Call `sendParameters()` on the Settlement Chain Gateway
+5. The parameter value will arrive on the app chain after bridge finalization

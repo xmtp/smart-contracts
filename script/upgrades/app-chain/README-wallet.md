@@ -2,20 +2,24 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Token Requirements](#2-token-requirements)
-- [3. Prerequisites](#3-prerequisites)
-  - [3.1 `.env` file](#31-env-file)
-  - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
-- [4. Upgrade Process](#4-upgrade-process)
-  - [4.1 Example: Upgrade IdentityUpdateBroadcaster on testnet-dev](#41-example-upgrade-identityupdatebroadcaster-on-testnet-dev)
-- [5. Post-Upgrade](#5-post-upgrade)
+- [App Chain Upgrades — Wallet (Private Key)](#app-chain-upgrades--wallet-private-key)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Token Requirements](#2-token-requirements)
+  - [3. Prerequisites](#3-prerequisites)
+    - [3.1 `.env` file](#31-env-file)
+    - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
+  - [4. Upgrade Process (Three Steps)](#4-upgrade-process-three-steps)
+    - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
+    - [4.2 Step 2: Bridge (settlement chain)](#42-step-2-bridge-settlement-chain)
+    - [4.3 Step 3: Upgrade (app chain)](#43-step-3-upgrade-app-chain)
+  - [5. Post-Upgrade](#5-post-upgrade)
 
 ## 1. Overview
 
-Use this workflow when the environment defaults to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
+Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `ADMIN_PRIVATE_KEY` or when overriding to use a private key.
 
-App chain upgrades are **always three steps** (regardless of signing method) because they span two chains.
+App chain upgrades are **always three steps** (regardless of signing method) because they span two chains. The migrator address must be bridged from the settlement chain to the app chain.
 
 ## 2. Token Requirements
 
@@ -31,13 +35,15 @@ App chain upgrades are **always three steps** (regardless of signing method) bec
 ### 3.1 `.env` file
 
 ```bash
-ADMIN_PRIVATE_KEY=...        # Admin key for param registry (Step 2)
-DEPLOYER_PRIVATE_KEY=...     # Deployer key (all steps)
-BASE_SEPOLIA_RPC_URL=...     # Settlement chain RPC
-XMTP_ROPSTEN_RPC_URL=...     # App chain RPC
+ADMIN_PRIVATE_KEY=...        # Admin private key (for setting migrator in Step 2)
+BASE_SEPOLIA_RPC_URL=...     # Settlement chain RPC endpoint
+DEPLOYER_PRIVATE_KEY=...     # Deployer private key (for all steps)
+XMTP_ROPSTEN_RPC_URL=...     # App chain RPC endpoint
 ```
 
 ### 3.2 `config/<environment>.json`
+
+Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
@@ -47,39 +53,58 @@ XMTP_ROPSTEN_RPC_URL=...     # App chain RPC
 }
 ```
 
-## 4. Upgrade Process
+## 4. Upgrade Process (Three Steps)
 
-### 4.1 Example: Upgrade IdentityUpdateBroadcaster on testnet-dev
+The following example upgrades `IdentityUpdateBroadcaster` on `testnet-dev`.
 
-**Step 1: Prepare (app chain)**
+### 4.1 Step 1: Prepare (app chain)
 
-```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
-```
-
-Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from output.
-
-**Step 2: Bridge (settlement chain)**
+Deploy the new implementation and migrator on the app chain:
 
 ```bash
 ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+  --rpc-url xmtp_ropsten \
+  --slow \
+  --sig "Prepare()" \
+  --broadcast
 ```
 
-Wait for bridge to complete. Verify on app chain parameter registry.
+**Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
 
-**Step 3: Upgrade (app chain)**
+### 4.2 Step 2: Bridge (settlement chain)
+
+Set the migrator in the settlement chain parameter registry and bridge it to the app chain:
 
 ```bash
 ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
-  --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+  --rpc-url base_sepolia \
+  --slow \
+  --sig "Bridge(address)" <MIGRATOR_ADDRESS> \
+  --broadcast
 ```
+
+Wait for the bridge transaction to finalize. You can verify the migrator arrived on the app chain by checking the app chain parameter registry.
+
+### 4.3 Step 3: Upgrade (app chain)
+
+Execute the migration on the app chain:
+
+```bash
+ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader \
+  --rpc-url xmtp_ropsten \
+  --slow \
+  --sig "Upgrade()" \
+  --broadcast
+```
+
+The script will verify that contract state is preserved after the upgrade.
 
 ## 5. Post-Upgrade
 
+After a successful upgrade:
+
 1. Copy the new implementation address to `config/<environment>.json`
-2. Verify:
+2. Verify the implementation contract:
 
 ```bash
 ./dev/verify-base xmtp_ropsten alchemy
