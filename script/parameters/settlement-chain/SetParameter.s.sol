@@ -4,31 +4,24 @@ pragma solidity 0.8.28;
 import { Script, console } from "../../../lib/forge-std/src/Script.sol";
 import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { AdminAddressTypeLib } from "../../utils/AdminAddressType.sol";
 
 /**
  * @title  Set a parameter in the Settlement Chain Parameter Registry
  * @notice Sets a single key-value pair in the SettlementChainParameterRegistry.
  *         The caller must be an admin of the parameter registry.
- * @dev    Admin address type is determined by environment with optional ADMIN_ADDRESS_TYPE override:
- *         - testnet-dev: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
- *         - testnet-staging: default PRIVATE_KEY, can override with ADMIN_ADDRESS_TYPE=FIREBLOCKS
- *         - testnet: default FIREBLOCKS, can override with ADMIN_ADDRESS_TYPE=PRIVATE_KEY
- *         - mainnet: always FIREBLOCKS (override ignored, requires ADMIN address)
+ * @dev    Admin address type is determined by environment with optional ADMIN_ADDRESS_TYPE override.
+ *         See AdminAddressTypeLib for environment-specific defaults.
  */
 contract SetParameter is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
     error AdminNotSet();
 
-    enum AdminAddressType {
-        PrivateKey,
-        Fireblocks
-    }
-
     string internal _environment;
     uint256 internal _adminPrivateKey;
     address internal _admin;
-    AdminAddressType internal _adminAddressType;
+    AdminAddressTypeLib.AdminAddressType internal _adminAddressType;
     Utils.DeploymentData internal _deployment;
 
     function setUp() external {
@@ -41,54 +34,19 @@ contract SetParameter is Script {
         _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
 
         // Determine admin address type based on environment with optional override
-        _adminAddressType = _getAdminAddressType(_environment);
+        _adminAddressType = AdminAddressTypeLib.getAdminAddressType(_environment);
 
         // Admin setup
-        if (_adminAddressType == AdminAddressType.PrivateKey) {
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
             _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
             if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
             _admin = vm.addr(_adminPrivateKey);
-            console.log("Admin (Private Key): %s", _admin);
+            console.log("Admin (Wallet): %s", _admin);
         } else {
             _admin = vm.envAddress("ADMIN");
             if (_admin == address(0)) revert AdminNotSet();
             console.log("Admin (Fireblocks): %s", _admin);
         }
-    }
-
-    /**
-     * @notice Determines admin address type based on environment with optional override
-     * @param environment_ The environment name
-     * @return adminAddressType_ The admin address type to use
-     */
-    function _getAdminAddressType(
-        string memory environment_
-    ) internal view returns (AdminAddressType adminAddressType_) {
-        // mainnet: always fireblocks (override ignored)
-        if (keccak256(bytes(environment_)) == keccak256(bytes("mainnet"))) {
-            return AdminAddressType.Fireblocks;
-        }
-
-        // Check for explicit override for other environments
-        try vm.envString("ADMIN_ADDRESS_TYPE") returns (string memory override_) {
-            if (keccak256(bytes(override_)) == keccak256(bytes("FIREBLOCKS"))) {
-                return AdminAddressType.Fireblocks;
-            } else if (keccak256(bytes(override_)) == keccak256(bytes("PRIVATE_KEY"))) {
-                return AdminAddressType.PrivateKey;
-            }
-        } catch {}
-
-        // Apply environment-specific defaults
-        if (keccak256(bytes(environment_)) == keccak256(bytes("testnet-dev"))) {
-            return AdminAddressType.PrivateKey;
-        } else if (keccak256(bytes(environment_)) == keccak256(bytes("testnet-staging"))) {
-            return AdminAddressType.PrivateKey;
-        } else if (keccak256(bytes(environment_)) == keccak256(bytes("testnet"))) {
-            return AdminAddressType.Fireblocks;
-        }
-
-        // Default to private key for unknown environments
-        return AdminAddressType.PrivateKey;
     }
 
     /**
@@ -104,7 +62,7 @@ contract SetParameter is Script {
         console.log("Value (bytes32):");
         console.logBytes32(value_);
 
-        if (_adminAddressType == AdminAddressType.PrivateKey) {
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
             vm.startBroadcast(_adminPrivateKey);
         } else {
             vm.startBroadcast(_admin);
@@ -130,7 +88,7 @@ contract SetParameter is Script {
 
         bytes32 encodedValue = Utils.encodeAddress(value_);
 
-        if (_adminAddressType == AdminAddressType.PrivateKey) {
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
             vm.startBroadcast(_adminPrivateKey);
         } else {
             vm.startBroadcast(_admin);
@@ -156,7 +114,7 @@ contract SetParameter is Script {
 
         bytes32 encodedValue = Utils.encodeUint(value_);
 
-        if (_adminAddressType == AdminAddressType.PrivateKey) {
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
             vm.startBroadcast(_adminPrivateKey);
         } else {
             vm.startBroadcast(_admin);
@@ -182,7 +140,7 @@ contract SetParameter is Script {
 
         bytes32 encodedValue = Utils.encodeBool(value_);
 
-        if (_adminAddressType == AdminAddressType.PrivateKey) {
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
             vm.startBroadcast(_adminPrivateKey);
         } else {
             vm.startBroadcast(_admin);

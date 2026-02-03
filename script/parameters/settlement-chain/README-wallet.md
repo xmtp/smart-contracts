@@ -9,6 +9,7 @@
     - [2.1 `.env` file](#21-env-file)
     - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
   - [3. Setting Parameters](#3-setting-parameters)
+    - [3.0 Setup Defaults](#30-setup-defaults)
     - [3.1 Set a bytes32 value](#31-set-a-bytes32-value)
     - [3.2 Set an address value](#32-set-an-address-value)
     - [3.3 Set a uint256 value](#33-set-a-uint256-value)
@@ -43,12 +44,21 @@ Ensure the following field is defined correctly for your chosen environment:
 
 ## 3. Setting Parameters
 
+### 3.0 Setup Defaults
+
+Before running any commands, set these environment variables:
+
+```bash
+export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
+export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
+```
+
 ### 3.1 Set a bytes32 value
 
 Use this for raw bytes32 values:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow \
+forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "set(string,bytes32)" "xmtp.example.key" 0x0000000000000000000000000000000000000000000000000000000000000001 --broadcast
 ```
 
@@ -57,7 +67,7 @@ ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow 
 Use this for address parameters (automatically right-justified to bytes32):
 
 ```bash
-ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow \
+forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "setAddress(string,address)" "xmtp.nodeRegistry.admin" 0x1234567890123456789012345678901234567890 --broadcast
 ```
 
@@ -66,7 +76,7 @@ ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow 
 Use this for numeric parameters (automatically converted to bytes32):
 
 ```bash
-ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow \
+forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" 100 --broadcast
 ```
 
@@ -75,17 +85,8 @@ ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow 
 Use this for boolean parameters (encoded as 1 for true, 0 for false):
 
 ```bash
-ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia --slow \
+forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "setBool(string,bool)" "xmtp.groupMessageBroadcaster.paused" true --broadcast
-```
-
-**Overriding to private key on testnet:**
-
-If testnet defaults to Fireblocks but you want to use a private key:
-
-```bash
-ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script SetParameter --rpc-url base_sepolia --slow \
-  --sig "setUint(string,uint256)" "xmtp.example.key" 42 --broadcast
 ```
 
 ## 4. Reading Parameters
@@ -93,7 +94,7 @@ ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script SetParameter --r
 To read the current value of a parameter (no transaction required, view-only):
 
 ```bash
-ENVIRONMENT=testnet-dev forge script SetParameter --rpc-url base_sepolia \
+forge script SetParameter --rpc-url base_sepolia \
   --sig "get(string)" "xmtp.nodeRegistry.maxCanonicalNodes"
 ```
 

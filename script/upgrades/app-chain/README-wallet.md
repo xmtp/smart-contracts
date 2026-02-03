@@ -10,6 +10,7 @@
     - [3.1 `.env` file](#31-env-file)
     - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
   - [4. Upgrade Process (Three Steps)](#4-upgrade-process-three-steps)
+    - [4.0 Setup Defaults](#40-setup-defaults)
     - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
     - [4.2 Step 2: Bridge (settlement chain)](#42-step-2-bridge-settlement-chain)
     - [4.3 Step 3: Upgrade (app chain)](#43-step-3-upgrade-app-chain)
@@ -57,12 +58,21 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example upgrades `IdentityUpdateBroadcaster` on `testnet-dev`.
 
+### 4.0 Setup Defaults
+
+Before running any commands, set these environment variables:
+
+```bash
+export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
+export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
+```
+
 ### 4.1 Step 1: Prepare (app chain)
 
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Prepare()" --broadcast
 ```
 
@@ -73,7 +83,7 @@ ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url
 Set the migrator in the settlement chain parameter registry and bridge it to the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow \
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow \
   --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
 ```
 
@@ -84,7 +94,7 @@ Wait for the bridge transaction to finalize. You can verify the migrator arrived
 Execute the migration on the app chain:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Upgrade()" --broadcast
 ```
 

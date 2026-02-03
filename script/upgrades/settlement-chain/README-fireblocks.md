@@ -9,6 +9,7 @@
     - [2.1 `.env` file](#21-env-file)
     - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
   - [3. Upgrade Process (Three Steps)](#3-upgrade-process-three-steps)
+    - [3.0 Setup Defaults](#30-setup-defaults)
     - [3.1 Step 1: Deploy implementation and migrator](#31-step-1-deploy-implementation-and-migrator)
     - [3.2 Step 2: Set migrator in parameter registry (Fireblocks)](#32-step-2-set-migrator-in-parameter-registry-fireblocks)
     - [3.3 Step 3: Perform migration](#33-step-3-perform-migration)
@@ -58,12 +59,21 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example upgrades `NodeRegistry` on `testnet`.
 
+### 3.0 Setup Defaults
+
+Before running any commands, set these environment variables:
+
+```bash
+export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
+export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
+```
+
 ### 3.1 Step 1: Deploy implementation and migrator
 
 This step deploys the new implementation and creates a migrator contract:
 
 ```bash
-ENVIRONMENT=testnet forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
   --sig "DeployImplementationAndMigrator()" --broadcast
 ```
 
@@ -80,19 +90,19 @@ Export the values from Step 1, then run the Fireblocks command:
 export MIGRATOR_ADDRESS=<value from Step 1>
 export FIREBLOCKS_NOTE=<value from Step 1>
 
-ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script NodeRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} \
+npx fireblocks-json-rpc --http -- \
+  forge script NodeRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
   --sig "SetMigratorInParameterRegistry(address)" $MIGRATOR_ADDRESS --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard.
+Approve the transaction in the Fireblocks console.
 
 ### 3.3 Step 3: Perform migration
 
 After the Fireblocks transaction is confirmed, execute the migration:
 
 ```bash
-ENVIRONMENT=testnet forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
   --sig "PerformMigration()" --broadcast
 ```
 
@@ -109,11 +119,13 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                      |
-| ----------------- | ------------------------------------------------------------ |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`               |
-| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction |
-| `--unlocked`      | Indicates the sender address is managed externally           |
+| Flag              | Purpose                                                          |
+| ----------------- | ---------------------------------------------------------------- |
+| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                   |
+| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
+| `--unlocked`      | Indicates the sender address is managed externally               |
+| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
+| `--retries 1`     | Minimal retries to prevent duplicate transactions in Fireblocks  |
 
 ## 5. Post-Upgrade
 

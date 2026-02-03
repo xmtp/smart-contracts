@@ -2,9 +2,11 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Environment Defaults](#2-environment-defaults)
-- [3. Choose Your Workflow](#3-choose-your-workflow)
+- [Settlement Chain Upgrades](#settlement-chain-upgrades)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Environment Defaults](#2-environment-defaults)
+  - [3. Choose Your Workflow](#3-choose-your-workflow)
 
 ## 1. Overview
 
@@ -17,12 +19,12 @@ The goals for testnets are minimal friction, whilst still proving out the Firebl
 
 ## 2. Environment Defaults
 
-| Environment       | Default             | To Override                      |
-| ----------------- | ------------------- | -------------------------------- |
-| `testnet-dev`     | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
-| `testnet-staging` | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
-| `testnet`         | `FIREBLOCKS`        | `ADMIN_ADDRESS_TYPE=PRIVATE_KEY` |
-| `mainnet`         | `FIREBLOCKS`        | —                                |
+| Environment       | Default      | To Override                     |
+| ----------------- | ------------ | ------------------------------- |
+| `testnet-dev`     | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet-staging` | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet`         | `FIREBLOCKS` | `ADMIN_ADDRESS_TYPE=WALLET`     |
+| `mainnet`         | `FIREBLOCKS` | No override possible            |
 
 Add the override variable to your command when you need to use the non-default signing method.
 

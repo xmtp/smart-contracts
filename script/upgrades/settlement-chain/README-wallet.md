@@ -9,7 +9,8 @@
     - [2.1 `.env` file](#21-env-file)
     - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
   - [3. Upgrade Process (All-in-One)](#3-upgrade-process-all-in-one)
-    - [3.1 Example: Upgrade NodeRegistry on testnet-dev](#31-example-upgrade-noderegistry-on-testnet-dev)
+    - [3.0 Setup Defaults](#30-setup-defaults)
+    - [3.1 Run Upgrade](#31-run-upgrade)
   - [4. Post-Upgrade](#4-post-upgrade)
 
 ## 1. Overview
@@ -52,19 +53,21 @@ The `Upgrade()` function performs all steps in a single transaction batch:
 4. Executes the migration
 5. Verifies state is preserved
 
-### 3.1 Example: Upgrade NodeRegistry on testnet-dev
+### 3.0 Setup Defaults
 
-**testnet-dev or testnet-staging (uses private key by default):**
+Before running any commands, set these environment variables:
 
 ```bash
-ENVIRONMENT=testnet-dev forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
-  --sig "Upgrade()" --broadcast
+export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
+export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 ```
 
-**testnet (override to use private key instead of Fireblocks):**
+### 3.1 Run Upgrade
+
+Example: Upgrade NodeRegistry:
 
 ```bash
-ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=PRIVATE_KEY forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
+forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
   --sig "Upgrade()" --broadcast
 ```
 

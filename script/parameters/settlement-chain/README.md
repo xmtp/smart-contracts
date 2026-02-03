@@ -2,9 +2,11 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Environment Defaults](#2-environment-defaults)
-- [3. Choose Your Workflow](#3-choose-your-workflow)
+- [Settlement Chain Parameters](#settlement-chain-parameters)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Environment Defaults](#2-environment-defaults)
+  - [3. Choose Your Workflow](#3-choose-your-workflow)
 
 ## 1. Overview
 
@@ -19,16 +21,16 @@ After setting a parameter on the settlement chain, you can bridge it to the app 
 
 ## 2. Environment Defaults
 
-| Environment       | Default             | To Override                      |
-| ----------------- | ------------------- | -------------------------------- |
-| `testnet-dev`     | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
-| `testnet-staging` | `ADMIN_PRIVATE_KEY` | `ADMIN_ADDRESS_TYPE=FIREBLOCKS`  |
-| `testnet`         | `FIREBLOCKS`        | `ADMIN_ADDRESS_TYPE=PRIVATE_KEY` |
-| `mainnet`         | `FIREBLOCKS`        | —                                |
+| Environment       | Default      | To Override                     |
+| ----------------- | ------------ | ------------------------------- |
+| `testnet-dev`     | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet-staging` | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet`         | `FIREBLOCKS` | `ADMIN_ADDRESS_TYPE=WALLET`     |
+| `mainnet`         | `FIREBLOCKS` | No override possible            |
 
 Add the override variable to your command when you need to use the non-default signing method.
 
 ## 3. Choose Your Workflow
 
 - **[README-wallet.md](README-wallet.md)** — Private key signing (simpler, single-step process)
-- **[README-fireblocks.md](README-fireblocks.md)** — Fireblocks signing (requires dashboard approval)
+- **[README-fireblocks.md](README-fireblocks.md)** — Fireblocks signing (requires Fireblocks approval)

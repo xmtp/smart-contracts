@@ -10,6 +10,7 @@
     - [3.1 `.env` file](#31-env-file)
     - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
   - [4. Upgrade Process (Three Steps)](#4-upgrade-process-three-steps)
+    - [4.0 Setup Defaults](#40-setup-defaults)
     - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
     - [4.2 Step 2: Bridge (settlement chain, via Fireblocks)](#42-step-2-bridge-settlement-chain-via-fireblocks)
     - [4.3 Step 3: Upgrade (app chain)](#43-step-3-upgrade-app-chain)
@@ -69,12 +70,21 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example upgrades `IdentityUpdateBroadcaster` on `testnet`.
 
+### 4.0 Setup Defaults
+
+Before running any commands, set these environment variables:
+
+```bash
+export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
+export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
+```
+
 ### 4.1 Step 1: Prepare (app chain)
 
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Prepare()" --broadcast
 ```
 
@@ -87,19 +97,19 @@ Set the migrator in the settlement chain parameter registry and bridge it to the
 ```bash
 export FIREBLOCKS_NOTE="bridge IdentityUpdateBroadcaster on testnet"
 
-ENVIRONMENT=testnet npx fireblocks-json-rpc --http -- \
-  forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} \
+npx fireblocks-json-rpc --http -- \
+  forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
   --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
 ```
 
-Approve the transaction in the Fireblocks dashboard, then wait for the bridge to complete.
+Approve the transaction in the Fireblocks console, then wait for the bridge to complete.
 
 ### 4.3 Step 3: Upgrade (app chain)
 
 After the bridge transaction finalizes, execute the migration on the app chain:
 
 ```bash
-ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Upgrade()" --broadcast
 ```
 
@@ -116,11 +126,13 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                      |
-| ----------------- | ------------------------------------------------------------ |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`               |
-| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction |
-| `--unlocked`      | Indicates the sender address is managed externally           |
+| Flag              | Purpose                                                          |
+| ----------------- | ---------------------------------------------------------------- |
+| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                   |
+| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
+| `--unlocked`      | Indicates the sender address is managed externally               |
+| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
+| `--retries 1`     | Minimal retries to prevent duplicate transactions in Fireblocks  |
 
 ## 6. Post-Upgrade
 
