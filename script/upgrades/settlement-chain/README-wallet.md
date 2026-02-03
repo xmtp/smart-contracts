@@ -30,9 +30,9 @@ ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 
 ```json
 {
-  "factory": "0x...",                    // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...",     // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..."             // The proxy being upgraded (e.g., nodeRegistryProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., nodeRegistryProxy)
 }
 ```
 

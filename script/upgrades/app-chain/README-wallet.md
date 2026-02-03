@@ -41,9 +41,9 @@ XMTP_ROPSTEN_RPC_URL=...     # App chain RPC
 
 ```json
 {
-  "factory": "0x...",                    // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...",     // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..."             // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
 }
 ```
 

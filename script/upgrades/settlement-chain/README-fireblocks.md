@@ -15,7 +15,7 @@
 
 ## 1. Overview
 
-Use this workflow when the environment defaults to `FIREBLOCKS` or when overriding to use Fireblocks.
+Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `FIREBLOCKS` or when overriding to use Fireblocks.
 
 ## 2. Prerequisites
 
@@ -37,9 +37,9 @@ FIREBLOCKS_VAULT_ACCOUNT_IDS=...
 
 ```json
 {
-  "factory": "0x...",                    // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...",     // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..."             // The proxy being upgraded (e.g., nodeRegistryProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., nodeRegistryProxy)
 }
 ```
 
@@ -47,11 +47,11 @@ FIREBLOCKS_VAULT_ACCOUNT_IDS=...
 
 Fireblocks requires a three-step process because only **Step 2** routes through Fireblocks signing.
 
-| Step | Function                           | Signer   | Fireblocks? |
-| ---- | ---------------------------------- | -------- | ----------- |
-| 1    | `DeployImplementationAndMigrator()`| DEPLOYER | No          |
-| 2    | `SetMigratorInParameterRegistry()` | ADMIN    | **Yes**     |
-| 3    | `PerformMigration()`               | DEPLOYER | No          |
+| Step | Function                            | Signer   | Fireblocks? |
+| ---- | ----------------------------------- | -------- | ----------- |
+| 1    | `DeployImplementationAndMigrator()` | DEPLOYER | No          |
+| 2    | `SetMigratorInParameterRegistry()`  | ADMIN    | **Yes**     |
+| 3    | `PerformMigration()`                | DEPLOYER | No          |
 
 As a worked example, the below does an upgrade of `NodeRegistry` on `testnet`.
 
@@ -63,6 +63,7 @@ ENVIRONMENT=testnet forge script NodeRegistryUpgrader \
 ```
 
 Note the output values:
+
 - `MIGRATOR_ADDRESS_FOR_STEP_2`
 - `FIREBLOCKS_NOTE_FOR_STEP_2`
 
@@ -91,11 +92,11 @@ ENVIRONMENT=testnet forge script NodeRegistryUpgrader \
 
 When using `npx fireblocks-json-rpc --http --`:
 
-| Flag | Purpose |
-| ---- | ------- |
-| `--rpc-url {}` | Proxy replaces `{}` with its URL |
-| `--sender $ADMIN` | Address to sign via Fireblocks |
-| `--unlocked` | Indicates sender is externally managed |
+| Flag              | Purpose                                |
+| ----------------- | -------------------------------------- |
+| `--rpc-url {}`    | Proxy replaces `{}` with its URL       |
+| `--sender $ADMIN` | Address to sign via Fireblocks         |
+| `--unlocked`      | Indicates sender is externally managed |
 
 ## 5. Post-Upgrade
 

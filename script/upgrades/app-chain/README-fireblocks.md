@@ -16,7 +16,7 @@
 
 ## 1. Overview
 
-Use this workflow when the environment defaults to `FIREBLOCKS` or when overriding to use Fireblocks.
+Use this workflow when the [environment defaults](README.md#2-environment-defaults) to `FIREBLOCKS` or when overriding to use Fireblocks.
 
 App chain upgrades are **always three steps** because they span two chains. Only **Step 2** (the admin tx) routes through Fireblocks.
 
@@ -50,9 +50,9 @@ FIREBLOCKS_VAULT_ACCOUNT_IDS=...
 
 ```json
 {
-  "factory": "0x...",                    // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...",     // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..."             // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
 }
 ```
 
@@ -99,11 +99,11 @@ ENVIRONMENT=testnet ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader 
 
 When using `npx fireblocks-json-rpc --http --`:
 
-| Flag | Purpose |
-| ---- | ------- |
-| `--rpc-url {}` | Proxy replaces `{}` with its URL |
-| `--sender $ADMIN` | Address to sign via Fireblocks |
-| `--unlocked` | Indicates sender is externally managed |
+| Flag              | Purpose                                |
+| ----------------- | -------------------------------------- |
+| `--rpc-url {}`    | Proxy replaces `{}` with its URL       |
+| `--sender $ADMIN` | Address to sign via Fireblocks         |
+| `--unlocked`      | Indicates sender is externally managed |
 
 ## 6. Post-Upgrade
 
