@@ -110,5 +110,6 @@ This will display the value in multiple formats: bytes32, uint256, and address.
 - `0x0000...0000` = false, or parameter not yet bridged
 
 ### 4.4 Troubleshooting
+
 - If you see the L# app chain parameter value as not changed or all zeros, wait a few minutes and try again. The bridge may still be finalizing.
 - If you've used a very long key, it is possible there is not enough gas for the bridge message to execute on L3. This manifests itself as failed transactions visible in the `AppChainGateway` contract on L3, but they may not show a useful error message. The clue is that the consumed gas is very close to the gas limit of the transaction.
