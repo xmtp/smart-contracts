@@ -45,10 +45,10 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "gatewayProxy": "0x...",       // Settlement chain gateway address
-  "feeTokenProxy": "0x...",      // Fee token contract address
-  "appChainId": 12345,           // Target app chain ID
-  "settlementChainId": 84532     // Settlement chain ID (e.g., Base Sepolia)
+  "gatewayProxy": "0x...", // Settlement chain gateway address
+  "feeTokenProxy": "0x...", // Fee token contract address
+  "appChainId": 12345, // Target app chain ID
+  "settlementChainId": 84532 // Settlement chain ID (e.g., Base Sepolia)
 }
 ```
 

@@ -48,9 +48,9 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "factory": "0x...",                  // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
+  "factory": "0x...", // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...", // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..." // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
 }
 ```
 
