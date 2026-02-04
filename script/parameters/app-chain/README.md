@@ -2,14 +2,17 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Workflow Summary](#2-workflow-summary)
-- [3. Prerequisites](#3-prerequisites)
-  - [3.1 `.env` file](#31-env-file)
-  - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
-- [4. Bridging Parameters](#4-bridging-parameters)
-  - [4.1 Using the helper script](#41-using-the-helper-script)
-  - [4.2 Using forge directly](#42-using-forge-directly)
+- [App Chain Parameters](#app-chain-parameters)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Workflow Summary](#2-workflow-summary)
+  - [3. Prerequisites](#3-prerequisites)
+    - [3.1 `.env` file](#31-env-file)
+    - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
+  - [4. Bridging Parameters](#4-bridging-parameters)
+    - [4.1 Using the helper script](#41-using-the-helper-script)
+    - [4.2 Using forge directly](#42-using-forge-directly)
+    - [4.3 Verifying the parameter arrived](#43-verifying-the-parameter-arrived)
 
 ## 1. Overview
 
@@ -85,3 +88,22 @@ The script will:
 3. Approve the fee token transfer
 4. Call `sendParameters()` on the Settlement Chain Gateway
 5. The parameter value will arrive on the app chain after bridge finalization
+
+### 4.3 Verifying the parameter arrived
+
+After bridging, you can verify the parameter arrived on the app chain. Note that bridge finalization takes a few minutes.
+
+```bash
+ENVIRONMENT=testnet-dev forge script BridgeParameter \
+  --rpc-url xmtp_ropsten \
+  --sig "get(string)" "xmtp.groupMessageBroadcaster.paused"
+```
+
+This will display the value in multiple formats: bytes32, uint256, and address.
+
+**Expected output:**
+
+- `0x0000...0001` = true (for boolean parameters)
+- `0x0000...0000` = false, or parameter not yet bridged
+
+If you see all zeros, wait a few minutes and try again — the bridge may still be finalizing.

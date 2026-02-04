@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [App Chain Upgrades - Wallet (Private Key)](#app-chain-upgrades--wallet-private-key)
+- [App Chain Upgrades - Wallet (Private Key)](#app-chain-upgrades---wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Token Requirements](#2-token-requirements)
@@ -24,12 +24,12 @@ App chain upgrades are **always three steps** (regardless of signing method) bec
 
 ## 2. Token Requirements
 
-| Step       | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) |
-| ---------- | ---------- | -------- | ------- | ----------------- | ---------- |
-| 1. Prepare | App        | DEPLOYER | -       | -                 | Yes        |
-| 2. Bridge  | Settlement | ADMIN    | Yes     | -                 | -          |
-| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | -          |
-| 3. Upgrade | App        | DEPLOYER | -       | -                 | Yes        |
+| Step       | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) | Note                                                       |
+| ---------- | ---------- | -------- | ------- | ----------------- | ---------- | ---------------------------------------------------------- |
+| 1. Prepare | App        | DEPLOYER | -       | -                 | Yes        |                                                            |
+| 2. Bridge  | Settlement | ADMIN    | Yes     | -                 | -          | This needs ADMIN because it sets migrator in parm registry |
+| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | -          |                                                            |
+| 3. Upgrade | App        | DEPLOYER | -       | -                 | Yes        |                                                            |
 
 ## 3. Prerequisites
 

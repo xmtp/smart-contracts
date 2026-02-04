@@ -3,16 +3,68 @@ pragma solidity 0.8.28;
 
 import { Script, console } from "../../../lib/forge-std/src/Script.sol";
 import { ISettlementChainGateway } from "../../../src/settlement-chain/interfaces/ISettlementChainGateway.sol";
+import { IParameterRegistry } from "../../../src/abstract/interfaces/IParameterRegistry.sol";
 import { IERC20Like } from "../../Interfaces.sol";
-import { BaseAppChainUpgrader } from "../../upgrades/app-chain/BaseAppChainUpgrader.s.sol";
+import { Utils } from "../../utils/Utils.sol";
 
 /**
- * @title  Push a single parameter from settlement chain parameter registry to app chain parameter registry
- * @notice Pushes a single parameter key-value pair from the SettlementChainParameterRegistry to the
- *         AppChainParameterRegistry via the SettlementChainGateway. The caller must have sufficient token balances.
+ * @title  Bridge and read parameters on the app chain parameter registry
+ * @notice Provides two operations:
+ *         - push(): Bridge a parameter from settlement chain to app chain (permissionless)
+ *         - get(): Read a parameter value from the app chain parameter registry
+ * @dev    Bridging is PERMISSIONLESS - no admin signature required. Only needs DEPLOYER_PRIVATE_KEY
+ *         with sufficient fee tokens to pay for the bridge transaction.
+ *
+ * Usage (push - run against settlement chain):
+ *   ENVIRONMENT=testnet-dev forge script BridgeParameter --rpc-url base_sepolia --slow --sig "push(string)" "xmtp.example.key" --broadcast
+ *
+ * Usage (get - run against app chain):
+ *   ENVIRONMENT=testnet-dev forge script BridgeParameter --rpc-url xmtp_ropsten --sig "get(string)" "xmtp.example.key"
+ *
+ * Or use the helper script for push:
+ *   ./dev/bridge-parameter testnet-dev xmtp.example.key
  */
-contract BridgeParameter is BaseAppChainUpgrader {
+contract BridgeParameter is Script {
+    error EnvironmentNotSet();
+    error PrivateKeyNotSet();
+    error GatewayProxyNotSet();
+    error UnexpectedChainId();
+    error InsufficientBalance();
+
+    uint256 internal constant _TX_STIPEND = 21_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 150_000;
+
+    /// @dev Default value copied from Administration.s.sol
+    /// On app chain, each gas unit costs 2 gwei (measured as fraction of the xUSD native token).
+    /// Arbitrum L3 default is 0.1 gwei, but this fluctuates with demand.
+    uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000;
+
+    string internal _environment;
+    uint256 internal _deployerPrivateKey;
+    address internal _deployer;
+    Utils.DeploymentData internal _deployment;
+
+    function setUp() external {
+        // Environment
+        _environment = vm.envString("ENVIRONMENT");
+        if (bytes(_environment).length == 0) revert EnvironmentNotSet();
+        console.log("Environment: %s", _environment);
+
+        // Deployment data
+        _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
+
+        // Deployer private key (optional - only needed for push(), not for get())
+        try vm.envBytes32("DEPLOYER_PRIVATE_KEY") returns (bytes32 pk_) {
+            _deployerPrivateKey = uint256(pk_);
+            if (_deployerPrivateKey != 0) {
+                _deployer = vm.addr(_deployerPrivateKey);
+                console.log("Deployer: %s", _deployer);
+            }
+        } catch {}
+    }
+
     function push(string memory key_) external {
+        if (_deployerPrivateKey == 0) revert PrivateKeyNotSet();
         if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
 
@@ -66,34 +118,24 @@ contract BridgeParameter is BaseAppChainUpgrader {
         vm.stopBroadcast();
     }
 
-    // Required abstract method implementations (not used for parameter bridging)
-    function _getProxy() internal pure override returns (address proxy_) {
-        return address(0);
-    }
+    /**
+     * @notice Gets the current value of a parameter from the app chain parameter registry
+     * @param key_ The parameter key
+     * @dev Run this against the app chain RPC to verify bridged parameters arrived
+     *
+     * Usage:
+     *   ENVIRONMENT=testnet-dev forge script BridgeParameter --rpc-url xmtp_ropsten --sig "get(string)" "xmtp.example.key"
+     */
+    function get(string calldata key_) external view {
+        address paramRegistry = _deployment.parameterRegistryProxy;
 
-    function _getContractName() internal pure override returns (string memory name_) {
-        return "bridgeParameter";
-    }
+        console.log("App Chain Parameter Registry: %s", paramRegistry);
+        console.log("Key: %s", key_);
 
-    function _getImplementationAddress(address) internal pure override returns (address impl_) {
-        return address(0);
+        bytes32 value = IParameterRegistry(paramRegistry).get(key_);
+        console.log("Value (bytes32):");
+        console.logBytes32(value);
+        console.log("Value (uint256): %s", uint256(value));
+        console.log("Value (address): %s", address(uint160(uint256(value))));
     }
-
-    function _deployOrGetImplementation(
-        address,
-        address,
-        address
-    ) internal pure override returns (address implementation_) {
-        return address(0);
-    }
-
-    function _getContractState(address) internal pure override returns (bytes memory state_) {
-        return "";
-    }
-
-    function _isContractStateEqual(bytes memory, bytes memory) internal pure override returns (bool isEqual_) {
-        return false;
-    }
-
-    function _logContractState(string memory, bytes memory) internal pure override {}
 }
