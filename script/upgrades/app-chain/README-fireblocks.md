@@ -110,8 +110,7 @@ Approve the transaction in the Fireblocks console and wait for it to complete.
 Bridge the migrator parameter to the app chain:
 
 ```bash
-forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow \
-  --sig "BridgeParameter()" --broadcast
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "BridgeParameter()" --broadcast
 ```
 
 Wait for the bridge transaction to finalize. You can verify the migrator arrived on the app chain by checking the app chain parameter registry:
@@ -127,8 +126,7 @@ The `Value (address)` in the output should match the `MIGRATOR_ADDRESS` from Ste
 After the bridge transaction finalizes, execute the migration on the app chain:
 
 ```bash
-forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
-  --sig "Upgrade()" --broadcast
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
 ```
 
 The script will verify that contract state is preserved after the upgrade.
