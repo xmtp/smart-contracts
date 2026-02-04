@@ -37,7 +37,7 @@ App chain upgrades are **always three steps** because they span two chains. Only
 ### 3.1 `.env` file
 
 ```bash
-ADMIN=...                              # Fireblocks vault account address (the admin)
+ADMIN=...                              # Fireblocks vault account address
 BASE_SEPOLIA_RPC_URL=...               # Settlement chain RPC endpoint
 DEPLOYER_PRIVATE_KEY=...               # Deployer private key (for all steps)
 ETHERSCAN_API_KEY=...                  # For contract verification

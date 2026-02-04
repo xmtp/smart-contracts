@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [Settlement Chain Upgrades - Fireblocks](#settlement-chain-upgrades--fireblocks)
+- [Settlement Chain Upgrades - Fireblocks](#settlement-chain-upgrades---fireblocks)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Prerequisites](#2-prerequisites)
@@ -27,7 +27,7 @@ Fireblocks requires a **three-step process** because only Step 2 (setting the mi
 ### 2.1 `.env` file
 
 ```bash
-ADMIN=...                              # Fireblocks vault account address (the admin)
+ADMIN=...                              # Fireblocks vault account address
 BASE_SEPOLIA_RPC_URL=...               # Settlement chain RPC endpoint
 DEPLOYER_PRIVATE_KEY=...               # Deployer private key (for Steps 1 and 3)
 ETHERSCAN_API_KEY=...                  # For contract verification
@@ -73,8 +73,7 @@ export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 This step deploys the new implementation and creates a migrator contract:
 
 ```bash
-forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
-  --sig "DeployImplementationAndMigrator()" --broadcast
+forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "DeployImplementationAndMigrator()" --broadcast
 ```
 
 **Important:** Note the output values - you will need them for Step 2:
@@ -131,7 +130,7 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 
 After a successful upgrade:
 
-1. Copy the `newImpl` address from the script output to `config/<environment>.json`
+1. Copy the `newImpl` address from the script earlier script output where we called `DeployImplementationAndMigrator` (section 3.1) to `config/<environment>.json`. If the implementation code has not changed, then this `newImpl` address will not change, although the upgrade is carried out.
 2. Verify the implementation contract on the block explorer:
 
 ```bash

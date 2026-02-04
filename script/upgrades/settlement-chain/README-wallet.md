@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [Settlement Chain Upgrades - Wallet (Private Key)](#settlement-chain-upgrades--wallet-private-key)
+- [Settlement Chain Upgrades - Wallet (Private Key)](#settlement-chain-upgrades---wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Prerequisites](#2-prerequisites)
@@ -67,8 +67,7 @@ export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 Example: Upgrade NodeRegistry:
 
 ```bash
-forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
-  --sig "Upgrade()" --broadcast
+forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "Upgrade()" --broadcast
 ```
 
 ## 4. Post-Upgrade
