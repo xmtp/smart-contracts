@@ -13,6 +13,7 @@
     - [4.1 Using the helper script](#41-using-the-helper-script)
     - [4.2 Using forge directly](#42-using-forge-directly)
     - [4.3 Verifying the parameter arrived](#43-verifying-the-parameter-arrived)
+    - [4.4 Troubleshooting](#44-troubleshooting)
 
 ## 1. Overview
 
@@ -73,6 +74,8 @@ The easiest way to bridge a parameter is using the helper script:
 
 ### 4.2 Using forge directly
 
+Alternatively, use forge to call the script like this:
+
 ```bash
 ENVIRONMENT=testnet-dev forge script BridgeParameter \
   --rpc-url base_sepolia \
@@ -106,4 +109,6 @@ This will display the value in multiple formats: bytes32, uint256, and address.
 - `0x0000...0001` = true (for boolean parameters)
 - `0x0000...0000` = false, or parameter not yet bridged
 
-If you see all zeros, wait a few minutes and try again — the bridge may still be finalizing.
+### 4.4 Troubleshooting
+- If you see the L# app chain parameter value as not changed or all zeros, wait a few minutes and try again. The bridge may still be finalizing.
+- If you've used a very long key, it is possible there is not enough gas for the bridge message to execute on L3. This manifests itself as failed transactions visible in the `AppChainGateway` contract on L3, but they may not show a useful error message. The clue is that the consumed gas is very close to the gas limit of the transaction.
