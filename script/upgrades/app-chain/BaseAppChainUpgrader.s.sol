@@ -104,7 +104,7 @@ abstract contract BaseAppChainUpgrader is Script {
     }
 
     /**
-     * @notice Step 1 of 3: Prepare the upgrade on the app chain
+     * @notice Step 1 of 4: Prepare the upgrade on the app chain
      * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
      */
     function Prepare() external {
@@ -143,10 +143,96 @@ abstract contract BaseAppChainUpgrader is Script {
     }
 
     /**
-     * @notice Step 2 of 3: Bridge the migrator parameter from settlement chain to app chain
+     * @notice Step 2 of 4: Set migrator in parameter registry on settlement chain
      * @param migrator_ The migrator address from step 1
-     * @dev Sets the migrator in parameter registry using ADMIN (PRIVATE_KEY or FIREBLOCKS based on environment),
-     *      then approves fee token and bridges the parameter using DEPLOYER_PRIVATE_KEY
+     * @dev Sets the migrator in parameter registry using ADMIN (PRIVATE_KEY or FIREBLOCKS based on environment)
+     * @dev For Fireblocks environments, this step is run via fireblocks-json-rpc
+     * @dev For Wallet environments, use Bridge() instead which combines steps 2-3
+     */
+    function SetMigratorInParameterRegistry(address migrator_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("setMigrator");
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
+
+        address paramRegistry = _deployment.parameterRegistryProxy;
+
+        console.log("paramRegistry: %s", paramRegistry);
+        console.log("migrator: %s", migrator_);
+
+        // Get migrator parameter key
+        string memory key = _getMigratorParameterKey();
+        console.log("migratorParameterKey: %s", key);
+
+        // Set migrator in parameter registry (using ADMIN)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
+        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator_))));
+        console.log("Set migrator in parameter registry");
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Step 3 of 4: Bridge the migrator parameter from settlement chain to app chain
+     * @dev Approves fee token and bridges the parameter using DEPLOYER_PRIVATE_KEY
+     * @dev For Fireblocks environments, run this separately after SetMigratorInParameterRegistry()
+     * @dev For Wallet environments, use Bridge() instead which combines steps 2-3
+     */
+    function BridgeParameter() external {
+        if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
+        address proxy = _deployment.gatewayProxy;
+
+        console.log("gatewayProxy (settlement chain): %s", proxy);
+        console.log("appChainId: %s", _deployment.appChainId);
+
+        // Get migrator parameter key
+        string memory key = _getMigratorParameterKey();
+        console.log("migratorParameterKey: %s", key);
+
+        // Calculate gas and cost for bridging
+        // The value 1 below is the number of parameter keys being bridged
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1);
+
+        // Convert from 18 decimals (app chain gas token) to 6 decimals (fee token).
+        uint256 cost_ = ((_APP_CHAIN_GAS_PRICE * gasLimit_) * 1e6) / 1e18;
+
+        console.log("gasLimit: %s", gasLimit_);
+        console.log("cost (fee token, 6 decimals): %s", cost_);
+
+        // Approve fee token and bridge (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
+        if (IERC20Like(_deployment.feeTokenProxy).balanceOf(_deployer) < cost_) revert InsufficientBalance();
+
+        // Approve fee token
+        IERC20Like(_deployment.feeTokenProxy).approve(proxy, cost_);
+
+        // Bridge the parameter
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = _deployment.appChainId;
+
+        string[] memory keys_ = new string[](1);
+        keys_[0] = key;
+
+        ISettlementChainGateway(proxy).sendParameters(chainIds_, keys_, gasLimit_, _APP_CHAIN_GAS_PRICE, cost_);
+
+        console.log("Bridged migrator parameter to app chain");
+
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Steps 2-3 of 4: Set migrator and bridge parameter (Wallet mode only)
+     * @param migrator_ The migrator address from step 1
+     * @dev This is a convenience function for Wallet environments that combines SetMigratorInParameterRegistry() and BridgeParameter()
+     * @dev For Fireblocks environments, use the separate SetMigratorInParameterRegistry() and BridgeParameter() functions instead
      */
     function Bridge(address migrator_) external {
         if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
@@ -212,7 +298,7 @@ abstract contract BaseAppChainUpgrader is Script {
     }
 
     /**
-     * @notice Step 3 of 3: Perform the upgrade on the app chain
+     * @notice Step 4 of 4: Perform the upgrade on the app chain
      * @dev Executes the migration and verifies state preservation (using DEPLOYER_PRIVATE_KEY)
      */
     function Upgrade() external {

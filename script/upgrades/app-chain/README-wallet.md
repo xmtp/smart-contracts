@@ -5,31 +5,31 @@
 - [App Chain Upgrades - Wallet (Private Key)](#app-chain-upgrades---wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
-  - [2. Token Requirements](#2-token-requirements)
+  - [2. Step Summary \& Token Requirements](#2-step-summary--token-requirements)
   - [3. Prerequisites](#3-prerequisites)
     - [3.1 `.env` file](#31-env-file)
     - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
-  - [4. Upgrade Process (Three Steps)](#4-upgrade-process-three-steps)
+  - [4. Upgrade Process (Four Steps)](#4-upgrade-process-four-steps)
     - [4.0 Setup Defaults](#40-setup-defaults)
     - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
-    - [4.2 Step 2: Bridge (settlement chain)](#42-step-2-bridge-settlement-chain)
-    - [4.3 Step 3: Upgrade (app chain)](#43-step-3-upgrade-app-chain)
+    - [4.2 Steps 2-3: SetMigrator and BridgeParameter (settlement chain)](#42-steps-2-3-setmigrator-and-bridgeparameter-settlement-chain)
+    - [4.3 Step 4: Upgrade (app chain)](#43-step-4-upgrade-app-chain)
   - [5. Post-Upgrade](#5-post-upgrade)
 
 ## 1. Overview
 
 Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-App chain upgrades are **always three steps** (regardless of signing method) because they span two chains. The migrator address must be bridged from the settlement chain to the app chain.
+App chain upgrades are **four steps** because they span two chains. The migrator address must be set on the settlement chain and bridged to the app chain. In Wallet mode, steps 2-3 are combined into a single command.
 
-## 2. Token Requirements
+## 2. Step Summary & Token Requirements
 
-| Step       | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) | Note                                                       |
-| ---------- | ---------- | -------- | ------- | ----------------- | ---------- | ---------------------------------------------------------- |
-| 1. Prepare | App        | DEPLOYER | -       | -                 | Yes        |                                                            |
-| 2. Bridge  | Settlement | ADMIN    | Yes     | -                 | -          | This needs ADMIN because it sets migrator in parm registry |
-| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | -          |                                                            |
-| 3. Upgrade | App        | DEPLOYER | -       | -                 | Yes        |                                                            |
+| Step               | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) | Note                                                                        |
+| ------------------ | ---------- | -------- | ------- | ----------------- | ---------- | --------------------------------------------------------------------------- |
+| 1. Prepare         | App        | DEPLOYER | -       | -                 | Yes        | Deploy new implementation and migrator contracts                            |
+| 2. SetMigrator     | Settlement | ADMIN    | Yes     | -                 | -          | Set migrator address in settlement chain parameter registry (admin-only tx) |
+| 3. BridgeParameter | Settlement | DEPLOYER | Yes     | Yes               | -          | Bridge the migrator parameter to app chain                                  |
+| 4. Upgrade         | App        | DEPLOYER | -       | -                 | Yes        | Execute migration on app chain using bridged migrator                       |
 
 ## 3. Prerequisites
 
@@ -54,9 +54,11 @@ Ensure the following fields are defined correctly for your chosen environment:
 }
 ```
 
-## 4. Upgrade Process (Three Steps)
+## 4. Upgrade Process (Four Steps)
 
 The following example upgrades `IdentityUpdateBroadcaster` on `testnet-dev`.
+
+**Note:** In Wallet mode, steps 2-3 (SetMigrator and BridgeParameter) are combined into a single `Bridge()` command for convenience.
 
 ### 4.0 Setup Defaults
 
@@ -72,13 +74,12 @@ export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
-  --sig "Prepare()" --broadcast
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 ```
 
 **Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
 
-### 4.2 Step 2: Bridge (settlement chain)
+### 4.2 Steps 2-3: SetMigrator and BridgeParameter (settlement chain)
 
 Set the migrator in the settlement chain parameter registry and bridge it to the app chain:
 
@@ -87,9 +88,20 @@ forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow \
   --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
 ```
 
-Wait for the bridge transaction to finalize. You can verify the migrator arrived on the app chain by checking the app chain parameter registry.
+This single command performs both:
 
-### 4.3 Step 3: Upgrade (app chain)
+- **Step 2 (SetMigrator):** Sets migrator in settlement chain parameter registry (ADMIN)
+- **Step 3 (BridgeParameter):** Bridges the parameter to app chain (DEPLOYER)
+
+Wait for the bridge transaction to finalize. You can verify the migrator arrived on the app chain by checking the app chain parameter registry:
+
+```bash
+forge script BridgeParameter --rpc-url xmtp_ropsten --sig "get(string)" "xmtp.identityUpdateBroadcaster.migrator"
+```
+
+The `Value (address)` in the output should match the `MIGRATOR_ADDRESS` from Step 1.
+
+### 4.3 Step 4: Upgrade (app chain)
 
 Execute the migration on the app chain:
 
