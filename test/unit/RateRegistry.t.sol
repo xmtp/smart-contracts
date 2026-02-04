@@ -210,7 +210,13 @@ contract RateRegistryTests is Test {
         );
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        emit IRateRegistry.RatesUpdated(
+            messageFee_,
+            storageFee_,
+            congestionFee_,
+            targetRatePerMinute_,
+            ratesInEffectAfter_
+        );
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();
@@ -261,7 +267,13 @@ contract RateRegistryTests is Test {
         );
 
         vm.expectEmit(address(_registry));
-        emit IRateRegistry.RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        emit IRateRegistry.RatesUpdated(
+            messageFee_,
+            storageFee_,
+            congestionFee_,
+            targetRatePerMinute_,
+            ratesInEffectAfter_
+        );
 
         vm.prank(_parameterRegistry);
         _registry.updateRates();

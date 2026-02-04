@@ -36,9 +36,15 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
      * @param  storageFee          The storage fee.
      * @param  congestionFee       The congestion fee.
      * @param  targetRatePerMinute The target rate per minute.
-     * @param startTime The start time of the rate
+     * @param  startTime           The start time of the rate.
      */
-    event RatesUpdated(uint64 messageFee, uint64 storageFee, uint64 congestionFee, uint64 targetRatePerMinute);
+    event RatesUpdated(
+        uint64 messageFee,
+        uint64 storageFee,
+        uint64 congestionFee,
+        uint64 targetRatePerMinute,
+        uint64 startTime
+    );
 
     /* ============ Custom Errors ============ */
 

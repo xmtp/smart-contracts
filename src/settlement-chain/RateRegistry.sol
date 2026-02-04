@@ -86,7 +86,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
-        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_);
     }
 
     /// @inheritdoc IMigratable
