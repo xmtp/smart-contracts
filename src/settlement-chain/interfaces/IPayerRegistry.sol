@@ -39,7 +39,34 @@ interface IPayerRegistry is IMigratable, IIdentified, IRegistryParametersErrors 
         uint96 fee;
     }
 
+    /**
+     * @notice Represents a delegation from a payer to a delegate (e.g., gateway).
+     * @param  isActive   Whether the delegation is currently active.
+     * @param  expiry     The timestamp when the delegation expires (0 for no expiry).
+     * @param  createdAt  The timestamp when the delegation was created.
+     */
+    struct Delegation {
+        bool isActive;
+        uint64 expiry;
+        uint64 createdAt;
+    }
+
     /* ============ Events ============ */
+
+    /**
+     * @notice Emitted when a payer authorizes a delegate to sign on their behalf.
+     * @param  payer    The address of the payer granting delegation.
+     * @param  delegate The address of the delegate being authorized.
+     * @param  expiry   The timestamp when the delegation expires (0 for no expiry).
+     */
+    event DelegationAuthorized(address indexed payer, address indexed delegate, uint64 expiry);
+
+    /**
+     * @notice Emitted when a payer revokes a delegate's authorization.
+     * @param  payer    The address of the payer revoking delegation.
+     * @param  delegate The address of the delegate being revoked.
+     */
+    event DelegationRevoked(address indexed payer, address indexed delegate);
 
     /**
      * @notice Emitted when the settler is updated.
@@ -189,6 +216,18 @@ interface IPayerRegistry is IMigratable, IIdentified, IRegistryParametersErrors 
     /// @notice Thrown when the recipient is the zero address.
     error ZeroRecipient();
 
+    /// @notice Thrown when the delegate address is zero.
+    error ZeroDelegate();
+
+    /// @notice Thrown when trying to authorize a delegate that is already authorized.
+    error DelegationAlreadyExists();
+
+    /// @notice Thrown when trying to revoke a delegation that does not exist.
+    error DelegationDoesNotExist();
+
+    /// @notice Thrown when the delegation expiry is in the past.
+    error DelegationExpiryInPast();
+
     /* ============ Initialization ============ */
 
     /**
@@ -312,6 +351,21 @@ interface IPayerRegistry is IMigratable, IIdentified, IRegistryParametersErrors 
     /// @notice Updates the pause status.
     function updatePauseStatus() external;
 
+    /* ============ Delegation Functions ============ */
+
+    /**
+     * @notice Authorizes a delegate to sign payer envelopes on behalf of the caller.
+     * @param  delegate_ The address of the delegate (e.g., gateway) to authorize.
+     * @param  expiry_   The timestamp when the delegation expires (0 for no expiry).
+     */
+    function authorize(address delegate_, uint64 expiry_) external;
+
+    /**
+     * @notice Revokes a delegate's authorization to sign on behalf of the caller.
+     * @param  delegate_ The address of the delegate to revoke.
+     */
+    function revoke(address delegate_) external;
+
     /* ============ View/Pure Functions ============ */
 
     /// @notice The parameter registry key used to fetch the settler.
@@ -390,4 +444,20 @@ interface IPayerRegistry is IMigratable, IIdentified, IRegistryParametersErrors 
     function getPendingWithdrawal(
         address payer_
     ) external view returns (uint96 pendingWithdrawal_, uint32 withdrawableTimestamp_, uint24 nonce_);
+
+    /**
+     * @notice Checks if a delegate is authorized to sign on behalf of a payer.
+     * @param  payer_        The address of the payer.
+     * @param  delegate_     The address of the delegate.
+     * @return isAuthorized_ True if the delegate is authorized and delegation has not expired.
+     */
+    function isAuthorized(address payer_, address delegate_) external view returns (bool isAuthorized_);
+
+    /**
+     * @notice Returns the delegation information for a payer and delegate.
+     * @param  payer_      The address of the payer.
+     * @param  delegate_   The address of the delegate.
+     * @return delegation_ The delegation struct with isActive, expiry, and createdAt.
+     */
+    function getDelegation(address payer_, address delegate_) external view returns (Delegation memory delegation_);
 }
