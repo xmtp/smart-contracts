@@ -1,8 +1,8 @@
-# App Chain Upgrades — Fireblocks
+# App Chain Upgrades - Fireblocks
 
 ## Table of Contents
 
-- [App Chain Upgrades — Fireblocks](#app-chain-upgrades--fireblocks)
+- [App Chain Upgrades - Fireblocks](#app-chain-upgrades--fireblocks)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Token Requirements](#2-token-requirements)
@@ -27,10 +27,10 @@ App chain upgrades are **always three steps** because they span two chains. Only
 
 | Step       | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) |
 | ---------- | ---------- | -------- | ------- | ----------------- | ---------- |
-| 1. Prepare | App        | DEPLOYER | —       | —                 | Yes        |
-| 2. Bridge  | Settlement | ADMIN    | Yes     | —                 | —          |
-| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | —          |
-| 3. Upgrade | App        | DEPLOYER | —       | —                 | Yes        |
+| 1. Prepare | App        | DEPLOYER | -       | -                 | Yes        |
+| 2. Bridge  | Settlement | ADMIN    | Yes     | -                 | -          |
+| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | -          |
+| 3. Upgrade | App        | DEPLOYER | -       | -                 | Yes        |
 
 ## 3. Prerequisites
 
@@ -54,9 +54,9 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "factory": "0x...", // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...", // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..." // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
 }
 ```
 
@@ -84,7 +84,7 @@ export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 Deploy the new implementation and migrator on the app chain:
 
 ```bash
-ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Prepare()" --broadcast
 ```
 
@@ -109,7 +109,7 @@ Approve the transaction in the Fireblocks console, then wait for the bridge to c
 After the bridge transaction finalizes, execute the migration on the app chain:
 
 ```bash
-ADMIN=$ADMIN forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
+forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow \
   --sig "Upgrade()" --broadcast
 ```
 

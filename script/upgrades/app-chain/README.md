@@ -30,5 +30,5 @@ Add the override variable to your command when you need to use the non-default s
 
 ## 3. Choose Your Workflow
 
-- **[README-wallet.md](README-wallet.md)** — Private key signing (simpler upgrade process)
-- **[README-fireblocks.md](README-fireblocks.md)** — Fireblocks signing (multi-step upgrade process)
+- **[README-wallet.md](README-wallet.md)** - Private key signing (simpler upgrade process)
+- **[README-fireblocks.md](README-fireblocks.md)** - Fireblocks signing (multi-step upgrade process)

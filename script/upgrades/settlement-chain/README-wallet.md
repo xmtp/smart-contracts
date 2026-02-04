@@ -1,8 +1,8 @@
-# Settlement Chain Upgrades — Wallet (Private Key)
+# Settlement Chain Upgrades - Wallet (Private Key)
 
 ## Table of Contents
 
-- [Settlement Chain Upgrades — Wallet (Private Key)](#settlement-chain-upgrades--wallet-private-key)
+- [Settlement Chain Upgrades - Wallet (Private Key)](#settlement-chain-upgrades--wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Prerequisites](#2-prerequisites)
@@ -17,7 +17,7 @@
 
 Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-This is the simpler workflow — the `Upgrade()` function performs all steps in a single transaction batch.
+This is the simpler workflow - the `Upgrade()` function performs all steps in a single transaction batch.
 
 ## 2. Prerequisites
 
@@ -37,9 +37,9 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "factory": "0x...", // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...", // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..." // The proxy being upgraded (e.g., nodeRegistryProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., nodeRegistryProxy)
 }
 ```
 

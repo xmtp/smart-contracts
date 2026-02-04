@@ -1,8 +1,8 @@
-# App Chain Upgrades — Wallet (Private Key)
+# App Chain Upgrades - Wallet (Private Key)
 
 ## Table of Contents
 
-- [App Chain Upgrades — Wallet (Private Key)](#app-chain-upgrades--wallet-private-key)
+- [App Chain Upgrades - Wallet (Private Key)](#app-chain-upgrades--wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Token Requirements](#2-token-requirements)
@@ -26,10 +26,10 @@ App chain upgrades are **always three steps** (regardless of signing method) bec
 
 | Step       | Chain      | Address  | baseETH | xUSD (settlement) | xUSD (app) |
 | ---------- | ---------- | -------- | ------- | ----------------- | ---------- |
-| 1. Prepare | App        | DEPLOYER | —       | —                 | Yes        |
-| 2. Bridge  | Settlement | ADMIN    | Yes     | —                 | —          |
-| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | —          |
-| 3. Upgrade | App        | DEPLOYER | —       | —                 | Yes        |
+| 1. Prepare | App        | DEPLOYER | -       | -                 | Yes        |
+| 2. Bridge  | Settlement | ADMIN    | Yes     | -                 | -          |
+| 2. Bridge  | Settlement | DEPLOYER | Yes     | Yes               | -          |
+| 3. Upgrade | App        | DEPLOYER | -       | -                 | Yes        |
 
 ## 3. Prerequisites
 
@@ -48,9 +48,9 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "factory": "0x...", // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...", // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..." // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., identityUpdateBroadcasterProxy)
 }
 ```
 

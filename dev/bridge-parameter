@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Bridging parameters is permissionless — only requires DEPLOYER_PRIVATE_KEY with fee tokens.
+# Bridging parameters is permissionless. It only requires DEPLOYER_PRIVATE_KEY with fee tokens.
 # See: script/parameters/app-chain/README.md
 
 # shellcheck disable=SC1091

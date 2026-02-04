@@ -7,17 +7,28 @@ import { IdentityUpdateBroadcasterDeployer } from "../../deployers/IdentityUpdat
 import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
 
 /**
- * @notice Identity Update Broadcaster upgrader
- * @dev This contract provides three entry points for the upgrade process:
- *      - Prepare(): Step 1 - Deploy implementation and migrator on app chain
- *      - Bridge(address): Step 2 - Bridge migrator parameter from settlement chain to app chain
- *      - Upgrade(): Step 3 - Execute migration and verify state preservation
+ * @notice Upgrades the IdentityUpdateBroadcaster proxy to a new implementation
+ * @dev This script provides two upgrade workflows. Both are three steps because they span two chains.
  *
- * Usage:
- * NOTE: These steps execute on different chains, take care to get the --rpc-url correct for each step.
+ *   Workflow 1 (Wallet, for non-Fireblocks environments):
+ *     - Step 1: Prepare() on app chain (DEPLOYER)
+ *     - Step 2: Bridge(address) on settlement chain (ADMIN via private key, DEPLOYER for bridging)
+ *     - Step 3: Upgrade() on app chain (DEPLOYER)
+ *
+ *   Workflow 2 (Fireblocks, for testnet/mainnet):
+ *     - Step 1: Prepare() on app chain (DEPLOYER)
+ *     - Step 2: Bridge(address) on settlement chain (ADMIN via Fireblocks, DEPLOYER for bridging)
+ *     - Step 3: Upgrade() on app chain (DEPLOYER)
+ *
+ * Usage (Wallet):
  *   Step 1: ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
  *   Step 2: ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
  *   Step 3: ENVIRONMENT=testnet-dev forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+ *
+ * Usage (Fireblocks):
+ *   Step 1: ENVIRONMENT=testnet forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+ *   Step 2: ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 3: ENVIRONMENT=testnet forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
  */
 contract IdentityUpdateBroadcasterUpgrader is BaseAppChainUpgrader {
     struct ContractState {

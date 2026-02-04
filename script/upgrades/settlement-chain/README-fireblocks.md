@@ -1,8 +1,8 @@
-# Settlement Chain Upgrades — Fireblocks
+# Settlement Chain Upgrades - Fireblocks
 
 ## Table of Contents
 
-- [Settlement Chain Upgrades — Fireblocks](#settlement-chain-upgrades--fireblocks)
+- [Settlement Chain Upgrades - Fireblocks](#settlement-chain-upgrades--fireblocks)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Prerequisites](#2-prerequisites)
@@ -43,9 +43,9 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "factory": "0x...", // Factory contract for creating new contracts
-  "parameterRegistryProxy": "0x...", // Parameter registry for setting migrator address
-  "<contract>Proxy": "0x..." // The proxy being upgraded (e.g., nodeRegistryProxy)
+  "factory": "0x...",                  // Factory contract for creating new contracts
+  "parameterRegistryProxy": "0x...",   // Parameter registry for setting migrator address
+  "<contract>Proxy": "0x..."           // The proxy being upgraded (e.g., nodeRegistryProxy)
 }
 ```
 
@@ -77,10 +77,10 @@ forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow \
   --sig "DeployImplementationAndMigrator()" --broadcast
 ```
 
-**Important:** Note the output values — you will need them for Step 2:
+**Important:** Note the output values - you will need them for Step 2:
 
-- `MIGRATOR_ADDRESS_FOR_STEP_2` — the migrator contract address
-- `FIREBLOCKS_NOTE_FOR_STEP_2` — a descriptive note for the Fireblocks transaction
+- `MIGRATOR_ADDRESS_FOR_STEP_2` - the migrator contract address
+- `FIREBLOCKS_NOTE_FOR_STEP_2` - a descriptive note for the Fireblocks transaction
 
 ### 3.2 Step 2: Set migrator in parameter registry (Fireblocks)
 

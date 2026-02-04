@@ -8,12 +8,12 @@ import { RateRegistryDeployer } from "../../deployers/RateRegistryDeployer.sol";
 
 /**
  * @notice Upgrades the RateRegistry proxy to a new implementation
- * @dev This script provides two upgrade paths:
+ * @dev This script provides two upgrade workflows:
  *
- *   Path 1 (All-in-one, for non-Fireblocks environments):
+ *   Workflow 1 (All-in-one, for non-Fireblocks environments):
  *     - Upgrade(): Performs all steps in a single transaction batch
  *
- *   Path 2 (Three-step, for Fireblocks environments):
+ *   Workflow 2 (Three-step, for Fireblocks environments):
  *     - DeployImplementationAndMigrator(): Step 1 - Deploy implementation and migrator (non-Fireblocks)
  *     - SetMigratorInParameterRegistry(address): Step 2 - Set migrator in parameter registry (Fireblocks)
  *     - PerformMigration(): Step 3 - Execute migration and verify state (non-Fireblocks)

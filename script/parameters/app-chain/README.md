@@ -15,7 +15,7 @@
 
 This folder contains scripts for bridging parameters from the Settlement Chain Parameter Registry to the App Chain Parameter Registry.
 
-Bridging is **permissionless** — anyone with fee tokens can bridge parameters. No admin signature or Fireblocks approval is required for the bridge step itself.
+Bridging is **permissionless** - anyone with fee tokens can bridge parameters. No admin signature or Fireblocks approval is required for the bridge step itself.
 
 ## 2. Workflow Summary
 
@@ -28,7 +28,7 @@ Setting a parameter on the app chain is a two-step process:
 
 **Step 1** is documented in `script/parameters/settlement-chain/` and may require Fireblocks approval depending on your environment.
 
-**Step 2** (this folder) only requires DEPLOYER with fee tokens — no admin signature needed.
+**Step 2** (this folder) only requires DEPLOYER with fee tokens - no admin signature needed.
 
 ## 3. Prerequisites
 
@@ -45,10 +45,10 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 ```json
 {
-  "gatewayProxy": "0x...", // Settlement chain gateway address
-  "feeTokenProxy": "0x...", // Fee token contract address
-  "appChainId": 12345, // Target app chain ID
-  "settlementChainId": 84532 // Settlement chain ID (e.g., Base Sepolia)
+  "gatewayProxy": "0x...",       // Settlement chain gateway address
+  "feeTokenProxy": "0x...",      // Fee token contract address
+  "appChainId": 12345,           // Target app chain ID
+  "settlementChainId": 84532     // Settlement chain ID (e.g., Base Sepolia)
 }
 ```
 

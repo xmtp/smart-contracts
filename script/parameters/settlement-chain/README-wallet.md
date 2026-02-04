@@ -1,8 +1,8 @@
-# Settlement Chain Parameters — Wallet (Private Key)
+# Settlement Chain Parameters - Wallet (Private Key)
 
 ## Table of Contents
 
-- [Settlement Chain Parameters — Wallet (Private Key)](#settlement-chain-parameters--wallet-private-key)
+- [Settlement Chain Parameters - Wallet (Private Key)](#settlement-chain-parameters--wallet-private-key)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Prerequisites](#2-prerequisites)
@@ -21,7 +21,7 @@
 
 Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-This is the simpler workflow — no Fireblocks approval required.
+This is the simpler workflow - no Fireblocks approval required.
 
 ## 2. Prerequisites
 
