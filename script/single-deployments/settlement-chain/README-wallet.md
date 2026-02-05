@@ -1,20 +1,18 @@
-# Settlement Chain Single Deployments - Wallet (Private Key)
+# Settlement Chain Single Deployments - Wallet (Private Key) <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Single Deployments - Wallet (Private Key)](#settlement-chain-single-deployments---wallet-private-key)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Prerequisites](#2-prerequisites)
-    - [2.1 `.env` file](#21-env-file)
-    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-  - [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
-    - [3.0 Setup Defaults](#30-setup-defaults)
-    - [3.1 Step 1: Predict Addresses](#31-step-1-predict-addresses)
-    - [3.2 Step 2: Deploy Contract](#32-step-2-deploy-contract)
-    - [3.3 Step 3: Set Parameter Registry Values](#33-step-3-set-parameter-registry-values)
-    - [3.4 Step 4: Update Contract Dependencies](#34-step-4-update-contract-dependencies)
-  - [4. Post-Deployment](#4-post-deployment)
+- [1. Overview](#1-overview)
+- [2. Prerequisites](#2-prerequisites)
+  - [2.1. `.env` file](#21-env-file)
+  - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
+- [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
+  - [3.1. Setup Defaults](#31-setup-defaults)
+  - [3.2. Step 1: Predict Addresses](#32-step-1-predict-addresses)
+  - [3.3. Step 2: Deploy Contract](#33-step-2-deploy-contract)
+  - [3.4. Step 3: Set Parameter Registry Values](#34-step-3-set-parameter-registry-values)
+  - [3.5. Step 4: Update Contract Dependencies](#35-step-4-update-contract-dependencies)
+- [4. Post-Deployment](#4-post-deployment)
 
 ## 1. Overview
 
@@ -26,7 +24,7 @@ A **single deployment** refers to deploying a new **proxy and implementation pai
 
 ## 2. Prerequisites
 
-### 2.1 `.env` file
+### 2.1. `.env` file
 
 ```bash
 ADMIN_PRIVATE_KEY=...        # Admin private key (for setting parameters in parameter registry)
@@ -36,7 +34,7 @@ ETHERSCAN_API_KEY=...        # For contract verification
 ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 ```
 
-### 2.2 `config/<environment>.json`
+### 2.2. `config/<environment>.json`
 
 Ensure the following fields are defined correctly for your chosen environment:
 
@@ -55,7 +53,7 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example deploys `PayerReportManager` on `testnet-dev`.
 
-### 3.0 Setup Defaults
+### 3.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -64,7 +62,7 @@ export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
 export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 ```
 
-### 3.1 Step 1: Predict Addresses
+### 3.2. Step 1: Predict Addresses
 
 Calculate the deterministic addresses that will be deployed:
 
@@ -77,7 +75,7 @@ forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predic
 - `Implementation` address
 - `Proxy` address
 
-### 3.2 Step 2: Deploy Contract
+### 3.3. Step 2: Deploy Contract
 
 Deploy the new implementation and proxy:
 
@@ -92,7 +90,7 @@ This will:
 3. Initialize the proxy
 4. Update `environments/<environment>.json` with the proxy address
 
-### 3.3 Step 3: Set Parameter Registry Values
+### 3.4. Step 3: Set Parameter Registry Values
 
 Set the required parameters in the parameter registry (uses `ADMIN_PRIVATE_KEY`):
 
@@ -107,7 +105,7 @@ This sets parameters like:
 
 **Note:** For NodeRegistry, parameters must be set manually before proceeding to the next step.
 
-### 3.4 Step 4: Update Contract Dependencies
+### 3.5. Step 4: Update Contract Dependencies
 
 Update dependent contracts to read the new parameter values (uses `DEPLOYER_PRIVATE_KEY`):
 

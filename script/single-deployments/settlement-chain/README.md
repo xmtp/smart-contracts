@@ -1,18 +1,16 @@
-# Settlement Chain Single Deployments
+# Settlement Chain Single Deployments <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Single Deployments](#settlement-chain-single-deployments)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Environment Defaults](#2-environment-defaults)
-  - [3. Workflow Selection](#3-workflow-selection)
-    - [Wallet Workflow (Private Key)](#wallet-workflow-private-key)
-    - [Fireblocks Workflow](#fireblocks-workflow)
-  - [4. Available Deployment Scripts](#4-available-deployment-scripts)
-    - [DeployNodeRegistry.s.sol](#deploynoderegistryssol)
-    - [DeployPayerReportManager.s.sol](#deploypayerreportmanagerssol)
-    - [DeployDistributionManager.s.sol](#deploydistributionmanagerssol)
+- [1. Overview](#1-overview)
+- [2. Environment Defaults](#2-environment-defaults)
+- [3. Workflow Selection](#3-workflow-selection)
+  - [3.1. Wallet Workflow (Private Key)](#31-wallet-workflow-private-key)
+  - [3.2. Fireblocks Workflow](#32-fireblocks-workflow)
+- [4. Available Deployment Scripts](#4-available-deployment-scripts)
+  - [4.1. DeployNodeRegistry.s.sol](#41-deploynoderegistryssol)
+  - [4.2. DeployPayerReportManager.s.sol](#42-deploypayerreportmanagerssol)
+  - [4.3. DeployDistributionManager.s.sol](#43-deploydistributionmanagerssol)
 
 ## 1. Overview
 
@@ -56,13 +54,13 @@ export ADMIN_ADDRESS_TYPE=FIREBLOCKS  # or WALLET
 
 Choose the appropriate workflow based on your environment:
 
-### Wallet Workflow (Private Key)
+### 3.1. Wallet Workflow (Private Key)
 
 - **Use for:** `testnet-dev`, `testnet-staging`
 - **Requirements:** `ADMIN_PRIVATE_KEY`, `DEPLOYER_PRIVATE_KEY`
 - **Documentation:** [README-wallet.md](README-wallet.md)
 
-### Fireblocks Workflow
+### 3.2. Fireblocks Workflow
 
 - **Use for:** `testnet`, `mainnet`
 - **Requirements:** `ADMIN` (Fireblocks vault address), `DEPLOYER_PRIVATE_KEY`, Fireblocks API credentials
@@ -70,7 +68,7 @@ Choose the appropriate workflow based on your environment:
 
 ## 4. Available Deployment Scripts
 
-### DeployNodeRegistry.s.sol
+### 4.1. DeployNodeRegistry.s.sol
 
 Deploys a new NodeRegistry contract (proxy and implementation).
 
@@ -81,7 +79,7 @@ Deploys a new NodeRegistry contract (proxy and implementation).
 
 **Note:** NodeRegistry has no parameters to set in Step 3. Parameters must be set manually before Step 4.
 
-### DeployPayerReportManager.s.sol
+### 4.2. DeployPayerReportManager.s.sol
 
 Deploys a new PayerReportManager contract (proxy and implementation).
 
@@ -92,7 +90,7 @@ Deploys a new PayerReportManager contract (proxy and implementation).
 
 **Post-deployment:** A new DistributionManager must also be upgraded or deployed since it has an immutable reference to the PayerReportManager address.
 
-### DeployDistributionManager.s.sol
+### 4.3. DeployDistributionManager.s.sol
 
 Deploys a new DistributionManager contract (proxy and implementation).
 

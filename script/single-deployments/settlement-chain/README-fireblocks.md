@@ -1,21 +1,19 @@
-# Settlement Chain Single Deployments - Fireblocks
+# Settlement Chain Single Deployments - Fireblocks <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Single Deployments - Fireblocks](#settlement-chain-single-deployments---fireblocks)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Prerequisites](#2-prerequisites)
-    - [2.1 `.env` file](#21-env-file)
-    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-  - [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
-    - [3.0 Setup Defaults](#30-setup-defaults)
-    - [3.1 Step 1: Predict Addresses](#31-step-1-predict-addresses)
-    - [3.2 Step 2: Deploy Contract](#32-step-2-deploy-contract)
-    - [3.3 Step 3: Set Parameter Registry Values (Fireblocks)](#33-step-3-set-parameter-registry-values-fireblocks)
-    - [3.4 Step 4: Update Contract Dependencies](#34-step-4-update-contract-dependencies)
-  - [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
-  - [5. Post-Deployment](#5-post-deployment)
+- [1. Overview](#1-overview)
+- [2. Prerequisites](#2-prerequisites)
+  - [2.1. `.env` file](#21-env-file)
+  - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
+- [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
+  - [3.1. Setup Defaults](#31-setup-defaults)
+  - [3.2. Step 1: Predict Addresses](#32-step-1-predict-addresses)
+  - [3.3. Step 2: Deploy Contract](#33-step-2-deploy-contract)
+  - [3.4. Step 3: Set Parameter Registry Values (Fireblocks)](#34-step-3-set-parameter-registry-values-fireblocks)
+  - [3.5. Step 4: Update Contract Dependencies](#35-step-4-update-contract-dependencies)
+- [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
+- [5. Post-Deployment](#5-post-deployment)
 
 ## 1. Overview
 
@@ -29,7 +27,7 @@ A **single deployment** refers to deploying a new **proxy and implementation pai
 
 ## 2. Prerequisites
 
-### 2.1 `.env` file
+### 2.1. `.env` file
 
 ```bash
 ADMIN=...                              # Fireblocks vault account address
@@ -42,7 +40,7 @@ FIREBLOCKS_API_PRIVATE_KEY_PATH=...    # Path to API private key file (download 
 FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # Vault account ID that owns the ADMIN address
 ```
 
-### 2.2 `config/<environment>.json`
+### 2.2. `config/<environment>.json`
 
 Ensure the following fields are defined correctly for your chosen environment:
 
@@ -68,7 +66,7 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example deploys `PayerReportManager` on `testnet`.
 
-### 3.0 Setup Defaults
+### 3.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -77,7 +75,7 @@ export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainn
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 ```
 
-### 3.1 Step 1: Predict Addresses
+### 3.2. Step 1: Predict Addresses
 
 Calculate the deterministic addresses that will be deployed:
 
@@ -90,7 +88,7 @@ forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predic
 - `Implementation` address
 - `Proxy` address
 
-### 3.2 Step 2: Deploy Contract
+### 3.3. Step 2: Deploy Contract
 
 Deploy the new implementation and proxy:
 
@@ -105,7 +103,7 @@ This will:
 3. Initialize the proxy
 4. Update `environments/<environment>.json` with the proxy address
 
-### 3.3 Step 3: Set Parameter Registry Values (Fireblocks)
+### 3.4. Step 3: Set Parameter Registry Values (Fireblocks)
 
 Set the required parameters in the parameter registry (via Fireblocks):
 
@@ -126,7 +124,7 @@ This sets parameters like:
 
 **Note:** For NodeRegistry, this step is informational only. Parameters must be set manually via the `SetParameter` script before proceeding to the next step.
 
-### 3.4 Step 4: Update Contract Dependencies
+### 3.5. Step 4: Update Contract Dependencies
 
 Update dependent contracts to read the new parameter values:
 
