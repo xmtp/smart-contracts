@@ -83,6 +83,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         uint64 startTime_ = RegistryParameters.getUint64Parameter(parameterRegistry, ratesInEffectAfterParameterKey());
 
         _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        _revertIfInvalidStartTime(startTime_);
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
@@ -185,5 +186,16 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         ) {
             revert NoChange();
         }
+    }
+
+    /// @dev Reverts if the start time is not strictly greater than the last start time.
+    function _revertIfInvalidStartTime(uint64 startTime_) internal view {
+        RateRegistryStorage storage $ = _getRateRegistryStorage();
+
+        if ($.allRates.length == 0) return;
+
+        uint64 lastStartTime_ = $.allRates[$.allRates.length - 1].startTime;
+
+        if (startTime_ <= lastStartTime_) revert InvalidStartTime(startTime_, lastStartTime_);
     }
 }

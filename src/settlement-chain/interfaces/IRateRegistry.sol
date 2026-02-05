@@ -63,6 +63,9 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
 
+    /// @notice Thrown when the new start time is not strictly greater than the last start time.
+    error InvalidStartTime(uint64 startTime, uint64 lastStartTime);
+
     /* ============ Initialization ============ */
 
     /**

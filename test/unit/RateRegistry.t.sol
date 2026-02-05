@@ -289,6 +289,84 @@ contract RateRegistryTests is Test {
         assertEq(rates_[4].startTime, ratesInEffectAfter_);
     }
 
+    function test_updateRates_invalidStartTime_equal() external {
+        _registry.__pushRates(100, 200, 300, 400, 1000);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(101)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(200)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(300)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _TARGET_RATE_PER_MINUTE_KEY, bytes32(uint256(400)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _RATES_IN_EFFECT_AFTER_KEY, bytes32(uint256(1000)));
+
+        vm.expectRevert(abi.encodeWithSelector(IRateRegistry.InvalidStartTime.selector, 1000, 1000));
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_invalidStartTime_less() external {
+        _registry.__pushRates(100, 200, 300, 400, 2000);
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(101)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(200)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(300)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _TARGET_RATE_PER_MINUTE_KEY, bytes32(uint256(400)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _RATES_IN_EFFECT_AFTER_KEY, bytes32(uint256(1000)));
+
+        vm.expectRevert(abi.encodeWithSelector(IRateRegistry.InvalidStartTime.selector, 1000, 2000));
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+    }
+
+    function test_updateRates_validStartTime_increasing() external {
+        _registry.__pushRates(100, 200, 300, 400, 1000);
+
+        uint64 messageFee_ = 101;
+        uint64 storageFee_ = 200;
+        uint64 congestionFee_ = 300;
+        uint64 targetRatePerMinute_ = 400;
+        uint64 ratesInEffectAfter_ = 1001;
+
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
+        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(congestionFee_)));
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _TARGET_RATE_PER_MINUTE_KEY,
+            bytes32(uint256(targetRatePerMinute_))
+        );
+
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _RATES_IN_EFFECT_AFTER_KEY,
+            bytes32(uint256(ratesInEffectAfter_))
+        );
+
+        vm.expectEmit(address(_registry));
+        emit IRateRegistry.RatesUpdated(
+            messageFee_,
+            storageFee_,
+            congestionFee_,
+            targetRatePerMinute_,
+            ratesInEffectAfter_
+        );
+
+        vm.prank(_parameterRegistry);
+        _registry.updateRates();
+
+        IRateRegistry.Rates[] memory rates_ = _registry.__getAllRates();
+
+        assertEq(rates_.length, 2);
+
+        assertEq(rates_[1].messageFee, messageFee_);
+        assertEq(rates_[1].storageFee, storageFee_);
+        assertEq(rates_[1].congestionFee, congestionFee_);
+        assertEq(rates_[1].targetRatePerMinute, targetRatePerMinute_);
+        assertEq(rates_[1].startTime, ratesInEffectAfter_);
+    }
+
     /* ============ getRates ============ */
 
     function test_getRates_zeroCount() external {
