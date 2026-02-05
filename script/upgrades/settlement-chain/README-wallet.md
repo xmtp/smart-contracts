@@ -1,17 +1,15 @@
-# Settlement Chain Upgrades - Wallet (Private Key)
+# Settlement Chain Upgrades - Wallet (Private Key) <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Upgrades - Wallet (Private Key)](#settlement-chain-upgrades---wallet-private-key)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Prerequisites](#2-prerequisites)
-    - [2.1 `.env` file](#21-env-file)
-    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-  - [3. Upgrade Process (All-in-One)](#3-upgrade-process-all-in-one)
-    - [3.0 Setup Defaults](#30-setup-defaults)
-    - [3.1 Run Upgrade](#31-run-upgrade)
-  - [4. Post-Upgrade](#4-post-upgrade)
+- [1. Overview](#1-overview)
+- [2. Prerequisites](#2-prerequisites)
+  - [2.1. `.env` file](#21-env-file)
+  - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
+- [3. Upgrade Process (All-in-One)](#3-upgrade-process-all-in-one)
+  - [3.1. Setup Defaults](#31-setup-defaults)
+  - [3.2. Run Upgrade](#32-run-upgrade)
+- [4. Post-Upgrade](#4-post-upgrade)
 
 ## 1. Overview
 
@@ -21,7 +19,7 @@ This is the simpler workflow - the `Upgrade()` function performs all steps in a 
 
 ## 2. Prerequisites
 
-### 2.1 `.env` file
+### 2.1. `.env` file
 
 ```bash
 ADMIN_PRIVATE_KEY=...        # Admin private key (for setting migrator in parameter registry)
@@ -31,9 +29,9 @@ ETHERSCAN_API_KEY=...        # For contract verification
 ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 ```
 
-### 2.2 `config/<environment>.json`
+### 2.2. `config/<environment>.json`
 
-Ensure the following fields are defined correctly for your chosen environment:
+Ensure the following fields are defined correctly in the `config/<environment>.json` file for your chosen environment:
 
 ```json
 {
@@ -53,7 +51,7 @@ The `Upgrade()` function performs all steps in a single transaction batch:
 4. Executes the migration
 5. Verifies state is preserved
 
-### 3.0 Setup Defaults
+### 3.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -62,7 +60,7 @@ export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
 export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 ```
 
-### 3.1 Run Upgrade
+### 3.2. Run Upgrade
 
 Example: Upgrade NodeRegistry:
 
