@@ -1,12 +1,10 @@
-# Settlement Chain Parameters
+# Settlement Chain Parameters <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Parameters](#settlement-chain-parameters)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Environment Defaults](#2-environment-defaults)
-  - [3. Choose Your Workflow](#3-choose-your-workflow)
+- [1. Overview](#1-overview)
+- [2. Environment Defaults](#2-environment-defaults)
+- [3. Choose Your Workflow](#3-choose-your-workflow)
 
 ## 1. Overview
 

@@ -1,20 +1,18 @@
-# Settlement Chain Upgrades - Fireblocks
+# Settlement Chain Upgrades - Fireblocks <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Upgrades - Fireblocks](#settlement-chain-upgrades---fireblocks)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Prerequisites](#2-prerequisites)
-    - [2.1 `.env` file](#21-env-file)
-    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-  - [3. Upgrade Process (Three Steps)](#3-upgrade-process-three-steps)
-    - [3.0 Setup Defaults](#30-setup-defaults)
-    - [3.1 Step 1: Deploy implementation and migrator](#31-step-1-deploy-implementation-and-migrator)
-    - [3.2 Step 2: Set migrator in parameter registry (Fireblocks)](#32-step-2-set-migrator-in-parameter-registry-fireblocks)
-    - [3.3 Step 3: Perform migration](#33-step-3-perform-migration)
-  - [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
-  - [5. Post-Upgrade](#5-post-upgrade)
+- [1. Overview](#1-overview)
+- [2. Prerequisites](#2-prerequisites)
+  - [2.1. `.env` file](#21-env-file)
+  - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
+- [3. Upgrade Process (Three Steps)](#3-upgrade-process-three-steps)
+  - [3.1. Setup Defaults](#31-setup-defaults)
+  - [3.2. Step 1: Deploy implementation and migrator](#32-step-1-deploy-implementation-and-migrator)
+  - [3.3. Step 2: Set migrator in parameter registry (Fireblocks)](#33-step-2-set-migrator-in-parameter-registry-fireblocks)
+  - [3.4. Step 3: Perform migration](#34-step-3-perform-migration)
+- [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
+- [5. Post-Upgrade](#5-post-upgrade)
 
 ## 1. Overview
 
@@ -24,7 +22,7 @@ Fireblocks requires a **three-step process** because only Step 2 (setting the mi
 
 ## 2. Prerequisites
 
-### 2.1 `.env` file
+### 2.1. `.env` file
 
 ```bash
 ADMIN=...                              # Fireblocks vault account address
@@ -37,9 +35,9 @@ FIREBLOCKS_API_PRIVATE_KEY_PATH=...    # Path to API private key file (download 
 FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # Vault account ID that owns the ADMIN address
 ```
 
-### 2.2 `config/<environment>.json`
+### 2.2. `config/<environment>.json`
 
-Ensure the following fields are defined correctly for your chosen environment:
+Ensure the following fields are defined correctly in the `config/<environment>.json` file for your chosen environment:
 
 ```json
 {
@@ -59,7 +57,7 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example upgrades `NodeRegistry` on `testnet`.
 
-### 3.0 Setup Defaults
+### 3.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -68,7 +66,7 @@ export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainn
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 ```
 
-### 3.1 Step 1: Deploy implementation and migrator
+### 3.2. Step 1: Deploy implementation and migrator
 
 This step deploys the new implementation and creates a migrator contract:
 
@@ -81,7 +79,7 @@ forge script NodeRegistryUpgrader --rpc-url base_sepolia --slow --sig "DeployImp
 - `MIGRATOR_ADDRESS_FOR_STEP_2` - the migrator contract address
 - `FIREBLOCKS_NOTE_FOR_STEP_2` - a descriptive note for the Fireblocks transaction
 
-### 3.2 Step 2: Set migrator in parameter registry (Fireblocks)
+### 3.3. Step 2: Set migrator in parameter registry (Fireblocks)
 
 Export the values from Step 1, then run the Fireblocks command:
 
@@ -96,7 +94,7 @@ npx fireblocks-json-rpc --http -- \
 
 Approve the transaction in the Fireblocks console.
 
-### 3.3 Step 3: Perform migration
+### 3.4. Step 3: Perform migration
 
 After the Fireblocks transaction is confirmed, execute the migration:
 
@@ -130,7 +128,7 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 
 After a successful upgrade:
 
-1. Copy the `newImpl` address from the script earlier script output where we called `DeployImplementationAndMigrator` (section 3.1) to `config/<environment>.json`. If the implementation code has not changed, then this `newImpl` address will not change, although the upgrade is carried out.
+1. Copy the `newImpl` address from the script earlier script output where we called `DeployImplementationAndMigrator` to `config/<environment>.json`. If the implementation code has not changed, then this `newImpl` address will not change, although the upgrade is carried out.
 2. Verify the implementation contract on the block explorer:
 
 ```bash

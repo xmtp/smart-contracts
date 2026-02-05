@@ -1,21 +1,19 @@
-# Settlement Chain Parameters - Wallet (Private Key)
+# Settlement Chain Parameters - Wallet (Private Key) <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [Settlement Chain Parameters - Wallet (Private Key)](#settlement-chain-parameters--wallet-private-key)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Prerequisites](#2-prerequisites)
-    - [2.1 `.env` file](#21-env-file)
-    - [2.2 `config/<environment>.json`](#22-configenvironmentjson)
-  - [3. Setting Parameters](#3-setting-parameters)
-    - [3.0 Setup Defaults](#30-setup-defaults)
-    - [3.1 Set a bytes32 value](#31-set-a-bytes32-value)
-    - [3.2 Set an address value](#32-set-an-address-value)
-    - [3.3 Set a uint256 value](#33-set-a-uint256-value)
-    - [3.4 Set a boolean value](#34-set-a-boolean-value)
-  - [4. Reading Parameters](#4-reading-parameters)
-  - [5. Next Steps](#5-next-steps)
+- [1. Overview](#1-overview)
+- [2. Prerequisites](#2-prerequisites)
+  - [2.1. `.env` file](#21-env-file)
+  - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
+- [3. Setting Parameters](#3-setting-parameters)
+  - [3.1. Setup Defaults](#31-setup-defaults)
+  - [3.2. Set a bytes32 value](#32-set-a-bytes32-value)
+  - [3.3. Set an address value](#33-set-an-address-value)
+  - [3.4. Set a uint256 value](#34-set-a-uint256-value)
+  - [3.5. Set a boolean value](#35-set-a-boolean-value)
+- [4. Reading Parameters](#4-reading-parameters)
+- [5. Next Steps](#5-next-steps)
 
 ## 1. Overview
 
@@ -25,14 +23,14 @@ This is the simpler workflow - no Fireblocks approval required.
 
 ## 2. Prerequisites
 
-### 2.1 `.env` file
+### 2.1. `.env` file
 
 ```bash
 ADMIN_PRIVATE_KEY=...        # Admin private key (must be a parameter registry admin)
 BASE_SEPOLIA_RPC_URL=...     # Settlement chain RPC endpoint
 ```
 
-### 2.2 `config/<environment>.json`
+### 2.2. `config/<environment>.json`
 
 Ensure the following field is defined correctly for your chosen environment:
 
@@ -44,7 +42,7 @@ Ensure the following field is defined correctly for your chosen environment:
 
 ## 3. Setting Parameters
 
-### 3.0 Setup Defaults
+### 3.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -53,7 +51,7 @@ export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
 export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 ```
 
-### 3.1 Set a bytes32 value
+### 3.2. Set a bytes32 value
 
 Use this for raw bytes32 values:
 
@@ -62,7 +60,7 @@ forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "set(string,bytes32)" "xmtp.example.key" 0x0000000000000000000000000000000000000000000000000000000000000001 --broadcast
 ```
 
-### 3.2 Set an address value
+### 3.3. Set an address value
 
 Use this for address parameters (automatically right-justified to bytes32):
 
@@ -71,7 +69,7 @@ forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "setAddress(string,address)" "xmtp.nodeRegistry.admin" 0x1234567890123456789012345678901234567890 --broadcast
 ```
 
-### 3.3 Set a uint256 value
+### 3.4. Set a uint256 value
 
 Use this for numeric parameters (automatically converted to bytes32):
 
@@ -80,7 +78,7 @@ forge script SetParameter --rpc-url base_sepolia --slow \
   --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" 100 --broadcast
 ```
 
-### 3.4 Set a boolean value
+### 3.5. Set a boolean value
 
 Use this for boolean parameters (encoded as 1 for true, 0 for false):
 

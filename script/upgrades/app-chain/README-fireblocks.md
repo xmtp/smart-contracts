@@ -1,22 +1,20 @@
-# App Chain Upgrades - Fireblocks
+# App Chain Upgrades - Fireblocks <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [App Chain Upgrades - Fireblocks](#app-chain-upgrades---fireblocks)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Step Summary \& Token Requirements](#2-step-summary--token-requirements)
-  - [3. Prerequisites](#3-prerequisites)
-    - [3.1 `.env` file](#31-env-file)
-    - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
-  - [4. Upgrade Process (Four Steps)](#4-upgrade-process-four-steps)
-    - [4.0 Setup Defaults](#40-setup-defaults)
-    - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
-    - [4.2 Step 2: SetMigrator (settlement chain)](#42-step-2-setmigrator-settlement-chain)
-    - [4.3 Step 3: BridgeParameter (settlement chain)](#43-step-3-bridgeparameter-settlement-chain)
-    - [4.4 Step 4: Upgrade (app chain)](#44-step-4-upgrade-app-chain)
-  - [5. Fireblocks Local RPC](#5-fireblocks-local-rpc)
-  - [6. Post-Upgrade](#6-post-upgrade)
+- [1. Overview](#1-overview)
+- [2. Step Summary \& Token Requirements](#2-step-summary--token-requirements)
+- [3. Prerequisites](#3-prerequisites)
+  - [3.1. `.env` file](#31-env-file)
+  - [3.2. `config/<environment>.json`](#32-configenvironmentjson)
+- [4. Upgrade Process (Four Steps)](#4-upgrade-process-four-steps)
+  - [4.1. Setup Defaults](#41-setup-defaults)
+  - [4.2. Step 1: Prepare (app chain)](#42-step-1-prepare-app-chain)
+  - [4.3. Step 2: SetMigrator (settlement chain)](#43-step-2-setmigrator-settlement-chain)
+  - [4.4. Step 3: BridgeParameter (settlement chain)](#44-step-3-bridgeparameter-settlement-chain)
+  - [4.5. Step 4: Upgrade (app chain)](#45-step-4-upgrade-app-chain)
+- [5. Fireblocks Local RPC](#5-fireblocks-local-rpc)
+- [6. Post-Upgrade](#6-post-upgrade)
 
 ## 1. Overview
 
@@ -35,7 +33,7 @@ App chain upgrades are **four steps** because they span two chains. The migrator
 
 ## 3. Prerequisites
 
-### 3.1 `.env` file
+### 3.1. `.env` file
 
 ```bash
 ADMIN=...                              # Fireblocks vault account address
@@ -49,9 +47,9 @@ FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # Vault account ID that owns the ADMIN ad
 XMTP_ROPSTEN_RPC_URL=...               # App chain RPC endpoint
 ```
 
-### 3.2 `config/<environment>.json`
+### 3.2. `config/<environment>.json`
 
-Ensure the following fields are defined correctly for your chosen environment:
+Ensure the following fields are defined correctly in the `config/<environment>.json` file for your chosen environment:
 
 ```json
 {
@@ -72,7 +70,7 @@ Ensure the following fields are defined correctly for your chosen environment:
 
 The following example upgrades `IdentityUpdateBroadcaster` on `testnet`.
 
-### 4.0 Setup Defaults
+### 4.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -81,7 +79,7 @@ export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainn
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 ```
 
-### 4.1 Step 1: Prepare (app chain)
+### 4.2. Step 1: Prepare (app chain)
 
 Deploy the new implementation and migrator on the app chain:
 
@@ -91,7 +89,7 @@ forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --s
 
 **Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
 
-### 4.2 Step 2: SetMigrator (settlement chain)
+### 4.3. Step 2: SetMigrator (settlement chain)
 
 Set the migrator in the settlement chain parameter registry (via Fireblocks):
 
@@ -105,7 +103,7 @@ npx fireblocks-json-rpc --http -- \
 
 Approve the transaction in the Fireblocks console and wait for it to complete.
 
-### 4.3 Step 3: BridgeParameter (settlement chain)
+### 4.4. Step 3: BridgeParameter (settlement chain)
 
 Bridge the migrator parameter to the app chain:
 
@@ -121,7 +119,7 @@ forge script BridgeParameter --rpc-url xmtp_ropsten --sig "get(string)" "xmtp.id
 
 The `Value (address)` in the output should match the `MIGRATOR_ADDRESS` from Step 1.
 
-### 4.4 Step 4: Upgrade (app chain)
+### 4.5. Step 4: Upgrade (app chain)
 
 After the bridge transaction finalizes, execute the migration on the app chain:
 

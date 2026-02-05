@@ -1,20 +1,18 @@
-# App Chain Upgrades - Wallet (Private Key)
+# App Chain Upgrades - Wallet (Private Key) <!-- omit from toc -->
 
-## Table of Contents
+## Table of Contents <!-- omit from toc -->
 
-- [App Chain Upgrades - Wallet (Private Key)](#app-chain-upgrades---wallet-private-key)
-  - [Table of Contents](#table-of-contents)
-  - [1. Overview](#1-overview)
-  - [2. Step Summary \& Token Requirements](#2-step-summary--token-requirements)
-  - [3. Prerequisites](#3-prerequisites)
-    - [3.1 `.env` file](#31-env-file)
-    - [3.2 `config/<environment>.json`](#32-configenvironmentjson)
-  - [4. Upgrade Process (Four Steps)](#4-upgrade-process-four-steps)
-    - [4.0 Setup Defaults](#40-setup-defaults)
-    - [4.1 Step 1: Prepare (app chain)](#41-step-1-prepare-app-chain)
-    - [4.2 Steps 2-3: SetMigrator and BridgeParameter (settlement chain)](#42-steps-2-3-setmigrator-and-bridgeparameter-settlement-chain)
-    - [4.3 Step 4: Upgrade (app chain)](#43-step-4-upgrade-app-chain)
-  - [5. Post-Upgrade](#5-post-upgrade)
+- [1. Overview](#1-overview)
+- [2. Step Summary \& Token Requirements](#2-step-summary--token-requirements)
+- [3. Prerequisites](#3-prerequisites)
+  - [3.1. `.env` file](#31-env-file)
+  - [3.2. `config/<environment>.json`](#32-configenvironmentjson)
+- [4. Upgrade Process (Four Steps)](#4-upgrade-process-four-steps)
+  - [4.1. Setup Defaults](#41-setup-defaults)
+  - [4.2. Step 1: Prepare (app chain)](#42-step-1-prepare-app-chain)
+  - [4.3. Steps 2-3: SetMigrator and BridgeParameter (settlement chain)](#43-steps-2-3-setmigrator-and-bridgeparameter-settlement-chain)
+  - [4.4. Step 4: Upgrade (app chain)](#44-step-4-upgrade-app-chain)
+- [5. Post-Upgrade](#5-post-upgrade)
 
 ## 1. Overview
 
@@ -33,7 +31,7 @@ App chain upgrades are **four steps** because they span two chains. The migrator
 
 ## 3. Prerequisites
 
-### 3.1 `.env` file
+### 3.1. `.env` file
 
 ```bash
 ADMIN_PRIVATE_KEY=...        # Admin private key (for setting migrator in Step 2)
@@ -42,9 +40,9 @@ DEPLOYER_PRIVATE_KEY=...     # Deployer private key (for all steps)
 XMTP_ROPSTEN_RPC_URL=...     # App chain RPC endpoint
 ```
 
-### 3.2 `config/<environment>.json`
+### 3.2. `config/<environment>.json`
 
-Ensure the following fields are defined correctly for your chosen environment:
+Ensure the following fields are defined correctly in the `config/<environment>.json` file for your chosen environment:
 
 ```json
 {
@@ -60,7 +58,7 @@ The following example upgrades `IdentityUpdateBroadcaster` on `testnet-dev`.
 
 **Note:** In Wallet mode, steps 2-3 (SetMigrator and BridgeParameter) are combined into a single `Bridge()` command for convenience.
 
-### 4.0 Setup Defaults
+### 4.1. Setup Defaults
 
 Before running any commands, set these environment variables:
 
@@ -69,7 +67,7 @@ export ENVIRONMENT=testnet-dev         # or: testnet-staging, testnet, mainnet
 export ADMIN_ADDRESS_TYPE=WALLET       # use wallet private key signing
 ```
 
-### 4.1 Step 1: Prepare (app chain)
+### 4.2. Step 1: Prepare (app chain)
 
 Deploy the new implementation and migrator on the app chain:
 
@@ -79,7 +77,7 @@ forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --s
 
 **Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
 
-### 4.2 Steps 2-3: SetMigrator and BridgeParameter (settlement chain)
+### 4.3. Steps 2-3: SetMigrator and BridgeParameter (settlement chain)
 
 Set the migrator in the settlement chain parameter registry and bridge it to the app chain:
 
@@ -101,7 +99,7 @@ forge script BridgeParameter --rpc-url xmtp_ropsten --sig "get(string)" "xmtp.id
 
 The `Value (address)` in the output should match the `MIGRATOR_ADDRESS` from Step 1.
 
-### 4.3 Step 4: Upgrade (app chain)
+### 4.4. Step 4: Upgrade (app chain)
 
 Execute the migration on the app chain:
 
