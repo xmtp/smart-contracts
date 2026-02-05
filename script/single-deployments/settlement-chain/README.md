@@ -35,7 +35,6 @@ Each deployment follows a four-step process:
 3. **Set Parameter Registry Values** - Set parameters (requires ADMIN)
 4. **Update Contract Dependencies** - Update dependent contracts (uses DEPLOYER) for case 1 above, or manually upgrade an existing contract for case 2 above.
 
-
 ## 2. Environment Defaults
 
 Admin address type is determined by environment with optional `ADMIN_ADDRESS_TYPE` override:

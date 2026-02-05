@@ -16,7 +16,7 @@ import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerR
  * @title DeployPayerReportManagerScript
  * @notice Script to deploy a fresh release of the PayerReportManager contract (proxy and implementation pair)
  * @dev This script inherits from Deploy.s.sol, and has four entry points:
- * 
+ *
  * 1) deployContract() to deploy a new PayerReportManager contract (proxy and implementation pair)
  * Calls into mass deploy script Deploy.s.sol for a single deployment of PayerReportManager:
  * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
