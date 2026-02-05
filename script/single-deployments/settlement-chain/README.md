@@ -1,111 +1,105 @@
-# Process Steps for Single Deployments on Settlement Chain
+# Settlement Chain Single Deployments
 
-A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Any dependencies must be manually maintained. All examples below use the environment of `staging`, so config files are named `testnet-staging.json`.
+## Table of Contents
 
-[TODO] **FIREBLOCKS** support not added yet.
+- [Settlement Chain Single Deployments](#settlement-chain-single-deployments)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Environment Defaults](#2-environment-defaults)
+  - [3. Workflow Selection](#3-workflow-selection)
+    - [Wallet Workflow (Private Key)](#wallet-workflow-private-key)
+    - [Fireblocks Workflow](#fireblocks-workflow)
+  - [4. Available Deployment Scripts](#4-available-deployment-scripts)
+    - [DeployNodeRegistry.s.sol](#deploynoderegistryssol)
+    - [DeployPayerReportManager.s.sol](#deploypayerreportmanagerssol)
+    - [DeployDistributionManager.s.sol](#deploydistributionmanagerssol)
 
-## STAGE 1 - Deploy New Payer Report Manager
+## 1. Overview
 
-When there is a new Payer Report Manager address, the following dependencies need to be updated:
+This directory contains scripts for deploying new contracts on the settlement chain. A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract.
 
-- The `PayerRegistry` has a field `settler` that contains the payer report manager. This is handled below by the `DeployPayerReportManagerScript.updateDependencies()` call.
-- The `DistributionManager` has an immutable field, set at constructor time, containing the payer report manager address. Therefore `DistributionManager` needs to be redeployed.
+**Important: Admin is NOT Required for Contract Deployment**
 
-The instructions below cover the complete process of deploying a new Payer Report Manager and updating all dependencies, including deploying a new `DistributionManager` and updating _its_ dependencies.
+A newly deployed contract's initial state is set via constructor and initializer parameters, NOT from the parameter registry. Anyone with gas tokens can deploy a contract. Admin rights are needed to **update dependencies**, to repoint existing contracts at the newly deployed contract.
 
-### 1. Maintain the root `.env` file to have:
+This repointing of existing contracts can be done in two ways:
 
-- [ ] `DEPLOYER` address and `DEPLOYER_PRIVATE_KEY`. This can be any address with gas tokens.
-- [ ] `ADMIN` and `ADMIN_PRIVATE_KEY`. This address must be an admin of the `SettlementChainParameterRegistry`. This address is used during a deploy to point the proxy at the new implementation.
-- [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider.
-- [ ] `ETHERSCAN_API_KEY` your etherscan API key.
-- [ ] `ETHERSCAN_API_URL` '`https://api-sepolia.basescan.org/api`'
+1. If an existing contract caches contract addresses in local storage, we must set a parameter registry value and pull that value into the existing contract (using an `update*()` function in the existing contract). This is covered as part of the deploy scripts.
 
-### 2. Edit file `config/testnet-staging.json` to have:
+2. If an existing contract contains immutable references to a contract that we just redeployed, we must upgrade the existing contract. Immutables are baked into the implementation source code. This must be done as a separate step using the guides in `script/upgrades/settlement-chain/README.md`.
 
-- [ ] The above deployer address.
-- [ ] Adjust the `payerReportManagerProxySalt` to be something new. For example, use `*_0_x` for `dev`, use `*_1_x` for staging. The deterministic proxy address depends on the **deployer address** maintained above + this **proxy salt**.
+Each deployment follows a four-step process:
 
-### 3. Run predicted address helper:
+1. **Predict Addresses** - Calculate deterministic addresses
+2. **Deploy Contract** - Deploy implementation and proxy (uses DEPLOYER)
+3. **Set Parameter Registry Values** - Set parameters (requires ADMIN)
+4. **Update Contract Dependencies** - Update dependent contracts (uses DEPLOYER) for case 1 above, or manually upgrade an existing contract for case 2 above.
 
-- [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation. This call will show warnings if the proxy or implementation is already in use. If the proxy is already in use, you can change the salt in previous step:
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
-```
+## 2. Environment Defaults
 
-### 4. Maintain `config/testnet-staging.json` to have:
+Admin address type is determined by environment with optional `ADMIN_ADDRESS_TYPE` override:
 
-- [ ] Predicted implementation address from previous step
-- [ ] Predicted proxy address from previous step
+| Environment       | Default Admin Type | Can Override? | Notes                      |
+| ----------------- | ------------------ | ------------- | -------------------------- |
+| `testnet-dev`     | WALLET             | Yes           | Use WALLET for development |
+| `testnet-staging` | WALLET             | Yes           | Use WALLET for staging     |
+| `testnet`         | FIREBLOCKS         | Yes           | Use FIREBLOCKS for testnet |
+| `mainnet`         | FIREBLOCKS         | No            | FIREBLOCKS always enforced |
 
-### 5. Maintain `environments/testnet-staging.json` to have:
-
-- [ ] Deployer address from earlier step.
-- [ ] Delete the existing row for `payerReportManager`. This will be replaced when we deploy the new proxy.
-
-### 6. Deployment
-
-This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
-
-```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
-```
-
-### 7. Post deploy dependencies
-
-Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.settler` with the new `PayerReportManager` proxy address. It then calls `PayerRegistry.updateSettler()` to update the settler in the `PayerRegistry` contract.
+Override by setting:
 
 ```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
+export ADMIN_ADDRESS_TYPE=FIREBLOCKS  # or WALLET
 ```
 
-## STAGE 2 - Deploy New Distribution Manager
+## 3. Workflow Selection
 
-Assuming that all values maintained in previous stage remain (the `.env` values in particular) then the following steps are required:
+Choose the appropriate workflow based on your environment:
 
-### 1. Edit file `config/testnet-staging.json`:
+### Wallet Workflow (Private Key)
 
-- [ ] Adjust the `DistributionManagerSalt` to be something new.
+- **Use for:** `testnet-dev`, `testnet-staging`
+- **Requirements:** `ADMIN_PRIVATE_KEY`, `DEPLOYER_PRIVATE_KEY`
+- **Documentation:** [README-wallet.md](README-wallet.md)
 
-### 2. Run predicted address helper:
+### Fireblocks Workflow
 
-- [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation:
+- **Use for:** `testnet`, `mainnet`
+- **Requirements:** `ADMIN` (Fireblocks vault address), `DEPLOYER_PRIVATE_KEY`, Fireblocks API credentials
+- **Documentation:** [README-fireblocks.md](README-fireblocks.md)
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
-```
+## 4. Available Deployment Scripts
 
-### 3. Maintain `config/testnet-staging.json` to have:
+### DeployNodeRegistry.s.sol
 
-- [ ] Predicted implementation address from previous step
-- [ ] Predicted proxy address from previous step
+Deploys a new NodeRegistry contract (proxy and implementation).
 
-### 4. Maintain `environments/testnet-staging.json` to have:
+**Dependencies:**
 
-- [ ] Delete the existing row for `distributionManager`. This will be replaced when we deploy the new proxy.
+- Reads from parameter registry: `xmtp.nodeRegistry.admin`, `xmtp.nodeRegistry.maxCanonicalNodes`
+- Updates: NodeRegistry contract via `updateAdmin()` and `updateMaxCanonicalNodes()`
 
-### 5. Deployment
+**Note:** NodeRegistry has no parameters to set in Step 3. Parameters must be set manually before Step 4.
 
-This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
+### DeployPayerReportManager.s.sol
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
-```
+Deploys a new PayerReportManager contract (proxy and implementation).
 
-### 6. Post deploy dependencies
+**Dependencies:**
 
-Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.feeDistributor` with the new `DistributionManager` proxy address. It then calls `PayerRegistry.updateFeeDistributor()` to update the fee distributor in the `PayerRegistry` contract.
+- Sets in parameter registry: `xmtp.payerRegistry.settler`
+- Updates: PayerRegistry contract via `updateSettler()`
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
-```
+**Post-deployment:** A new DistributionManager must also be upgraded or deployed since it has an immutable reference to the PayerReportManager address.
 
-## STAGE 3 - Code Verification
+### DeployDistributionManager.s.sol
 
-To verify the code of the new implementations:
+Deploys a new DistributionManager contract (proxy and implementation).
 
-```bash
-forge verify-contract --chain-id 84532 <newly deployed payer report manager implementation address> src/settlement-chain/PayerReportManager.sol:PayerReportManager
-forge verify-contract --chain-id 84532 <newly deployed distribution manager implementation address> src/settlement-chain/DistributionManager.sol:DistributionManager
-```
+**Dependencies:**
+
+- Sets in parameter registry: `xmtp.payerRegistry.feeDistributor`
+- Updates: PayerRegistry contract via `updateFeeDistributor()`
+
+**Note:** DistributionManager has an immutable constructor parameter pointing to PayerReportManager, so it must be upgraded or redeployed when PayerReportManager changes.
