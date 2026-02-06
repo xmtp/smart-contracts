@@ -62,7 +62,7 @@ contract RateRegistryTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_registry.version(), "1.0.0");
+        assertEq(_registry.version(), "1.0.1");
     }
 
     /* ============ contractName ============ */
@@ -330,7 +330,11 @@ contract RateRegistryTests is Test {
 
         Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _MESSAGE_FEE_KEY, bytes32(uint256(messageFee_)));
         Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _STORAGE_FEE_KEY, bytes32(uint256(storageFee_)));
-        Utils.expectAndMockParameterRegistryGet(_parameterRegistry, _CONGESTION_FEE_KEY, bytes32(uint256(congestionFee_)));
+        Utils.expectAndMockParameterRegistryGet(
+            _parameterRegistry,
+            _CONGESTION_FEE_KEY,
+            bytes32(uint256(congestionFee_))
+        );
 
         Utils.expectAndMockParameterRegistryGet(
             _parameterRegistry,
