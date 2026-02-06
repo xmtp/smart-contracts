@@ -6,12 +6,12 @@
 - [2. Prerequisites](#2-prerequisites)
   - [2.1. `.env` file](#21-env-file)
   - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
-- [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
+- [3. Deployment Process (Three Steps)](#3-deployment-process-three-steps)
   - [3.1. Setup Defaults](#31-setup-defaults)
   - [3.2. Step 1: Predict Addresses](#32-step-1-predict-addresses)
   - [3.3. Step 2: Deploy Contract](#33-step-2-deploy-contract)
-  - [3.4. Step 3: Set Parameter Registry Values (Fireblocks)](#34-step-3-set-parameter-registry-values-fireblocks)
-  - [3.5. Step 4: Update Contract Dependencies](#35-step-4-update-contract-dependencies)
+  - [3.4. Step 3a: Set Parameters (if any)](#34-step-3a-set-parameters-if-any)
+  - [3.5. Step 3b: Call update() (if any)](#35-step-3b-call-update-if-any)
 - [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
 - [5. Post-Deployment](#5-post-deployment)
 
@@ -19,11 +19,11 @@
 
 Use this workflow to deploy new contracts via the Fireblocks-managed admin address. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-Fireblocks requires a **multi-step process** because only Step 3 (setting parameter registry values) routes through Fireblocks signing. Steps 1, 2, and 4 use the deployer key directly.
+Fireblocks requires a **multi-step process** because only Step 3a (setting parameter registry values, if any) routes through Fireblocks signing. Steps 1, 2, and 3b use the deployer key directly.
 
 A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Dependencies are managed through the parameter registry and must be updated after deployment. Each deployment script (`DeployNodeRegistry.s.sol`, `DeployPayerReportManager.s.sol`, `DeployDistributionManager.s.sol`) includes a **Dependencies** block in its contract comments describing which parameter registry keys it uses and which contracts it updates.
 
-**Important:** Contract deployment (Step 2) does NOT require admin privileges. The newly deployed contract's initial state is set via constructor/initializer parameters. Admin privileges (via Fireblocks) are ONLY required for Step 3 (setting parameter registry values) so that other contracts can update their references to point to the new contract.
+**Important:** Contract deployment (Step 2) does NOT require admin privileges. The newly deployed contract's initial state is set via constructor/initializer parameters. Admin privileges (via Fireblocks) are ONLY required for Step 3a (setting parameter registry values, if any) so that other contracts can update their references to point to the new contract.
 
 ## 2. Prerequisites
 
@@ -32,7 +32,7 @@ A **single deployment** refers to deploying a new **proxy and implementation pai
 ```bash
 ADMIN=...                              # Fireblocks vault account address
 BASE_SEPOLIA_RPC_URL=...               # Settlement chain RPC endpoint
-DEPLOYER_PRIVATE_KEY=...               # Deployer private key (for Steps 1, 2, and 4)
+DEPLOYER_PRIVATE_KEY=...               # Deployer private key (for Steps 1, 2, and 3b)
 ETHERSCAN_API_KEY=...                  # For contract verification
 ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 FIREBLOCKS_API_KEY=...                 # From Fireblocks console → Settings → API Users
@@ -55,14 +55,14 @@ Ensure the following fields are defined correctly for your chosen environment:
 }
 ```
 
-## 3. Deployment Process (Four Steps)
+## 3. Deployment Process (Three Steps)
 
 | Step | Function                       | Signer   | Fireblocks? |
 | ---- | ------------------------------ | -------- | ----------- |
 | 1    | `predictAddresses()`           | N/A      | No          |
 | 2    | `deployContract()`             | DEPLOYER | No          |
-| 3    | `SetParameterRegistryValues()` | ADMIN    | **Yes**     |
-| 4    | `UpdateContractDependencies()` | DEPLOYER | No          |
+| 3a   | `SetParameterRegistryValues()` | ADMIN    | **Yes**     |
+| 3b   | `UpdateContractDependencies()` | DEPLOYER | No          |
 
 The following example deploys `PayerReportManager` on `testnet`.
 
@@ -103,9 +103,9 @@ This will:
 3. Initialize the proxy
 4. Update `environments/<environment>.json` with the proxy address
 
-### 3.4. Step 3: Set Parameter Registry Values (Fireblocks)
+### 3.4. Step 3a: Set Parameters (if any)
 
-Set the required parameters in the parameter registry (via Fireblocks):
+If the deployment script sets parameter registry values, run this (via Fireblocks):
 
 ```bash
 export FIREBLOCKS_NOTE="Deploy PayerReportManager on testnet"
@@ -117,22 +117,22 @@ npx fireblocks-json-rpc --http -- \
 
 Approve the transaction in the Fireblocks console and wait for it to complete.
 
-This sets parameters like:
+Examples of parameters set by script:
 
 - `xmtp.payerRegistry.settler` (for PayerReportManager)
 - `xmtp.payerRegistry.feeDistributor` (for DistributionManager)
 
-**Note:** For NodeRegistry, this step is informational only. Parameters must be set manually via the `SetParameter` script before proceeding to the next step.
+**Note:** For NodeRegistry, the script has no parameters to set in this step; set them manually via the `SetParameter` script before Step 3b if needed.
 
-### 3.5. Step 4: Update Contract Dependencies
+### 3.5. Step 3b: Call update() (if any)
 
-Update dependent contracts to read the new parameter values:
+If the deployment script updates dependent contracts, run this:
 
 ```bash
 forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
 ```
 
-This calls permissionless update functions like:
+Examples of permissionless update functions:
 
 - `PayerRegistry.updateSettler()`
 - `PayerRegistry.updateFeeDistributor()`

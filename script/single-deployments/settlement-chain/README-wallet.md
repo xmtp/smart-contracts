@@ -6,12 +6,12 @@
 - [2. Prerequisites](#2-prerequisites)
   - [2.1. `.env` file](#21-env-file)
   - [2.2. `config/<environment>.json`](#22-configenvironmentjson)
-- [3. Deployment Process (Four Steps)](#3-deployment-process-four-steps)
+- [3. Deployment Process (Three Steps)](#3-deployment-process-three-steps)
   - [3.1. Setup Defaults](#31-setup-defaults)
   - [3.2. Step 1: Predict Addresses](#32-step-1-predict-addresses)
   - [3.3. Step 2: Deploy Contract](#33-step-2-deploy-contract)
-  - [3.4. Step 3: Set Parameter Registry Values](#34-step-3-set-parameter-registry-values)
-  - [3.5. Step 4: Update Contract Dependencies](#35-step-4-update-contract-dependencies)
+  - [3.4. Step 3a: Set Parameters (if any)](#34-step-3a-set-parameters-if-any)
+  - [3.5. Step 3b: Call update() (if any)](#35-step-3b-call-update-if-any)
 - [4. Post-Deployment](#4-post-deployment)
 
 ## 1. Overview
@@ -20,7 +20,7 @@ Use this workflow to deploy new contracts via `ADMIN_PRIVATE_KEY` and `DEPLOYER_
 
 A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Dependencies are managed through the parameter registry and must be updated after deployment. Each deployment script (`DeployNodeRegistry.s.sol`, `DeployPayerReportManager.s.sol`, `DeployDistributionManager.s.sol`) includes a **Dependencies** block in its contract comments describing which parameter registry keys it uses and which contracts it updates.
 
-**Important:** Contract deployment (Step 2) does NOT require admin privileges. The newly deployed contract's initial state is set via constructor/initializer parameters. Admin privileges are ONLY required for Step 3 (setting parameter registry values) so that other contracts can update their references to point to the new contract.
+**Important:** Contract deployment (Step 2) does NOT require admin privileges. The newly deployed contract's initial state is set via constructor/initializer parameters. Admin privileges are ONLY required for Step 3a (setting parameter registry values, if any) so that other contracts can update their references to point to the new contract.
 
 ## 2. Prerequisites
 
@@ -49,7 +49,7 @@ Ensure the following fields are defined correctly for your chosen environment:
 }
 ```
 
-## 3. Deployment Process (Four Steps)
+## 3. Deployment Process (Three Steps)
 
 The following example deploys `PayerReportManager` on `testnet-dev`.
 
@@ -90,30 +90,30 @@ This will:
 3. Initialize the proxy
 4. Update `environments/<environment>.json` with the proxy address
 
-### 3.4. Step 3: Set Parameter Registry Values
+### 3.4. Step 3a: Set Parameters (if any)
 
-Set the required parameters in the parameter registry (uses `ADMIN_PRIVATE_KEY`):
+If the deployment script sets parameter registry values, run this (uses `ADMIN_PRIVATE_KEY`):
 
 ```bash
 forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
 ```
 
-This sets parameters like:
+Examples of parameters set by script:
 
 - `xmtp.payerRegistry.settler` (for PayerReportManager)
 - `xmtp.payerRegistry.feeDistributor` (for DistributionManager)
 
-**Note:** For NodeRegistry, parameters must be set manually before proceeding to the next step.
+**Note:** For NodeRegistry, the script has no parameters to set in this step; set them manually before Step 3b if needed.
 
-### 3.5. Step 4: Update Contract Dependencies
+### 3.5. Step 3b: Call update() (if any)
 
-Update dependent contracts to read the new parameter values (uses `DEPLOYER_PRIVATE_KEY`):
+If the deployment script updates dependent contracts, run this (uses `DEPLOYER_PRIVATE_KEY`):
 
 ```bash
 forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
 ```
 
-This calls permissionless update functions like:
+Examples of permissionless update functions:
 
 - `PayerRegistry.updateSettler()`
 - `PayerRegistry.updateFeeDistributor()`
