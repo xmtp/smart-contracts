@@ -38,7 +38,7 @@ abstract contract BaseAppChainUpgrader is Script {
     error StateMismatch();
 
     uint256 internal constant _TX_STIPEND = 21_000;
-    uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 120_000;
 
     /// @dev Default value copied from Administration.s.sol
     /// On app chain, each gas unit costs 2 gwei (measured as fraction of the xUSD native token).
@@ -302,6 +302,8 @@ abstract contract BaseAppChainUpgrader is Script {
      * @dev Executes the migration and verifies state preservation (using DEPLOYER_PRIVATE_KEY)
      */
     function Upgrade() external {
+        if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
+
         // Set Fireblocks note for this operation
         _fireblocksNote = _getFireblocksNote("upgrade");
         if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
