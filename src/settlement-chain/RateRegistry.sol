@@ -80,13 +80,14 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
             targetRatePerMinuteParameterKey()
         );
 
-        _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        uint64 startTime_ = RegistryParameters.getUint64Parameter(parameterRegistry, ratesInEffectAfterParameterKey());
 
-        uint64 startTime_ = uint64(block.timestamp);
+        _revertIfNoRateChange(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        _revertIfInvalidStartTime(startTime_);
 
         $.allRates.push(Rates(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_));
 
-        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_);
+        emit RatesUpdated(messageFee_, storageFee_, congestionFee_, targetRatePerMinute_, startTime_);
     }
 
     /// @inheritdoc IMigratable
@@ -118,6 +119,11 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
     }
 
     /// @inheritdoc IRateRegistry
+    function ratesInEffectAfterParameterKey() public pure returns (string memory key_) {
+        return "xmtp.rateRegistry.ratesInEffectAfter";
+    }
+
+    /// @inheritdoc IRateRegistry
     function migratorParameterKey() public pure returns (string memory key_) {
         return "xmtp.rateRegistry.migrator";
     }
@@ -145,7 +151,7 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
 
     /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     /// @inheritdoc IIdentified
@@ -180,5 +186,16 @@ contract RateRegistry is IRateRegistry, Migratable, Initializable {
         ) {
             revert NoChange();
         }
+    }
+
+    /// @dev Reverts if the start time is not strictly greater than the last start time.
+    function _revertIfInvalidStartTime(uint64 startTime_) internal view {
+        RateRegistryStorage storage $ = _getRateRegistryStorage();
+
+        if ($.allRates.length == 0) return;
+
+        uint64 lastStartTime_ = $.allRates[$.allRates.length - 1].startTime;
+
+        if (startTime_ <= lastStartTime_) revert InvalidStartTime(startTime_, lastStartTime_);
     }
 }
