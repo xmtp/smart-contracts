@@ -38,6 +38,10 @@ import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerR
  * The proxy address depends on the factory addresss, deployer address and the salt.
  * The implementation address depends on the factory address and the implementation bytecode.
  * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+ *
+ * Dependencies: Sets in parameter registry xmtp.payerRegistry.settler. Updates PayerRegistry via updateSettler().
+ * Post-deployment: a new DistributionManager must also be upgraded or deployed since it has an immutable
+ * reference to the PayerReportManager address.
  */
 contract DeployPayerReportManagerScript is DeployScripts {
     error EnvironmentContainsPayerReportManager();

@@ -35,6 +35,10 @@ import { INodeRegistry } from "../../../src/settlement-chain/interfaces/INodeReg
  * The proxy address depends on the factory addresss, deployer address and the salt.
  * The implementation address depends on the factory address and the implementation bytecode.
  * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
+ *
+ * Dependencies: Reads from parameter registry xmtp.nodeRegistry.admin, xmtp.nodeRegistry.maxCanonicalNodes.
+ * Updates NodeRegistry via updateAdmin() and updateMaxCanonicalNodes().
+ * NodeRegistry has no parameters to set in Step 3; parameters must be set manually before Step 4.
  */
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();

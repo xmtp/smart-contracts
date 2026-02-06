@@ -18,7 +18,7 @@
 
 Use this workflow to deploy new contracts via `ADMIN_PRIVATE_KEY` and `DEPLOYER_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Dependencies are managed through the parameter registry and must be updated after deployment.
+A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Dependencies are managed through the parameter registry and must be updated after deployment. Each deployment script (`DeployNodeRegistry.s.sol`, `DeployPayerReportManager.s.sol`, `DeployDistributionManager.s.sol`) includes a **Dependencies** block in its contract comments describing which parameter registry keys it uses and which contracts it updates.
 
 **Important:** Contract deployment (Step 2) does NOT require admin privileges. The newly deployed contract's initial state is set via constructor/initializer parameters. Admin privileges are ONLY required for Step 3 (setting parameter registry values) so that other contracts can update their references to point to the new contract.
 
