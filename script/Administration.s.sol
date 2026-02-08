@@ -48,7 +48,7 @@ contract AdministrationScripts is Script {
     error ZeroImplementation();
 
     uint256 internal constant _TX_STIPEND = 21_000;
-    uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 120_000;
     uint256 internal constant _APP_CHAIN_GAS_PRICE = 2_000_000_000; // 2 gwei per gas.
 
     string internal constant _GROUP_MESSAGE_BROADCASTER_MIN_PAYLOAD_SIZE_KEY =
