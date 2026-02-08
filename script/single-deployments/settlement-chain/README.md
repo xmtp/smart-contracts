@@ -2,6 +2,8 @@
 
 A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Any dependencies must be manually maintained. All examples below use the environment of `staging`, so config files are named `testnet-staging.json`.
 
+[TODO] **FIREBLOCKS** support not added yet.
+
 ## STAGE 1 - Deploy New Payer Report Manager
 
 When there is a new Payer Report Manager address, the following dependencies need to be updated:

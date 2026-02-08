@@ -8,6 +8,8 @@ import { ISettlementChainGateway } from "../../../src/settlement-chain/interface
 import { IMigratable } from "../../../src/abstract/interfaces/IMigratable.sol";
 import { IERC20Like } from "../../Interfaces.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { FireblocksNote } from "../../utils/FireblocksNote.sol";
+import { AdminAddressTypeLib } from "../../utils/AdminAddressType.sol";
 
 /**
  * @notice Base contract for app chain upgrade scripts
@@ -19,20 +21,24 @@ import { Utils } from "../../utils/Utils.sol";
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
- * @dev Requires both ADMIN_PRIVATE_KEY and DEPLOYER_PRIVATE_KEY environment variables:
- *      - ADMIN_PRIVATE_KEY: Used only for setting the migrator parameter in the parameter registry
- *      - DEPLOYER_PRIVATE_KEY: Used for deploying implementations, migrators, executing migrations, and bridging parameters
+ * @dev Admin address type is determined by environment with optional ADMIN_ADDRESS_TYPE override.
+ *      See AdminAddressTypeLib for environment-specific defaults.
+ * @dev Environment variables:
+ *      - ADMIN_PRIVATE_KEY: Required when using WALLET mode (for setting migrator in parameter registry)
+ *      - ADMIN: Required when using FIREBLOCKS mode (must match Fireblocks vault account address)
+ *      - DEPLOYER_PRIVATE_KEY: Always required (for deploying implementations, migrators, executing migrations, and bridging parameters)
  */
 abstract contract BaseAppChainUpgrader is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
+    error AdminNotSet();
     error GatewayProxyNotSet();
     error UnexpectedChainId();
     error InsufficientBalance();
     error StateMismatch();
 
     uint256 internal constant _TX_STIPEND = 21_000;
-    uint256 internal constant _GAS_PER_BRIDGED_KEY = 75_000;
+    uint256 internal constant _GAS_PER_BRIDGED_KEY = 120_000;
 
     /// @dev Default value copied from Administration.s.sol
     /// On app chain, each gas unit costs 2 gwei (measured as fraction of the xUSD native token).
@@ -42,9 +48,11 @@ abstract contract BaseAppChainUpgrader is Script {
     string internal _environment;
     uint256 internal _adminPrivateKey;
     address internal _admin;
+    AdminAddressTypeLib.AdminAddressType internal _adminAddressType;
     uint256 internal _deployerPrivateKey;
     address internal _deployer;
     Utils.DeploymentData internal _deployment;
+    string internal _fireblocksNote;
 
     function setUp() external {
         // Environment
@@ -55,25 +63,58 @@ abstract contract BaseAppChainUpgrader is Script {
         // Deployment data
         _deployment = Utils.parseDeploymentData(string.concat("config/", _environment, ".json"));
 
-        // Admin private key (for setting migrator in parameter registry)
-        _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
-        _admin = vm.addr(_adminPrivateKey);
-        console.log("Admin: %s", _admin);
+        // Determine admin address type based on environment with optional override
+        _adminAddressType = AdminAddressTypeLib.getAdminAddressType(_environment);
+
+        // Admin setup (for setting migrator in parameter registry)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            // Wallet mode: require ADMIN_PRIVATE_KEY
+            _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+            if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+            _admin = vm.addr(_adminPrivateKey);
+            console.log("Admin (Wallet): %s", _admin);
+        } else {
+            // Fireblocks mode: require ADMIN address (private key not needed)
+            _admin = vm.envAddress("ADMIN");
+            if (_admin == address(0)) revert AdminNotSet();
+            console.log("Admin (Fireblocks): %s", _admin);
+        }
 
         // Deployer private key (for deploying implementations, migrators, and executing migrations)
         _deployerPrivateKey = uint256(vm.envBytes32("DEPLOYER_PRIVATE_KEY"));
         if (_deployerPrivateKey == 0) revert PrivateKeyNotSet();
         _deployer = vm.addr(_deployerPrivateKey);
         console.log("Deployer: %s", _deployer);
+
+        // Fireblocks note will be set per operation (Prepare/Bridge/Upgrade)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: Will be set per operation (Prepare/Bridge/Upgrade)");
+        }
     }
 
     /**
-     * @notice Step 1 of 3: Prepare the upgrade on the app chain
+     * @notice Gets or generates a Fireblocks note for transaction tracking
+     * @param operation_ The operation being performed (e.g., "prepare", "bridge", "upgrade")
+     * @return note_ The Fireblocks note to use
+     * @dev If FIREBLOCKS_NOTE env var is set, uses that. Otherwise generates a default note
+     *      based on environment, contract name, and operation.
+     */
+    function _getFireblocksNote(string memory operation_) internal view returns (string memory note_) {
+        return FireblocksNote.getNote(_environment, operation_, _getContractName());
+    }
+
+    /**
+     * @notice Step 1 of 4: Prepare the upgrade on the app chain
      * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
      */
     function Prepare() external {
         if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
+
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("prepare");
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
 
         address factory = _deployment.factory;
         address paramRegistry = _deployment.parameterRegistryProxy;
@@ -102,14 +143,106 @@ abstract contract BaseAppChainUpgrader is Script {
     }
 
     /**
-     * @notice Step 2 of 3: Bridge the migrator parameter from settlement chain to app chain
+     * @notice Step 2 of 4: Set migrator in parameter registry on settlement chain
      * @param migrator_ The migrator address from step 1
-     * @dev Sets the migrator in parameter registry using ADMIN_PRIVATE_KEY,
-     *      then approves fee token and bridges the parameter using DEPLOYER_PRIVATE_KEY
+     * @dev Sets the migrator in parameter registry using ADMIN (PRIVATE_KEY or FIREBLOCKS based on environment)
+     * @dev For Fireblocks environments, this step is run via fireblocks-json-rpc
+     * @dev For Wallet environments, use Bridge() instead which combines steps 2-3
+     */
+    function SetMigratorInParameterRegistry(address migrator_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("setMigrator");
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
+
+        address paramRegistry = _deployment.parameterRegistryProxy;
+
+        console.log("paramRegistry: %s", paramRegistry);
+        console.log("migrator: %s", migrator_);
+
+        // Get migrator parameter key
+        string memory key = _getMigratorParameterKey();
+        console.log("migratorParameterKey: %s", key);
+
+        // Set migrator in parameter registry (using ADMIN)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
+        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator_))));
+        console.log("Set migrator in parameter registry");
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Step 3 of 4: Bridge the migrator parameter from settlement chain to app chain
+     * @dev Approves fee token and bridges the parameter using DEPLOYER_PRIVATE_KEY
+     * @dev For Fireblocks environments, run this separately after SetMigratorInParameterRegistry()
+     * @dev For Wallet environments, use Bridge() instead which combines steps 2-3
+     */
+    function BridgeParameter() external {
+        if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
+        address proxy = _deployment.gatewayProxy;
+
+        console.log("gatewayProxy (settlement chain): %s", proxy);
+        console.log("appChainId: %s", _deployment.appChainId);
+
+        // Get migrator parameter key
+        string memory key = _getMigratorParameterKey();
+        console.log("migratorParameterKey: %s", key);
+
+        // Calculate gas and cost for bridging
+        // The value 1 below is the number of parameter keys being bridged
+        uint256 gasLimit_ = _TX_STIPEND + (_GAS_PER_BRIDGED_KEY * 1);
+
+        // Convert from 18 decimals (app chain gas token) to 6 decimals (fee token).
+        uint256 cost_ = ((_APP_CHAIN_GAS_PRICE * gasLimit_) * 1e6) / 1e18;
+
+        console.log("gasLimit: %s", gasLimit_);
+        console.log("cost (fee token, 6 decimals): %s", cost_);
+
+        // Approve fee token and bridge (using DEPLOYER)
+        vm.startBroadcast(_deployerPrivateKey);
+        if (IERC20Like(_deployment.feeTokenProxy).balanceOf(_deployer) < cost_) revert InsufficientBalance();
+
+        // Approve fee token
+        IERC20Like(_deployment.feeTokenProxy).approve(proxy, cost_);
+
+        // Bridge the parameter
+        uint256[] memory chainIds_ = new uint256[](1);
+        chainIds_[0] = _deployment.appChainId;
+
+        string[] memory keys_ = new string[](1);
+        keys_[0] = key;
+
+        ISettlementChainGateway(proxy).sendParameters(chainIds_, keys_, gasLimit_, _APP_CHAIN_GAS_PRICE, cost_);
+
+        console.log("Bridged migrator parameter to app chain");
+
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Steps 2-3 of 4: Set migrator and bridge parameter (Wallet mode only)
+     * @param migrator_ The migrator address from step 1
+     * @dev This is a convenience function for Wallet environments that combines SetMigratorInParameterRegistry() and BridgeParameter()
+     * @dev For Fireblocks environments, use the separate SetMigratorInParameterRegistry() and BridgeParameter() functions instead
      */
     function Bridge(address migrator_) external {
         if (_deployment.gatewayProxy == address(0)) revert GatewayProxyNotSet();
         if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("bridge");
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
 
         address paramRegistry = _deployment.parameterRegistryProxy;
         address proxy = _deployment.gatewayProxy;
@@ -124,7 +257,11 @@ abstract contract BaseAppChainUpgrader is Script {
         console.log("migratorParameterKey: %s", key);
 
         // Set migrator in parameter registry (using ADMIN)
-        vm.startBroadcast(_adminPrivateKey);
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
         IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator_))));
         console.log("Set migrator in parameter registry");
         vm.stopBroadcast();
@@ -161,10 +298,18 @@ abstract contract BaseAppChainUpgrader is Script {
     }
 
     /**
-     * @notice Step 3 of 3: Perform the upgrade on the app chain
+     * @notice Step 4 of 4: Perform the upgrade on the app chain
      * @dev Executes the migration and verifies state preservation (using DEPLOYER_PRIVATE_KEY)
      */
     function Upgrade() external {
+        if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
+
+        // Set Fireblocks note for this operation
+        _fireblocksNote = _getFireblocksNote("upgrade");
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
+            console.log("Fireblocks Note: %s", _fireblocksNote);
+        }
+
         address proxy = _getProxy();
 
         console.log("proxy: %s", proxy);

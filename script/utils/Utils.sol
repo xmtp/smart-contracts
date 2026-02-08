@@ -260,21 +260,35 @@ library Utils {
         string memory json_,
         string memory key_
     ) internal pure returns (bytes32 value_) {
-        return bytes32(uint256(uint160(stdJson.readAddress(json_, key_))));
+        return encodeAddress(stdJson.readAddress(json_, key_));
     }
 
     function parseAndEncodeBooleanParameter(
         string memory json_,
         string memory key_
     ) internal pure returns (bytes32 value_) {
-        return stdJson.readBool(json_, key_) ? bytes32(uint256(1)) : bytes32(uint256(0));
+        return encodeBool(stdJson.readBool(json_, key_));
     }
 
     function parseAndEncodeUintParameter(
         string memory json_,
         string memory key_
     ) internal pure returns (bytes32 value_) {
-        return bytes32(stdJson.readUint(json_, key_));
+        return encodeUint(stdJson.readUint(json_, key_));
+    }
+
+    /* ============ Encoding Helpers ============ */
+
+    function encodeAddress(address value_) internal pure returns (bytes32 encoded_) {
+        return bytes32(uint256(uint160(value_)));
+    }
+
+    function encodeBool(bool value_) internal pure returns (bytes32 encoded_) {
+        return value_ ? bytes32(uint256(1)) : bytes32(uint256(0));
+    }
+
+    function encodeUint(uint256 value_) internal pure returns (bytes32 encoded_) {
+        return bytes32(value_);
     }
 
     function parseMigratorParameters(

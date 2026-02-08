@@ -1,107 +1,32 @@
-# Process Steps for Upgrades on App Chain
+# App Chain Upgrades <!-- omit from toc -->
 
-An **app chain upgrade** refers to upgrading an existing **proxy** on an app chain to point to a new **implementation** address. App chain upgrades require a three-step process that spans both the settlement chain and the app chain:
+## Table of Contents <!-- omit from toc -->
 
-1. **Prepare** the new implementation and migrator on the app chain, that is, deploy them.
-2. **Bridge** the migrator parameter from the settlement chain to the app chain.
-3. **Upgrade** the contract on the app chain.
+- [1. Overview](#1-overview)
+- [2. Environment Defaults](#2-environment-defaults)
+- [3. Choose Your Workflow](#3-choose-your-workflow)
 
-All examples below use the environment `staging`, so config files are named `testnet-staging.json`.
+## 1. Overview
 
-## Token Requirements
+There are two possible workflows for app chain upgrades. The parameter registry admin address can be controlled:
 
-| Step       | Executed on      | Address  | baseETH (settlement)  | xUSD (settlement)     | xUSD (app chain)          |
-| ---------- | ---------------- | -------- | --------------------- | --------------------- | ------------------------- |
-| 1. Prepare | App Chain        | DEPLOYER | -                     | -                     | yes for deployment tx gas |
-| 2. Bridge  | Settlement Chain | ADMIN    | yes for param reg tx  | -                     | -                         |
-| 2. Bridge  | Settlement Chain | DEPLOYER | yes for bridge tx gas | yes to give to bridge | -                         |
-| 3. Upgrade | App Chain        | DEPLOYER | -                     | -                     | yes for upgrade tx gas    |
+1. by a local private key, or
+2. by Fireblocks.
 
-## STAGE 1 - Setup
+The goals for testnets are minimal friction, whilst still proving out the Fireblocks approval process before mainnet.
 
-### 1. Maintain the root `.env` file to have:
+## 2. Environment Defaults
 
-- [ ] `ADMIN_PRIVATE_KEY` used only for writing migrator parameter to parameter registry
-- [ ] `DEPLOYER_PRIVATE_KEY` used for deploying implementations, migrators, bridging, and executing migrations
-- [ ] `BASE_SEPOLIA_RPC_URL` the RPC provider for the settlement chain.
-- [ ] `XMTP_ROPSTEN_RPC_URL` the RPC for the app chain.
+| Environment       | Default      | To Override                     |
+| ----------------- | ------------ | ------------------------------- |
+| `testnet-dev`     | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet-staging` | `WALLET`     | `ADMIN_ADDRESS_TYPE=FIREBLOCKS` |
+| `testnet`         | `FIREBLOCKS` | `ADMIN_ADDRESS_TYPE=WALLET`     |
+| `mainnet`         | `FIREBLOCKS` | No override possible            |
 
-### 2. Maintain `config/testnet-staging.json` to have:
+Add the override variable to your command when you need to use the non-default signing method.
 
-- [ ] `factory` (used for creating new contracts)
-- [ ] `parameterRegistryProxy` (used to set migrator address)
-- [ ] `<contract-being-upgraded>Proxy` (this is what gets upgraded)
+## 3. Choose Your Workflow
 
-Note: There are no dependencies on `environments/testnet-staging.json` for upgrades.
-
-## STAGE 2 - Upgrade Contracts
-
-App chain upgrades require three steps that execute on different chains.
-
-**NB: Take care to use the correct `--rpc-url` for each step!**
-
-### Example: Upgrade Identity Update Broadcaster
-
-#### Step 1 - Prepare new implementation on app chain (uses DEPLOYER)
-
-Deploy the new implementation and migrator on the app chain:
-
-```bash
-ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
-```
-
-- [ ] Note the migrator address from the output. This will be used in Step 2.
-
-#### Step 2 - Bridge the migrator parameter (uses ADMIN and DEPLOYER)
-
-Bridge the migrator parameter from the settlement chain to the app chain. ADMIN sets the migrator in parameter registry, then DEPLOYER approves fee token and bridges:
-
-```bash
-ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS_FROM_STEP_1> --broadcast
-```
-
-- [ ] Note the `migratorParameterKey` from the output (e.g., `xmtp.identityUpdateBroadcaster.migrator`).
-
-#### Step 3 - Verify bridge and execute upgrade (uses DEPLOYER)
-
-- [ ] Manually verify the bridge completed successfully by checking the parameter registry on the app chain. The parameter key from Step 2 should show the migrator address from Step 1.
-
-Example verification URL:
-
-```
-https://xmtp-ropsten.explorer.alchemy.com/address/0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D?tab=read_write_proxy
-```
-
-Execute the upgrade on the app chain:
-
-```bash
-ENVIRONMENT=testnet-staging forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
-```
-
-- [ ] Note the new implementation address from the output.
-
-#### Step 4 - Update configuration file
-
-- [ ] Manually copy the new implementation address from Step 3 to the corresponding `config/testnet-staging.json` file, so that the file shows the correct implementation address.
-
-## STAGE 3 - Code Verification
-
-Code verification is only needed once per implementation. The automated verification script is idempotent and will skip previously verified contracts:
-
-```bash
-./dev/verify-base xmtp_ropsten alchemy
-```
-
-If any contracts were not picked up by the automated script, verify them manually. Example for Identity Update Broadcaster:
-
-```bash
-forge verify-contract \
-  --verifier blockscout \
-  --verifier-url https://xmtp-ropsten.explorer.alchemy.com/api/ \
-  --chain-id 351243127 \
-  --constructor-args $(cast abi-encode "constructor(address)" "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D") \
-  <IMPLEMENTATION_ADDRESS> \
-  src/app-chain/IdentityUpdateBroadcaster.sol:IdentityUpdateBroadcaster
-```
-
-In the above, the address `0xB2EA...` is the parameter registry address.
+- **[README-wallet.md](README-wallet.md)** - Private key signing (simpler upgrade process)
+- **[README-fireblocks.md](README-fireblocks.md)** - Fireblocks signing (multi-step upgrade process)
