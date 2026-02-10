@@ -36,8 +36,15 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
      * @param  storageFee          The storage fee.
      * @param  congestionFee       The congestion fee.
      * @param  targetRatePerMinute The target rate per minute.
+     * @param  startTime           The start time of the rate.
      */
-    event RatesUpdated(uint64 messageFee, uint64 storageFee, uint64 congestionFee, uint64 targetRatePerMinute);
+    event RatesUpdated(
+        uint64 messageFee,
+        uint64 storageFee,
+        uint64 congestionFee,
+        uint64 targetRatePerMinute,
+        uint64 startTime
+    );
 
     /* ============ Custom Errors ============ */
 
@@ -55,6 +62,9 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
 
     /// @notice Thrown when there is no change to an updated parameter.
     error NoChange();
+
+    /// @notice Thrown when the new start time is not strictly greater than the last start time.
+    error InvalidStartTime(uint64 startTime, uint64 lastStartTime);
 
     /* ============ Initialization ============ */
 
@@ -94,6 +104,9 @@ interface IRateRegistry is IMigratable, IIdentified, IRegistryParametersErrors {
 
     /// @notice The parameter registry key used to fetch the target rate per minute.
     function targetRatePerMinuteParameterKey() external pure returns (string memory key_);
+
+    /// @notice The parameter registry key used to fetch the rates in effect after timestamp.
+    function ratesInEffectAfterParameterKey() external pure returns (string memory key_);
 
     /// @notice The parameter registry key used to fetch the migrator.
     function migratorParameterKey() external pure returns (string memory key_);
