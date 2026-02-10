@@ -17,6 +17,7 @@ contract SetParameter is Script {
     error PrivateKeyNotSet();
     error EnvironmentNotSet();
     error AdminNotSet();
+    error UnexpectedChainId();
 
     string internal _environment;
     uint256 internal _adminPrivateKey;
@@ -55,6 +56,8 @@ contract SetParameter is Script {
      * @param value_ The parameter value as bytes32
      */
     function set(string calldata key_, bytes32 value_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         console.log("Parameter Registry: %s", paramRegistry);
@@ -80,6 +83,8 @@ contract SetParameter is Script {
      * @param value_ The address value
      */
     function setAddress(string calldata key_, address value_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         console.log("Parameter Registry: %s", paramRegistry);
@@ -106,6 +111,8 @@ contract SetParameter is Script {
      * @param value_ The uint256 value
      */
     function setUint(string calldata key_, uint256 value_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         console.log("Parameter Registry: %s", paramRegistry);
@@ -132,6 +139,8 @@ contract SetParameter is Script {
      * @param value_ The boolean value
      */
     function setBool(string calldata key_, bool value_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         console.log("Parameter Registry: %s", paramRegistry);
@@ -157,6 +166,8 @@ contract SetParameter is Script {
      * @param key_ The parameter key
      */
     function get(string calldata key_) external view {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address paramRegistry = _deployment.parameterRegistryProxy;
 
         console.log("Parameter Registry: %s", paramRegistry);

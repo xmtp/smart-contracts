@@ -15,6 +15,8 @@ import { VmSafe } from "../../lib/forge-std/src/Vm.sol";
 library AdminAddressTypeLib {
     VmSafe internal constant VM = VmSafe(address(uint160(uint256(keccak256("hevm cheat code")))));
 
+    error UnrecognizedAdminAddressType(string value);
+
     enum AdminAddressType {
         Wallet,
         Fireblocks
@@ -47,6 +49,8 @@ library AdminAddressTypeLib {
                 keccak256(bytes(override_)) == keccak256(bytes("PRIVATE_KEY"))
             ) {
                 return AdminAddressType.Wallet;
+            } else if (bytes(override_).length > 0) {
+                revert UnrecognizedAdminAddressType(override_);
             }
         } catch {}
 

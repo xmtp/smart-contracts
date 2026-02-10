@@ -31,6 +31,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
     error AdminNotSet();
     error StateMismatch();
     error StateComparisonNotImplemented();
+    error UnexpectedChainId();
 
     string internal _environment;
     uint256 internal _adminPrivateKey;
@@ -120,6 +121,8 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @return migrator_ The deployed migrator address
      */
     function DeployImplementationAndMigrator() external returns (address migrator_) {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address factory = _deployment.factory;
         address paramRegistry = _deployment.parameterRegistryProxy;
         address proxy = _getProxy();
@@ -160,6 +163,8 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @dev Sets the migrator in parameter registry using ADMIN (PRIVATE_KEY or FIREBLOCKS based on environment)
      */
     function SetMigratorInParameterRegistry(address migrator_) external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         // Set Fireblocks note for this operation
         _fireblocksNote = _getFireblocksNote("setMigrator");
         if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Fireblocks) {
@@ -191,6 +196,8 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @dev This step never uses Fireblocks, so no Fireblocks note is needed
      */
     function PerformMigration() external {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address proxy = _getProxy();
 
         console.log("proxy %s", proxy);
@@ -244,6 +251,8 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @dev This is called by Upgrade() and can be overridden by child contracts if needed
      */
     function _upgrade() internal {
+        if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
+
         address factory = _deployment.factory;
         address paramRegistry = _deployment.parameterRegistryProxy;
         address proxy = _getProxy();

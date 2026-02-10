@@ -49,11 +49,11 @@ Ensure the following fields are defined correctly in the `config/<environment>.j
 
 ## 3. Upgrade Process (Three Steps)
 
-| Step | Function                            | Signer   | Fireblocks? |
-| ---- | ----------------------------------- | -------- | ----------- |
-| 1    | `DeployImplementationAndMigrator()` | DEPLOYER | No          |
-| 2    | `SetMigratorInParameterRegistry()`  | ADMIN    | **Yes**     |
-| 3    | `PerformMigration()`                | DEPLOYER | No          |
+| Step | Function                                  | Signer   | Fireblocks? |
+| ---- | ----------------------------------------- | -------- | ----------- |
+| 1    | `DeployImplementationAndMigrator()`       | DEPLOYER | No          |
+| 2    | `SetMigratorInParameterRegistry(address)` | ADMIN    | **Yes**     |
+| 3    | `PerformMigration()`                      | DEPLOYER | No          |
 
 The following example upgrades `NodeRegistry` on `testnet`.
 
@@ -128,7 +128,7 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 
 After a successful upgrade:
 
-1. Copy the `newImpl` address from the script earlier script output where we called `DeployImplementationAndMigrator` to `config/<environment>.json`. If the implementation code has not changed, then this `newImpl` address will not change, although the upgrade is carried out.
+1. Copy the `newImpl` address from the earlier script output where we called `DeployImplementationAndMigrator` to `config/<environment>.json`. If the implementation code has not changed, then this `newImpl` address will not change, although the upgrade is carried out.
 2. Verify the implementation contract on the block explorer:
 
 ```bash
