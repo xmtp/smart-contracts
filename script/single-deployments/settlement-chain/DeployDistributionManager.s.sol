@@ -14,34 +14,10 @@ import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerR
 
 /**
  * @title DeployDistributionManagerScript
- * @notice Script to deploy a fresh release of the DistributionManager contract (proxy and implementation pair)
- * @dev This script inherits from Deploy.s.sol, and has four entry points:
- *
- * 1) deployContract() to deploy a new DistributionManager contract (proxy and implementation pair)
- * Calls into mass deploy script Deploy.s.sol for a single deployment of DistributionManager:
- * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
- * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
- * - Updates the environment JSON with the new distributionManager proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
- *
- * 2) SetParameterRegistryValues() to set parameters in the parameter registry (requires ADMIN)
- * Sets the xmtp.payerRegistry.feeDistributor parameter in the SettlementChainParameterRegistry.
- * For Fireblocks: wrap with `npx fireblocks-json-rpc --http --`
- * Usage (Wallet): ENVIRONMENT=testnet-dev forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
- * Usage (Fireblocks): ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --sig "SetParameterRegistryValues()" --broadcast
- *
- * 3) UpdateContractDependencies() to update the dependencies of the DistributionManager contract (uses DEPLOYER, permissionless)
- * Calls PayerRegistry.updateFeeDistributor() to update the fee distributor in the PayerRegistry contract
- * Usage: ENVIRONMENT=testnet-dev forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
- *
- * 4) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
- * The proxy address depends on the factory addresss, deployer address and the salt.
- * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployDistributionManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
- *
- * Dependencies: Sets in parameter registry xmtp.payerRegistry.feeDistributor. Updates PayerRegistry via updateFeeDistributor().
- * DistributionManager has an immutable constructor parameter pointing to PayerReportManager, so it must be
- * upgraded or redeployed when PayerReportManager changes.
+ * @notice Deploys a new DistributionManager proxy and implementation pair.
+ * @dev See DeployDistributionManager.md for detailed deployment instructions.
+ *      Entry points: predictAddresses(), deployContract(), SetParameterRegistryValues(),
+ *      UpdateContractDependencies().
  */
 contract DeployDistributionManagerScript is DeployScripts {
     error EnvironmentContainsDistributionManager();
@@ -73,6 +49,7 @@ contract DeployDistributionManagerScript is DeployScripts {
         }
     }
 
+    /// @notice Step 2: Deploy DistributionManager implementation and proxy.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -94,8 +71,8 @@ contract DeployDistributionManagerScript is DeployScripts {
     }
 
     /**
-     * @notice Step 2: Set parameter registry values (requires ADMIN)
-     * @dev Sets the xmtp.payerRegistry.feeDistributor parameter in the SettlementChainParameterRegistry.
+     * @notice Step 3a (set values): Set xmtp.payerRegistry.feeDistributor in the parameter registry (requires ADMIN).
+     * @dev Sets the feeDistributor address to the newly deployed DistributionManager proxy.
      *      This is an admin-only operation that requires Fireblocks signing in production environments.
      */
     function SetParameterRegistryValues() external {
@@ -137,7 +114,7 @@ contract DeployDistributionManagerScript is DeployScripts {
     }
 
     /**
-     * @notice Step 3: Update contract dependencies (permissionless, uses DEPLOYER)
+     * @notice Step 3a (pull values): Update PayerRegistry by calling updateFeeDistributor() (permissionless, uses DEPLOYER).
      * @dev Calls PayerRegistry.updateFeeDistributor() which is a permissionless function
      *      that reads from the parameter registry and updates local contract state.
      */
@@ -159,6 +136,7 @@ contract DeployDistributionManagerScript is DeployScripts {
         console.log("DistributionManager dependencies update complete");
     }
 
+    /// @notice Step 1: Predict deterministic addresses for implementation and proxy.
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -184,13 +162,15 @@ contract DeployDistributionManagerScript is DeployScripts {
         );
 
         console.log("Proxy Salt:", Utils.bytes32ToString(_deploymentData.distributionManagerProxySalt));
-        console.log("Proxy:", _deploymentData.distributionManagerProxy);
         console.log("DistributionManager Predicted Addresses:");
         console.log("  Implementation:", computedImplementation_);
         console.log("  Proxy:", computedProxy_);
         if (_deploymentData.distributionManagerProxy != address(0)) {
-            if (computedProxy_ != _deploymentData.distributionManagerProxy) {
-                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            if (computedProxy_ == _deploymentData.distributionManagerProxy) {
+                console.log("Predicted proxy matches distributionManagerProxy in config JSON.");
+            } else {
+                console.log("WARNING: Predicted proxy does NOT match distributionManagerProxy in config JSON!");
+                console.log("  Config JSON value:", _deploymentData.distributionManagerProxy);
             }
         }
 

@@ -14,34 +14,10 @@ import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerR
 
 /**
  * @title DeployPayerReportManagerScript
- * @notice Script to deploy a fresh release of the PayerReportManager contract (proxy and implementation pair)
- * @dev This script inherits from Deploy.s.sol, and has four entry points:
- *
- * 1) deployContract() to deploy a new PayerReportManager contract (proxy and implementation pair)
- * Calls into mass deploy script Deploy.s.sol for a single deployment of PayerReportManager:
- * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
- * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
- * - Updates the environment JSON with the new payerReportManager proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
- *
- * 2) SetParameterRegistryValues() to set parameters in the parameter registry (requires ADMIN)
- * Sets the xmtp.payerRegistry.settler parameter in the SettlementChainParameterRegistry.
- * For Fireblocks: wrap with `npx fireblocks-json-rpc --http --`
- * Usage (Wallet): ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
- * Usage (Fireblocks): ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script DeployPayerReportManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --sig "SetParameterRegistryValues()" --broadcast
- *
- * 3) UpdateContractDependencies() to update the dependencies of the PayerReportManager contract (uses DEPLOYER, permissionless)
- * Calls PayerRegistry.updateSettler() to update the settler in the PayerRegistry contract
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
- *
- * 4) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
- * The proxy address depends on the factory addresss, deployer address and the salt.
- * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
- *
- * Dependencies: Sets in parameter registry xmtp.payerRegistry.settler. Updates PayerRegistry via updateSettler().
- * Post-deployment: a new DistributionManager must also be upgraded or deployed since it has an immutable
- * reference to the PayerReportManager address.
+ * @notice Deploys a new PayerReportManager proxy and implementation pair.
+ * @dev See DeployPayerReportManager.md for detailed deployment instructions.
+ *      Entry points: predictAddresses(), deployContract(), SetParameterRegistryValues(),
+ *      UpdateContractDependencies().
  */
 contract DeployPayerReportManagerScript is DeployScripts {
     error EnvironmentContainsPayerReportManager();
@@ -73,6 +49,7 @@ contract DeployPayerReportManagerScript is DeployScripts {
         }
     }
 
+    /// @notice Step 2: Deploy PayerReportManager implementation and proxy.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -94,8 +71,8 @@ contract DeployPayerReportManagerScript is DeployScripts {
     }
 
     /**
-     * @notice Step 2: Set parameter registry values (requires ADMIN)
-     * @dev Sets the xmtp.payerRegistry.settler parameter in the SettlementChainParameterRegistry.
+     * @notice Step 3a (set values): Set xmtp.payerRegistry.settler in the parameter registry (requires ADMIN).
+     * @dev Sets the settler address to the newly deployed PayerReportManager proxy.
      *      This is an admin-only operation that requires Fireblocks signing in production environments.
      */
     function SetParameterRegistryValues() external {
@@ -134,7 +111,7 @@ contract DeployPayerReportManagerScript is DeployScripts {
     }
 
     /**
-     * @notice Step 3: Update contract dependencies (permissionless, uses DEPLOYER)
+     * @notice Step 3a (pull values): Update PayerRegistry by calling updateSettler() (permissionless, uses DEPLOYER).
      * @dev Calls PayerRegistry.updateSettler() which is a permissionless function
      *      that reads from the parameter registry and updates local contract state.
      */
@@ -156,6 +133,7 @@ contract DeployPayerReportManagerScript is DeployScripts {
         console.log("PayerReportManager dependencies update complete");
     }
 
+    /// @notice Step 1: Predict deterministic addresses for implementation and proxy.
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -177,13 +155,15 @@ contract DeployPayerReportManagerScript is DeployScripts {
         );
 
         console.log("Proxy Salt:", Utils.bytes32ToString(_deploymentData.payerReportManagerProxySalt));
-        console.log("Proxy:", _deploymentData.payerReportManagerProxy);
         console.log("PayerReportManager Predicted Addresses:");
         console.log("  Implementation:", computedImplementation_);
         console.log("  Proxy:", computedProxy_);
         if (_deploymentData.payerReportManagerProxy != address(0)) {
-            if (computedProxy_ != _deploymentData.payerReportManagerProxy) {
-                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            if (computedProxy_ == _deploymentData.payerReportManagerProxy) {
+                console.log("Predicted proxy matches payerReportManagerProxy in config JSON.");
+            } else {
+                console.log("WARNING: Predicted proxy does NOT match payerReportManagerProxy in config JSON!");
+                console.log("  Config JSON value:", _deploymentData.payerReportManagerProxy);
             }
         }
 

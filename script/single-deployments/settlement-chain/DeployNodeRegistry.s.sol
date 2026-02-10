@@ -11,34 +11,10 @@ import { INodeRegistry } from "../../../src/settlement-chain/interfaces/INodeReg
 
 /**
  * @title DeployNodeRegistryScript
- * @notice Script to deploy a fresh release of the NodeRegistry contract (proxy and implementation pair)
- * @dev This script inherits from Deploy.s.sol, and has four entry points:
- *
- * 1) deployContract() to deploy a new NodeRegistry contract (proxy and implementation pair)
- * Calls into mass deploy script Deploy.s.sol for a single deployment of NodeRegistry:
- * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
- * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
- * - Updates the environment JSON with the new nodeRegistry proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
- *
- * 2) SetParameterRegistryValues() to set parameters in the parameter registry (requires ADMIN)
- * Sets the admin and maxCanonicalNodes parameters in the SettlementChainParameterRegistry.
- * For Fireblocks: wrap with `npx fireblocks-json-rpc --http --`
- * Usage (Wallet): ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
- * Usage (Fireblocks): ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script DeployNodeRegistryScript --sender $ADMIN --slow --unlocked --rpc-url {} --sig "SetParameterRegistryValues()" --broadcast
- *
- * 3) UpdateContractDependencies() to update the dependencies of the NodeRegistry contract (uses DEPLOYER, permissionless)
- * Updates the admin and maxCanonicalNodes by calling updateAdmin() and updateMaxCanonicalNodes()
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
- *
- * 4) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
- * The proxy address depends on the factory addresss, deployer address and the salt.
- * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
- *
- * Dependencies: Reads from parameter registry xmtp.nodeRegistry.admin, xmtp.nodeRegistry.maxCanonicalNodes.
- * Updates NodeRegistry via updateAdmin() and updateMaxCanonicalNodes().
- * NodeRegistry has no parameters to set in Step 3; parameters must be set manually before Step 4.
+ * @notice Deploys a new NodeRegistry proxy and implementation pair.
+ * @dev See DeployNodeRegistry.md for detailed deployment instructions.
+ *      Entry points: predictAddresses(), deployContract(), SetParameterRegistryValues(),
+ *      UpdateContractDependencies().
  */
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
@@ -70,6 +46,7 @@ contract DeployNodeRegistryScript is DeployScripts {
         }
     }
 
+    /// @notice Step 2: Deploy NodeRegistry implementation and proxy.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -91,9 +68,8 @@ contract DeployNodeRegistryScript is DeployScripts {
     }
 
     /**
-     * @notice Step 2: Set parameter registry values (requires ADMIN)
-     * @dev This function is intentionally empty for NodeRegistry because it has no parameters to set.
-     *      The admin and maxCanonicalNodes values should be set in the parameter registry manually
+     * @notice Step 3a (set values): No-op for NodeRegistry. Parameters must be set manually.
+     * @dev The admin and maxCanonicalNodes values should be set in the parameter registry manually
      *      before calling UpdateContractDependencies().
      *      This function exists to maintain consistency with other deployment scripts.
      */
@@ -109,7 +85,7 @@ contract DeployNodeRegistryScript is DeployScripts {
     }
 
     /**
-     * @notice Step 3: Update contract dependencies (permissionless, uses DEPLOYER)
+     * @notice Step 3a (pull values): Update NodeRegistry by pulling values from parameter registry.
      * @dev Calls updateAdmin() and updateMaxCanonicalNodes() which are permissionless functions
      *      that read from the parameter registry and update local contract state.
      */
@@ -141,6 +117,7 @@ contract DeployNodeRegistryScript is DeployScripts {
         console.log("NodeRegistry dependencies updated");
     }
 
+    /// @notice Step 1: Predict deterministic addresses for implementation and proxy.
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -158,13 +135,15 @@ contract DeployNodeRegistryScript is DeployScripts {
         );
 
         console.log("Proxy Salt:", Utils.bytes32ToString(_deploymentData.nodeRegistryProxySalt));
-        console.log("Proxy:", _deploymentData.nodeRegistryProxy);
         console.log("NodeRegistry Predicted Addresses:");
         console.log("  Implementation:", computedImplementation_);
         console.log("  Proxy:", computedProxy_);
         if (_deploymentData.nodeRegistryProxy != address(0)) {
-            if (computedProxy_ != _deploymentData.nodeRegistryProxy) {
-                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            if (computedProxy_ == _deploymentData.nodeRegistryProxy) {
+                console.log("Predicted proxy matches nodeRegistryProxy in config JSON.");
+            } else {
+                console.log("WARNING: Predicted proxy does NOT match nodeRegistryProxy in config JSON!");
+                console.log("  Config JSON value:", _deploymentData.nodeRegistryProxy);
             }
         }
 
