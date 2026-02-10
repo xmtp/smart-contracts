@@ -250,7 +250,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @notice Internal upgrade function that performs all upgrade steps
      * @dev This is called by Upgrade() and can be overridden by child contracts if needed
      */
-    function _upgrade() internal {
+    function _upgrade() internal virtual {
         if (block.chainid != _deployment.settlementChainId) revert UnexpectedChainId();
 
         address factory = _deployment.factory;
