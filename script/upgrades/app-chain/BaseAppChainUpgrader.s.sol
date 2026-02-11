@@ -142,7 +142,12 @@ abstract contract BaseAppChainUpgrader is Script {
         // Output migrator address, Fireblocks note, and external tx ID for step 2
         string memory fireblocksNote = _getFireblocksNote("setMigrator");
         string memory externalTxId = string.concat(
-            "setMigrator-", _getContractName(), "-", _environment, "-", vm.toString(vm.unixTime())
+            "setMigrator-",
+            _getContractName(),
+            "-",
+            _environment,
+            "-",
+            vm.toString(vm.unixTime())
         );
         console.log("==========================================");
         console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));

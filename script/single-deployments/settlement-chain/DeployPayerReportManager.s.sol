@@ -73,7 +73,10 @@ contract DeployPayerReportManagerScript is DeployScripts {
 
         // Output Fireblocks external tx ID for Step 3a (if using Fireblocks)
         string memory externalTxId = string.concat(
-            "deploy-PayerReportManager-setParam-", _environment, "-", vm.toString(vm.unixTime())
+            "deploy-PayerReportManager-setParam-",
+            _environment,
+            "-",
+            vm.toString(vm.unixTime())
         );
         console.log("==========================================");
         console.log("If using Fireblocks for Step 3a, export these values:");

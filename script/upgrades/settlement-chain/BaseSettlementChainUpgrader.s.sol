@@ -150,7 +150,12 @@ abstract contract BaseSettlementChainUpgrader is Script {
         // Always output these, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
         string memory fireblocksNote = _getFireblocksNote("setMigrator");
         string memory externalTxId = string.concat(
-            "setMigrator-", _getContractName(), "-", _environment, "-", vm.toString(vm.unixTime())
+            "setMigrator-",
+            _getContractName(),
+            "-",
+            _environment,
+            "-",
+            vm.toString(vm.unixTime())
         );
         console.log("==========================================");
         console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));

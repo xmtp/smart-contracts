@@ -127,12 +127,12 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                          |
-| ----------------- | ---------------------------------------------------------------- |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                   |
-| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
-| `--unlocked`      | Indicates the sender address is managed externally               |
-| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
+| Flag              | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                                   |
+| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction                     |
+| `--unlocked`      | Indicates the sender address is managed externally                               |
+| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort)                 |
 | `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
 
 ## 6. Next Steps
