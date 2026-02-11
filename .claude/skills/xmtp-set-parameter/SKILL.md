@@ -1,7 +1,15 @@
 ---
 name: xmtp-set-parameter
-description: Set or read a parameter in the XMTP protocol parameter registry, supporting both wallet and Fireblocks signing modes, with optional bridging to the app chain.
+description: >
+  Set, read, or bridge a parameter in the XMTP protocol parameter registry,
+  supporting both wallet and Fireblocks signing modes. Use when user asks to
+  "set a parameter", "read a parameter", "check a parameter value",
+  "bridge a parameter to the app chain", or mentions the parameter registry,
+  paused flags, or specific keys like nodeRegistry, payerRegistry, rateRegistry.
 argument-hint: [action] [key] [value] [environment] [signing-mode]
+metadata:
+  author: XMTP
+  version: 1.0.0
 ---
 
 The user wants to set, read, or bridge a parameter. Parse from their request:
@@ -60,6 +68,50 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
 - If any step fails, stop and discuss with the user before retrying or continuing.
 - For reads, omit `--broadcast` and `--slow` — these are view-only calls.
 - For Fireblocks: set `FIREBLOCKS_NOTE` to a human-readable description of the parameter change so the approver knows what they are signing.
+
+## Examples
+
+Example 1: Set and bridge a boolean parameter
+User says: "use fireblocks to set a parameter claude.devops.test with value true in testnet-dev, then bridge it to the app chain"
+Actions:
+1. Read READMEs, config, and .env
+2. Verify .env has Fireblocks ADMIN uncommented
+3. Run `setBool` via Fireblocks JSON-RPC proxy with `--broadcast`
+4. Wait for Fireblocks approval
+5. Bridge parameter using `BridgeParameter` script
+6. Verify parameter arrived on app chain
+
+Example 2: Set a numeric parameter
+User says: "set max nodes to 100 on testnet-dev"
+Actions:
+1. Infer key `xmtp.nodeRegistry.maxCanonicalNodes`, type uint256
+2. Use wallet signing (testnet-dev default)
+3. Run `setUint` with `--broadcast`
+
+Example 3: Read a parameter
+User says: "read the paused flag for the group message broadcaster on testnet"
+Actions:
+1. Infer key `xmtp.groupMessageBroadcaster.paused`
+2. Run `get(string)` without `--broadcast` or `--slow`
+3. Display value in all formats
+
+## Troubleshooting
+
+Error: Fireblocks transaction times out
+Cause: Approver didn't act within the `--timeout` window (default 3600s)
+Solution: Re-run the command — Fireblocks will create a new transaction for approval
+
+Error: `forge script` fails with "sender not found" or wrong ADMIN
+Cause: `.env` has the wrong ADMIN uncommented for the chosen signing mode
+Solution: Ask the user to swap which ADMIN line is commented/uncommented in `.env`
+
+Error: Bridge verification shows zero value
+Cause: Bridge finalization takes a few minutes
+Solution: Wait 2-5 minutes and re-run the verification command
+
+Error: `forge script` compilation failure
+Cause: Contract changes or missing dependencies
+Solution: Run `forge build` first to diagnose, then fix before retrying
 
 ## Shared registry safety — paused flags
 

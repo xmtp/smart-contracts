@@ -1,7 +1,16 @@
 ---
 name: xmtp-upgrade
-description: Upgrade an XMTP protocol contract via the multi-step forge script workflow, supporting both wallet and Fireblocks signing modes across settlement and app chains.
+description: >
+  Upgrade an XMTP protocol contract via the multi-step forge script workflow,
+  supporting both wallet and Fireblocks signing modes across settlement and app
+  chains. Use when user asks to "upgrade a contract", "deploy a new
+  implementation", "upgrade NodeRegistry", "upgrade PayerRegistry", or mentions
+  upgrading any XMTP contract like GroupMessageBroadcaster, Gateway, RateRegistry,
+  DistributionManager, FeeToken, or ParameterRegistry.
 argument-hint: [contract] [environment] [signing-mode]
+metadata:
+  author: XMTP
+  version: 1.0.0
 ---
 
 The user wants to upgrade a contract. Parse from their request:
@@ -75,3 +84,52 @@ Accept fuzzy names from the user (e.g. "node registry", "payer report manager", 
 - Set `ENVIRONMENT` and `ADMIN_ADDRESS_TYPE` env vars before the first forge command.
 - If any step fails, stop and discuss with the user before retrying or continuing.
 - If the user asks to skip the state check, set `SKIP_STATE_CHECK=true` in the environment.
+
+## Examples
+
+Example 1: Dry-run upgrade with Fireblocks
+User says: "upgrade NodeRegistry on testnet-dev using fireblocks, do a dry run"
+Actions:
+1. Verify repo is clean (`forge clean && yarn prettier && yarn build && yarn test`)
+2. Read READMEs, config, and .env
+3. Verify .env has Fireblocks ADMIN uncommented
+4. Run Step 1 (deploy new implementation) without `--broadcast`
+5. Show results without submitting any on-chain transaction
+
+Example 2: Full upgrade with wallet signing
+User says: "upgrade the payer report manager on testnet-staging"
+Actions:
+1. Resolve to `PayerReportManagerUpgrader` on settlement chain
+2. Use wallet signing (testnet-staging default)
+3. Run all steps with `--broadcast`, carrying forward addresses between steps
+4. Update `config/testnet-staging.json` with new implementation address
+
+Example 3: App chain contract upgrade
+User says: "upgrade GroupMessageBroadcaster on testnet-dev"
+Actions:
+1. Identify as app-chain contract
+2. Read app-chain upgrade READMEs
+3. Run upgrade steps including bridge step
+4. Verify migrator arrived on app chain after bridge finalization
+
+## Troubleshooting
+
+Error: Tests fail during repo cleanliness check
+Cause: Existing test failures or code changes in the working tree
+Solution: Stop and ask the user to fix failing tests or commit changes before retrying
+
+Error: `git status` shows uncommitted changes after prettier
+Cause: Files were reformatted by prettier
+Solution: Stop and ask the user to commit the formatting changes first
+
+Error: Fireblocks transaction times out
+Cause: Approver didn't act within the `--timeout` window (default 3600s)
+Solution: Re-run the command — Fireblocks will create a new transaction for approval
+
+Error: Wrong ADMIN address picked up by forge
+Cause: `.env` has the wrong ADMIN uncommented for the chosen signing mode
+Solution: Ask the user to swap which ADMIN line is commented/uncommented in `.env`
+
+Error: Bridge verification shows migrator hasn't arrived
+Cause: Bridge finalization takes a few minutes
+Solution: Wait 2-5 minutes and re-run the verification command
