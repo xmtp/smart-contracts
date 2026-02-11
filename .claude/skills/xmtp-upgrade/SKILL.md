@@ -71,6 +71,7 @@ Accept fuzzy names from the user (e.g. "node registry", "payer report manager", 
 
 - Never run a `--broadcast` command unless the user has asked for a broadcast (not a dry run). The tool permission prompt serves as the approval gate — do not also ask in chat.
 - Never edit `.env` by yourself, always ask the user to do that.
+- Source `.env` into the shell (`source .env`) before the first forge command so that variables like `$ADMIN` are available for shell expansion (e.g. in `--sender $ADMIN`). The `.env` file is a dotenv file that forge also reads internally, but command-line arguments require the shell to expand them first.
 - Set `ENVIRONMENT` and `ADMIN_ADDRESS_TYPE` env vars before the first forge command.
 - If any step fails, stop and discuss with the user before retrying or continuing.
 - If the user asks to skip the state check, set `SKIP_STATE_CHECK=true` in the environment.
