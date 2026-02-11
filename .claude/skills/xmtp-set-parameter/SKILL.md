@@ -59,3 +59,9 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
 - If any step fails, stop and discuss with the user before retrying or continuing.
 - For reads, omit `--broadcast` and `--slow` — these are view-only calls.
 - For Fireblocks: set `FIREBLOCKS_NOTE` to a human-readable description of the parameter change so the approver knows what they are signing.
+
+## Shared registry safety — paused flags
+
+The parameter registry is a **singleton shared across all `testnet*` environments** (`testnet-dev`, `testnet-staging`, `testnet`). Any value set on the settlement chain is visible to all of them.
+
+Setting a contract's `paused` flag (e.g. `xmtp.groupMessageBroadcaster.paused`) is **sensitive**. If the task requires setting a paused flag to `false`, do so on-chain, but **never commit `false` as the default value in the repository** (config files, scripts, etc.). Always leave paused flags defaulting to `true` in the repo. This prevents accidental unpausing in other environments if someone runs `update*()` functions without realizing the registry is shared.
