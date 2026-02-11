@@ -54,6 +54,7 @@ Before running any commands, set these environment variables:
 export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 export FIREBLOCKS_NOTE="set xmtp.example.key on testnet"  # description shown in Fireblocks approval
+export FIREBLOCKS_EXTERNAL_TX_ID="setParam-$(date +%s)"   # idempotency key to prevent duplicate Fireblocks transactions
 ```
 
 ### 3.2. Set a bytes32 value
@@ -126,13 +127,13 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                          |
-| ----------------- | ---------------------------------------------------------------- |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                   |
-| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
-| `--unlocked`      | Indicates the sender address is managed externally               |
-| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
-| `--retries 1`     | Minimal retries to prevent duplicate transactions in Fireblocks  |
+| Flag              | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                                   |
+| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction                     |
+| `--unlocked`      | Indicates the sender address is managed externally                               |
+| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort)                 |
+| `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
 
 ## 6. Next Steps
 

@@ -67,11 +67,14 @@ forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig
 
 ```bash
 export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
+export FIREBLOCKS_EXTERNAL_TX_ID=<value from Step 2 output>
 
 npx fireblocks-json-rpc --http -- \
   forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
   --sig "SetParameterRegistryValues()" --broadcast
 ```
+
+The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key that prevents duplicate Fireblocks transactions if forge retries the RPC call. Both values are output at the end of Step 2 (`deployContract`).
 
 Approve the transaction in the Fireblocks console and wait for it to complete.
 
