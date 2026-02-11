@@ -50,6 +50,8 @@ contract DeployPayerReportManagerScript is DeployScripts {
     }
 
     /// @notice Step 2: Deploy PayerReportManager implementation and proxy.
+    /// @dev Outputs FIREBLOCKS_NOTE and FIREBLOCKS_EXTERNAL_TX_ID for Step 3a if using Fireblocks.
+    ///      The external tx ID is a Fireblocks idempotency key that prevents duplicate transactions.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -68,6 +70,16 @@ contract DeployPayerReportManagerScript is DeployScripts {
         _writePayerReportManagerToEnvironment();
 
         console.log("PayerReportManager deployment complete");
+
+        // Output Fireblocks external tx ID for Step 3a (if using Fireblocks)
+        string memory externalTxId = string.concat(
+            "deploy-PayerReportManager-setParam-", _environment, "-", vm.toString(vm.unixTime())
+        );
+        console.log("==========================================");
+        console.log("If using Fireblocks for Step 3a, export these values:");
+        console.log('  export FIREBLOCKS_NOTE="Deploy PayerReportManager - set settler parameter"');
+        console.log('  export FIREBLOCKS_EXTERNAL_TX_ID="%s"', externalTxId);
+        console.log("==========================================");
     }
 
     /**

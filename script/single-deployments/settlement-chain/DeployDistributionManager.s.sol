@@ -50,6 +50,8 @@ contract DeployDistributionManagerScript is DeployScripts {
     }
 
     /// @notice Step 2: Deploy DistributionManager implementation and proxy.
+    /// @dev Outputs FIREBLOCKS_NOTE and FIREBLOCKS_EXTERNAL_TX_ID for Step 3a if using Fireblocks.
+    ///      The external tx ID is a Fireblocks idempotency key that prevents duplicate transactions.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -68,6 +70,16 @@ contract DeployDistributionManagerScript is DeployScripts {
         _writeDistributionManagerToEnvironment();
 
         console.log("DistributionManager deployment complete");
+
+        // Output Fireblocks external tx ID for Step 3a (if using Fireblocks)
+        string memory externalTxId = string.concat(
+            "deploy-DistributionManager-setParam-", _environment, "-", vm.toString(vm.unixTime())
+        );
+        console.log("==========================================");
+        console.log("If using Fireblocks for Step 3a, export these values:");
+        console.log('  export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"');
+        console.log('  export FIREBLOCKS_EXTERNAL_TX_ID="%s"', externalTxId);
+        console.log("==========================================");
     }
 
     /**
