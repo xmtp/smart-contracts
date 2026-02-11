@@ -87,18 +87,24 @@ Deploy the new implementation and migrator on the app chain:
 forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
 ```
 
-**Important:** Note the `MIGRATOR_ADDRESS_FOR_STEP_2` from the output.
+**Important:** Note the output values - you will need them for Step 2:
+
+- `MIGRATOR_ADDRESS_FOR_STEP_2` - the migrator contract address
+- `FIREBLOCKS_NOTE_FOR_STEP_2` - a descriptive note for the Fireblocks transaction
+- `FIREBLOCKS_EXTERNAL_TX_ID` - idempotency key to prevent duplicate Fireblocks transactions if forge retries the RPC call
 
 ### 4.3. Step 2: SetMigrator (settlement chain)
 
 Set the migrator in the settlement chain parameter registry (via Fireblocks):
 
 ```bash
-export FIREBLOCKS_NOTE="setMigrator IdentityUpdateBroadcaster on testnet"
+export MIGRATOR_ADDRESS=<value from Step 1>
+export FIREBLOCKS_NOTE=<value from Step 1>
+export FIREBLOCKS_EXTERNAL_TX_ID=<value from Step 1>
 
 npx fireblocks-json-rpc --http -- \
   forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
-  --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
+  --sig "SetMigratorInParameterRegistry(address)" $MIGRATOR_ADDRESS --broadcast
 ```
 
 Approve the transaction in the Fireblocks console and wait for it to complete.
@@ -146,7 +152,7 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 | `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
 | `--unlocked`      | Indicates the sender address is managed externally               |
 | `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
-| `--retries 1`     | Minimal retries to prevent duplicate transactions in Fireblocks  |
+| `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
 
 ## 6. Post-Upgrade
 
