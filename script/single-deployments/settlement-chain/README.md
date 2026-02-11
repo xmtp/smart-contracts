@@ -1,109 +1,127 @@
-# Process Steps for Single Deployments on Settlement Chain
+# Settlement Chain Single Deployments <!-- omit from toc -->
 
-A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract. Any dependencies must be manually maintained. All examples below use the environment of `staging`, so config files are named `testnet-staging.json`.
+## Table of Contents <!-- omit from toc -->
 
-## STAGE 1 - Deploy New Payer Report Manager
+- [1. Overview](#1-overview)
+- [2. Overview of Three-Step Deployment Process](#2-overview-of-three-step-deployment-process)
+- [3. Environment and Prerequisites](#3-environment-and-prerequisites)
+  - [3.1. Environment Defaults](#31-environment-defaults)
+  - [3.2. `.env` Variables](#32-env-variables)
+  - [3.3. `config/<environment>.json`](#33-configenvironmentjson)
+- [4. Supported Deployments](#4-supported-deployments)
+- [5. Post-Deployment](#5-post-deployment)
 
-When there is a new Payer Report Manager address, the following dependencies need to be updated:
+## 1. Overview
 
-- The `PayerRegistry` has a field `settler` that contains the payer report manager. This is handled below by the `DeployPayerReportManagerScript.updateDependencies()` call.
-- The `DistributionManager` has an immutable field, set at constructor time, containing the payer report manager address. Therefore `DistributionManager` needs to be redeployed.
+This folder contains scripts for deploying new contracts on the settlement chain. A **single deployment** refers to deploying a new **proxy and implementation pair** for a given contract.
 
-The instructions below cover the complete process of deploying a new Payer Report Manager and updating all dependencies, including deploying a new `DistributionManager` and updating _its_ dependencies.
+**Important: Admin is NOT Required for Contract Deployment**.
 
-### 1. Maintain the root `.env` file to have:
+A newly deployed contract's initial state is set via constructor and initializer parameters, NOT from the parameter registry. Anyone with gas tokens can deploy a contract. Admin rights are needed to **update the dependencies** to repoint existing contracts at the newly deployed contract. Where admin rights are needed, the exact steps vary depending on if you are using a private key versus Fireblocks to manage the admin address. All steps are documented in the `.md` files in this folder.
 
-- [ ] `DEPLOYER` address and `DEPLOYER_PRIVATE_KEY`. This can be any address with gas tokens.
-- [ ] `ADMIN` and `ADMIN_PRIVATE_KEY`. This address must be an admin of the `SettlementChainParameterRegistry`. This address is used during a deploy to point the proxy at the new implementation.
-- [ ] `BASE_SEPOLIA_RPC_URL` your RPC provider.
-- [ ] `ETHERSCAN_API_KEY` your etherscan API key.
-- [ ] `ETHERSCAN_API_URL` '`https://api-sepolia.basescan.org/api`'
+## 2. Overview of Three-Step Deployment Process
 
-### 2. Edit file `config/testnet-staging.json` to have:
+This section is an overview of the deployment process, the exact steps to follow are detailed in the per-contract guides linked in [Supported Deployments](#4-supported-deployments). Each deployment follows a three-step process. Steps 1 and 2 are the same for all contracts, step 3 is specific to each contract:
 
-- [ ] The above deployer address.
-- [ ] Adjust the `payerReportManagerProxySalt` to be something new. For example, use `*_0_x` for `dev`, use `*_1_x` for staging. The deterministic proxy address depends on the **deployer address** maintained above + this **proxy salt**.
+| Step | Description         | Signer                |
+| ---- | ------------------- | --------------------- |
+| 1    | Predict Addresses   | Not required          |
+| 2    | Deploy Contract     | DEPLOYER              |
+| 3    | Update Dependencies | ADMIN and/or DEPLOYER |
 
-### 3. Run predicted address helper:
+**Step 1: Predict Addresses.** Calculate deterministic addresses for the implementation and proxy using `predictAddresses()`. Copy the predicted addresses to `config/<environment>.json`.
 
-- [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation. This call will show warnings if the proxy or implementation is already in use. If the proxy is already in use, you can change the salt in previous step:
+**Step 2: Deploy Contract.** Deploy the implementation and proxy pair using `deployContract()`. This updates `environments/<environment>.json` with the new proxy address. This does not need an ADMIN address.
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
-```
+**Step 3: Update Dependencies.** Repoint existing contracts at the newly deployed contract. This has two methods, applied as needed per contract:
 
-### 4. Maintain `config/testnet-staging.json` to have:
+- **3a) Set parameter registry values and pull them in.** If an existing contract caches contract addresses in local storage, we set a parameter registry value (requires ADMIN via `SetParameterRegistryValues()`) and then pull that value into the existing contract via a permissionless `update*()` function (uses DEPLOYER via `UpdateContractDependencies()`).
 
-- [ ] Predicted implementation address from previous step
-- [ ] Predicted proxy address from previous step
+- **3b) Upgrade/redeploy contracts with immutable references.** If an existing contract contains immutable references to the contract we just redeployed, we must upgrade or redeploy that contract. Immutables are baked into the implementation source code. Generally, we upgrade the existing contract using the [upgrade guides](../../upgrades/settlement-chain/README.md).
 
-### 5. Maintain `environments/testnet-staging.json` to have:
+## 3. Environment and Prerequisites
 
-- [ ] Deployer address from earlier step.
-- [ ] Delete the existing row for `payerReportManager`. This will be replaced when we deploy the new proxy.
+Complete all subsections below before starting any deployment listed in the [Supported Deployments](#4-supported-deployments) section.
 
-### 6. Deployment
+### 3.1. Environment Defaults
 
-This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
+Admin address type is determined by environment with optional `ADMIN_ADDRESS_TYPE` override:
 
-```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
-```
+| Environment       | Default Admin Type | Can Override? | Notes                      |
+| ----------------- | ------------------ | ------------- | -------------------------- |
+| `testnet-dev`     | WALLET             | Yes           | Use WALLET for development |
+| `testnet-staging` | WALLET             | Yes           | Use WALLET for staging     |
+| `testnet`         | FIREBLOCKS         | Yes           | Use FIREBLOCKS for testnet |
+| `mainnet`         | FIREBLOCKS         | No            | FIREBLOCKS always enforced |
 
-### 7. Post deploy dependencies
-
-Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.settler` with the new `PayerReportManager` proxy address. It then calls `PayerRegistry.updateSettler()` to update the settler in the `PayerRegistry` contract.
-
-```bash
-ENVIRONMENT=testnet-staging forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
-```
-
-## STAGE 2 - Deploy New Distribution Manager
-
-Assuming that all values maintained in previous stage remain (the `.env` values in particular) then the following steps are required:
-
-### 1. Edit file `config/testnet-staging.json`:
-
-- [ ] Adjust the `DistributionManagerSalt` to be something new.
-
-### 2. Run predicted address helper:
-
-- [ ] Run this to calculate what new addresses will be, and copy the predicted values for proxy and implementation:
+Set environment and admin type before running any commands:
 
 ```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "predictAddresses()"
+export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
+export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # or WALLET (optional override)
 ```
 
-### 3. Maintain `config/testnet-staging.json` to have:
+### 3.2. `.env` Variables
 
-- [ ] Predicted implementation address from previous step
-- [ ] Predicted proxy address from previous step
-
-### 4. Maintain `environments/testnet-staging.json` to have:
-
-- [ ] Delete the existing row for `distributionManager`. This will be replaced when we deploy the new proxy.
-
-### 5. Deployment
-
-This will update the `environments/testnet-staging.json` file with the newly deployed proxy.
+All environments need:
 
 ```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
+DEPLOYER_PRIVATE_KEY=...               # Deployer private key
+BASE_SEPOLIA_RPC_URL=...               # Settlement chain RPC endpoint
+ETHERSCAN_API_KEY=...                  # For contract verification
+ETHERSCAN_API_URL=https://api-sepolia.basescan.org/api
 ```
 
-### 6. Post deploy dependencies
-
-Run this to update dependencies. This updates the SettlementChainParameterRegistry key `xmtp.payerRegistry.feeDistributor` with the new `DistributionManager` proxy address. It then calls `PayerRegistry.updateFeeDistributor()` to update the fee distributor in the `PayerRegistry` contract.
+Wallet signing additionally needs:
 
 ```bash
-ENVIRONMENT=testnet-staging forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
+ADMIN=...                              # Admin account address. This needs replaced with Fireblocks value if Fireblocks is used.
+ADMIN_PRIVATE_KEY=...                  # Admin private key. This is ignored if Fireblocks is used.
 ```
 
-## STAGE 3 - Code Verification
-
-To verify the code of the new implementations:
+Fireblocks signing additionally needs:
 
 ```bash
-forge verify-contract --chain-id 84532 <newly deployed payer report manager implementation address> src/settlement-chain/PayerReportManager.sol:PayerReportManager
-forge verify-contract --chain-id 84532 <newly deployed distribution manager implementation address> src/settlement-chain/DistributionManager.sol:DistributionManager
+ADMIN=...                              # Fireblocks vault account address (this replaces the Wallet ADMIN address above)
+FIREBLOCKS_API_KEY=...                 # From Fireblocks console (Settings -> Users, find API user)
+FIREBLOCKS_API_PRIVATE_KEY_PATH=...    # Path to API private key file (download from 1Password)
+FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # Vault account ID that owns the ADMIN address
 ```
+
+### 3.3. `config/<environment>.json`
+
+Ensure the following fields are defined correctly for your chosen environment:
+
+```json
+{
+  "factory": "0x...",
+  "parameterRegistryProxy": "0x...",
+  "deployer": "0x..."
+}
+```
+
+## 4. Supported Deployments
+
+After completing the prerequisites in section 3 above, follow the remaining steps according to the contract being deployed:
+
+| Contract            | Deployment Guide                                             | Script                            |
+| ------------------- | ------------------------------------------------------------ | --------------------------------- |
+| NodeRegistry        | [DeployNodeRegistry.md](DeployNodeRegistry.md)               | `DeployNodeRegistry.s.sol`        |
+| PayerReportManager  | [DeployPayerReportManager.md](DeployPayerReportManager.md)   | `DeployPayerReportManager.s.sol`  |
+| DistributionManager | [DeployDistributionManager.md](DeployDistributionManager.md) | `DeployDistributionManager.s.sol` |
+
+## 5. Post-Deployment
+
+After a successful deployment:
+
+1. Verify the implementation contract on the block explorer. Use the chain ID for your target network:
+
+```bash
+# Base Sepolia (testnet-dev, testnet-staging, testnet)
+forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
+
+# Base Mainnet
+forge verify-contract --chain-id 8453 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
+```
+
+2. Confirm that `environments/<environment>.json` was updated with the new proxy address (written automatically by `deployContract()` in Step 2).

@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+# This script uses wallet private key signing (ADMIN_PRIVATE_KEY).
+
 source "$(dirname "$0")/utils"
 
 # Check if argument is provided

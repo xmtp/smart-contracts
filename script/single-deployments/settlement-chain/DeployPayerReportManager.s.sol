@@ -6,6 +6,7 @@ import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
 import { DeployScripts } from "../../Deploy.s.sol";
 import { PayerReportManagerDeployer } from "../../deployers/PayerReportManagerDeployer.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { AdminAddressTypeLib } from "../../utils/AdminAddressType.sol";
 import {
     ISettlementChainParameterRegistry
 } from "../../../src/settlement-chain/interfaces/ISettlementChainParameterRegistry.sol";
@@ -13,31 +14,42 @@ import { IPayerRegistry } from "../../../src/settlement-chain/interfaces/IPayerR
 
 /**
  * @title DeployPayerReportManagerScript
- * @notice Script to deploy a fresh release of the PayerReportManager contract (proxy and implementation pair)
- * @dev This script inherits from Deploy.s.sol, and has three entry points:
- * 1) deployContract() to deploy a new PayerReportManager contract (proxy and implementation pair)
- * Calls into mass deploy script Deploy.s.sol for a single deployment of PayerReportManager:
- * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
- * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
- * - Updates the environment JSON with the new payerReportManager proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
- *
- * 2) updateDependencies() to update the dependencies of the PayerReportManager contract
- * - Updates the SettlementChainParameterRegistry key xmtp.payerRegistry.settler with the new PayerReportManager proxy address
- * - Calls PayerRegistry.updateSettler() to update the settler in the PayerRegistry contract
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
- *
- * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
- * The proxy address depends on the factory addresss, deployer address and the salt.
- * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+ * @notice Deploys a new PayerReportManager proxy and implementation pair.
+ * @dev See DeployPayerReportManager.md for detailed deployment instructions.
+ *      Entry points: predictAddresses(), deployContract(), SetParameterRegistryValues(),
+ *      UpdateContractDependencies().
  */
 contract DeployPayerReportManagerScript is DeployScripts {
     error EnvironmentContainsPayerReportManager();
     error ImplementationAddressMismatch(address expected, address computed);
+    error AdminNotSet();
 
     uint256 internal _adminPrivateKey;
+    address internal _admin;
+    AdminAddressTypeLib.AdminAddressType internal _adminAddressType;
 
+    /**
+     * @dev Initializes admin-related variables. Called at the start of functions that need admin access.
+     *      The parent DeployScripts.setUp() already initializes _environment, _deployer, and _deployerPrivateKey.
+     */
+    function _initializeAdmin() internal {
+        // Determine admin address type based on environment with optional override
+        _adminAddressType = AdminAddressTypeLib.getAdminAddressType(_environment);
+
+        // Admin setup (for setting parameters in parameter registry)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+            if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+            _admin = vm.addr(_adminPrivateKey);
+            console.log("Admin (Wallet): %s", _admin);
+        } else {
+            _admin = vm.envAddress("ADMIN");
+            if (_admin == address(0)) revert AdminNotSet();
+            console.log("Admin (Fireblocks): %s", _admin);
+        }
+    }
+
+    /// @notice Step 2: Deploy PayerReportManager implementation and proxy.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -58,17 +70,17 @@ contract DeployPayerReportManagerScript is DeployScripts {
         console.log("PayerReportManager deployment complete");
     }
 
-    function updateDependencies() external {
+    /**
+     * @notice Step 3a (set values): Set xmtp.payerRegistry.settler in the parameter registry (requires ADMIN).
+     * @dev Sets the settler address to the newly deployed PayerReportManager proxy.
+     *      This is an admin-only operation that requires Fireblocks signing in production environments.
+     */
+    function SetParameterRegistryValues() external {
+        _initializeAdmin();
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
-        if (_deploymentData.payerRegistryProxy == address(0)) revert PayerRegistryProxyNotSet();
 
-        // Load admin private key from environment variable
-        _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
-        if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
-        address admin_ = vm.addr(_adminPrivateKey);
-        console.log("Admin: %s", admin_);
-        console.log("Updating PayerReportManager dependencies");
+        console.log("Setting PayerReportManager parameters in parameter registry");
 
         // Read the PayerReportManager proxy address from the environment JSON file
         string memory filePath_ = string.concat("environments/", _environment, ".json");
@@ -82,16 +94,32 @@ contract DeployPayerReportManagerScript is DeployScripts {
         // Update SettlementChainParameterRegistry key xmtp.payerRegistry.settler
         string memory settlerKey_ = "xmtp.payerRegistry.settler";
         bytes32 settlerValue_ = bytes32(uint256(uint160(payerReportManagerProxy_)));
-        console.log("Updating SettlementChainParameterRegistry parameter:");
+        console.log("Setting SettlementChainParameterRegistry parameter:");
         console.log("  Key: %s", settlerKey_);
         console.log("  Value (PayerReportManager proxy): %s", payerReportManagerProxy_);
 
         // Set parameter in parameter registry (using ADMIN)
-        vm.startBroadcast(_adminPrivateKey);
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            vm.startBroadcast(_adminPrivateKey);
+        } else {
+            vm.startBroadcast(_admin);
+        }
         ISettlementChainParameterRegistry(_deploymentData.parameterRegistryProxy).set(settlerKey_, settlerValue_);
         vm.stopBroadcast();
 
-        console.log("Successfully updated SettlementChainParameterRegistry parameter");
+        console.log("Successfully set SettlementChainParameterRegistry parameter");
+    }
+
+    /**
+     * @notice Step 3a (pull values): Update PayerRegistry by calling updateSettler() (permissionless, uses DEPLOYER).
+     * @dev Calls PayerRegistry.updateSettler() which is a permissionless function
+     *      that reads from the parameter registry and updates local contract state.
+     */
+    function UpdateContractDependencies() external {
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+        if (_deploymentData.payerRegistryProxy == address(0)) revert PayerRegistryProxyNotSet();
+
+        console.log("Updating PayerReportManager contract dependencies");
 
         // Call PayerRegistry.updateSettler() (using DEPLOYER)
         console.log("Calling PayerRegistry.updateSettler()");
@@ -105,6 +133,7 @@ contract DeployPayerReportManagerScript is DeployScripts {
         console.log("PayerReportManager dependencies update complete");
     }
 
+    /// @notice Step 1: Predict deterministic addresses for implementation and proxy.
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -126,13 +155,15 @@ contract DeployPayerReportManagerScript is DeployScripts {
         );
 
         console.log("Proxy Salt:", Utils.bytes32ToString(_deploymentData.payerReportManagerProxySalt));
-        console.log("Proxy:", _deploymentData.payerReportManagerProxy);
         console.log("PayerReportManager Predicted Addresses:");
         console.log("  Implementation:", computedImplementation_);
         console.log("  Proxy:", computedProxy_);
         if (_deploymentData.payerReportManagerProxy != address(0)) {
-            if (computedProxy_ != _deploymentData.payerReportManagerProxy) {
-                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            if (computedProxy_ == _deploymentData.payerReportManagerProxy) {
+                console.log("Predicted proxy matches payerReportManagerProxy in config JSON.");
+            } else {
+                console.log("WARNING: Predicted proxy does NOT match payerReportManagerProxy in config JSON!");
+                console.log("  Config JSON value:", _deploymentData.payerReportManagerProxy);
             }
         }
 

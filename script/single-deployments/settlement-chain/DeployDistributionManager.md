@@ -1,0 +1,92 @@
+# Deploy DistributionManager <!-- omit from toc -->
+
+## Table of Contents <!-- omit from toc -->
+
+- [Overview](#overview)
+- [Step 1: Predict Addresses](#step-1-predict-addresses)
+- [Step 2: Deploy Contract](#step-2-deploy-contract)
+- [Step 3: Update Dependencies](#step-3-update-dependencies)
+  - [3a: Set Parameter Registry Values and Pull Them In](#3a-set-parameter-registry-values-and-pull-them-in)
+
+## Overview
+
+Deploys a new **DistributionManager** proxy and implementation pair using `DeployDistributionManager.s.sol`.
+
+**Before you begin:** Complete all environment and prerequisite setup in [README.md - Environment and Prerequisites](README.md#3-environment-and-prerequisites), then return here.
+
+**Dependencies managed by this deployment:**
+
+| Method | Parameter Registry Key              | Updated Contract | Update Function          |
+| ------ | ----------------------------------- | ---------------- | ------------------------ |
+| 3a     | `xmtp.payerRegistry.feeDistributor` | PayerRegistry    | `updateFeeDistributor()` |
+
+DistributionManager has no Step 3b — no other contracts have immutable references to it.
+
+**Note:** DistributionManager itself has immutable references to `parameterRegistryProxy`, `nodeRegistryProxy`, `payerReportManagerProxy`, `payerRegistryProxy`, and `feeTokenProxy`. If any of those contracts are redeployed, DistributionManager must be upgraded or redeployed.
+
+## Step 1: Predict Addresses
+
+1. Edit `distributionManagerProxySalt` in `config/<environment>.json` to a new unique value.
+2. Run the prediction script:
+
+```bash
+forge script DeployDistributionManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+```
+
+3. Copy the predicted `Implementation` and `Proxy` addresses into `config/<environment>.json` as `distributionManagerImplementation` and `distributionManagerProxy`.
+4. Run the script again to confirm `Predicted proxy matches distributionManagerProxy in config JSON.`
+
+The implementation address depends only on bytecode, so it may be unchanged. The `Code already exists at predicted implementation address` warning is expected in that case.
+
+## Step 2: Deploy Contract
+
+1. Remove the existing `distributionManager` key from `environments/<environment>.json` (the script will rewrite it).
+2. Run the deploy:
+
+```bash
+forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
+```
+
+This deploys the implementation, deploys the proxy, initializes the proxy, and writes the new `distributionManager` proxy address to `environments/<environment>.json`.
+
+## Step 3: Update Dependencies
+
+### 3a: Set Parameter Registry Values and Pull Them In
+
+PayerRegistry caches the feeDistributor (DistributionManager) address in local storage. We need to announce the new proxy address via the parameter registry, then tell PayerRegistry to pull it in.
+
+1. Set `xmtp.payerRegistry.feeDistributor` to the new DistributionManager proxy address (requires ADMIN):
+
+**Wallet:**
+
+```bash
+forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
+```
+
+**Fireblocks:**
+
+```bash
+export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
+
+npx fireblocks-json-rpc --http -- \
+  forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  --sig "SetParameterRegistryValues()" --broadcast
+```
+
+Approve the transaction in the Fireblocks console and wait for it to complete.
+
+2. Pull the value into PayerRegistry (permissionless, uses DEPLOYER):
+
+```bash
+forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
+```
+
+This calls `PayerRegistry.updateFeeDistributor()`.
+
+3. Verify the update took effect:
+
+```bash
+cast call <payerRegistry-proxy> "feeDistributor()(address)" --rpc-url base_sepolia
+```
+
+The returned address should match the new DistributionManager proxy.

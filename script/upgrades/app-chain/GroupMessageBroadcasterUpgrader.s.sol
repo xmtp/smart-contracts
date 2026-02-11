@@ -7,17 +7,29 @@ import { GroupMessageBroadcasterDeployer } from "../../deployers/GroupMessageBro
 import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
 
 /**
- * @notice Group Message Broadcaster upgrader
- * @dev This contract provides three entry points for the upgrade process:
- *      - Prepare(): Step 1 - Deploy implementation and migrator on app chain
- *      - Bridge(address): Step 2 - Bridge migrator parameter from settlement chain to app chain
- *      - Upgrade(): Step 3 - Execute migration and verify state preservation
+ * @notice Upgrades the GroupMessageBroadcaster proxy to a new implementation
+ * @dev App chain upgrades are always 4 steps because they span two chains:
+ *      1. Prepare - Deploy implementation and migrator on app chain
+ *      2. SetMigrator - Set migrator in settlement chain parameter registry (ADMIN)
+ *      3. BridgeParameter - Bridge migrator parameter to app chain (DEPLOYER)
+ *      4. Upgrade - Execute migration on app chain (DEPLOYER)
  *
- * Usage:
- * NOTE: These steps execute on different chains, take care to get the --rpc-url correct for each step.
+ *   Workflow 1 (Wallet):
+ *     Steps 2-3 are combined into a single Bridge(address) command for convenience.
+ *
+ *   Workflow 2 (Fireblocks):
+ *     Steps 2-3 must be run separately (step 2 via Fireblocks, step 3 without).
+ *
+ * Usage (Wallet):
  *   Step 1: ENVIRONMENT=testnet-dev forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
- *   Step 2: ENVIRONMENT=testnet-dev forge script GroupMessageBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
- *   Step 3: ENVIRONMENT=testnet-dev forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+ *   Steps 2-3: ENVIRONMENT=testnet-dev forge script GroupMessageBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "Bridge(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 4: ENVIRONMENT=testnet-dev forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
+ *
+ * Usage (Fireblocks):
+ *   Step 1: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
+ *   Step 2: ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script GroupMessageBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 3: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "BridgeParameter()" --broadcast
+ *   Step 4: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
  */
 contract GroupMessageBroadcasterUpgrader is BaseAppChainUpgrader {
     struct ContractState {

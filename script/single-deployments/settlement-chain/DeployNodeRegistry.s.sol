@@ -6,32 +6,47 @@ import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
 import { DeployScripts } from "../../Deploy.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
 import { Utils } from "../../utils/Utils.sol";
+import { AdminAddressTypeLib } from "../../utils/AdminAddressType.sol";
 import { INodeRegistry } from "../../../src/settlement-chain/interfaces/INodeRegistry.sol";
 
 /**
  * @title DeployNodeRegistryScript
- * @notice Script to deploy a fresh release of the NodeRegistry contract (proxy and implementation pair)
- * @dev This script inherits from Deploy.s.sol, and has three entry points:
- * 1) deployContract() to deploy a new NodeRegistry contract (proxy and implementation pair)
- * Calls into mass deploy script Deploy.s.sol for a single deployment of NodeRegistry:
- * - Validates the proxy & implementation addresses match the deterministic address held in config JSON.
- * - Deploys the implementation & proxy (no-ops if already present on chain as was requested).
- * - Updates the environment JSON with the new nodeRegistry proxy address.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
- *
- * 2) updateDependencies() to update the dependencies of the NodeRegistry contract
- * Updates the admin and maxCanonicalNodes by calling updateAdmin() and updateMaxCanonicalNodes()
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --slow --sig "updateDependencies()" --broadcast
- *
- * 3) predictAddresses() to print the predicted addresses of the implementation & proxy (a helper function, doesn't broadcast)
- * The proxy address depends on the factory addresss, deployer address and the salt.
- * The implementation address depends on the factory address and the implementation bytecode.
- * Usage: ENVIRONMENT=testnet-dev forge script DeployNodeRegistryScript --rpc-url base_sepolia --sig "predictAddresses()"
+ * @notice Deploys a new NodeRegistry proxy and implementation pair.
+ * @dev See DeployNodeRegistry.md for detailed deployment instructions.
+ *      Entry points: predictAddresses(), deployContract(), SetParameterRegistryValues(),
+ *      UpdateContractDependencies().
  */
 contract DeployNodeRegistryScript is DeployScripts {
     error EnvironmentContainsNodeRegistry();
     error ImplementationAddressMismatch(address expected, address computed);
+    error AdminNotSet();
 
+    uint256 internal _adminPrivateKey;
+    address internal _admin;
+    AdminAddressTypeLib.AdminAddressType internal _adminAddressType;
+
+    /**
+     * @dev Initializes admin-related variables. Called at the start of functions that need admin access.
+     *      The parent DeployScripts.setUp() already initializes _environment, _deployer, and _deployerPrivateKey.
+     */
+    function _initializeAdmin() internal {
+        // Determine admin address type based on environment with optional override
+        _adminAddressType = AdminAddressTypeLib.getAdminAddressType(_environment);
+
+        // Admin setup (for setting parameters in parameter registry)
+        if (_adminAddressType == AdminAddressTypeLib.AdminAddressType.Wallet) {
+            _adminPrivateKey = uint256(vm.envBytes32("ADMIN_PRIVATE_KEY"));
+            if (_adminPrivateKey == 0) revert PrivateKeyNotSet();
+            _admin = vm.addr(_adminPrivateKey);
+            console.log("Admin (Wallet): %s", _admin);
+        } else {
+            _admin = vm.envAddress("ADMIN");
+            if (_admin == address(0)) revert AdminNotSet();
+            console.log("Admin (Fireblocks): %s", _admin);
+        }
+    }
+
+    /// @notice Step 2: Deploy NodeRegistry implementation and proxy.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -52,7 +67,29 @@ contract DeployNodeRegistryScript is DeployScripts {
         console.log("NodeRegistry deployment complete");
     }
 
-    function updateDependencies() external {
+    /**
+     * @notice Step 3a (set values): No-op for NodeRegistry. Parameters must be set manually.
+     * @dev The admin and maxCanonicalNodes values should be set in the parameter registry manually
+     *      before calling UpdateContractDependencies().
+     *      This function exists to maintain consistency with other deployment scripts.
+     */
+    function SetParameterRegistryValues() external {
+        _initializeAdmin();
+        if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
+
+        console.log("NodeRegistry has no parameter registry values to set.");
+        console.log("Ensure the following parameters are set manually:");
+        console.log("  - xmtp.nodeRegistry.admin");
+        console.log("  - xmtp.nodeRegistry.maxCanonicalNodes");
+        console.log("Then proceed to UpdateContractDependencies()");
+    }
+
+    /**
+     * @notice Step 3a (pull values): Update NodeRegistry by pulling values from parameter registry.
+     * @dev Calls updateAdmin() and updateMaxCanonicalNodes() which are permissionless functions
+     *      that read from the parameter registry and update local contract state.
+     */
+    function UpdateContractDependencies() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
         if (_deploymentData.nodeRegistryProxy == address(0)) revert NodeRegistryProxyNotSet();
 
@@ -80,6 +117,7 @@ contract DeployNodeRegistryScript is DeployScripts {
         console.log("NodeRegistry dependencies updated");
     }
 
+    /// @notice Step 1: Predict deterministic addresses for implementation and proxy.
     function predictAddresses() external view {
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
@@ -97,13 +135,15 @@ contract DeployNodeRegistryScript is DeployScripts {
         );
 
         console.log("Proxy Salt:", Utils.bytes32ToString(_deploymentData.nodeRegistryProxySalt));
-        console.log("Proxy:", _deploymentData.nodeRegistryProxy);
         console.log("NodeRegistry Predicted Addresses:");
         console.log("  Implementation:", computedImplementation_);
         console.log("  Proxy:", computedProxy_);
         if (_deploymentData.nodeRegistryProxy != address(0)) {
-            if (computedProxy_ != _deploymentData.nodeRegistryProxy) {
-                console.log("WARNING: Computed proxy address does not match config proxy address!");
+            if (computedProxy_ == _deploymentData.nodeRegistryProxy) {
+                console.log("Predicted proxy matches nodeRegistryProxy in config JSON.");
+            } else {
+                console.log("WARNING: Predicted proxy does NOT match nodeRegistryProxy in config JSON!");
+                console.log("  Config JSON value:", _deploymentData.nodeRegistryProxy);
             }
         }
 
