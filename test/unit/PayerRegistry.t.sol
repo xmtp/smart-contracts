@@ -1475,4 +1475,177 @@ contract PayerRegistryTests is Test {
             output_ := input_
         }
     }
+
+    /* ============ authorize ============ */
+
+    function test_authorize_zeroDelegate() external {
+        vm.expectRevert(IPayerRegistry.ZeroDelegate.selector);
+        vm.prank(_alice);
+        _registry.authorize(address(0), 0);
+    }
+
+    function test_authorize_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+    }
+
+    function test_authorize_expiryInPast() external {
+        vm.warp(1000);
+
+        vm.expectRevert(IPayerRegistry.DelegationExpiryInPast.selector);
+        vm.prank(_alice);
+        _registry.authorize(_bob, 500);
+    }
+
+    function test_authorize_delegationAlreadyExists() external {
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+
+        vm.expectRevert(IPayerRegistry.DelegationAlreadyExists.selector);
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+    }
+
+    function test_authorize_success_noExpiry() external {
+        vm.warp(1000);
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.DelegationAuthorized(_alice, _bob, 0);
+
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+        IPayerRegistry.Delegation memory delegation_ = _registry.getDelegation(_alice, _bob);
+        assertTrue(delegation_.isActive);
+        assertEq(delegation_.expiry, 0);
+        assertEq(delegation_.createdAt, 1000);
+    }
+
+    function test_authorize_success_withExpiry() external {
+        vm.warp(1000);
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.DelegationAuthorized(_alice, _bob, 2000);
+
+        vm.prank(_alice);
+        _registry.authorize(_bob, 2000);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+        IPayerRegistry.Delegation memory delegation_ = _registry.getDelegation(_alice, _bob);
+        assertTrue(delegation_.isActive);
+        assertEq(delegation_.expiry, 2000);
+        assertEq(delegation_.createdAt, 1000);
+    }
+
+    /* ============ revoke ============ */
+
+    function test_revoke_zeroDelegate() external {
+        vm.expectRevert(IPayerRegistry.ZeroDelegate.selector);
+        vm.prank(_alice);
+        _registry.revoke(address(0));
+    }
+
+    function test_revoke_paused() external {
+        _registry.__setPauseStatus(true);
+
+        vm.expectRevert(IPayerRegistry.Paused.selector);
+        vm.prank(_alice);
+        _registry.revoke(_bob);
+    }
+
+    function test_revoke_delegationDoesNotExist() external {
+        vm.expectRevert(IPayerRegistry.DelegationDoesNotExist.selector);
+        vm.prank(_alice);
+        _registry.revoke(_bob);
+    }
+
+    function test_revoke_success() external {
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.DelegationRevoked(_alice, _bob);
+
+        vm.prank(_alice);
+        _registry.revoke(_bob);
+
+        assertFalse(_registry.isAuthorized(_alice, _bob));
+        IPayerRegistry.Delegation memory delegation_ = _registry.getDelegation(_alice, _bob);
+        assertFalse(delegation_.isActive);
+    }
+
+    /* ============ isAuthorized ============ */
+
+    function test_isAuthorized_notAuthorized() external view {
+        assertFalse(_registry.isAuthorized(_alice, _bob));
+    }
+
+    function test_isAuthorized_expired() external {
+        vm.warp(1000);
+
+        vm.prank(_alice);
+        _registry.authorize(_bob, 2000);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+
+        // Move past expiry
+        vm.warp(2001);
+
+        assertFalse(_registry.isAuthorized(_alice, _bob));
+    }
+
+    function test_isAuthorized_noExpiry_stillValid() external {
+        vm.warp(1000);
+
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+
+        // Move far into the future
+        vm.warp(1000000);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+    }
+
+    /* ============ getDelegation ============ */
+
+    function test_getDelegation_notExists() external view {
+        IPayerRegistry.Delegation memory delegation_ = _registry.getDelegation(_alice, _bob);
+        assertFalse(delegation_.isActive);
+        assertEq(delegation_.expiry, 0);
+        assertEq(delegation_.createdAt, 0);
+    }
+
+    /* ============ reauthorize after revoke ============ */
+
+    function test_reauthorize_afterRevoke() external {
+        vm.warp(1000);
+
+        // First authorize
+        vm.prank(_alice);
+        _registry.authorize(_bob, 0);
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+
+        // Revoke
+        vm.prank(_alice);
+        _registry.revoke(_bob);
+        assertFalse(_registry.isAuthorized(_alice, _bob));
+
+        // Authorize again with different expiry
+        vm.warp(2000);
+
+        vm.prank(_alice);
+        _registry.authorize(_bob, 5000);
+
+        assertTrue(_registry.isAuthorized(_alice, _bob));
+        IPayerRegistry.Delegation memory delegation_ = _registry.getDelegation(_alice, _bob);
+        assertTrue(delegation_.isActive);
+        assertEq(delegation_.expiry, 5000);
+        assertEq(delegation_.createdAt, 2000);
+    }
 }
