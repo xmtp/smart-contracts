@@ -106,9 +106,7 @@ abstract contract BaseAppChainUpgrader is Script {
     /**
      * @notice Step 1 of 4: Prepare the upgrade on the app chain
      * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
-     * @dev Outputs MIGRATOR_ADDRESS, FIREBLOCKS_NOTE, and FIREBLOCKS_EXTERNAL_TX_ID for Step 2.
-     *      The external tx ID is a Fireblocks idempotency key that prevents duplicate transactions
-     *      if forge retries the RPC call during the Fireblocks signing step.
+     * @dev Outputs MIGRATOR_ADDRESS and FIREBLOCKS_NOTE for Step 2.
      */
     function Prepare() external {
         if (block.chainid != _deployment.appChainId) revert UnexpectedChainId();
@@ -139,23 +137,15 @@ abstract contract BaseAppChainUpgrader is Script {
 
         vm.stopBroadcast();
 
-        // Output migrator address, Fireblocks note, and external tx ID for step 2
+        // Output migrator address and Fireblocks note for step 2
         string memory fireblocksNote = _getFireblocksNote("setMigrator");
-        string memory externalTxId = string.concat(
-            "setMigrator-",
-            _getContractName(),
-            "-",
-            _environment,
-            "-",
-            vm.toString(vm.unixTime())
-        );
         console.log("==========================================");
         console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));
         console.log("FIREBLOCKS_NOTE_FOR_STEP_2: %s", fireblocksNote);
         console.log("Export these values before running Step 2:");
         console.log("  export MIGRATOR_ADDRESS=%s", address(migrator));
         console.log('  export FIREBLOCKS_NOTE="%s"', fireblocksNote);
-        console.log('  export FIREBLOCKS_EXTERNAL_TX_ID="%s"', externalTxId);
+        console.log("  export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)");
         console.log("==========================================");
     }
 

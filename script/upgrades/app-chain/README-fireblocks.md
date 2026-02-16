@@ -91,7 +91,6 @@ forge script IdentityUpdateBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --s
 
 - `MIGRATOR_ADDRESS_FOR_STEP_2` - the migrator contract address
 - `FIREBLOCKS_NOTE_FOR_STEP_2` - a descriptive note for the Fireblocks transaction
-- `FIREBLOCKS_EXTERNAL_TX_ID` - idempotency key to prevent duplicate Fireblocks transactions if forge retries the RPC call
 
 ### 4.3. Step 2: SetMigrator (settlement chain)
 
@@ -100,10 +99,10 @@ Set the migrator in the settlement chain parameter registry (via Fireblocks):
 ```bash
 export MIGRATOR_ADDRESS=<value from Step 1>
 export FIREBLOCKS_NOTE=<value from Step 1>
-export FIREBLOCKS_EXTERNAL_TX_ID=<value from Step 1>
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)
 
 npx fireblocks-json-rpc --http -- \
-  forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "SetMigratorInParameterRegistry(address)" $MIGRATOR_ADDRESS --broadcast
 ```
 
@@ -151,8 +150,10 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 | `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                                   |
 | `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction                     |
 | `--unlocked`      | Indicates the sender address is managed externally                               |
-| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort)                 |
+| `--timeout 14400` | Wait up to 4 hours for Fireblocks approval (prevents early abort)                |
 | `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
+
+> **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
 
 ## 6. Post-Upgrade
 
