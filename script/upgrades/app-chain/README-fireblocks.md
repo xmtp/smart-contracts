@@ -99,7 +99,7 @@ Set the migrator in the settlement chain parameter registry (via Fireblocks):
 ```bash
 export MIGRATOR_ADDRESS=<value from Step 1>
 export FIREBLOCKS_NOTE=<value from Step 1>
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
 npx fireblocks-json-rpc --http -- \
   forge script IdentityUpdateBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \

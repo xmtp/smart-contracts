@@ -54,7 +54,7 @@ Before running any commands, set these environment variables:
 export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 export FIREBLOCKS_NOTE="set xmtp.example.key on testnet"  # description shown in Fireblocks approval
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)               # idempotency key to prevent duplicate Fireblocks transactions
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)               # idempotency key, re-run before each new Fireblocks command
 ```
 
 ### 3.2. Set a bytes32 value

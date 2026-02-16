@@ -65,7 +65,7 @@ forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig 
 
 ```bash
 export FIREBLOCKS_NOTE="Deploy PayerReportManager - set settler parameter"
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
 npx fireblocks-json-rpc --http -- \
   forge script DeployPayerReportManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \

@@ -67,7 +67,7 @@ forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig
 
 ```bash
 export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
 npx fireblocks-json-rpc --http -- \
   forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \

@@ -86,7 +86,7 @@ Export the values from Step 1, then run the Fireblocks command:
 ```bash
 export MIGRATOR_ADDRESS=<value from Step 1>
 export FIREBLOCKS_NOTE=<value from Step 1>
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
 npx fireblocks-json-rpc --http -- \
   forge script NodeRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
