@@ -12,15 +12,10 @@
   - [3.3. Add a Node to the Canonical Network](#33-add-a-node-to-the-canonical-network)
   - [3.4. Remove a Node from the Canonical Network](#34-remove-a-node-from-the-canonical-network)
   - [3.5. Set Base URI](#35-set-base-uri)
-- [4. View Operations](#4-view-operations)
-  - [4.1. Get All Nodes](#41-get-all-nodes)
-  - [4.2. Get Canonical Nodes](#42-get-canonical-nodes)
-  - [4.3. Get a Specific Node](#43-get-a-specific-node)
-  - [4.4. Get Admin Address](#44-get-admin-address)
 
 ## 1. Overview
 
-Use this workflow to send admin transactions via `ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
+Use this workflow to send admin transactions via `NODE_REGISTRY_ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
 This is the simpler workflow - no Fireblocks approval required.
 
@@ -126,36 +121,4 @@ Example:
 ```bash
 forge script NodeRegistryAdmin --rpc-url base_sepolia --slow \
   --sig "setBaseURI(string)" "https://metadata.xmtp.org/nodes/" --broadcast
-```
-
-## 4. View Operations
-
-View operations are read-only and do not require a transaction or admin privileges.
-
-### 4.1. Get All Nodes
-
-```bash
-forge script NodeRegistryAdmin --rpc-url base_sepolia \
-  --sig "getAllNodes()"
-```
-
-### 4.2. Get Canonical Nodes
-
-```bash
-forge script NodeRegistryAdmin --rpc-url base_sepolia \
-  --sig "getCanonicalNodes()"
-```
-
-### 4.3. Get a Specific Node
-
-```bash
-forge script NodeRegistryAdmin --rpc-url base_sepolia \
-  --sig "getNode(uint32)" <NODE_ID>
-```
-
-### 4.4. Get Admin Address
-
-```bash
-forge script NodeRegistryAdmin --rpc-url base_sepolia \
-  --sig "getAdmin()"
 ```

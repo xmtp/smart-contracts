@@ -21,15 +21,6 @@ Available admin operations:
 | `removeFromNetwork` | Remove a node from the canonical network |
 | `setBaseURI`        | Set the base URI for node NFTs           |
 
-Available view operations (no transaction required):
-
-| Function            | Description                     |
-| ------------------- | ------------------------------- |
-| `getAllNodes`       | List all nodes in the registry  |
-| `getCanonicalNodes` | List all canonical node IDs     |
-| `getNode`           | Get details for a specific node |
-| `getAdmin`          | Get the current admin address   |
-
 ## 2. Environment Defaults
 
 | Environment       | Default      | To Override                     |

@@ -30,7 +30,7 @@ NODE_REGISTRY_ADMIN_ADDRESS=...        # Fireblocks vault account address (the N
 BASE_SEPOLIA_RPC_URL=...               # Settlement chain RPC endpoint
 FIREBLOCKS_API_KEY=...                 # From Fireblocks console → Settings → API Users
 FIREBLOCKS_API_PRIVATE_KEY_PATH=...    # Path to API private key file (download from 1Password)
-FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # Vault account ID that owns the NODE_REGISTRY_ADMIN_ADDRESS
+FIREBLOCKS_VAULT_ACCOUNT_IDS=...       # List must include the vault account ID that owns the NODE_REGISTRY_ADMIN_ADDRESS
 ```
 
 ### 2.2. `config/<environment>.json`
