@@ -195,12 +195,12 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                                          |
-| ----------------- | -------------------------------------------------------------------------------- |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                                   |
-| `--sender $NODE_REGISTRY_ADMIN_ADDRESS` | Specifies the Fireblocks-managed NodeRegistry admin address |
-| `--unlocked`      | Indicates the sender address is managed externally                               |
-| `--timeout 14400` | Wait up to 4 hours for Fireblocks approval (prevents early abort)                |
-| `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
+| Flag                                    | Purpose                                                                          |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| `--rpc-url {}`                          | The local RPC injects its URL in place of `{}`                                   |
+| `--sender $NODE_REGISTRY_ADMIN_ADDRESS` | Specifies the Fireblocks-managed NodeRegistry admin address                      |
+| `--unlocked`                            | Indicates the sender address is managed externally                               |
+| `--timeout 14400`                       | Wait up to 4 hours for Fireblocks approval (prevents early abort)                |
+| `--retries 1`                           | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
 
 > **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, you're done. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
