@@ -17,8 +17,6 @@
 
 Use this workflow to send admin transactions via `NODE_REGISTRY_ADMIN_PRIVATE_KEY`. See [environment defaults](README.md#2-environment-defaults) for when this applies.
 
-This is the simpler workflow - no Fireblocks approval required.
-
 ## 2. Prerequisites
 
 ### 2.1. `.env` file
@@ -77,7 +75,7 @@ The script outputs the assigned **Node ID** and the derived **Signer** address.
 
 ### 3.3. Add a Node to the Canonical Network
 
-Adds an existing node to the canonical network (makes it active for consensus):
+Adds an existing node to the canonical network:
 
 ```bash
 forge script NodeRegistryAdmin --rpc-url base_sepolia --slow \

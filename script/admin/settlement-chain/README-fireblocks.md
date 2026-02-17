@@ -12,8 +12,7 @@
   - [3.3. Add a Node to the Canonical Network](#33-add-a-node-to-the-canonical-network)
   - [3.4. Remove a Node from the Canonical Network](#34-remove-a-node-from-the-canonical-network)
   - [3.5. Set Base URI](#35-set-base-uri)
-- [4. View Operations](#4-view-operations)
-- [5. Fireblocks Local RPC](#5-fireblocks-local-rpc)
+- [4. Fireblocks Local RPC](#4-fireblocks-local-rpc)
 
 ## 1. Overview
 
@@ -166,25 +165,7 @@ npx fireblocks-json-rpc --http -- \
 
 Approve the transaction in Fireblocks.
 
-## 4. View Operations
-
-View operations are read-only and do not require a transaction or Fireblocks approval. Use the same commands as the [wallet workflow](README-wallet.md#4-view-operations).
-
-```bash
-# Get all nodes
-forge script NodeRegistryAdmin --rpc-url base_sepolia --sig "getAllNodes()"
-
-# Get canonical nodes
-forge script NodeRegistryAdmin --rpc-url base_sepolia --sig "getCanonicalNodes()"
-
-# Get a specific node
-forge script NodeRegistryAdmin --rpc-url base_sepolia --sig "getNode(uint32)" <NODE_ID>
-
-# Get the current admin address
-forge script NodeRegistryAdmin --rpc-url base_sepolia --sig "getAdmin()"
-```
-
-## 5. Fireblocks Local RPC
+## 4. Fireblocks Local RPC
 
 The Fireblocks JSON-RPC proxy runs locally and redirects signing requests to Fireblocks.
 
