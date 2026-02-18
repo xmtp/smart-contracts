@@ -3,8 +3,9 @@
 ## Table of Contents <!-- omit from toc -->
 
 - [1. Overview](#1-overview)
-- [2. Environment Defaults](#2-environment-defaults)
-- [3. Choose Your Workflow](#3-choose-your-workflow)
+- [2. Claude Code](#2-claude-code)
+- [3. Environment Defaults](#3-environment-defaults)
+- [4. Choose Your Workflow](#4-choose-your-workflow)
 
 ## 1. Overview
 
@@ -15,7 +16,15 @@ There are two possible workflows for settlement chain upgrades. The parameter re
 
 The goals for testnets are minimal friction, whilst still proving out the Fireblocks approval process before mainnet.
 
-## 2. Environment Defaults
+## 2. Claude Code
+
+You can use [Claude Code](https://claude.ai/code) to orchestrate the multi-step upgrade process. The `/xmtp-upgrade` skill handles repo validation, signing mode selection, and carrying forward addresses between steps automatically:
+
+```
+/xmtp-upgrade upgrade NodeRegistry on testnet-dev using fireblocks
+```
+
+## 3. Environment Defaults
 
 | Environment       | Default      | To Override                     |
 | ----------------- | ------------ | ------------------------------- |
@@ -26,7 +35,7 @@ The goals for testnets are minimal friction, whilst still proving out the Firebl
 
 Add the override variable to your command when you need to use the non-default signing method.
 
-## 3. Choose Your Workflow
+## 4. Choose Your Workflow
 
 - **[README-wallet.md](README-wallet.md)** - Private key signing (simpler upgrade process)
 - **[README-fireblocks.md](README-fireblocks.md)** - Fireblocks signing (multi-step upgrade process)
