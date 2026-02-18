@@ -27,7 +27,7 @@ import { BaseAppChainUpgrader } from "./BaseAppChainUpgrader.s.sol";
  *
  * Usage (Fireblocks):
  *   Step 1: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Prepare()" --broadcast
- *   Step 2: ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script GroupMessageBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 2: ENVIRONMENT=testnet ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script GroupMessageBroadcasterUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
  *   Step 3: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url base_sepolia --slow --sig "BridgeParameter()" --broadcast
  *   Step 4: ENVIRONMENT=testnet forge script GroupMessageBroadcasterUpgrader --rpc-url xmtp_ropsten --slow --sig "Upgrade()" --broadcast
  */

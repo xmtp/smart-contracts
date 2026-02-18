@@ -50,6 +50,7 @@ contract DeployDistributionManagerScript is DeployScripts {
     }
 
     /// @notice Step 2: Deploy DistributionManager implementation and proxy.
+    /// @dev Outputs FIREBLOCKS_NOTE for Step 3a if using Fireblocks.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -68,6 +69,13 @@ contract DeployDistributionManagerScript is DeployScripts {
         _writeDistributionManagerToEnvironment();
 
         console.log("DistributionManager deployment complete");
+
+        // Output Fireblocks values for Step 3a (if using Fireblocks)
+        console.log("==========================================");
+        console.log("If using Fireblocks for Step 3a, export these values:");
+        console.log('  export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"');
+        console.log("  export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)");
+        console.log("==========================================");
     }
 
     /**

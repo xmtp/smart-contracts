@@ -118,6 +118,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @notice Step 1 of 3: Deploy implementation and migrator
      * @dev Deploys or gets the implementation and creates a migrator (using DEPLOYER_PRIVATE_KEY)
      * @dev This step never uses Fireblocks, so no Fireblocks note is needed
+     * @dev Outputs MIGRATOR_ADDRESS and FIREBLOCKS_NOTE for Step 2.
      * @return migrator_ The deployed migrator address
      */
     function DeployImplementationAndMigrator() external returns (address migrator_) {
@@ -144,7 +145,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
         vm.stopBroadcast();
 
         // Output migrator address and Fireblocks note for step 2
-        // Always output the note, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
+        // Always output these, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
         string memory fireblocksNote = _getFireblocksNote("setMigrator");
         console.log("==========================================");
         console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));
@@ -152,6 +153,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
         console.log("Export these values before running Step 2:");
         console.log("  export MIGRATOR_ADDRESS=%s", address(migrator));
         console.log('  export FIREBLOCKS_NOTE="%s"', fireblocksNote);
+        console.log("  export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)");
         console.log("==========================================");
 
         return address(migrator);

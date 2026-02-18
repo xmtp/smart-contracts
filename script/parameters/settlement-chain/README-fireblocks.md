@@ -54,6 +54,7 @@ Before running any commands, set these environment variables:
 export ENVIRONMENT=testnet             # or: testnet-dev, testnet-staging, mainnet
 export ADMIN_ADDRESS_TYPE=FIREBLOCKS   # use Fireblocks signing
 export FIREBLOCKS_NOTE="set xmtp.example.key on testnet"  # description shown in Fireblocks approval
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)               # idempotency key, re-run before each new Fireblocks command
 ```
 
 ### 3.2. Set a bytes32 value
@@ -62,7 +63,7 @@ Use this for raw bytes32 values:
 
 ```bash
 npx fireblocks-json-rpc --http -- \
-  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "set(string,bytes32)" "xmtp.example.key" 0x0000000000000000000000000000000000000000000000000000000000000001 --broadcast
 ```
 
@@ -74,7 +75,7 @@ Use this for address parameters (automatically right-justified to bytes32):
 
 ```bash
 npx fireblocks-json-rpc --http -- \
-  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "setAddress(string,address)" "xmtp.nodeRegistry.admin" 0x1234567890123456789012345678901234567890 --broadcast
 ```
 
@@ -86,7 +87,7 @@ Use this for numeric parameters (automatically converted to bytes32):
 
 ```bash
 npx fireblocks-json-rpc --http -- \
-  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" 100 --broadcast
 ```
 
@@ -98,7 +99,7 @@ Use this for boolean parameters (encoded as 1 for true, 0 for false):
 
 ```bash
 npx fireblocks-json-rpc --http -- \
-  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script SetParameter --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "setBool(string,bool)" "xmtp.groupMessageBroadcaster.paused" true --broadcast
 ```
 
@@ -126,13 +127,15 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 3. Routes signing requests to Fireblocks for approval
 4. Shuts down after the command completes
 
-| Flag              | Purpose                                                          |
-| ----------------- | ---------------------------------------------------------------- |
-| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                   |
-| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction     |
-| `--unlocked`      | Indicates the sender address is managed externally               |
-| `--timeout 3600`  | Wait up to 1 hour for Fireblocks approval (prevents early abort) |
-| `--retries 1`     | Minimal retries to prevent duplicate transactions in Fireblocks  |
+| Flag              | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `--rpc-url {}`    | The local RPC injects its URL in place of `{}`                                   |
+| `--sender $ADMIN` | Specifies the Fireblocks-managed address for the transaction                     |
+| `--unlocked`      | Indicates the sender address is managed externally                               |
+| `--timeout 14400` | Wait up to 4 hours for Fireblocks approval (prevents early abort)                |
+| `--retries 1`     | Minimal retries (forge minimum); `FIREBLOCKS_EXTERNAL_TX_ID` prevents duplicates |
+
+> **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, you're done. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
 
 ## 6. Next Steps
 
