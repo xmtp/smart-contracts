@@ -9,7 +9,22 @@ description: >
 argument-hint: [action] [key] [value] [environment] [signing-mode]
 metadata:
   author: XMTP
-  version: 1.0.0
+  version: 2.0.0
+---
+
+## CRITICAL CONSTRAINT — PROPOSE ONLY, NEVER EXECUTE
+
+**You MUST NOT execute any CLI commands (forge, cast, source, etc.) yourself.**
+Your job is to research the codebase, compose the correct commands, and present
+them to the user as a numbered step-by-step plan. The user will copy and run
+the commands themselves.
+
+- **DO**: Read READMEs, config files, and `.env` to gather context.
+- **DO**: Compose fully-substituted CLI commands with all flags and arguments.
+- **DO**: Present commands in a numbered plan with explanations.
+- **DO NOT**: Use the Bash tool to run any forge, cast, source, or shell commands.
+- **DO NOT**: Parse command output — there will be no output since you are not running anything.
+
 ---
 
 The user wants to set, read, or bridge a parameter. Parse from their request:
@@ -34,68 +49,72 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
 
 ## Procedure
 
+**Steps 1–4 are mandatory research steps. You MUST read these files before composing any commands.** The READMEs are the single source of truth for command syntax — do not rely on examples in this skill file or on prior knowledge. If the README commands differ from what you expect, follow the README.
+
 1. Determine the **signing mode**. Read the environment defaults table in the settlement chain README:
    - `script/parameters/settlement-chain/README.md`
 
-2. Read the appropriate workflow README:
+2. Read the appropriate workflow README (this is where you get the actual commands to propose):
    - Wallet: `script/parameters/settlement-chain/README-wallet.md`
    - Fireblocks: `script/parameters/settlement-chain/README-fireblocks.md`
    - Bridging: `script/parameters/app-chain/README.md`
 
 3. Read `config/<environment>.json` to verify `parameterRegistryProxy` exists. For bridge actions, also verify `gatewayProxy`, `feeTokenProxy`, `appChainId`, and `settlementChainId`.
 
-4. Read `.env` and make sure the ADMIN address is uncommented in the block appropriate for the chosen signing method. If we are using signing method FIREBLOCKS then we expect ADMIN to be uncommented near the other FIREBLOCKS env vars, and commented out near the ADMIN_PRIVATE_KEY. If we are using signing method WALLET then it is vice-versa. This is because forge picks up the first ADMIN it finds when reading the .env file.
+4. Read `.env` and check whether the ADMIN address is uncommented in the block appropriate for the chosen signing method. If we are using signing method FIREBLOCKS then we expect ADMIN to be uncommented near the other FIREBLOCKS env vars, and commented out near the ADMIN_PRIVATE_KEY. If we are using signing method WALLET then it is vice-versa. This is because forge picks up the first ADMIN it finds when reading the .env file. If the `.env` is misconfigured, **tell the user what to change** — never edit `.env` yourself.
 
-5. Execute the action by following the commands in the README exactly, substituting the parameter key, value, inferred value type signature (from the table above), and environment. For each command:
-   - **Compose the full command** with all flags and arguments filled in.
-   - **Show the command** to the user, explain what it does, and **run it in the same turn**. Do not ask for approval in chat — Claude Code's tool permission prompt already handles that.
-   - For **reads**, use the "Reading Parameters" section of the relevant README. Parse and display the value in all formats (bytes32, uint256, address) from the output.
+5. **Compose the plan.** Following the commands in the README exactly, substitute the parameter key, value, inferred value type signature (from the table above), and environment to produce fully-formed commands. Present the plan as a numbered list of CLI steps:
+   - For each step, show the **complete command** in a fenced code block and a brief explanation of what it does.
+   - For **reads**, use the "Reading Parameters" section of the relevant README. Note that the user should look for bytes32, uint256, and address formats in the output.
    - For **sets**, use the "Setting Parameters" section, choosing the correct value type subsection.
    - For **bridge**, follow `script/parameters/app-chain/README.md`.
+   - Include prerequisite shell commands (e.g. `source .env`, `export ENVIRONMENT=...`, `export ADMIN_ADDRESS_TYPE=...`) as the first steps in the plan.
 
-6. For **Fireblocks** actions: after running the command, remind the user: "Please approve the transaction in the Fireblocks console. Let me know when it's confirmed." **Wait for the user to confirm** before proceeding.
+6. For **Fireblocks** actions: include a note after the relevant command step reminding the user to approve the transaction in the Fireblocks console before proceeding to the next step.
 
-7. For **bridge** actions: after bridging, offer to verify the parameter arrived on the app chain using the verification command in the bridging README. If the value shows as zero, remind the user that bridge finalization takes a few minutes and offer to re-check.
+7. For **bridge** actions: include a verification step at the end using the verification command from the bridging README. Note that if the value shows as zero, bridge finalization may take a few minutes.
 
-8. **After a successful set**, ask the user whether the parameter also needs to be bridged to the app chain. If yes, proceed with the bridge action.
+8. **After a set plan**, note that the parameter may also need to be bridged to the app chain, and offer to compose the bridge plan if the user wants it.
 
 ## Important rules
 
-- Never run a `--broadcast` command unless the user has asked for a broadcast (not a dry run). The tool permission prompt serves as the approval gate — do not also ask in chat.
-- Never edit `.env` by yourself, always ask the user to do that.
-- Source `.env` into the shell (`source .env`) before the first forge command so that variables like `$ADMIN` are available for shell expansion (e.g. in `--sender $ADMIN`). The `.env` file is a dotenv file that forge also reads internally, but command-line arguments require the shell to expand them first.
-- Set `ENVIRONMENT` and `ADMIN_ADDRESS_TYPE` env vars before the first forge command.
-- If any step fails, stop and discuss with the user before retrying or continuing.
-- For reads, omit `--broadcast` and `--slow` — these are view-only calls.
-- For Fireblocks: set `FIREBLOCKS_NOTE` to a human-readable description of the parameter change so the approver knows what they are signing.
+- **Never execute commands. Only propose them.**
+- Never edit `.env` yourself — always tell the user what to change.
+- Include `source .env` as a prerequisite step so that variables like `$ADMIN` are available for shell expansion.
+- Include `export ENVIRONMENT=<env>` and `export ADMIN_ADDRESS_TYPE=<type>` as prerequisite steps.
+- For reads, note that `--broadcast` and `--slow` should be omitted — these are view-only calls.
+- For Fireblocks: include `export FIREBLOCKS_NOTE="<description>"` as a step, with a human-readable description of the parameter change.
+- If the user did not specify `--broadcast`, compose the commands as dry runs (without `--broadcast`). Note this in the plan.
 
 ## Examples
 
 Example 1: Set and bridge a boolean parameter
 User says: "use fireblocks to set a parameter claude.devops.test with value true in testnet-dev, then bridge it to the app chain"
-Actions:
-1. Read READMEs, config, and .env
-2. Verify .env has Fireblocks ADMIN uncommented
-3. Run `setBool` via Fireblocks JSON-RPC proxy with `--broadcast`
-4. Wait for Fireblocks approval
-5. Bridge parameter using `BridgeParameter` script
-6. Verify parameter arrived on app chain
+Output: a numbered plan containing:
+1. Prerequisite exports (`source .env`, `ENVIRONMENT`, `ADMIN_ADDRESS_TYPE`, `FIREBLOCKS_NOTE`)
+2. `.env` verification note (Fireblocks ADMIN must be uncommented)
+3. `setBool` command via Fireblocks JSON-RPC proxy with `--broadcast`
+4. Note: approve in Fireblocks console before continuing
+5. Bridge command using `BridgeParameter` script
+6. Verification command for app chain
 
 Example 2: Set a numeric parameter
 User says: "set max nodes to 100 on testnet-dev"
-Actions:
-1. Infer key `xmtp.nodeRegistry.maxCanonicalNodes`, type uint256
-2. Use wallet signing (testnet-dev default)
-3. Run `setUint` with `--broadcast`
+Output: a numbered plan containing:
+1. Prerequisite exports
+2. `.env` verification note
+3. `setUint` command with `--broadcast`
 
 Example 3: Read a parameter
 User says: "read the paused flag for the group message broadcaster on testnet"
-Actions:
-1. Infer key `xmtp.groupMessageBroadcaster.paused`
-2. Run `get(string)` without `--broadcast` or `--slow`
-3. Display value in all formats
+Output: a numbered plan containing:
+1. Prerequisite exports
+2. `get(string)` command without `--broadcast` or `--slow`
+3. Note: look for bytes32, uint256, and address values in output
 
 ## Troubleshooting
+
+Include these notes in the plan when relevant:
 
 Error: Fireblocks transaction times out
 Cause: Approver didn't act within the `--timeout` window (default 3600s)
@@ -103,7 +122,7 @@ Solution: Re-run the command — Fireblocks will create a new transaction for ap
 
 Error: `forge script` fails with "sender not found" or wrong ADMIN
 Cause: `.env` has the wrong ADMIN uncommented for the chosen signing mode
-Solution: Ask the user to swap which ADMIN line is commented/uncommented in `.env`
+Solution: Swap which ADMIN line is commented/uncommented in `.env`
 
 Error: Bridge verification shows zero value
 Cause: Bridge finalization takes a few minutes
@@ -117,4 +136,4 @@ Solution: Run `forge build` first to diagnose, then fix before retrying
 
 The parameter registry is a **singleton shared across all `testnet*` environments** (`testnet-dev`, `testnet-staging`, `testnet`). Any value set on the settlement chain is visible to all of them.
 
-Setting a contract's `paused` flag (e.g. `xmtp.groupMessageBroadcaster.paused`) is **sensitive**. If the task requires setting a paused flag to `false`, do so on-chain, but **never commit `false` as the default value in the repository** (config files, scripts, etc.). Always leave paused flags defaulting to `true` in the repo. This prevents accidental unpausing in other environments if someone runs `update*()` functions without realizing the registry is shared.
+Setting a contract's `paused` flag (e.g. `xmtp.groupMessageBroadcaster.paused`) is **sensitive**. If the task requires setting a paused flag to `false`, include a warning in the plan. Also note: **never commit `false` as the default value in the repository** (config files, scripts, etc.). Always leave paused flags defaulting to `true` in the repo. This prevents accidental unpausing in other environments if someone runs `update*()` functions without realizing the registry is shared.
