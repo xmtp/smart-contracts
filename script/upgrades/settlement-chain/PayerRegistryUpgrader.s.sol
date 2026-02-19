@@ -23,7 +23,7 @@ import { PayerRegistryDeployer } from "../../deployers/PayerRegistryDeployer.sol
  *
  * Usage (Fireblocks):
  *   Step 1: ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "DeployImplementationAndMigrator()" --broadcast
- *   Step 2: ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script PayerRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
+ *   Step 2: ENVIRONMENT=testnet-dev ADMIN_ADDRESS_TYPE=FIREBLOCKS npx fireblocks-json-rpc --http -- forge script PayerRegistryUpgrader --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 --sig "SetMigratorInParameterRegistry(address)" <MIGRATOR_ADDRESS> --broadcast
  *   Step 3: ENVIRONMENT=testnet-dev forge script PayerRegistryUpgrader --rpc-url base_sepolia --slow --sig "PerformMigration()" --broadcast
  *
  */

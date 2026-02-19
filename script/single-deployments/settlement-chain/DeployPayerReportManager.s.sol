@@ -50,6 +50,7 @@ contract DeployPayerReportManagerScript is DeployScripts {
     }
 
     /// @notice Step 2: Deploy PayerReportManager implementation and proxy.
+    /// @dev Outputs FIREBLOCKS_NOTE for Step 3a if using Fireblocks.
     function deployContract() external {
         if (block.chainid != _deploymentData.settlementChainId) revert UnexpectedChainId();
 
@@ -68,6 +69,13 @@ contract DeployPayerReportManagerScript is DeployScripts {
         _writePayerReportManagerToEnvironment();
 
         console.log("PayerReportManager deployment complete");
+
+        // Output Fireblocks values for Step 3a (if using Fireblocks)
+        console.log("==========================================");
+        console.log("If using Fireblocks for Step 3a, export these values:");
+        console.log('  export FIREBLOCKS_NOTE="Deploy PayerReportManager - set settler parameter"');
+        console.log("  export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)");
+        console.log("==========================================");
     }
 
     /**

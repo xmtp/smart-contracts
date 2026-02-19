@@ -67,13 +67,18 @@ forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig
 
 ```bash
 export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
+export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
 npx fireblocks-json-rpc --http -- \
-  forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 3600 --retries 1 \
+  forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
   --sig "SetParameterRegistryValues()" --broadcast
 ```
 
+The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key (UUID) that prevents duplicate Fireblocks transactions if forge retries the RPC call.
+
 Approve the transaction in the Fireblocks console and wait for it to complete.
+
+> **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
 
 2. Pull the value into PayerRegistry (permissionless, uses DEPLOYER):
 

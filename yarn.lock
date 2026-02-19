@@ -381,10 +381,10 @@
     "@ethersproject/properties" "^5.8.0"
     "@ethersproject/strings" "^5.8.0"
 
-"@fireblocks/fireblocks-json-rpc@^0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@fireblocks/fireblocks-json-rpc/-/fireblocks-json-rpc-0.2.2.tgz#9d9fce2bd83dbbd2493ba56bc7bd663afb388265"
-  integrity sha512-03BUiF1QI3uPovt7ogLVF2Zx3T0cIOPXpOYt14iw1/nOi9YdEwqmZs+YGwA3iQjyqHq/FF/Fdb06wxQ+Uv0rzA==
+"@fireblocks/fireblocks-json-rpc@0.2.6":
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/@fireblocks/fireblocks-json-rpc/-/fireblocks-json-rpc-0.2.6.tgz#ad7f9f95a5c5094048ba76674143abf62bf0c3b4"
+  integrity sha512-Ryi83+BayJrJSBEeZqZm8SoxLgySuqKR/kdSCFaF7J5ooIroHYXeVWRhNWngPI021PGS9sWB0Wg13zyQNvqS8Q==
   dependencies:
     "@fireblocks/fireblocks-web3-provider" "^1.3.8"
     commander "^9.4.1"
