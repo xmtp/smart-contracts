@@ -10,7 +10,7 @@ description: >
 argument-hint: [contract] [environment] [signing-mode]
 metadata:
   author: XMTP
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 ## CRITICAL CONSTRAINT — PROPOSE ONLY, NEVER EXECUTE
@@ -94,7 +94,7 @@ Accept fuzzy names from the user (e.g. "node registry", "payer report manager", 
    - Include the verify-contract command from the Post-Upgrade section of the README.
    - If the user asks to skip the state check, note that they should add `export SKIP_STATE_CHECK=true` to the prerequisites.
 
-7. If the user did not specify `--broadcast`, compose all commands as dry runs (without `--broadcast`). Note this in the plan.
+7. Always include `--broadcast` in all transaction-submitting commands. Do not produce dry runs unless user specifically asks.
 
 ## Important rules
 
@@ -107,16 +107,15 @@ Accept fuzzy names from the user (e.g. "node registry", "payer report manager", 
 
 ## Examples
 
-Example 1: Dry-run upgrade with Fireblocks
-User says: "upgrade NodeRegistry on testnet-dev using fireblocks, do a dry run"
+Example 1: Upgrade with Fireblocks
+User says: "upgrade NodeRegistry on testnet-dev using fireblocks"
 Output: a numbered plan containing:
 1. Repo cleanliness check commands
 2. Prerequisite exports (`source .env`, `ENVIRONMENT`, `ADMIN_ADDRESS_TYPE`, `FIREBLOCKS_NOTE`)
 3. `.env` verification note (Fireblocks ADMIN must be uncommented)
-4. Step 1 command (deploy new implementation) without `--broadcast`
-5. Note: this is a dry run — no on-chain transactions will be submitted
+4. Step 1 command (deploy new implementation) with `--broadcast`
 
-Example 2: Full upgrade with wallet signing
+Example 2: Upgrade with wallet signing
 User says: "upgrade the payer report manager on testnet-staging"
 Output: a numbered plan containing:
 1. Repo cleanliness check commands

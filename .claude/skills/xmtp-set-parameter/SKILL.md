@@ -9,7 +9,7 @@ description: >
 argument-hint: [action] [key] [value] [environment] [signing-mode]
 metadata:
   author: XMTP
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 ## CRITICAL CONSTRAINT — PROPOSE ONLY, NEVER EXECUTE
@@ -84,7 +84,7 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
 - Include `export ENVIRONMENT=<env>` and `export ADMIN_ADDRESS_TYPE=<type>` as prerequisite steps.
 - For reads, note that `--broadcast` and `--slow` should be omitted — these are view-only calls.
 - For Fireblocks: include `export FIREBLOCKS_NOTE="<description>"` as a step, with a human-readable description of the parameter change.
-- If the user did not specify `--broadcast`, compose the commands as dry runs (without `--broadcast`). Note this in the plan.
+- Always include `--broadcast` in set and bridge commands. Do not produce dry runs unless user specifically asks.
 
 ## Examples
 
