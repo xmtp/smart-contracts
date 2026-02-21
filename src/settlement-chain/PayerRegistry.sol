@@ -49,6 +49,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
      * @param  settler            The address of the settler.
      * @param  feeDistributor     The address of the fee distributor.
      * @param  payers             A mapping of payer addresses to payer information.
+     * @param  delegations        A mapping of payer => delegate => delegation info.
      */
     struct PayerRegistryStorage {
         bool paused;
@@ -59,6 +60,7 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         address settler;
         address feeDistributor;
         mapping(address account => Payer payer) payers;
+        mapping(address payer => mapping(address delegate => Delegation delegation)) delegations;
     }
 
     // keccak256(abi.encode(uint256(keccak256("xmtp.storage.PayerRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -321,6 +323,43 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
         emit PauseStatusUpdated($.paused = paused_);
     }
 
+    /* ============ Delegation Functions ============ */
+
+    /// @inheritdoc IPayerRegistry
+    function authorize(address delegate_, uint64 expiry_) external whenNotPaused {
+        if (_isZero(delegate_)) revert ZeroDelegate();
+
+        // If expiry is set, it must be in the future
+        // slither-disable-next-line timestamp
+        if (expiry_ != 0 && expiry_ <= block.timestamp) revert DelegationExpiryInPast();
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        Delegation storage delegation_ = $.delegations[msg.sender][delegate_];
+
+        // Check if delegation already exists and is active
+        if (delegation_.isActive) revert DelegationAlreadyExists();
+
+        delegation_.isActive = true;
+        delegation_.expiry = expiry_;
+        delegation_.createdAt = uint64(block.timestamp);
+
+        emit DelegationAuthorized(msg.sender, delegate_, expiry_);
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function revoke(address delegate_) external whenNotPaused {
+        if (_isZero(delegate_)) revert ZeroDelegate();
+
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        Delegation storage delegation_ = $.delegations[msg.sender][delegate_];
+
+        if (!delegation_.isActive) revert DelegationDoesNotExist();
+
+        delegation_.isActive = false;
+
+        emit DelegationRevoked(msg.sender, delegate_);
+    }
+
     /// @inheritdoc IMigratable
     function migrate() external {
         // NOTE: No access control logic is enforced here, since the migrator is defined by some administered parameter.
@@ -435,6 +474,21 @@ contract PayerRegistry is IPayerRegistry, Migratable, Initializable {
             $.payers[payer_].withdrawableTimestamp,
             $.payers[payer_].withdrawalNonce
         );
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function isAuthorized(address payer_, address delegate_) public view returns (bool isAuthorized_) {
+        PayerRegistryStorage storage $ = _getPayerRegistryStorage();
+        Delegation storage delegation_ = $.delegations[payer_][delegate_];
+
+        // Must be active and either no expiry (0) or not expired
+        // slither-disable-next-line timestamp
+        return delegation_.isActive && (delegation_.expiry == 0 || delegation_.expiry > block.timestamp);
+    }
+
+    /// @inheritdoc IPayerRegistry
+    function getDelegation(address payer_, address delegate_) external view returns (Delegation memory delegation_) {
+        return _getPayerRegistryStorage().delegations[payer_][delegate_];
     }
 
     /// @inheritdoc IIdentified
