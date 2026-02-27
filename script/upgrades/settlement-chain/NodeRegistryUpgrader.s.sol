@@ -5,6 +5,7 @@ import { console } from "../../../lib/forge-std/src/Script.sol";
 import { NodeRegistry, INodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
 import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
+import { NodeRegistryBackfillMigrator } from "../../../src/any-chain/NodeRegistryBackfillMigrator.sol";
 
 /**
  * @notice Upgrades the NodeRegistry proxy to a new implementation
@@ -67,6 +68,11 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         (implementation_, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
+    // TODO: Remove this override after the one-off canonical-nodes backfill migration is complete.
+    function _deployMigrator(address newImpl_) internal override returns (address migrator_) {
+        return address(new NodeRegistryBackfillMigrator(newImpl_));
+    }
+
     function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return NodeRegistry(proxy_).migratorParameterKey();
     }
@@ -86,8 +92,10 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
             before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
-            before.canonicalNodesCount == afterState.canonicalNodesCount &&
             before.nodeCount == afterState.nodeCount;
+
+        // canonicalNodesCount may increase due to backfill migration, but must not decrease.
+        isEqual_ = isEqual_ && afterState.canonicalNodesCount >= before.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
@@ -166,8 +174,10 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
             before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
-            before_.canonicalNodesCount == afterState_.canonicalNodesCount &&
             before_.nodeCount == afterState_.nodeCount;
+
+        // canonicalNodesCount may increase due to backfill migration, but must not decrease.
+        isEqual_ = isEqual_ && afterState_.canonicalNodesCount >= before_.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
