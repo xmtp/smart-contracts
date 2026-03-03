@@ -68,7 +68,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         (implementation_, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
-    // TODO: Remove this override after the one-off canonical-nodes backfill migration is complete.
+    // TODO UPGRADE: Remove this override after the one-off canonical-nodes backfill migration is complete.
     function _deployMigrator(address newImpl_) internal override returns (address migrator_) {
         return address(new NodeRegistryBackfillMigrator(newImpl_));
     }
@@ -94,6 +94,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
             before.nodeCount == afterState.nodeCount;
 
+        // TODO UPGRADE: Revert to strict equality (==) after the one-off canonical-nodes backfill migration is complete.
         // canonicalNodesCount may increase due to backfill migration, but must not decrease.
         isEqual_ = isEqual_ && afterState.canonicalNodesCount >= before.canonicalNodesCount;
 
@@ -176,6 +177,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
             before_.nodeCount == afterState_.nodeCount;
 
+        // TODO UPGRADE: Revert to strict equality (==) after the one-off canonical-nodes backfill migration is complete.
         // canonicalNodesCount may increase due to backfill migration, but must not decrease.
         isEqual_ = isEqual_ && afterState_.canonicalNodesCount >= before_.canonicalNodesCount;
 

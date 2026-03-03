@@ -7,7 +7,7 @@ import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IParameterRegistry } from "../../src/abstract/interfaces/IParameterRegistry.sol";
 import { NodeRegistry } from "../../src/settlement-chain/NodeRegistry.sol";
 
-import { GenericEIP1967Migrator } from "../../src/any-chain/GenericEIP1967Migrator.sol";
+import { NodeRegistryBackfillMigrator } from "../../src/any-chain/NodeRegistryBackfillMigrator.sol";
 import { Utils } from "../../script/utils/Utils.sol";
 import { NodeRegistryDeployer } from "../../script/deployers/NodeRegistryDeployer.sol";
 import { NodeRegistryUpgrader } from "../../script/upgrades/settlement-chain/NodeRegistryUpgrader.s.sol";
@@ -38,10 +38,6 @@ contract NodeRegistryUpgradeForkTest is Test {
         // Get state before upgrade using script's getContractState
         NodeRegistryUpgrader.ContractState memory stateBefore = upgrader.getContractState(proxy);
 
-        // Check if the storage variable and enumerable set are in sync BEFORE upgrade
-        uint32[] memory canonicalNodesBeforeUpgrade = NodeRegistry(proxy).getCanonicalNodes();
-        bool wasInSyncBefore = stateBefore.canonicalNodesCount == uint8(canonicalNodesBeforeUpgrade.length);
-
         // Compute the implementation address
         address computedImpl = NodeRegistryDeployer.getImplementation(factory, paramRegistry);
 
@@ -54,8 +50,8 @@ contract NodeRegistryUpgradeForkTest is Test {
             (newImpl, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
         }
 
-        // Deploy migrator
-        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
+        // Deploy backfill migrator (matches the _deployMigrator override in NodeRegistryUpgrader)
+        NodeRegistryBackfillMigrator migrator = new NodeRegistryBackfillMigrator(newImpl);
 
         // Set the migrator in ParameterRegistry (impersonate admin)
         vm.startPrank(admin);
@@ -80,11 +76,8 @@ contract NodeRegistryUpgradeForkTest is Test {
         assertEq(stateAfter.parameterRegistry, stateBefore.parameterRegistry, "Parameter registry changed");
         assertEq(stateAfter.nodeCount, stateBefore.nodeCount, "Node count changed");
 
-        // Only check canonicalNodesCount if it was in sync before the upgrade
-        // If it was already out of sync, the upgrade fixes it by making canonicalNodesCount() return canonicalNodes.length()
-        if (wasInSyncBefore) {
-            assertEq(stateAfter.canonicalNodesCount, stateBefore.canonicalNodesCount, "Canonical nodes count changed");
-        }
+        // canonicalNodesCount must not decrease (backfill may increase it)
+        assertGe(stateAfter.canonicalNodesCount, stateBefore.canonicalNodesCount, "Canonical nodes count decreased");
 
         // After upgrade, canonicalNodesCount() should always equal the enumerable set length
         uint32[] memory canonicalNodesAfter = NodeRegistry(proxy).getCanonicalNodes();
@@ -93,5 +86,21 @@ contract NodeRegistryUpgradeForkTest is Test {
             canonicalNodesAfter.length,
             "canonicalNodesCount() does not match enumerable set length after upgrade"
         );
+
+        // Verify backfill: every node with isCanonical=true must be in the canonical set
+        NodeRegistry nodeRegistry = NodeRegistry(proxy);
+        for (uint32 i = 1; i <= stateAfter.nodeCount; ++i) {
+            uint32 nodeId = i * 100;
+            if (nodeRegistry.getIsCanonicalNode(nodeId)) {
+                bool found;
+                for (uint256 j = 0; j < canonicalNodesAfter.length; ++j) {
+                    if (canonicalNodesAfter[j] == nodeId) {
+                        found = true;
+                        break;
+                    }
+                }
+                assertTrue(found, string.concat("Canonical node missing from set: ", vm.toString(nodeId)));
+            }
+        }
     }
 }
