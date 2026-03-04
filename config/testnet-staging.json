@@ -9,7 +9,7 @@
   "distributionManagerProxySalt": "DistributionManager_1_1",
   "factory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
   "factoryImplementation": "0xd3627Fc7fbfB252d063c3331489Fb41706624a65",
-  "feeTokenImplementation": "0x2A1bFD2E77Fc3d3fF5Ba39a60cC16cA2472fa411",
+  "feeTokenImplementation": "0x6D07cbAF4C4991A00Ab1A4528666190Cd3385285",
   "feeTokenProxy": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
   "feeTokenProxySalt": "FeeToken_0",
   "gatewayProxy": "0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3",
@@ -28,7 +28,7 @@
   "nodeRegistryProxySalt": "NodeRegistry_1_0",
   "parameterRegistryProxy": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
   "parameterRegistryProxySalt": "ParameterRegistry_0",
-  "payerRegistryImplementation": "0x51Cd6A296e8624728D25752F7B14BF10193810f6",
+  "payerRegistryImplementation": "0xffF6fD963B3d7F15d917D446c0c1C237292AD3E0",
   "payerRegistryProxy": "0x208E94fbC9833B58765fedC30CFF8539C6356e88",
   "payerRegistryProxySalt": "PayerRegistry_1_0",
   "payerReportManagerImplementation": "0x3853e90e5E80bc42fb3726e0C75E8f4Db3c49194",
@@ -37,12 +37,12 @@
   "rateRegistryImplementation": "0xb7cd7F1E889DBe2Dd89B280864981418a8F6F9Bb",
   "rateRegistryProxy": "0xA112D3E611a6a2F06F435FdE3B3912469cc6EE3f",
   "rateRegistryProxySalt": "RateRegistry_1_0",
-  "settlementChainGatewayImplementation": "0xaf3c0F769c9Bc5BbDDb475a08a0a8b160519efdf",
+  "settlementChainGatewayImplementation": "0x6748bfc9ce3bbF672E93A5beD18043B73600072B",
   "settlementChainId": "84532",
   "settlementChainParameterRegistryAdmin1": "0x560469CBb7D1E29c7d56EfE765B21FbBaC639dC7",
   "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
   "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
-  "settlementChainParameterRegistryImplementation": "0xBc4210f3295448569A8Fc242565608a1e637f539",
+  "settlementChainParameterRegistryImplementation": "0xA860f449b6e90D72b6958036D5123219fE6b2c59",
   "startingParameters": {
     "xmtp": {
       "settlementChainGateway": {
