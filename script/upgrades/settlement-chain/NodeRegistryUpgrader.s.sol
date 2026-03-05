@@ -5,7 +5,6 @@ import { console } from "../../../lib/forge-std/src/Script.sol";
 import { NodeRegistry, INodeRegistry } from "../../../src/settlement-chain/NodeRegistry.sol";
 import { BaseSettlementChainUpgrader } from "./BaseSettlementChainUpgrader.s.sol";
 import { NodeRegistryDeployer } from "../../deployers/NodeRegistryDeployer.sol";
-import { NodeRegistryBackfillMigrator } from "../../../src/any-chain/NodeRegistryBackfillMigrator.sol";
 
 /**
  * @notice Upgrades the NodeRegistry proxy to a new implementation
@@ -68,11 +67,6 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         (implementation_, ) = NodeRegistryDeployer.deployImplementation(factory, paramRegistry);
     }
 
-    // TODO UPGRADE: Remove this override after the one-off canonical-nodes backfill migration is complete.
-    function _deployMigrator(address newImpl_) internal override returns (address migrator_) {
-        return address(new NodeRegistryBackfillMigrator(newImpl_));
-    }
-
     function _getMigratorParameterKey(address proxy_) internal view override returns (string memory key_) {
         return NodeRegistry(proxy_).migratorParameterKey();
     }
@@ -94,9 +88,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
             before.nodeCount == afterState.nodeCount;
 
-        // TODO UPGRADE: Revert to strict equality (==) after the one-off canonical-nodes backfill migration is complete.
-        // canonicalNodesCount may increase due to backfill migration, but must not decrease.
-        isEqual_ = isEqual_ && afterState.canonicalNodesCount >= before.canonicalNodesCount;
+        isEqual_ = isEqual_ && before.canonicalNodesCount == afterState.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
@@ -177,9 +169,7 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
             before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
             before_.nodeCount == afterState_.nodeCount;
 
-        // TODO UPGRADE: Revert to strict equality (==) after the one-off canonical-nodes backfill migration is complete.
-        // canonicalNodesCount may increase due to backfill migration, but must not decrease.
-        isEqual_ = isEqual_ && afterState_.canonicalNodesCount >= before_.canonicalNodesCount;
+        isEqual_ = isEqual_ && before_.canonicalNodesCount == afterState_.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
