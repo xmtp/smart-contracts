@@ -332,7 +332,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @return migrator_ The deployed migrator address.
      * @dev Defaults to GenericEIP1967Migrator. Override in child contracts when the upgrade
      *      requires custom migration logic (e.g. data backfills or storage reorganization).
-     *      See doc/custom-migration-guide.md for details.
+     *      See script/upgrades/custom-migration-guide.md for details.
      */
     function _deployMigrator(address newImpl_) internal virtual returns (address migrator_) {
         return address(new GenericEIP1967Migrator(newImpl_));

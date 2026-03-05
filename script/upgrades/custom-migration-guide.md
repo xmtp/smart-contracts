@@ -10,7 +10,7 @@ How to perform an upgrade that includes data migration, backfill, or storage reo
   - [4. Adjust the state comparison](#4-adjust-the-state-comparison)
   - [5. Write a fork test](#5-write-a-fork-test)
   - [6. Deploy](#6-deploy)
-  - [7. Script Clean up after the migration](#7-script-clean-up-after-the-migration)
+  - [7. Clean up after the migration](#7-clean-up-after-the-migration)
 
 ## Background
 
@@ -30,7 +30,7 @@ Create a new contract in `src/any-chain/` (or the appropriate chain-specific dir
   2. Emits `IERC1967.Upgraded(newImpl)`.
   3. Performs whatever data migration is needed.
 
-Use `GenericEIP1967Migrator` as a starting point and `NodeRegistryBackfillMigrator` as a reference for a migrator that also does data work. The design intentionally does not use interfaces. In order to mininise dependencies it relies on a fallback to execute the migration.
+Use `GenericEIP1967Migrator` as a starting point and `NodeRegistryBackfillMigrator` as a reference for a migrator that also does data work. The design intentionally does not use interfaces. In order to minimise dependencies it relies on a fallback to execute the migration.
 
 **Key constraints:**
 
@@ -85,15 +85,7 @@ Mark these relaxations with a `TODO UPGRADE` so they can be tightened back after
 
 ### 5. Write a fork test
 
-Create a fork test in `test/upgrades/` following the existing `*.fork.t.sol` pattern. This exercises the full migration against real on-chain state:
-
-```solidity
-function setUp() external {
-  string memory rpc = vm.rpcUrl("base_sepolia");
-  vm.createSelectFork(rpc);
-  // ...
-}
-```
+Create a temporary fork test in `test/upgrades/` to exercise the migration against real on-chain state before deploying. Use `vm.createSelectFork` pinned to a specific block number so the test is reproducible. Remove the fork test during cleanup (step 7) — fork tests that target live state become stale after the migration is applied and add maintenance burden.
 
 ### 6. Deploy
 
@@ -106,11 +98,12 @@ ENVIRONMENT=testnet forge script YourContractUpgrader --rpc-url base_sepolia --s
 # Or three-step (Fireblocks) — same as normal, the migrator swap is transparent
 ```
 
-### 7. Script Clean up after the migration
+### 7. Clean up after the migration
 
 Once the migration has been applied to all target environments check the `TODO` that you left in the code:
 
 1. **Remove the `_deployMigrator` override** from the upgrader so future upgrades revert to `GenericEIP1967Migrator`.
 2. **Revert any relaxed state checks** in `_isContractStateEqual` back to strict equality.
-3. Search for `TODO UPGRADE` to find all items that need reverting.
-4. The custom migrator contract in `src/` can remain. It is deployed on-chain and may be useful as a reference, but it won't be used again.
+3. **Delete the fork test** from `test/upgrades/`.
+4. Search for `TODO UPGRADE` to find all items that need reverting.
+5. The custom migrator contract in `src/` can remain. It is deployed on-chain and may be useful as a reference, but it won't be used again.

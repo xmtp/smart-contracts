@@ -20,7 +20,7 @@ contract NodeRegistryBackfillMigrator {
     using EnumerableSet for EnumerableSet.UintSet;
 
     /// @dev bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
-    bytes32 private constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     // Must match NodeRegistry.NODE_INCREMENT
     uint32 internal constant _NODE_INCREMENT = 100;
@@ -71,6 +71,8 @@ contract NodeRegistryBackfillMigrator {
         _backfillCanonicalNodes();
     }
 
+    /// @dev Reads and writes through the proxy's storage layout via delegatecall.
+    ///      NodeRegistryStorage struct must remain in sync with NodeRegistry.NodeRegistryStorage.
     function _backfillCanonicalNodes() internal {
         NodeRegistryStorage storage $ = _getNodeRegistryStorage();
 
@@ -83,6 +85,8 @@ contract NodeRegistryBackfillMigrator {
         }
     }
 
+    /// @dev Returns a storage pointer using the ERC-7201 slot for NodeRegistry.
+    ///      NodeRegistryStorage struct must remain in sync with NodeRegistry.NodeRegistryStorage.
     function _getNodeRegistryStorage() internal pure returns (NodeRegistryStorage storage $) {
         // slither-disable-next-line assembly
         assembly {
