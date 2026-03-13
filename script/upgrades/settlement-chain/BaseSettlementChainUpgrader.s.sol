@@ -18,6 +18,8 @@ import { AdminAddressTypeLib } from "../../utils/AdminAddressType.sol";
  *      - `_getContractState()` to capture contract state
  *      - `_isContractStateEqual()` to compare states
  *      - `_logContractState()` to log state information
+ * @dev Concrete upgraders may optionally override:
+ *      - `_deployMigrator()` to deploy a custom migrator (defaults to GenericEIP1967Migrator)
  * @dev Admin address type is determined by environment with optional ADMIN_ADDRESS_TYPE override.
  *      See AdminAddressTypeLib for environment-specific defaults.
  * @dev Environment variables:
@@ -138,9 +140,9 @@ abstract contract BaseSettlementChainUpgrader is Script {
         address newImpl = _deployOrGetImplementation();
         console.log("newImpl %s", newImpl);
 
-        // Deploy generic migrator
-        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
-        console.log("migrator (also param reg migrator value) %s", address(migrator));
+        // Deploy migrator (overridable by child contracts for custom migration logic)
+        address migrator = _deployMigrator(newImpl);
+        console.log("migrator (also param reg migrator value) %s", migrator);
 
         vm.stopBroadcast();
 
@@ -148,15 +150,15 @@ abstract contract BaseSettlementChainUpgrader is Script {
         // Always output these, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
         string memory fireblocksNote = _getFireblocksNote("setMigrator");
         console.log("==========================================");
-        console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", address(migrator));
+        console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", migrator);
         console.log("FIREBLOCKS_NOTE_FOR_STEP_2: %s", fireblocksNote);
         console.log("Export these values before running Step 2:");
-        console.log("  export MIGRATOR_ADDRESS=%s", address(migrator));
+        console.log("  export MIGRATOR_ADDRESS=%s", migrator);
         console.log('  export FIREBLOCKS_NOTE="%s"', fireblocksNote);
         console.log("  export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)");
         console.log("==========================================");
 
-        return address(migrator);
+        return migrator;
     }
 
     /**
@@ -235,7 +237,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @notice Performs the upgrade process (all-in-one for non-Fireblocks environments)
      * @dev This function handles the common upgrade flow:
      *      1. Deploys or gets the implementation (using DEPLOYER_PRIVATE_KEY)
-     *      2. Creates a GenericEIP1967Migrator (using DEPLOYER_PRIVATE_KEY)
+     *      2. Deploys a migrator via `_deployMigrator()` (using DEPLOYER_PRIVATE_KEY)
      *      3. Sets the migrator in the parameter registry (using ADMIN - PRIVATE_KEY or FIREBLOCKS based on environment)
      *      4. Executes the migration (using DEPLOYER_PRIVATE_KEY)
      *      5. Compares state before and after
@@ -271,9 +273,9 @@ abstract contract BaseSettlementChainUpgrader is Script {
         address newImpl = _deployOrGetImplementation();
         console.log("newImpl %s", newImpl);
 
-        // Deploy generic migrator (using DEPLOYER)
-        GenericEIP1967Migrator migrator = new GenericEIP1967Migrator(newImpl);
-        console.log("migrator (also param reg migrator value) %s", address(migrator));
+        // Deploy migrator (overridable by child contracts for custom migration logic)
+        address migrator = _deployMigrator(newImpl);
+        console.log("migrator (also param reg migrator value) %s", migrator);
         vm.stopBroadcast();
 
         // Set migrator in parameter registry (using ADMIN)
@@ -283,7 +285,7 @@ abstract contract BaseSettlementChainUpgrader is Script {
         } else {
             vm.startBroadcast(_admin);
         }
-        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(address(migrator)))));
+        IParameterRegistry(paramRegistry).set(key, bytes32(uint256(uint160(migrator))));
         console.log("param reg migrator key %s", key);
         vm.stopBroadcast();
 
@@ -323,6 +325,18 @@ abstract contract BaseSettlementChainUpgrader is Script {
      * @dev Should check if implementation already exists at computed address before deploying
      */
     function _deployOrGetImplementation() internal virtual returns (address implementation_);
+
+    /**
+     * @notice Deploys a migrator for the given implementation.
+     * @param newImpl_ The new implementation address to pass to the migrator constructor.
+     * @return migrator_ The deployed migrator address.
+     * @dev Defaults to GenericEIP1967Migrator. Override in child contracts when the upgrade
+     *      requires custom migration logic (e.g. data backfills or storage reorganization).
+     *      See script/upgrades/custom-migration-guide.md for details.
+     */
+    function _deployMigrator(address newImpl_) internal virtual returns (address migrator_) {
+        return address(new GenericEIP1967Migrator(newImpl_));
+    }
 
     /**
      * @notice Gets the migrator parameter key from the proxy contract

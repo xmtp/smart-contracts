@@ -86,8 +86,9 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         isEqual_ =
             before.parameterRegistry == afterState.parameterRegistry &&
             before.maxCanonicalNodes == afterState.maxCanonicalNodes &&
-            before.canonicalNodesCount == afterState.canonicalNodesCount &&
             before.nodeCount == afterState.nodeCount;
+
+        isEqual_ = isEqual_ && before.canonicalNodesCount == afterState.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
@@ -166,8 +167,9 @@ contract NodeRegistryUpgrader is BaseSettlementChainUpgrader {
         isEqual_ =
             before_.parameterRegistry == afterState_.parameterRegistry &&
             before_.maxCanonicalNodes == afterState_.maxCanonicalNodes &&
-            before_.canonicalNodesCount == afterState_.canonicalNodesCount &&
             before_.nodeCount == afterState_.nodeCount;
+
+        isEqual_ = isEqual_ && before_.canonicalNodesCount == afterState_.canonicalNodesCount;
 
         // Only check contractName if it existed in the before state (non-empty)
         // This handles upgrades from old versions without contractName to new versions with it
