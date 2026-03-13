@@ -760,20 +760,20 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_invalidProof() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
         bytes[] memory payerFees_ = new bytes[](3);
-        payerFees_[0] = abi.encode(address(1), uint96(100));
-        payerFees_[1] = abi.encode(address(2), uint96(200));
-        payerFees_[2] = abi.encode(address(3), uint96(300));
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_000));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](3);
 
         // Incorrect leaf count as first proof element.
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000005));
-        proofElements_[1] = bytes32(0xbf3990232dba4985267c2b0c64d09165457aa9bc02292fff8416821335f719ad);
-        proofElements_[2] = bytes32(0x179a5ab6250bc7b598e955bb7a59ed2b26171140d0c9ecbdb5e2ee15a529dfc5);
+        proofElements_[1] = bytes32(0xc7a83e45e11b69800b058f902598615625ff3d69c180fd2d59a2ca3cb88f6dec);
+        proofElements_[2] = bytes32(0x4683c80d7765d87de0a6c38b3ceb3861b1c9f8cdd4e5b7b4229148216af2748b);
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -793,18 +793,18 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_settleUsageFailed() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
         bytes[] memory payerFees_ = new bytes[](3);
-        payerFees_[0] = abi.encode(address(1), uint96(100));
-        payerFees_[1] = abi.encode(address(2), uint96(200));
-        payerFees_[2] = abi.encode(address(3), uint96(300));
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_000));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](3);
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
-        proofElements_[1] = bytes32(0xbf3990232dba4985267c2b0c64d09165457aa9bc02292fff8416821335f719ad);
-        proofElements_[2] = bytes32(0x179a5ab6250bc7b598e955bb7a59ed2b26171140d0c9ecbdb5e2ee15a529dfc5);
+        proofElements_[1] = bytes32(0xc7a83e45e11b69800b058f902598615625ff3d69c180fd2d59a2ca3cb88f6dec);
+        proofElements_[2] = bytes32(0x4683c80d7765d87de0a6c38b3ceb3861b1c9f8cdd4e5b7b4229148216af2748b);
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -828,19 +828,19 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_decodedPayerFees() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
-        // ABI encoded payer fees.
+        // ABI encoded payer fees (in pico dollars).
         bytes[] memory payerFees_ = new bytes[](3);
-        payerFees_[0] = abi.encode(address(1), uint96(100));
-        payerFees_[1] = abi.encode(address(2), uint96(200));
-        payerFees_[2] = abi.encode(address(3), uint96(300));
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_000));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](3);
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
-        proofElements_[1] = bytes32(0xbf3990232dba4985267c2b0c64d09165457aa9bc02292fff8416821335f719ad);
-        proofElements_[2] = bytes32(0x179a5ab6250bc7b598e955bb7a59ed2b26171140d0c9ecbdb5e2ee15a529dfc5);
+        proofElements_[1] = bytes32(0xc7a83e45e11b69800b058f902598615625ff3d69c180fd2d59a2ca3cb88f6dec);
+        proofElements_[2] = bytes32(0x4683c80d7765d87de0a6c38b3ceb3861b1c9f8cdd4e5b7b4229148216af2748b);
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -857,7 +857,7 @@ contract PayerReportManagerTests is Test {
 
         bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
 
-        // Expected ABI decoded PayerFee array.
+        // Expected PayerFee array after scaling from pico dollars to micro dollars.
         IPayerRegistry.PayerFee[] memory expectedPayerFees = new IPayerRegistry.PayerFee[](3);
         expectedPayerFees[0] = IPayerRegistry.PayerFee({ payer: address(1), fee: 100 });
         expectedPayerFees[1] = IPayerRegistry.PayerFee({ payer: address(2), fee: 200 });
@@ -883,18 +883,18 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_firstHalf() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
         bytes[] memory payerFees_ = new bytes[](3);
-        payerFees_[0] = abi.encode(address(1), uint96(100));
-        payerFees_[1] = abi.encode(address(2), uint96(200));
-        payerFees_[2] = abi.encode(address(3), uint96(300));
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_000));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](3);
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
-        proofElements_[1] = bytes32(0xbf3990232dba4985267c2b0c64d09165457aa9bc02292fff8416821335f719ad);
-        proofElements_[2] = bytes32(0x179a5ab6250bc7b598e955bb7a59ed2b26171140d0c9ecbdb5e2ee15a529dfc5);
+        proofElements_[1] = bytes32(0xc7a83e45e11b69800b058f902598615625ff3d69c180fd2d59a2ca3cb88f6dec);
+        proofElements_[2] = bytes32(0x4683c80d7765d87de0a6c38b3ceb3861b1c9f8cdd4e5b7b4229148216af2748b);
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -927,18 +927,18 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_secondHalf() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
         bytes[] memory payerFees_ = new bytes[](3);
-        payerFees_[0] = abi.encode(address(4), uint96(400));
-        payerFees_[1] = abi.encode(address(5), uint96(500));
-        payerFees_[2] = abi.encode(address(6), uint96(600));
+        payerFees_[0] = abi.encode(address(4), uint96(400_000_000));
+        payerFees_[1] = abi.encode(address(5), uint96(500_000_000));
+        payerFees_[2] = abi.encode(address(6), uint96(600_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](3);
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
-        proofElements_[1] = bytes32(0xe1fd91200025ec7e94c96c4e035820e7f510e94f479b07caf2791ed8991d80ca);
-        proofElements_[2] = bytes32(0x81c8c090425d4a46672a976619a2dd2fce8b9b0fea5e01d1fb32e78bff1681d0);
+        proofElements_[1] = bytes32(0xf3572cea2c37a3dfba968d85469e4c7c51a1ad4d0b924f78516200c1a8615322);
+        proofElements_[2] = bytes32(0x8b593c47db921044f53d1b66ebbfddfa4704c453932831d94d593e33dacb1665);
 
         _manager.__pushPayerReport({
             originatorNodeId_: 0,
@@ -972,16 +972,16 @@ contract PayerReportManagerTests is Test {
     }
 
     function test_settle_oneShot() external {
-        // This is the root for the payer fees: (1, 100), (2, 200), (3, 300), (4, 400), (5, 500), (6, 600).
-        bytes32 payersMerkleRoot_ = 0xf3051bbf3818e5393ac18edd8ba285e62f35fe01748a8acc900eca813a6b364e;
+        // This is the root for payer fees in pico dollars: (1, 100e6), (2, 200e6), (3, 300e6), (4, 400e6), (5, 500e6), (6, 600e6).
+        bytes32 payersMerkleRoot_ = 0x5807d8ca94a88902828131e142324977223e0021944d54e5c63881a0421a4e8d;
 
         bytes[] memory payerFees_ = new bytes[](6);
-        payerFees_[0] = abi.encode(address(1), uint96(100));
-        payerFees_[1] = abi.encode(address(2), uint96(200));
-        payerFees_[2] = abi.encode(address(3), uint96(300));
-        payerFees_[3] = abi.encode(address(4), uint96(400));
-        payerFees_[4] = abi.encode(address(5), uint96(500));
-        payerFees_[5] = abi.encode(address(6), uint96(600));
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_000));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_000_000));
+        payerFees_[3] = abi.encode(address(4), uint96(400_000_000));
+        payerFees_[4] = abi.encode(address(5), uint96(500_000_000));
+        payerFees_[5] = abi.encode(address(6), uint96(600_000_000));
 
         bytes32[] memory proofElements_ = new bytes32[](1);
         proofElements_[0] = bytes32(uint256(0x0000000000000000000000000000000000000000000000000000000000000006));
@@ -1014,6 +1014,60 @@ contract PayerReportManagerTests is Test {
 
         assertEq(_manager.getPayerReport(0, 0).feesSettled, 2_100);
         assertEq(_manager.getPayerReport(0, 0).offset, 6);
+        assertTrue(_manager.getPayerReport(0, 0).isSettled);
+    }
+
+    function test_settle_roundsUpFees() external {
+        // Pico dollar leaf values that do NOT divide evenly by 1e6, exercising the ceiling division:
+        //   (1, 100_000_001) → ceil(100_000_001 / 1e6) = 101 micro dollars
+        //   (2, 200_000_000) → exact: 200 micro dollars
+        //   (3, 300_500_000) → ceil(300_500_000 / 1e6) = 301 micro dollars
+        //   Total after scaling = 602 micro dollars
+        bytes32 payersMerkleRoot_ = 0xd4ec0dad298eb8f566d0f79b3beb905e08fa6d9cc1411034ca8ef719cca84ff3;
+
+        bytes[] memory payerFees_ = new bytes[](3);
+        payerFees_[0] = abi.encode(address(1), uint96(100_000_001));
+        payerFees_[1] = abi.encode(address(2), uint96(200_000_000));
+        payerFees_[2] = abi.encode(address(3), uint96(300_500_000));
+
+        bytes32[] memory proofElements_ = new bytes32[](1);
+        proofElements_[0] = bytes32(uint256(3));
+
+        _manager.__pushPayerReport({
+            originatorNodeId_: 0,
+            startSequenceId_: 0,
+            endSequenceId_: 0,
+            endMinuteSinceEpoch_: 0,
+            feesSettled_: 0,
+            offset_: 0,
+            isSettled_: false,
+            protocolFeeRate_: 0,
+            payersMerkleRoot_: payersMerkleRoot_,
+            nodeIds_: new uint32[](0)
+        });
+
+        bytes32 digest_ = _manager.__getPayerReportDigest(0, 0, 0, 0, payersMerkleRoot_, new uint32[](0));
+
+        // Expected scaled fees: 101 + 200 + 301 = 602.
+        IPayerRegistry.PayerFee[] memory expectedPayerFees = new IPayerRegistry.PayerFee[](3);
+        expectedPayerFees[0] = IPayerRegistry.PayerFee({ payer: address(1), fee: 101 });
+        expectedPayerFees[1] = IPayerRegistry.PayerFee({ payer: address(2), fee: 200 });
+        expectedPayerFees[2] = IPayerRegistry.PayerFee({ payer: address(3), fee: 301 });
+
+        vm.expectCall(
+            address(_payerRegistry),
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector, digest_, expectedPayerFees)
+        );
+
+        vm.mockCall(
+            _payerRegistry,
+            abi.encodeWithSelector(IPayerRegistry.settleUsage.selector),
+            abi.encode(uint96(602))
+        );
+
+        _manager.settle(0, 0, payerFees_, proofElements_);
+
+        assertEq(_manager.getPayerReport(0, 0).feesSettled, 602);
         assertTrue(_manager.getPayerReport(0, 0).isSettled);
     }
 

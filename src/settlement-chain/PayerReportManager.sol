@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import { ECDSA } from "../../lib/solady/src/utils/ECDSA.sol";
+import { FixedPointMathLib } from "../../lib/solady/src/utils/FixedPointMathLib.sol";
 import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 import { RegistryParameters } from "../libraries/RegistryParameters.sol";
@@ -34,6 +35,9 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
 
     /// @inheritdoc IPayerReportManager
     uint16 public constant ONE_HUNDRED_PERCENT = 10_000;
+
+    /// @dev Scaling factor to convert pico dollar leaf values (12 decimals) to micro dollar fee values (6 decimals).
+    uint256 internal constant _LEAF_FEE_SCALING_FACTOR = 1e6;
 
     /// @inheritdoc IPayerReportManager
     address public immutable parameterRegistry;
@@ -562,19 +566,29 @@ contract PayerReportManager is IPayerReportManager, Initializable, Migratable, E
     }
 
     /**
-     * @dev    Decodes ABI-encoded payer fees and forwards them to the payer registry.
+     * @dev    Decodes ABI-encoded payer fees, scales from pico dollars to micro dollars, and forwards them to the
+     *         payer registry.
+     * @dev    Merkle leaf fee values are produced by xmtpd in pico dollars (12 decimals), but the payer balance system
+     *         operates in micro dollars (6 decimals). Each fee is divided by 1e6, rounding up (ceiling division) so
+     *         that the protocol never undercharges.
      * @param  digest_       The payer report digest for settlement verification.
-     * @param  payerFees_    Array of ABI-encoded (address payer, uint96 fee) tuples.
-     * @return feesSettled_  The total fees settled by the payer registry.
+     * @param  payerFees_    Array of ABI-encoded (address payer, uint96 fee) tuples with fees in pico dollars.
+     * @return feesSettled_  The total fees settled by the payer registry (in micro dollars).
      */
     function _settleUsage(bytes32 digest_, bytes[] calldata payerFees_) internal returns (uint96 feesSettled_) {
         uint256 length = payerFees_.length;
 
         IPayerRegistry.PayerFee[] memory decodedPayerFees = new IPayerRegistry.PayerFee[](length);
 
-        // Each payerFee is 64 bytes of ABI-encoded data containing the address and uint96. Decode each one into a PayerFee struct.
+        // Each payerFee is 64 bytes of ABI-encoded data containing the address and uint96 fee (in pico dollars).
+        // Decode each one into a PayerFee struct and scale the fee value from pico dollars to micro dollars.
         for (uint256 i = 0; i < length; i++) {
-            decodedPayerFees[i] = abi.decode(payerFees_[i], (IPayerRegistry.PayerFee));
+            IPayerRegistry.PayerFee memory payerFee_ = abi.decode(payerFees_[i], (IPayerRegistry.PayerFee));
+
+            // Ceiling division so the protocol never undercharges.
+            payerFee_.fee = uint96(FixedPointMathLib.divUp(payerFee_.fee, _LEAF_FEE_SCALING_FACTOR));
+
+            decodedPayerFees[i] = payerFee_;
         }
 
         return IPayerRegistryLike(payerRegistry).settleUsage(digest_, decodedPayerFees);
