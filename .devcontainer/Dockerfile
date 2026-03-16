@@ -26,15 +26,11 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 
 RUN PIPX_BIN_DIR=/usr/local/bin pipx install slither-analyzer==${SLITHER_VERSION}
 
-RUN usermod -l coder vscode \
-    && usermod -d /home/coder -m coder \
-    && groupmod -n coder vscode
-
-USER coder
+USER vscode
 
 RUN curl -L https://foundry.paradigm.xyz | bash \
-    && /home/coder/.foundry/bin/foundryup --version ${FOUNDRY_VERSION} \
-    && echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> /home/coder/.bashrc \
-    && echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> /home/coder/.zshrc
+    && /home/vscode/.foundry/bin/foundryup --version ${FOUNDRY_VERSION} \
+    && echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> /home/vscode/.bashrc \
+    && echo 'export PATH="$HOME/.foundry/bin:$PATH"' >> /home/vscode/.zshrc
 
-ENV PATH="/home/coder/.foundry/bin:/home/coder/.local/bin:${PATH}"
+ENV PATH="/home/vscode/.foundry/bin:/home/vscode/.local/bin:${PATH}"
