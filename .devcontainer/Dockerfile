@@ -31,8 +31,9 @@ RUN PIPX_HOME=/usr/local/pipx PIPX_BIN_DIR=/usr/local/bin pipx install slither-a
     && slither --version
 
 # Install foundry directly to /usr/local/bin (FOUNDRY_DIR=/usr/local puts binaries in /usr/local/bin)
-RUN FOUNDRY_DIR=/usr/local curl -L https://foundry.paradigm.xyz | bash \
-    && FOUNDRY_DIR=/usr/local /usr/local/bin/foundryup --install ${FOUNDRY_VERSION} \
+RUN export FOUNDRY_DIR=/usr/local \
+    && curl -L https://foundry.paradigm.xyz | bash \
+    && foundryup --install ${FOUNDRY_VERSION} \
     && forge --version
 
 USER vscode
