@@ -22,13 +22,16 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare yarn@stable --activate
+RUN npm install -g yarn@1.22.22
 
 RUN PIPX_BIN_DIR=/usr/local/bin pipx install slither-analyzer==${SLITHER_VERSION}
 
 RUN curl -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup --version ${FOUNDRY_VERSION} \
+    && chmod -R a+rX /root/.foundry \
     && ln -sf /root/.foundry/bin/forge /usr/local/bin/forge \
     && ln -sf /root/.foundry/bin/cast /usr/local/bin/cast \
     && ln -sf /root/.foundry/bin/anvil /usr/local/bin/anvil \
     && ln -sf /root/.foundry/bin/chisel /usr/local/bin/chisel
+
+USER vscode
