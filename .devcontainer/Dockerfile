@@ -22,16 +22,19 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g yarn@1.22.22
+# Install yarn classic to match local dev environment
+RUN npm install -g yarn@1.22.22 \
+    && yarn --version
 
-RUN PIPX_BIN_DIR=/usr/local/bin pipx install slither-analyzer==${SLITHER_VERSION}
+# Install slither directly to /usr/local/bin
+RUN PIPX_BIN_DIR=/usr/local/bin pipx install slither-analyzer==${SLITHER_VERSION} \
+    && slither --version
 
-RUN curl -L https://foundry.paradigm.xyz | bash \
-    && /root/.foundry/bin/foundryup --version ${FOUNDRY_VERSION} \
-    && chmod -R a+rX /root/.foundry \
-    && ln -sf /root/.foundry/bin/forge /usr/local/bin/forge \
-    && ln -sf /root/.foundry/bin/cast /usr/local/bin/cast \
-    && ln -sf /root/.foundry/bin/anvil /usr/local/bin/anvil \
-    && ln -sf /root/.foundry/bin/chisel /usr/local/bin/chisel
+# Install foundry directly to /usr/local/bin (FOUNDRY_DIR=/usr/local puts binaries in /usr/local/bin)
+# set -o pipefail ensures curl failures are not masked by the pipe to bash
+RUN set -o pipefail \
+    && FOUNDRY_DIR=/usr/local curl -L https://foundry.paradigm.xyz | bash \
+    && FOUNDRY_DIR=/usr/local /usr/local/bin/foundryup --version ${FOUNDRY_VERSION} \
+    && forge --version
 
 USER vscode
