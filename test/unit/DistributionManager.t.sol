@@ -8,6 +8,7 @@ import { Initializable } from "../../lib/oz-upgradeable/contracts/proxy/utils/In
 import { IDistributionManager } from "../../src/settlement-chain/interfaces/IDistributionManager.sol";
 import { IERC1967 } from "../../src/abstract/interfaces/IERC1967.sol";
 import { IMigratable } from "../../src/abstract/interfaces/IMigratable.sol";
+import { IPayerRegistry } from "../../src/settlement-chain/interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "../../src/settlement-chain/interfaces/IPayerReportManager.sol";
 import { IRegistryParametersErrors } from "../../src/libraries/interfaces/IRegistryParametersErrors.sol";
 
@@ -591,6 +592,36 @@ contract DistributionManagerTests is Test {
 
         assertEq(withdrawn_, 2);
         assertEq(_manager.owedProtocolFees(), 0);
+    }
+
+    function test_internal_prepareProtocolFeesWithdrawal_noExcessRevert_usesAvailableBalance() external {
+        _manager.__setOwedProtocolFees(2);
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(1));
+        vm.mockCallRevert(
+            _payerRegistry,
+            abi.encodeWithSignature("sendExcessToFeeDistributor()"),
+            abi.encodeWithSelector(IPayerRegistry.NoExcess.selector)
+        );
+
+        uint96 withdrawn_ = _manager.__prepareProtocolFeesWithdrawal(address(1));
+
+        assertEq(withdrawn_, 1);
+        assertEq(_manager.owedProtocolFees(), 1);
+    }
+
+    function test_internal_prepareProtocolFeesWithdrawal_nonNoExcessRevert_bubbles() external {
+        _manager.__setOwedProtocolFees(2);
+
+        vm.mockCall(_feeToken, abi.encodeWithSignature("balanceOf(address)", address(_manager)), abi.encode(1));
+        vm.mockCallRevert(
+            _payerRegistry,
+            abi.encodeWithSignature("sendExcessToFeeDistributor()"),
+            abi.encodeWithSelector(IPayerRegistry.ZeroFeeDistributor.selector)
+        );
+
+        vm.expectRevert(IPayerRegistry.ZeroFeeDistributor.selector);
+        _manager.__prepareProtocolFeesWithdrawal(address(1));
     }
 
     /* ============ withdrawProtocolFees ============ */
