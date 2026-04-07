@@ -390,7 +390,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
                 // Ignore "no excess" so we can still withdraw up to currently available balance.
                 if (reason_.length >= 4) {
                     assembly {
-                        selector_ := shr(224, mload(add(reason_, 0x20)))
+                        selector_ := mload(add(reason_, 0x20))
                     }
                 }
 
