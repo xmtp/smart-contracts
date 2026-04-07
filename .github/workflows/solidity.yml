@@ -28,9 +28,6 @@ jobs:
     outputs:
       cache-key: ${{ steps.set-cache-key.outputs.cache-key }}
 
-    strategy:
-      fail-fast: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -346,11 +343,7 @@ jobs:
 
       - run: chmod +x /usr/local/bin/forge
 
-      - name: Install Slither
-        run: pip3 install slither-analyzer==0.11.3
-
-      - name: Run Slither
-        run: npm run slither
+      - uses: crytic/slither-action@v0.4.2
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
