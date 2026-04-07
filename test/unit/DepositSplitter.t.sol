@@ -623,5 +623,4 @@ contract DepositSplitterTests is Test {
         vm.prank(_alice);
         _splitter.depositFromUnderlyingWithPermit(_bob, 2, _charlie, 1, 0, 0, 0, 0, 0, 0);
     }
-
 }
