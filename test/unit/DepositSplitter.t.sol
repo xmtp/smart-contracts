@@ -304,6 +304,40 @@ contract DepositSplitterTests is Test {
         _splitter.depositWithPermit(_bob, 2, _charlie, 1, 0, 0, 0, 0, 0, 0);
     }
 
+    function test_depositWithPermit_permitReverts_depositSucceeds() external {
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_splitter),
+                3,
+                0,
+                0,
+                0,
+                0
+            ),
+            "PERMIT_EXPIRED"
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_splitter), 3),
+            abi.encode(true)
+        );
+
+        Utils.expectAndMockCall(_payerRegistry, abi.encodeWithSignature("deposit(address,uint96)", _bob, 2), "");
+
+        Utils.expectAndMockCall(
+            _settlementChainGateway,
+            abi.encodeWithSignature("deposit(uint256,address,uint256,uint256,uint256)", _appChainId, _charlie, 1, 0, 0),
+            ""
+        );
+
+        vm.prank(_alice);
+        _splitter.depositWithPermit(_bob, 2, _charlie, 1, 0, 0, 0, 0, 0, 0);
+    }
+
     /* ============ depositFromUnderlying ============ */
 
     function test_depositFromUnderlying_underlyingTokenTransferFromFailed_returnsFalse() external {
@@ -589,4 +623,5 @@ contract DepositSplitterTests is Test {
         vm.prank(_alice);
         _splitter.depositFromUnderlyingWithPermit(_bob, 2, _charlie, 1, 0, 0, 0, 0, 0, 0);
     }
+
 }
