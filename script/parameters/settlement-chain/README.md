@@ -22,7 +22,7 @@ After setting a parameter on the settlement chain, you can bridge it to the app 
 
 You can use [Claude Code](https://claude.ai/code) to orchestrate the entire set/read/bridge workflow. The `/xmtp-set-parameter` skill handles signing mode selection, `.env` validation, and command execution automatically:
 
-```
+```text
 /xmtp-set-parameter set xmtp.nodeRegistry.maxCanonicalNodes to 100 on testnet-dev using fireblocks
 ```
 

@@ -1,9 +1,8 @@
-# XMTP network contracts - Proxy, factory, and migration patterns
+# XMTP network contracts - Proxy, factory, and migration patterns <!-- omit from toc -->
 
-- [XMTP network contracts - Proxy, factory, and migration patterns](#xmtp-network-contracts---proxy-factory-and-migration-patterns)
-  - [Proxy pattern](#proxy-pattern)
-  - [Factory pattern](#factory-pattern)
-  - [Migration pattern](#migration-pattern)
+- [Proxy pattern](#proxy-pattern)
+- [Factory pattern](#factory-pattern)
+- [Migration pattern](#migration-pattern)
 
 ## Proxy pattern
 

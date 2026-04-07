@@ -1,35 +1,111 @@
-# XMTP network documentation
+# XMTP Network Smart Contracts — Documentation Hub <!-- omit from toc -->
 
-Welcome to the XMTP Network smart contracts documentation. This collection provides comprehensive technical documentation for understanding and working with the XMTP decentralized messaging protocol.
+Central index for all protocol documentation, operator runbooks, and in-code references.
 
-## Getting started
+## Table of Contents <!-- omit from toc -->
 
-For newcomers to XMTP, we recommend starting with the **[System Architecture](./architecture.md)** document, which provides a high-level overview of how the entire system works, including the dual-chain design, key actors, and economic model.
+- [Protocol documentation](#protocol-documentation)
+  - [Core system understanding](#core-system-understanding)
+  - [Actor-specific guides](#actor-specific-guides)
+  - [Implementation details](#implementation-details)
+- [Operator runbooks](#operator-runbooks)
+  - [Contract upgrades](#contract-upgrades)
+  - [Single-contract deployments](#single-contract-deployments)
+  - [Parameter management](#parameter-management)
+  - [Node registry administration](#node-registry-administration)
+- [In-code documentation](#in-code-documentation)
+- [Quick navigation](#quick-navigation)
 
-## Documentation guide
+## Protocol documentation
+
+Narrative docs that explain **what** the system is and **why** it works the way it does. Start here if you are new.
 
 ### Core system understanding
 
-- **[System architecture](./architecture.md)**: _Start here_ - Complete system overview, chain architecture, and key concepts
-- **[Contracts](./contracts.md)**: Detailed smart contract specifications and interactions
-- **[Parameter registry](./parameter-registry.md)**: Cross-chain parameter synchronization mechanism
+| Document                                          | Description                                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **[System architecture](./architecture.md)**      | _Start here._ Dual-chain design, actors, economic model, cross-chain communication, and security model. |
+| **[Contracts](./contracts.md)**                   | All smart contracts: purpose, key components, deployment order, data flow, and design rationale.        |
+| **[Parameter registry](./parameter-registry.md)** | Every `xmtp.*` parameter key, cross-chain bridging flow (PlantUML + Mermaid), and type reference.       |
 
 ### Actor-specific guides
 
-- **[Payers](./payers.md)**: How service providers fund and use the network
-- **[Node operators](./node-operators.md)**: Running and managing XMTP network nodes
-- **[Payer reports](./payer-reports.md)**: Economic settlement and fee distribution system
+| Document                                  | Description                                                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **[Payers](./payers.md)**                 | How service providers fund the network: manual deposits, DepositSplitter, and Funding Portal.                                  |
+| **[Node operators](./node-operators.md)** | Node identification (NFT ID scheme), canonical network, onboarding, synchronization, and authentication.                       |
+| **[Payer reports](./payer-reports.md)**   | Economic settlement end-to-end: report structure, EIP-712 signing, Merkle proofs, settlement, node payouts, and protocol fees. |
 
 ### Implementation details
 
-- **[Deployment](./deployment.md)**: Contract deployment procedures and configurations
-- **[Dependencies](./dependencies.md)**: External dependencies and integration requirements
-- **[Proxies](./proxies.md)**: Proxy, factory, and migration patterns for contract upgrades
+| Document                              | Description                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **[Deployment](./deployment.md)**     | Greenfield environment rollout via `./dev/*` shell helpers; links to Foundry runbooks for day-two operations.            |
+| **[Dependencies](./dependencies.md)** | Contract communication dependency diagram (Mermaid) and call-level breakdown per contract.                               |
+| **[Proxies](./proxies.md)**           | Proxy, Factory, and Migration patterns — deterministic deploys, atomic initialization, and governance-friendly upgrades. |
+
+## Operator runbooks
+
+Step-by-step procedural guides that live next to the Foundry scripts under [`script/`](../script/). Each area has a top-level README and per-workflow variants for **wallet** (private key) and **Fireblocks** signing.
+
+### Contract upgrades
+
+Upgrade an existing proxy to a new implementation (same proxy address, new code).
+
+| Chain      | Entry point                                                                                   | Wallet                                                                   | Fireblocks                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Settlement | [`script/upgrades/settlement-chain/README.md`](../script/upgrades/settlement-chain/README.md) | [README-wallet.md](../script/upgrades/settlement-chain/README-wallet.md) | [README-fireblocks.md](../script/upgrades/settlement-chain/README-fireblocks.md) |
+| App chain  | [`script/upgrades/app-chain/README.md`](../script/upgrades/app-chain/README.md)               | [README-wallet.md](../script/upgrades/app-chain/README-wallet.md)        | [README-fireblocks.md](../script/upgrades/app-chain/README-fireblocks.md)        |
+
+For upgrades that also migrate storage, see the [Custom migration guide](../script/upgrades/custom-migration-guide.md).
+
+### Single-contract deployments
+
+Deploy a **new proxy + implementation pair** for an individual contract (new address).
+
+| Guide                                                                                                             | Description                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`script/single-deployments/settlement-chain/README.md`](../script/single-deployments/settlement-chain/README.md) | Overview, three-step process, environment prerequisites.                                      |
+| [DeployNodeRegistry.md](../script/single-deployments/settlement-chain/DeployNodeRegistry.md)                      | **System invariant — requires human intervention.** See the doc for breaking-change criteria. |
+| [DeployPayerReportManager.md](../script/single-deployments/settlement-chain/DeployPayerReportManager.md)          | PayerReportManager deployment and dependency updates.                                         |
+| [DeployDistributionManager.md](../script/single-deployments/settlement-chain/DeployDistributionManager.md)        | DistributionManager deployment and dependency updates.                                        |
+
+### Parameter management
+
+Set, read, and bridge `xmtp.*` parameters across chains.
+
+| Chain                | Entry point                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| Settlement           | [`script/parameters/settlement-chain/README.md`](../script/parameters/settlement-chain/README.md) |
+| App chain (bridging) | [`script/parameters/app-chain/README.md`](../script/parameters/app-chain/README.md)               |
+
+### Node registry administration
+
+Admin operations on the NodeRegistry contract (add nodes, manage canonical network, set base URI).
+
+| Guide                                                                                   | Description                      |
+| --------------------------------------------------------------------------------------- | -------------------------------- |
+| [`script/admin/settlement-chain/README.md`](../script/admin/settlement-chain/README.md) | Overview and workflow selection. |
+| [README-wallet.md](../script/admin/settlement-chain/README-wallet.md)                   | Wallet signing commands.         |
+| [README-fireblocks.md](../script/admin/settlement-chain/README-fireblocks.md)           | Fireblocks signing commands.     |
+
+## In-code documentation
+
+| Location                                                              | Description                                                                             |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`src/settlement-chain/README.md`](../src/settlement-chain/README.md) | Settlement chain contracts overview, interaction flow, and upgrade/migration mechanics. |
+| [`CLAUDE.md`](../CLAUDE.md)                                           | AI assistant guidance: build/test commands and code style guidelines.                   |
 
 ## Quick navigation
 
-**New to XMTP?** → Start with [System architecture](./architecture.md)  
-**Integrating as a service provider?** → See [Payers](./payers.md)  
-**Running network infrastructure?** → Check [Node operators](./node-operators.md)  
-**Deploying contracts?** → Follow [Deployment](./deployment.md)  
-**Understanding the economics?** → Read [Payer reports](./payer-reports.md)
+| I want to...                          | Go to                                                         |
+| ------------------------------------- | ------------------------------------------------------------- |
+| Understand the system                 | [System architecture](./architecture.md)                      |
+| Integrate as a service provider       | [Payers](./payers.md)                                         |
+| Run network infrastructure            | [Node operators](./node-operators.md)                         |
+| Understand the economics              | [Payer reports](./payer-reports.md)                           |
+| Deploy a new environment from scratch | [Deployment](./deployment.md)                                 |
+| Upgrade a live contract               | [Contract upgrades](#contract-upgrades)                       |
+| Deploy a single new contract          | [Single-contract deployments](#single-contract-deployments)   |
+| Change a parameter                    | [Parameter management](#parameter-management)                 |
+| Add or manage nodes                   | [Node registry administration](#node-registry-administration) |

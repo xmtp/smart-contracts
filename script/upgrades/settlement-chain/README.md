@@ -20,7 +20,7 @@ The goals for testnets are minimal friction, whilst still proving out the Firebl
 
 You can use [Claude Code](https://claude.ai/code) to orchestrate the multi-step upgrade process. The `/xmtp-upgrade` skill handles repo validation, signing mode selection, and carrying forward addresses between steps automatically:
 
-```
+```text
 /xmtp-upgrade upgrade NodeRegistry on testnet-dev using fireblocks
 ```
 

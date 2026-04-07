@@ -27,9 +27,9 @@ Deploys a new **PayerReportManager** proxy and implementation pair using `Deploy
 1. Edit `payerReportManagerProxySalt` in `config/<environment>.json` to a new unique value.
 2. Run the prediction script:
 
-```bash
-forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
-```
+   ```bash
+   forge script DeployPayerReportManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+   ```
 
 3. Copy the predicted `Implementation` and `Proxy` addresses into `config/<environment>.json` as `payerReportManagerImplementation` and `payerReportManagerProxy`.
 4. Run the script again to confirm `Predicted proxy matches payerReportManagerProxy in config JSON.`
@@ -55,36 +55,36 @@ PayerRegistry caches the settler (PayerReportManager) address in local storage. 
 
 1. Set `xmtp.payerRegistry.settler` to the new PayerReportManager proxy address (requires ADMIN):
 
-**Wallet:**
+   **Wallet:**
 
-```bash
-forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
-```
+   ```bash
+   forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
+   ```
 
-**Fireblocks:**
+   **Fireblocks:**
 
-```bash
-export FIREBLOCKS_NOTE="Deploy PayerReportManager - set settler parameter"
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
+   ```bash
+   export FIREBLOCKS_NOTE="Deploy PayerReportManager - set settler parameter"
+   export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
-npx fireblocks-json-rpc --http -- \
-  forge script DeployPayerReportManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
-  --sig "SetParameterRegistryValues()" --broadcast
-```
+   npx fireblocks-json-rpc --http -- \
+     forge script DeployPayerReportManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
+     --sig "SetParameterRegistryValues()" --broadcast
+   ```
 
-The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key (UUID) that prevents duplicate Fireblocks transactions if forge retries the RPC call.
+   The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key (UUID) that prevents duplicate Fireblocks transactions if forge retries the RPC call.
 
-Approve the transaction in the Fireblocks console and wait for it to complete.
+   Approve the transaction in the Fireblocks console and wait for it to complete.
 
-> **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
+   > **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
 
 2. Pull the value into PayerRegistry (permissionless, uses DEPLOYER):
 
-```bash
-forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
-```
+   ```bash
+   forge script DeployPayerReportManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
+   ```
 
-This calls `PayerRegistry.updateSettler()`.
+   This calls `PayerRegistry.updateSettler()`.
 
 3. Verify the update took effect:
 

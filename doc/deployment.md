@@ -1,13 +1,14 @@
-# XMTP network contracts - deployment
+# XMTP network contracts - deployment <!-- omit from toc -->
 
-- [XMTP network contracts - deployment](#xmtp-network-contracts---deployment)
-  - [Base contracts](#base-contracts)
-    - [Constraints](#constraints)
-    - [Deploy base contracts](#deploy-base-contracts)
-  - [Environment contracts](#environment-contracts)
-    - [Deploy environment contracts](#deploy-environment-contracts)
+- [Base contracts](#base-contracts)
+  - [Constraints](#constraints)
+  - [Deploy base contracts](#deploy-base-contracts)
+- [Environment contracts](#environment-contracts)
+  - [Deploy environment contracts](#deploy-environment-contracts)
 
 The project includes deploy and upgrade scripts.
+
+**Foundry runbooks:** Day-two operations (contract upgrades, single-contract redeployments, parameter changes via wallet or Fireblocks) are documented next to the scripts under [`script/`](../script/). Start with [`script/upgrades/settlement-chain/README.md`](../script/upgrades/settlement-chain/README.md) and [`script/single-deployments/settlement-chain/README.md`](../script/single-deployments/settlement-chain/README.md). Greenfield environment rollout in this document uses the `./dev/*` shell helpers, which wrap `forge script` (for example `script/Deploy.s.sol`).
 
 ## Base contracts
 

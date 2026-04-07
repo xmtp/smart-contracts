@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build/Lint/Test Commands
+
 - Build: `forge build`
 - Test all: `forge test`
 - Test single: `forge test --match-contract ContractName --match-test testFunctionName -vvv`
@@ -11,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Static analysis: `npm run slither` or `yarn slither`
 
 ## Code Style Guidelines
+
 - Follow checks-effects-interactions pattern
 - Use internal instead of private visibility
 - Functions should have single responsibility
