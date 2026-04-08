@@ -358,7 +358,7 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
 
     /// @inheritdoc IIdentified
     function version() external pure returns (string memory version_) {
-        return "1.0.1";
+        return "1.0.2";
     }
 
     /// @inheritdoc IIdentified
