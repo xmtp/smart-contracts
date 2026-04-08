@@ -106,7 +106,7 @@ contract DistributionManagerTests is Test {
     /* ============ version ============ */
 
     function test_version() external view {
-        assertEq(_manager.version(), "1.0.1");
+        assertEq(_manager.version(), "1.0.2");
     }
 
     /* ============ contractName ============ */
