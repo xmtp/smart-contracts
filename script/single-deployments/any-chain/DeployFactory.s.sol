@@ -92,10 +92,7 @@ contract DeployFactoryScript is DeployScripts {
             _deploymentData.parameterRegistryProxy
         );
 
-        address expectedProxy_ = IFactory(_deploymentData.factory).computeProxyAddress(
-            _deployer,
-            _factoryProxySalt
-        );
+        address expectedProxy_ = IFactory(_deploymentData.factory).computeProxyAddress(_deployer, _factoryProxySalt);
 
         if (expectedProxy_.code.length > 0) revert NewFactoryProxyAlreadyExists();
 
