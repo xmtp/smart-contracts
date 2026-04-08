@@ -600,6 +600,81 @@ contract SettlementChainGatewayTests is Test {
         _gateway.depositWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
     }
 
+    function test_depositWithPermit_permitReverts_depositSucceeds() external {
+        uint256 maxFeePerGas_ = 1 gwei;
+        uint256 gasLimit_ = 100_000;
+        uint256 amount_ = 3_000_000;
+        uint256 submissionCost_ = 0.1 ether;
+
+        address inbox_ = makeAddr("inbox");
+
+        _gateway.__setInbox(1111, inbox_);
+
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_gateway),
+                amount_,
+                0,
+                0,
+                0,
+                0
+            ),
+            "PERMIT_EXPIRED"
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_gateway), amount_),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "calculateRetryableSubmissionFee(uint256,uint256)",
+                _RECEIVE_DEPOSIT_DATA_LENGTH,
+                block.basefee
+            ),
+            abi.encode(submissionCost_)
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("approve(address,uint256)", inbox_, amount_),
+            abi.encode(true)
+        );
+
+        address appChainAlias_ = AddressAliasHelper.toAlias(address(_gateway));
+        uint256 expectedCallValue_ = (amount_ * 10 ** 12) - submissionCost_ - (maxFeePerGas_ * gasLimit_);
+        uint256 expectedMaxFees_ = _gateway.__convertFromWei(submissionCost_ + (maxFeePerGas_ * gasLimit_));
+
+        Utils.expectAndMockCall(
+            inbox_,
+            abi.encodeWithSignature(
+                "createRetryableTicket(address,uint256,uint256,address,address,uint256,uint256,uint256,bytes)",
+                _appChainGateway,
+                expectedCallValue_,
+                submissionCost_,
+                appChainAlias_,
+                appChainAlias_,
+                gasLimit_,
+                maxFeePerGas_,
+                amount_,
+                abi.encodeCall(IAppChainGatewayLike.receiveDeposit, (_bob))
+            ),
+            abi.encode(uint256(11))
+        );
+
+        vm.expectEmit(address(_gateway));
+        emit ISettlementChainGateway.Deposit(1111, 11, _bob, amount_, expectedMaxFees_);
+
+        vm.prank(_alice);
+        _gateway.depositWithPermit(1111, _bob, amount_, gasLimit_, maxFeePerGas_, 0, 0, 0, 0);
+    }
+
     /* ============ depositFromUnderlying ============ */
 
     function test_depositFromUnderlying_paused() external {

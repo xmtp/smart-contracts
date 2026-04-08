@@ -310,6 +310,38 @@ contract PayerRegistryTests is Test {
         assertEq(_registry.getBalance(_bob), int256(uint256(1)));
     }
 
+    function test_depositWithPermit_permitReverts_depositSucceeds() external {
+        vm.mockCallRevert(
+            _feeToken,
+            abi.encodeWithSignature(
+                "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+                _alice,
+                address(_registry),
+                1,
+                0,
+                0,
+                0,
+                0
+            ),
+            "PERMIT_EXPIRED"
+        );
+
+        Utils.expectAndMockCall(
+            _feeToken,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", _alice, address(_registry), 1),
+            abi.encode(true)
+        );
+
+        vm.expectEmit(address(_registry));
+        emit IPayerRegistry.Deposit(_bob, 1);
+
+        vm.prank(_alice);
+        _registry.depositWithPermit(_bob, 1, 0, 0, 0, 0);
+
+        assertEq(_registry.getBalance(_alice), 0);
+        assertEq(_registry.getBalance(_bob), int256(uint256(1)));
+    }
+
     /* ============ depositFromUnderlying ============ */
 
     function test_depositFromUnderlying_underlyingTokenTransferFromFailed_returnsFalse() external {
