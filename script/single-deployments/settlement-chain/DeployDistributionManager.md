@@ -29,9 +29,9 @@ DistributionManager has no Step 3b — no other contracts have immutable referen
 1. Edit `distributionManagerProxySalt` in `config/<environment>.json` to a new unique value.
 2. Run the prediction script:
 
-```bash
-forge script DeployDistributionManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
-```
+   ```bash
+   forge script DeployDistributionManagerScript --rpc-url base_sepolia --sig "predictAddresses()"
+   ```
 
 3. Copy the predicted `Implementation` and `Proxy` addresses into `config/<environment>.json` as `distributionManagerImplementation` and `distributionManagerProxy`.
 4. Run the script again to confirm `Predicted proxy matches distributionManagerProxy in config JSON.`
@@ -57,36 +57,36 @@ PayerRegistry caches the feeDistributor (DistributionManager) address in local s
 
 1. Set `xmtp.payerRegistry.feeDistributor` to the new DistributionManager proxy address (requires ADMIN):
 
-**Wallet:**
+   **Wallet:**
 
-```bash
-forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
-```
+   ```bash
+   forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "SetParameterRegistryValues()" --broadcast
+   ```
 
-**Fireblocks:**
+   **Fireblocks:**
 
-```bash
-export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
-export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
+   ```bash
+   export FIREBLOCKS_NOTE="Deploy DistributionManager - set feeDistributor parameter"
+   export FIREBLOCKS_EXTERNAL_TX_ID=$(uuidgen)  # idempotency key, re-run before each new Fireblocks command
 
-npx fireblocks-json-rpc --http -- \
-  forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
-  --sig "SetParameterRegistryValues()" --broadcast
-```
+   npx fireblocks-json-rpc --http -- \
+     forge script DeployDistributionManagerScript --sender $ADMIN --slow --unlocked --rpc-url {} --timeout 14400 --retries 1 \
+     --sig "SetParameterRegistryValues()" --broadcast
+   ```
 
-The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key (UUID) that prevents duplicate Fireblocks transactions if forge retries the RPC call.
+   The `FIREBLOCKS_EXTERNAL_TX_ID` is an idempotency key (UUID) that prevents duplicate Fireblocks transactions if forge retries the RPC call.
 
-Approve the transaction in the Fireblocks console and wait for it to complete.
+   Approve the transaction in the Fireblocks console and wait for it to complete.
 
-> **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
+   > **If forge times out:** Don't panic. The Fireblocks transaction will continue processing independently. Check the Fireblocks console to confirm the transaction was approved and completed on-chain. If it was, proceed to the next step. If you need to re-run, generate a new `FIREBLOCKS_EXTERNAL_TX_ID` (via `uuidgen`) to avoid idempotency conflicts with the completed transaction.
 
 2. Pull the value into PayerRegistry (permissionless, uses DEPLOYER):
 
-```bash
-forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
-```
+   ```bash
+   forge script DeployDistributionManagerScript --rpc-url base_sepolia --slow --sig "UpdateContractDependencies()" --broadcast
+   ```
 
-This calls `PayerRegistry.updateFeeDistributor()`.
+   This calls `PayerRegistry.updateFeeDistributor()`.
 
 3. Verify the update took effect:
 

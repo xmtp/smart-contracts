@@ -116,12 +116,12 @@ After a successful deployment:
 
 1. Verify the implementation contract on the block explorer. Use the chain ID for your target network:
 
-```bash
-# Base Sepolia (testnet-dev, testnet-staging, testnet)
-forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
+   ```bash
+   # Base Sepolia (testnet-dev, testnet-staging, testnet)
+   forge verify-contract --chain-id 84532 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
 
-# Base Mainnet
-forge verify-contract --chain-id 8453 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
-```
+   # Base Mainnet
+   forge verify-contract --chain-id 8453 <impl-address> src/settlement-chain/<Contract>.sol:<Contract>
+   ```
 
 2. Confirm that `environments/<environment>.json` was updated with the new proxy address (written automatically by `deployContract()` in Step 2).

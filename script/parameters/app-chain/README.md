@@ -24,7 +24,7 @@ Bridging is **permissionless** - anyone with fee tokens can bridge parameters. N
 
 You can use [Claude Code](https://claude.ai/code) to orchestrate the full set-and-bridge workflow in one command. The `/xmtp-set-parameter` skill sets the value on the settlement chain and bridges it to the app chain automatically:
 
-```
+```text
 /xmtp-set-parameter set xmtp.groupMessageBroadcaster.paused to true on testnet-dev, then bridge it
 ```
 

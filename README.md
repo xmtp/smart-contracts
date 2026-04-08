@@ -1,11 +1,10 @@
-# XMTP Contracts
+# XMTP Contracts <!-- omit from toc -->
 
-- [XMTP Contracts](#xmtp-contracts)
-  - [Usage](#usage)
-    - [Prerequisites](#prerequisites)
-    - [Initialize project](#initialize-project)
-  - [Developer tools](#developer-tools)
-  - [Developer documentation](#developer-documentation)
+- [Usage](#usage)
+  - [Prerequisites](#prerequisites)
+  - [Initialize project](#initialize-project)
+- [Developer tools](#developer-tools)
+- [Developer documentation](#developer-documentation)
 
 **⚠️ Experimental:** This software is in early development. Expect frequent changes and unresolved issues.
 
@@ -75,4 +74,4 @@ prettier-check: Runs prettier in check mode.
 
 The Foundry book can be found hosted on the [contracts documentation page](https://xmtp.github.io/smart-contracts/).
 
-To dive deeper into the protocol and its architecture, read the [architecture documentation](./doc/README.md).
+To dive deeper into the protocol and its architecture, read the [documentation index](./doc/README.md). That page links narrative docs under `doc/` and operator runbooks under [`script/`](./script/) (upgrades, single deployments, parameters).

@@ -1,37 +1,34 @@
-# XMTP network system architecture
+# XMTP network system architecture <!-- omit from toc -->
 
-> Last edited: 09/19/2025
-
-- [XMTP network system architecture](#xmtp-network-system-architecture)
-  - [System overview](#system-overview)
-  - [Messaging protocol](#messaging-protocol)
-  - [Chain architecture](#chain-architecture)
-    - [XMTP Settlement Chain (Base L2)](#xmtp-settlement-chain-base-l2)
-    - [XMTP App Chain (XMTP L3)](#xmtp-app-chain-xmtp-l3)
-    - [Design rationale](#design-rationale)
-  - [Actors](#actors)
-    - [End users](#end-users)
-    - [Payers](#payers)
-      - [Setup requirements](#setup-requirements)
-      - [Message publishing](#message-publishing)
-    - [Node operators](#node-operators)
-      - [xmtpd service components](#xmtpd-service-components)
-      - [Onboarding process](#onboarding-process)
-    - [Administrators](#administrators)
-      - [Parameter registry](#parameter-registry)
-  - [Economic model](#economic-model)
-    - [Fee structure](#fee-structure)
-    - [Settlement process](#settlement-process)
-    - [Token economics](#token-economics)
-  - [Cross-chain communication](#cross-chain-communication)
-    - [Token deposits](#token-deposits)
-    - [Token withdrawals](#token-withdrawals)
-    - [Parameter synchronization](#parameter-synchronization)
-    - [Reliability features](#reliability-features)
-  - [Security model](#security-model)
-    - [Trust assumptions](#trust-assumptions)
-    - [Consensus mechanism](#consensus-mechanism)
-    - [Upgrade security](#upgrade-security)
+- [System overview](#system-overview)
+- [Messaging protocol](#messaging-protocol)
+- [Chain architecture](#chain-architecture)
+  - [XMTP Settlement Chain (Base L2)](#xmtp-settlement-chain-base-l2)
+  - [XMTP App Chain (XMTP L3)](#xmtp-app-chain-xmtp-l3)
+  - [Design rationale](#design-rationale)
+- [Actors](#actors)
+  - [End users](#end-users)
+  - [Payers](#payers)
+    - [Setup requirements](#setup-requirements)
+    - [Message publishing](#message-publishing)
+  - [Node operators](#node-operators)
+    - [xmtpd service components](#xmtpd-service-components)
+    - [Onboarding process](#onboarding-process)
+  - [Administrators](#administrators)
+    - [Parameter registry](#parameter-registry)
+- [Economic model](#economic-model)
+  - [Fee structure](#fee-structure)
+  - [Settlement process](#settlement-process)
+  - [Token economics](#token-economics)
+- [Cross-chain communication](#cross-chain-communication)
+  - [Token deposits](#token-deposits)
+  - [Token withdrawals](#token-withdrawals)
+  - [Parameter synchronization](#parameter-synchronization)
+  - [Reliability features](#reliability-features)
+- [Security model](#security-model)
+  - [Trust assumptions](#trust-assumptions)
+  - [Consensus mechanism](#consensus-mechanism)
+  - [Upgrade security](#upgrade-security)
 
 ## System overview
 
@@ -202,7 +199,7 @@ End users are the ultimate consumers of XMTP messaging services, typically acces
 
 Administrators manage system governance, parameters, and network operations through multi-signature wallets and eventual governance mechanisms.
 
-The [Parameter Registry](./parameter-flow.md) plays a major role on this task.
+The [Parameter Registry](./parameter-registry.md) plays a major role on this task.
 
 **Responsibilities**:
 

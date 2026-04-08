@@ -1,15 +1,14 @@
-# XMTP node operators
+# XMTP node operators <!-- omit from toc -->
 
-- [XMTP node operators](#xmtp-node-operators)
-  - [Node identification system](#node-identification-system)
-  - [Canonical network](#canonical-network)
-  - [Node onboarding process](#node-onboarding-process)
-  - [Canonical network management](#canonical-network-management)
-  - [Node synchronization process](#node-synchronization-process)
-  - [Key features](#key-features)
-    - [Node authentication](#node-authentication)
-    - [Network consensus](#network-consensus)
-    - [Operational management](#operational-management)
+- [Node identification system](#node-identification-system)
+- [Canonical network](#canonical-network)
+- [Node onboarding process](#node-onboarding-process)
+- [Canonical network management](#canonical-network-management)
+- [Node synchronization process](#node-synchronization-process)
+- [Key features](#key-features)
+  - [Node authentication](#node-authentication)
+  - [Network consensus](#network-consensus)
+  - [Operational management](#operational-management)
 
 Node operators are managed through the [Node Registry](../src/settlement-chain/NodeRegistry.sol) contract, where they are registered as NFTs representing their node ownership and operational rights.
 

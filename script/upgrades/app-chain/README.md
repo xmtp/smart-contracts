@@ -20,7 +20,7 @@ The goals for testnets are minimal friction, whilst still proving out the Firebl
 
 You can use [Claude Code](https://claude.ai/code) to orchestrate the multi-step upgrade process including bridge finalization. The `/xmtp-upgrade` skill handles repo validation, signing mode selection, and verification automatically:
 
-```
+```text
 /xmtp-upgrade upgrade GroupMessageBroadcaster on testnet-dev
 ```
 

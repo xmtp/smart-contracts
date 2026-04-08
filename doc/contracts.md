@@ -1,25 +1,24 @@
-# XMTP network contracts
+# XMTP network contracts <!-- omit from toc -->
 
-- [XMTP network contracts](#xmtp-network-contracts)
-  - [System design](#system-design)
-  - [Deployment process](#deployment-process)
-  - [Key components](#key-components)
-    - [Settlement chain](#settlement-chain)
-    - [XMTP App Chain](#xmtp-app-chain)
-    - [Cross-chain infrastructure](#cross-chain-infrastructure)
-  - [Parameter registry](#parameter-registry)
-  - [Data flow](#data-flow)
-  - [Design rationale](#design-rationale)
-    - [L2/L3 chain separation](#l2l3-chain-separation)
-    - [Fee token](#fee-token)
-    - [Parameter registry architecture](#parameter-registry-architecture)
-    - [Cross-chain communication](#cross-chain-communication)
-    - [Storage pattern implementation](#storage-pattern-implementation)
-    - [Updateable parameters](#updateable-parameters)
-    - [Migration/upgrade pattern](#migrationupgrade-pattern)
-  - [System considerations](#system-considerations)
-    - [Security considerations](#security-considerations)
-    - [Developer and operational considerations](#developer-and-operational-considerations)
+- [System design](#system-design)
+- [Deployment process](#deployment-process)
+- [Key components](#key-components)
+  - [Settlement chain](#settlement-chain)
+  - [XMTP App Chain](#xmtp-app-chain)
+  - [Cross-chain infrastructure](#cross-chain-infrastructure)
+- [Parameter registry](#parameter-registry)
+- [Data flow](#data-flow)
+- [Design rationale](#design-rationale)
+  - [L2/L3 chain separation](#l2l3-chain-separation)
+  - [Fee token](#fee-token)
+  - [Parameter registry architecture](#parameter-registry-architecture)
+  - [Cross-chain communication](#cross-chain-communication)
+  - [Storage pattern implementation](#storage-pattern-implementation)
+  - [Updateable parameters](#updateable-parameters)
+  - [Migration/upgrade pattern](#migrationupgrade-pattern)
+- [System considerations](#system-considerations)
+  - [Security considerations](#security-considerations)
+  - [Developer and operational considerations](#developer-and-operational-considerations)
 
 ## System design
 
@@ -45,7 +44,7 @@ The deployment follows a precise order to handle contract interdependencies:
 5. **Gateway deployments** on both chains that reference each other and their respective parameter registries.
 6. **Initial parameter configuration** on the XMTP Settlement Chain followed by parameter bridging.
 7. **Broadcaster deployments** on the XMTP App Chain that use the app chain parameter registry.
-8. **Service contract deployments** (Payer, Rate, Node registries) on the XMTP Settlement Chain.
+8. **Settlement service contracts** on the XMTP Settlement Chain: `PayerRegistry`, `RateRegistry`, `NodeRegistry`, `PayerReportManager`, `DistributionManager`, and `DepositSplitter`.
 
 ## Key components
 
@@ -54,6 +53,7 @@ The deployment follows a precise order to handle contract interdependencies:
 - **NodeRegistry**: ERC721-based registry for network nodes (mints NFTs starting at ID 100, incrementing by 100).
 - **PayerRegistry**: Manages payer deposits, withdrawals, and fee payment for messaging.
 - **RateRegistry**: Sets fees for message and storage operations.
+- **PayerReportManager**: Accepts signed payer reports from canonical nodes, verifies consensus and Merkle proofs, settles usage via `PayerRegistry`, and exposes report state to `DistributionManager` for operator payouts.
 - **SettlementChainParameterRegistry**: Stores system parameters, defined by an admin and/or governance.
 - **SettlementChainGateway**: Bridges parameters to the XMTP App Chain via retryable tickets.
 - **FeeToken**: ERC20-compliant wrapped token serving as the primary medium of exchange for protocol fees. Backed 1:1 by an underlying stablecoin (USDC). Features permit functionality for gasless approvals and support both direct deposits and deposits-for-others patterns.
