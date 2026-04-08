@@ -14,6 +14,7 @@ import {
     IPayerRegistryLike,
     IPayerReportManagerLike
 } from "./interfaces/External.sol";
+import { IPayerRegistry } from "./interfaces/IPayerRegistry.sol";
 import { IPayerReportManager } from "./interfaces/IPayerReportManager.sol";
 
 import { IMigratable } from "../abstract/interfaces/IMigratable.sol";
@@ -379,8 +380,25 @@ contract DistributionManager is IDistributionManager, Initializable, Migratable 
         uint96 available_ = uint96(IERC20Like(feeToken).balanceOf(address(this)));
 
         if (owed_ > available_) {
-            unchecked {
-                available_ += IPayerRegistryLike(payerRegistry).sendExcessToFeeDistributor();
+            try IPayerRegistryLike(payerRegistry).sendExcessToFeeDistributor() returns (uint96 excess_) {
+                unchecked {
+                    available_ += excess_;
+                }
+            } catch (bytes memory reason_) {
+                bytes4 selector_;
+
+                // Ignore "no excess" so we can still withdraw up to currently available balance.
+                if (reason_.length >= 4) {
+                    assembly {
+                        selector_ := mload(add(reason_, 0x20))
+                    }
+                }
+
+                if (selector_ != IPayerRegistry.NoExcess.selector) {
+                    assembly {
+                        revert(add(reason_, 0x20), mload(reason_))
+                    }
+                }
             }
         }
 
