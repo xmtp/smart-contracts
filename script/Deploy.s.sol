@@ -1234,6 +1234,24 @@ contract DeployScripts is Script {
         }
     }
 
+    function predictDepositSplitter() public view {
+        if (_deploymentData.factory == address(0)) revert FactoryNotSet();
+        if (_deploymentData.feeTokenProxy == address(0)) revert FeeTokenProxyNotSet();
+        if (_deploymentData.payerRegistryProxy == address(0)) revert PayerRegistryProxyNotSet();
+        if (_deploymentData.gatewayProxy == address(0)) revert GatewayProxyNotSet();
+        if (_deploymentData.appChainId == 0) revert AppChainIdNotSet();
+
+        address predicted_ = DepositSplitterDeployer.getImplementation(
+            _deploymentData.factory,
+            _deploymentData.feeTokenProxy,
+            _deploymentData.payerRegistryProxy,
+            _deploymentData.gatewayProxy,
+            _deploymentData.appChainId
+        );
+
+        console.log("Predicted DepositSplitter: %s", predicted_);
+    }
+
     function deployAppChainParameterRegistryImplementation() public {
         if (_deploymentData.appChainParameterRegistryImplementation == address(0)) revert ImplementationNotSet();
         if (_deploymentData.factory == address(0)) revert FactoryNotSet();

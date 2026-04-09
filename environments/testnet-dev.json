@@ -5,7 +5,7 @@
   "appChainId": 351243127,
   "appChainParameterRegistry": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
   "deployer": "0xE4b610ac9E75F98eaa1CC83eC1ac6A9eCaEe1e9f",
-  "depositSplitter": "0x20B7B4a368b78eD53843736f0b02295C8AE93988",
+  "depositSplitter": "0x1C0c060d1bBCCc368C6a70276D47515473211c5f",
   "distributionManager": "0xe6dFd753AE0028FE85DEC586CF2d60BFF4C91B4F",
   "feeToken": "0x63C6667798fdA65E2E29228C43fbfDa0Cd4634A8",
   "groupMessageBroadcaster": "0xbDF24fD4bBaE0E3CCd42Fb6C07EC6eA347A1Ef87",
