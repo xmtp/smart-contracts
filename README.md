@@ -1,5 +1,6 @@
 # XMTP Contracts <!-- omit from toc -->
 
+- [Repository layout](#repository-layout)
 - [Usage](#usage)
   - [Prerequisites](#prerequisites)
   - [Initialize project](#initialize-project)
@@ -11,6 +12,18 @@
 This repository contains all the smart contracts that underpin the XMTP decentralized network.
 
 [![Solidity](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml/badge.svg)](https://github.com/xmtp/smart-contracts/actions/workflows/solidity.yml)
+
+## Repository layout
+
+| Path                       | Contents                                                         | Deep entry point                                                     |
+| -------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/`                     | Solidity sources — settlement-chain, app-chain, any-chain        | [`src/settlement-chain/README.md`](./src/settlement-chain/README.md) |
+| `script/`                  | Foundry scripts driving deployments, upgrades, parameters, admin | —                                                                    |
+| `test/`                    | Foundry tests                                                    | —                                                                    |
+| `doc/`                     | Protocol documentation (architecture, contracts, actors)         | [`doc/README.md`](./doc/README.md)                                   |
+| `doc/runbooks/`            | Operator runbooks — upgrades, deployments, parameters, admin     | [`doc/runbooks/README.md`](./doc/runbooks/README.md)                 |
+| `config/`, `environments/` | Per-environment JSON configs and deployment manifests            | —                                                                    |
+| `dev/`                     | Shell helpers for greenfield environment rollout                 | [`doc/deployment.md`](./doc/deployment.md)                           |
 
 ## Usage
 
@@ -74,4 +87,4 @@ prettier-check: Runs prettier in check mode.
 
 The Foundry book can be found hosted on the [contracts documentation page](https://xmtp.github.io/smart-contracts/).
 
-To dive deeper into the protocol and its architecture, read the [documentation index](./doc/README.md). That page links narrative docs under `doc/` and operator runbooks under [`script/`](./script/) (upgrades, single deployments, parameters).
+To dive deeper into the protocol and its architecture, read the [documentation index](./doc/README.md). For step-by-step day-two operations (upgrades, single-contract deployments, parameters, admin), go straight to the [operator runbooks](./doc/runbooks/README.md).

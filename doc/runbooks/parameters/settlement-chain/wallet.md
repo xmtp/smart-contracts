@@ -100,4 +100,4 @@ This will display the value in multiple formats: bytes32, uint256, and address.
 
 ## 5. Next Steps
 
-After setting a parameter on the settlement chain, you may need to bridge it to the app chain. See `script/parameters/app-chain/README.md` for bridging instructions.
+After setting a parameter on the settlement chain, you may need to bridge it to the app chain. See [`../app-chain/README.md`](../app-chain/README.md) for bridging instructions.

@@ -139,4 +139,4 @@ When you see `npx fireblocks-json-rpc --http --`, it:
 
 ## 6. Next Steps
 
-After setting a parameter on the settlement chain, you may need to bridge it to the app chain. See `script/parameters/app-chain/README.md` for bridging instructions.
+After setting a parameter on the settlement chain, you may need to bridge it to the app chain. See [`../app-chain/README.md`](../app-chain/README.md) for bridging instructions.

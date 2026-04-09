@@ -106,9 +106,10 @@ After completing the prerequisites in section 3 above, follow the remaining step
 
 | Contract            | Deployment Guide                                             | Script                            |
 | ------------------- | ------------------------------------------------------------ | --------------------------------- |
-| NodeRegistry        | [DeployNodeRegistry.md](DeployNodeRegistry.md)               | `DeployNodeRegistry.s.sol`        |
-| PayerReportManager  | [DeployPayerReportManager.md](DeployPayerReportManager.md)   | `DeployPayerReportManager.s.sol`  |
-| DistributionManager | [DeployDistributionManager.md](DeployDistributionManager.md) | `DeployDistributionManager.s.sol` |
+| NodeRegistry        | [deploy-node-registry.md](deploy-node-registry.md)               | `DeployNodeRegistry.s.sol`        |
+| PayerReportManager  | [deploy-payer-report-manager.md](deploy-payer-report-manager.md) | `DeployPayerReportManager.s.sol`  |
+| DistributionManager | [deploy-distribution-manager.md](deploy-distribution-manager.md) | `DeployDistributionManager.s.sol` |
+| DepositSplitter     | [deploy-deposit-splitter.md](deploy-deposit-splitter.md)         | `Deploy.s.sol:deployDepositSplitter` |
 
 ## 5. Post-Deployment
 
