@@ -46,48 +46,51 @@ Narrative docs that explain **what** the system is and **why** it works the way 
 
 ## Operator runbooks
 
-Step-by-step procedural guides that live next to the Foundry scripts under [`script/`](../script/). Each area has a top-level README and per-workflow variants for **wallet** (private key) and **Fireblocks** signing.
+Step-by-step procedural guides live under [`doc/runbooks/`](./runbooks/README.md). Each area has a top-level `README.md` and, where applicable, per-workflow variants for **wallet** (private key) and **Fireblocks** signing. The Foundry scripts they drive remain under [`script/`](../script/).
 
 ### Contract upgrades
 
 Upgrade an existing proxy to a new implementation (same proxy address, new code).
 
-| Chain      | Entry point                                                                                   | Wallet                                                                   | Fireblocks                                                                       |
-| ---------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| Settlement | [`script/upgrades/settlement-chain/README.md`](../script/upgrades/settlement-chain/README.md) | [README-wallet.md](../script/upgrades/settlement-chain/README-wallet.md) | [README-fireblocks.md](../script/upgrades/settlement-chain/README-fireblocks.md) |
-| App chain  | [`script/upgrades/app-chain/README.md`](../script/upgrades/app-chain/README.md)               | [README-wallet.md](../script/upgrades/app-chain/README-wallet.md)        | [README-fireblocks.md](../script/upgrades/app-chain/README-fireblocks.md)        |
+| Chain      | Entry point                                                                                      | Wallet                                                      | Fireblocks                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Settlement | [`runbooks/upgrades/settlement-chain/README.md`](./runbooks/upgrades/settlement-chain/README.md) | [wallet.md](./runbooks/upgrades/settlement-chain/wallet.md) | [fireblocks.md](./runbooks/upgrades/settlement-chain/fireblocks.md) |
+| App chain  | [`runbooks/upgrades/app-chain/README.md`](./runbooks/upgrades/app-chain/README.md)               | [wallet.md](./runbooks/upgrades/app-chain/wallet.md)        | [fireblocks.md](./runbooks/upgrades/app-chain/fireblocks.md)        |
 
-For upgrades that also migrate storage, see the [Custom migration guide](../script/upgrades/custom-migration-guide.md).
+For upgrades that also migrate storage, see the [Custom migration guide](./runbooks/upgrades/custom-migration-guide.md).
 
 ### Single-contract deployments
 
 Deploy a **new proxy + implementation pair** for an individual contract (new address).
 
-| Guide                                                                                                             | Description                                                                                   |
-| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`script/single-deployments/settlement-chain/README.md`](../script/single-deployments/settlement-chain/README.md) | Overview, three-step process, environment prerequisites.                                      |
-| [DeployNodeRegistry.md](../script/single-deployments/settlement-chain/DeployNodeRegistry.md)                      | **System invariant — requires human intervention.** See the doc for breaking-change criteria. |
-| [DeployPayerReportManager.md](../script/single-deployments/settlement-chain/DeployPayerReportManager.md)          | PayerReportManager deployment and dependency updates.                                         |
-| [DeployDistributionManager.md](../script/single-deployments/settlement-chain/DeployDistributionManager.md)        | DistributionManager deployment and dependency updates.                                        |
+| Guide                                                                                                                | Description                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`runbooks/single-deployments/any-chain/README.md`](./runbooks/single-deployments/any-chain/README.md)               | Any-chain overview and prerequisites.                                                         |
+| [deploy-factory.md](./runbooks/single-deployments/any-chain/deploy-factory.md)                                       | `Factory` deployment via CREATE2.                                                             |
+| [`runbooks/single-deployments/settlement-chain/README.md`](./runbooks/single-deployments/settlement-chain/README.md) | Settlement-chain overview, three-step process, environment prerequisites.                     |
+| [deploy-node-registry.md](./runbooks/single-deployments/settlement-chain/deploy-node-registry.md)                    | **System invariant — requires human intervention.** See the doc for breaking-change criteria. |
+| [deploy-payer-report-manager.md](./runbooks/single-deployments/settlement-chain/deploy-payer-report-manager.md)      | PayerReportManager deployment and dependency updates.                                         |
+| [deploy-distribution-manager.md](./runbooks/single-deployments/settlement-chain/deploy-distribution-manager.md)      | DistributionManager deployment and dependency updates.                                        |
+| [deploy-deposit-splitter.md](./runbooks/single-deployments/settlement-chain/deploy-deposit-splitter.md)              | DepositSplitter redeployment across testnet environments (non-upgradeable).                   |
 
 ### Parameter management
 
 Set, read, and bridge `xmtp.*` parameters across chains.
 
-| Chain                | Entry point                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| Settlement           | [`script/parameters/settlement-chain/README.md`](../script/parameters/settlement-chain/README.md) |
-| App chain (bridging) | [`script/parameters/app-chain/README.md`](../script/parameters/app-chain/README.md)               |
+| Chain                | Entry point                                                                                          |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| Settlement           | [`runbooks/parameters/settlement-chain/README.md`](./runbooks/parameters/settlement-chain/README.md) |
+| App chain (bridging) | [`runbooks/parameters/app-chain/README.md`](./runbooks/parameters/app-chain/README.md)               |
 
 ### Node registry administration
 
 Admin operations on the NodeRegistry contract (add nodes, manage canonical network, set base URI).
 
-| Guide                                                                                   | Description                      |
-| --------------------------------------------------------------------------------------- | -------------------------------- |
-| [`script/admin/settlement-chain/README.md`](../script/admin/settlement-chain/README.md) | Overview and workflow selection. |
-| [README-wallet.md](../script/admin/settlement-chain/README-wallet.md)                   | Wallet signing commands.         |
-| [README-fireblocks.md](../script/admin/settlement-chain/README-fireblocks.md)           | Fireblocks signing commands.     |
+| Guide                                                                                      | Description                      |
+| ------------------------------------------------------------------------------------------ | -------------------------------- |
+| [`runbooks/admin/settlement-chain/README.md`](./runbooks/admin/settlement-chain/README.md) | Overview and workflow selection. |
+| [wallet.md](./runbooks/admin/settlement-chain/wallet.md)                                   | Wallet signing commands.         |
+| [fireblocks.md](./runbooks/admin/settlement-chain/fireblocks.md)                           | Fireblocks signing commands.     |
 
 ## In-code documentation
 

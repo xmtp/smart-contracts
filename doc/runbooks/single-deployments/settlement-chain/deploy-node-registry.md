@@ -76,7 +76,7 @@ NodeRegistry's `SetParameterRegistryValues()` is a no-op, there is no "new NodeR
    forge script SetParameter --rpc-url base_sepolia --slow --sig "setUint(string,uint256)" "xmtp.nodeRegistry.maxCanonicalNodes" <value> --broadcast
    ```
 
-   For Fireblocks environments, wrap with `npx fireblocks-json-rpc --http --` (see [SetParameter Fireblocks docs](../../parameters/settlement-chain/README-fireblocks.md)).
+   For Fireblocks environments, wrap with `npx fireblocks-json-rpc --http --` (see [SetParameter Fireblocks docs](../../parameters/settlement-chain/fireblocks.md)).
 
 3. Pull the values into the new NodeRegistry contract:
 

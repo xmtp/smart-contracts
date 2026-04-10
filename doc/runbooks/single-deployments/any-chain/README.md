@@ -63,7 +63,7 @@ After completing the prerequisites in section 2 above, follow the remaining step
 
 | Contract | Deployment Guide                     | Script                |
 | -------- | ------------------------------------ | --------------------- |
-| Factory  | [DeployFactory.md](DeployFactory.md) | `DeployFactory.s.sol` |
+| Factory  | [deploy-factory.md](deploy-factory.md) | `DeployFactory.s.sol` |
 
 ## 4. Post-Deployment
 

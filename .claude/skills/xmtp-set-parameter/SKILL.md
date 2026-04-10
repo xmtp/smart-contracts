@@ -52,12 +52,12 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
 **Steps 1–4 are mandatory research steps. You MUST read these files before composing any commands.** The READMEs are the single source of truth for command syntax — do not rely on examples in this skill file or on prior knowledge. If the README commands differ from what you expect, follow the README.
 
 1. Determine the **signing mode**. Read the environment defaults table in the settlement chain README:
-   - `script/parameters/settlement-chain/README.md`
+   - `doc/runbooks/parameters/settlement-chain/README.md`
 
 2. Read the appropriate workflow README (this is where you get the actual commands to propose):
-   - Wallet: `script/parameters/settlement-chain/README-wallet.md`
-   - Fireblocks: `script/parameters/settlement-chain/README-fireblocks.md`
-   - Bridging: `script/parameters/app-chain/README.md`
+   - Wallet: `doc/runbooks/parameters/settlement-chain/wallet.md`
+   - Fireblocks: `doc/runbooks/parameters/settlement-chain/fireblocks.md`
+   - Bridging: `doc/runbooks/parameters/app-chain/README.md`
 
 3. Read `config/<environment>.json` to verify `parameterRegistryProxy` exists. For bridge actions, also verify `gatewayProxy`, `feeTokenProxy`, `appChainId`, and `settlementChainId`.
 
@@ -67,7 +67,7 @@ Accept fuzzy descriptions from the user (e.g. "set max nodes to 100 on testnet-d
    - For each step, show the **complete command** in a fenced code block and a brief explanation of what it does.
    - For **reads**, use the "Reading Parameters" section of the relevant README. Note that the user should look for bytes32, uint256, and address formats in the output.
    - For **sets**, use the "Setting Parameters" section, choosing the correct value type subsection.
-   - For **bridge**, follow `script/parameters/app-chain/README.md`.
+   - For **bridge**, follow `doc/runbooks/parameters/app-chain/README.md`.
    - Include prerequisite shell commands (e.g. `source .env`, `export ENVIRONMENT=...`, `export ADMIN_ADDRESS_TYPE=...`) as the first steps in the plan.
 
 6. For **Fireblocks** actions: include a note after the relevant command step reminding the user to approve the transaction in the Fireblocks console before proceeding to the next step.

@@ -61,14 +61,14 @@ Accept fuzzy names from the user (e.g. "node registry", "payer report manager", 
 1. Determine the **chain** from the contract name (settlement-chain or app-chain).
 
 2. Determine the **signing mode**. Read the environment defaults table in the appropriate README:
-   - Settlement chain: `script/upgrades/settlement-chain/README.md`
-   - App chain: `script/upgrades/app-chain/README.md`
+   - Settlement chain: `doc/runbooks/upgrades/settlement-chain/README.md`
+   - App chain: `doc/runbooks/upgrades/app-chain/README.md`
 
 3. Read the appropriate workflow README (this is where you get the actual commands to propose):
-   - Settlement chain + wallet: `script/upgrades/settlement-chain/README-wallet.md`
-   - Settlement chain + fireblocks: `script/upgrades/settlement-chain/README-fireblocks.md`
-   - App chain + wallet: `script/upgrades/app-chain/README-wallet.md`
-   - App chain + fireblocks: `script/upgrades/app-chain/README-fireblocks.md`
+   - Settlement chain + wallet: `doc/runbooks/upgrades/settlement-chain/wallet.md`
+   - Settlement chain + fireblocks: `doc/runbooks/upgrades/settlement-chain/fireblocks.md`
+   - App chain + wallet: `doc/runbooks/upgrades/app-chain/wallet.md`
+   - App chain + fireblocks: `doc/runbooks/upgrades/app-chain/fireblocks.md`
 
 4. Read `config/<environment>.json` to verify the required addresses exist (factory, parameterRegistryProxy, and the relevant contract proxy address).
 
