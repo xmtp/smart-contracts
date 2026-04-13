@@ -3,16 +3,14 @@
 ## Table of Contents <!-- omit from toc -->
 
 - [Overview](#overview)
-- [How It Works](#how-it-works)
-- [Step 1: Predict Addresses](#step-1-predict-addresses)
-- [Step 2: Deploy Contract](#step-2-deploy-contract)
-- [Step 3: Verify Deployment](#step-3-verify-deployment)
+- [Step 1: Deploy Contract](#step-1-deploy-contract)
+- [Step 2: Verify Deployment](#step-2-verify-deployment)
+- [Step 3: Verify Source Code](#step-3-verify-source-code)
 - [Step 4: Update Config JSON](#step-4-update-config-json)
 - [Multi-Chain Deployment](#multi-chain-deployment)
 - [Impact on Other Contracts](#impact-on-other-contracts)
   - [Existing deployed contracts](#existing-deployed-contracts)
   - [Future contract deployments](#future-contract-deployments)
-  - [Proxy salt reuse](#proxy-salt-reuse)
 
 ## Overview
 
@@ -20,7 +18,7 @@ Deploys a new **Factory** proxy and implementation pair using `DeployFactory.s.s
 
 **Before you begin:** Complete all environment and prerequisite setup in [README.md - Environment and Prerequisites](README.md#3-environment-and-prerequisites), then return here.
 
-**Key difference from other deployments:** Factory is a base-layer contract. Unlike other contracts (NodeRegistry, DistributionManager, etc.) which are deployed _through_ the Factory, a new Factory is deployed _through the old Factory_. The old Factory's CREATE2 mechanism gives the new Factory fully deterministic addresses.
+**Key difference from other deployments:** Factory is a base-layer contract, but no other contract stores the Factory address as a runtime dependency. A new Factory can be deployed at any time via direct CREATE — deterministic addressing is not required.
 
 **Dependencies managed by this deployment:**
 
@@ -28,73 +26,39 @@ Deploys a new **Factory** proxy and implementation pair using `DeployFactory.s.s
 | ------ | ---------------------- | ---------------- | --------------- |
 | —      | —                      | —                | —               |
 
-Factory has **no Step 3a or 3b** — no contracts store the Factory address as a runtime dependency. The Factory is only used at deploy time by other contracts' deployment scripts. After deployment, update `config/<environment>.json` so future scripts use the new Factory.
+Factory has **no dependency updates** — no contracts store the Factory address at runtime. The Factory is only used at deploy time by other contracts' deployment scripts. After deployment, update `config/<environment>.json` so future scripts use the new Factory.
 
 **Parameter Registry:** No parameter registry updates are required. The two Factory-related keys (`xmtp.factory.paused` and `xmtp.factory.migrator`) are optional governance parameters that apply per-Factory and start at their zero-value defaults (unpaused, no migrator).
 
-## How It Works
-
-The original Factory was deployed via CREATE (nonce-based) during the base deploy. For redeployment, we go through the _old_ Factory's CREATE2:
-
-1. **Implementation** — deployed via `oldFactory.deployImplementation(bytecode)`. The address is fully determined by the bytecode hash (which includes the `parameterRegistry` constructor argument).
-
-2. **Proxy** — deployed via `oldFactory.deployProxy(impl, salt, initCallData)`. The address is determined by deployer + salt. The proxy is atomically initialized, which creates a new `Initializable` contract inside the new Factory.
-
-3. **InitializableImplementation** — created inside `Factory.initialize()` via CREATE from the new proxy. Its address is `computeCreateAddress(newProxy, nonce=1)`.
-
-The `factory` field in `config/<environment>.json` must remain the **old** Factory address during deployment (the script uses it to deploy through). Update it only after deployment succeeds.
-
-## Step 1: Predict Addresses
-
-1. Add `factoryProxySalt` to `config/<environment>.json` with a unique value (e.g. `"Factory_1"`):
-
-   ```json
-   {
-     "factoryProxySalt": "Factory_1",
-     ...
-   }
-   ```
-
-2. Run the prediction script:
-
-   ```bash
-   forge script DeployFactoryScript --rpc-url $RPC_URL --sig "predictAddresses()"
-   ```
-
-3. Note the three predicted addresses: `factoryImplementation`, `factory` (proxy), and `initializableImplementation`.
-
-4. If `WARNING: Code already exists at predicted proxy address!` appears, choose a different `factoryProxySalt`.
-
-5. If `NOTE: Code already exists at predicted implementation address` appears, this is expected when the Factory source code hasn't changed (CREATE2 is content-addressed). The deploy will skip the implementation and reuse the existing one.
-
-## Step 2: Deploy Contract
+## Step 1: Deploy Contract
 
 Deploy the new Factory:
 
 ```bash
-forge script DeployFactoryScript --rpc-url $RPC_URL --slow --sig "deployContract()" --broadcast
+forge script script/single-deployments/any-chain/DeployFactory.s.sol --rpc-url base_sepolia --slow --sig "deployContract()" --broadcast
 ```
 
 This:
 
-- Deploys the Factory implementation via the old Factory (or reuses it if bytecode matches)
-- Deploys the Factory proxy via the old Factory with the configured salt
-- Atomically initializes the proxy (creates the `Initializable` contract)
+- Deploys a new Factory implementation (`new Factory(parameterRegistry)`)
+- Deploys a new Factory proxy (`new Proxy(implementation)`)
+- Initializes the proxy (creates the `Initializable` contract)
+- Validates that `parameterRegistry` and `initializableImplementation` are set correctly
 - Writes the new proxy address to `environments/<environment>.json` as `settlementChainFactory` or `appChainFactory` (depending on which chain you're connected to)
 
-## Step 3: Verify Deployment
+## Step 2: Verify Deployment
 
 Run the verification script (read-only, no broadcast needed):
 
 ```bash
-forge script DeployFactoryScript --rpc-url $RPC_URL --sig "verifyDeployment()"
+forge script script/single-deployments/any-chain/DeployFactory.s.sol --rpc-url base_sepolia --sig "verifyDeployment()"
 ```
 
-This checks:
+This reads the Factory address from `environments/<environment>.json` and checks:
 
-- Code exists at predicted implementation and proxy addresses
+- Code exists at the factory address
 - `parameterRegistry` matches the expected value
-- `initializableImplementation` is non-zero and matches the predicted address
+- `initializableImplementation` is non-zero (initialized)
 - Prints `contractName`, `version`, and `paused` status
 
 Additionally, verify with direct `cast` calls:
@@ -113,6 +77,32 @@ cast call <new-factory-proxy> "initializableImplementation()(address)" --rpc-url
 cast call <new-factory-proxy> "paused()(bool)" --rpc-url $RPC_URL
 ```
 
+## Step 3: Verify Source Code
+
+Verify both the Factory implementation and the Proxy on the block explorer. Replace `<chain-id>`, `<parameter-registry>`, `<implementation>`, and `<proxy>` with the values printed by `deployContract()`.
+
+**Factory implementation** (constructor takes `parameterRegistry`):
+
+```bash
+forge verify-contract \
+  --chain-id 84532 \
+  --watch \
+  --constructor-args $(cast abi-encode "constructor(address)" 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D) \
+  0xAb8bE5d1177b1E1f9Da930E5C5cA09F5bE15F4C5 \
+  src/any-chain/Factory.sol:Factory
+```
+
+**Proxy** (constructor takes the implementation address):
+
+```bash
+forge verify-contract \
+  --chain-id 84532 \
+  --watch \
+  --constructor-args $(cast abi-encode "constructor(address)" 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D) \
+  0x2bF1F1b5A3c53B8abD3578146148aD1dfBC8491C \
+  src/any-chain/Proxy.sol:Proxy
+```
+
 ## Step 4: Update Config JSON
 
 After successful deployment on **all chains** (settlement + app), update `config/<environment>.json`:
@@ -126,7 +116,7 @@ After successful deployment on **all chains** (settlement + app), update `config
 }
 ```
 
-These values were printed by `predictAddresses()` and `deployContract()`. This step is critical — all future contract deployments via the single-deployment or upgrade scripts read `factory` from this config.
+These values were printed by `deployContract()`. This step is critical — all future contract deployments via the single-deployment or upgrade scripts read `factory` from this config.
 
 ## Multi-Chain Deployment
 
@@ -148,8 +138,6 @@ Factory exists on both the settlement chain and the app chain. Deploy separately
 
    Updates `appChainFactory` in `environments/<environment>.json`.
 
-If the old Factory is at the same address on both chains, and the `parameterRegistryProxy` is at the same address on both chains, and you use the same `factoryProxySalt`, the new Factory will land at the **same address on both chains**. This matches the pattern of the original base deploy.
-
 **Multiple environments sharing a chain:** If multiple environments (e.g. `testnet-dev`, `testnet-staging`, `testnet`) share the same settlement chain, you only deploy once per chain. The on-chain Factory is the same; just update each environment's JSON files.
 
 ## Impact on Other Contracts
@@ -160,8 +148,4 @@ No impact. Contracts already deployed through the old Factory continue to work. 
 
 ### Future contract deployments
 
-All proxy addresses deployed through the new Factory will differ from those deployed through the old Factory (because the new Factory has a different `initializableImplementation`, which changes the CREATE2 proxy init code hash). When deploying new contracts via the single-deployment scripts, re-run `predictAddresses()` to get the correct new addresses with the updated `factory` in config.
-
-### Proxy salt reuse
-
-Proxy salts that were used with the **old** Factory can be reused with the **new** Factory since they produce different addresses (different Factory address + different `initializableImplementation`). However, using new/incremented salts is recommended for clarity.
+All proxy addresses deployed through the new Factory will differ from those deployed through the old Factory (because the new Factory has a different `initializableImplementation`, which changes the proxy init code hash). When deploying new contracts via the single-deployment scripts, re-run `predictAddresses()` to get the correct new addresses with the updated `factory` in config.

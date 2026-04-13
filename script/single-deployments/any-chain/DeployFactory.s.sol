@@ -6,202 +6,86 @@ import { console } from "../../../lib/forge-std/src/console.sol";
 import { VmSafe } from "../../../lib/forge-std/src/Vm.sol";
 import { DeployScripts } from "../../Deploy.s.sol";
 import { FactoryDeployer } from "../../deployers/FactoryDeployer.sol";
-import { Utils } from "../../utils/Utils.sol";
 import { Factory } from "../../../src/any-chain/Factory.sol";
 import { IFactory } from "../../../src/any-chain/interfaces/IFactory.sol";
 
 /**
  * @title  DeployFactoryScript
- * @notice Deploys a new Factory proxy and implementation pair via the existing (old) Factory.
+ * @notice Deploys a new Factory proxy and implementation via direct CREATE.
  * @dev    See DeployFactory.md for detailed deployment instructions.
- *         Entry points: predictAddresses(), deployContract(), verifyDeployment().
+ *         Entry points: deployContract(), verifyDeployment().
  *
- *         Unlike the base deploy (which uses CREATE / nonce-based addressing), this script deploys
- *         BOTH the implementation and proxy through the old Factory's CREATE2, giving fully
- *         deterministic addresses that do not depend on deployer nonce.
- *
- *         The `factory` field in config/<environment>.json must remain the OLD Factory address
- *         during deployment. Update it to the new address only after deployment succeeds.
+ *         No other contract stores the Factory address as a runtime dependency, so deterministic
+ *         addressing is not required. The new Factory address is written to
+ *         environments/<env>.json and should be updated in config/<env>.json afterward.
  */
 contract DeployFactoryScript is DeployScripts {
-    error FactoryProxySaltNotSet();
-    error OldFactoryNotSet();
-    error NewFactoryProxyAlreadyExists();
-    error ImplementationAddressMismatch(address expected, address actual);
-    error ProxyAddressMismatch(address expected, address actual);
-    error InitializableImplementationMismatch(address expected, address actual);
     error ParameterRegistryMismatch(address expected, address actual);
     error ChainNotRecognized();
+    error FactoryNotDeployed();
 
-    bytes32 internal _factoryProxySalt;
-
-    function _readFactoryProxySalt() internal view returns (bytes32 salt_) {
-        string memory json_ = vm.readFile(string.concat("config/", _environment, ".json"));
-        salt_ = Utils.stringToBytes32(stdJson.readString(json_, ".factoryProxySalt"));
-
-        if (salt_ == 0) revert FactoryProxySaltNotSet();
-    }
-
-    /// @notice Step 1: Predict deterministic addresses for implementation, proxy, and initializableImplementation.
-    function predictAddresses() external view {
-        if (_deploymentData.factory == address(0)) revert OldFactoryNotSet();
-        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
-
-        bytes32 salt_ = _readFactoryProxySalt();
-
-        address computedImplementation_ = FactoryDeployer.getImplementationViaFactory(
-            _deploymentData.factory,
-            _deploymentData.parameterRegistryProxy
-        );
-
-        address computedProxy_ = IFactory(_deploymentData.factory).computeProxyAddress(_deployer, salt_);
-
-        address computedInitializable_ = vm.computeCreateAddress(computedProxy_, 1);
-
-        console.log("Old Factory: %s", _deploymentData.factory);
-        console.log("Parameter Registry: %s", _deploymentData.parameterRegistryProxy);
-        console.log("Factory Proxy Salt: %s", Utils.bytes32ToString(salt_));
-        console.log("");
-        console.log("New Factory Predicted Addresses:");
-        console.log("  factoryImplementation: %s", computedImplementation_);
-        console.log("  factory:               %s", computedProxy_);
-        console.log("  initializableImplementation: %s", computedInitializable_);
-
-        if (computedImplementation_.code.length > 0) {
-            console.log("");
-            console.log("NOTE: Code already exists at predicted implementation address.");
-            console.log("      This is expected if the Factory bytecode has not changed.");
-        }
-
-        if (computedProxy_.code.length > 0) {
-            console.log("");
-            console.log("WARNING: Code already exists at predicted proxy address!");
-            console.log("         Choose a different factoryProxySalt in config JSON.");
-        }
-    }
-
-    /// @notice Step 2: Deploy Factory implementation and proxy via the old Factory.
+    /// @notice Step 1: Deploy a new Factory implementation, proxy, and initialize it.
     function deployContract() external {
-        if (_deploymentData.factory == address(0)) revert OldFactoryNotSet();
         if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
 
-        _factoryProxySalt = _readFactoryProxySalt();
-
-        address expectedImplementation_ = FactoryDeployer.getImplementationViaFactory(
-            _deploymentData.factory,
-            _deploymentData.parameterRegistryProxy
-        );
-
-        address expectedProxy_ = IFactory(_deploymentData.factory).computeProxyAddress(_deployer, _factoryProxySalt);
-
-        if (expectedProxy_.code.length > 0) revert NewFactoryProxyAlreadyExists();
-
-        address expectedInitializable_ = vm.computeCreateAddress(expectedProxy_, 1);
-
-        console.log("Deploying new Factory via old Factory at %s", _deploymentData.factory);
+        console.log("Deploying new Factory...");
+        console.log("Parameter Registry: %s", _deploymentData.parameterRegistryProxy);
 
         vm.startBroadcast(_deployerPrivateKey);
 
-        // Deploy implementation via old Factory (CREATE2, idempotent if bytecode matches)
-        address newImplementation_;
-        if (expectedImplementation_.code.length == 0) {
-            bytes memory constructorArgs_ = abi.encode(_deploymentData.parameterRegistryProxy);
-            bytes memory creationCode_ = abi.encodePacked(type(Factory).creationCode, constructorArgs_);
-            newImplementation_ = IFactory(_deploymentData.factory).deployImplementation(creationCode_);
-        } else {
-            newImplementation_ = expectedImplementation_;
-            console.log("Implementation already deployed (bytecode unchanged): %s", newImplementation_);
-        }
+        (address implementation_, ) = FactoryDeployer.deployImplementation(_deploymentData.parameterRegistryProxy);
 
-        // Deploy proxy via old Factory (CREATE2 + initialize in one atomic call)
-        bytes memory initCallData_ = abi.encodeWithSelector(Factory.initialize.selector);
-        address newProxy_ = IFactory(_deploymentData.factory).deployProxy(
-            newImplementation_,
-            _factoryProxySalt,
-            initCallData_
-        );
+        (address proxy_, , ) = FactoryDeployer.deployProxy(implementation_);
+
+        IFactory(proxy_).initialize();
 
         vm.stopBroadcast();
 
-        // Validate addresses match predictions
-        if (newImplementation_ != expectedImplementation_) {
-            revert ImplementationAddressMismatch(expectedImplementation_, newImplementation_);
-        }
-
-        if (newProxy_ != expectedProxy_) {
-            revert ProxyAddressMismatch(expectedProxy_, newProxy_);
-        }
-
-        address actualInitializable_ = IFactory(newProxy_).initializableImplementation();
-        if (actualInitializable_ != expectedInitializable_) {
-            revert InitializableImplementationMismatch(expectedInitializable_, actualInitializable_);
-        }
-
-        // Validate runtime state
-        address actualParamRegistry_ = IFactory(newProxy_).parameterRegistry();
+        address actualParamRegistry_ = IFactory(proxy_).parameterRegistry();
         if (actualParamRegistry_ != _deploymentData.parameterRegistryProxy) {
             revert ParameterRegistryMismatch(_deploymentData.parameterRegistryProxy, actualParamRegistry_);
         }
 
-        console.log("Factory Implementation: %s", newImplementation_);
-        console.log("Factory Proxy:          %s", newProxy_);
-        console.log("Factory Name:           %s", IFactory(newProxy_).contractName());
-        console.log("Factory Version:        %s", IFactory(newProxy_).version());
-        console.log("Parameter Registry:     %s", actualParamRegistry_);
-        console.log("Initializable Impl:     %s", actualInitializable_);
+        address initializableImpl_ = IFactory(proxy_).initializableImplementation();
+        if (initializableImpl_ == address(0)) revert FactoryNotDeployed();
 
-        _writeFactoryToEnvironment(newProxy_);
+        console.log("");
+        console.log("Factory deployed successfully:");
+        console.log("  Implementation:               %s", implementation_);
+        console.log("  Proxy:                        %s", proxy_);
+        console.log("  Name:                         %s", IFactory(proxy_).contractName());
+        console.log("  Version:                      %s", IFactory(proxy_).version());
+        console.log("  Parameter Registry:           %s", actualParamRegistry_);
+        console.log("  Initializable Implementation: %s", initializableImpl_);
+
+        _writeFactoryToEnvironment(proxy_);
     }
 
-    /// @notice Step 3: Verify the deployed Factory matches expectations (read-only, no broadcast).
+    /// @notice Step 2: Verify a deployed Factory from environments JSON (read-only, no broadcast).
     function verifyDeployment() external view {
-        if (_deploymentData.factory == address(0)) revert OldFactoryNotSet();
-        if (_deploymentData.parameterRegistryProxy == address(0)) revert ParameterRegistryProxyNotSet();
+        address factory_ = _readFactoryFromEnvironment();
 
-        bytes32 salt_ = _readFactoryProxySalt();
+        console.log("Verifying Factory at %s ...", factory_);
 
-        address expectedImplementation_ = FactoryDeployer.getImplementationViaFactory(
-            _deploymentData.factory,
-            _deploymentData.parameterRegistryProxy
-        );
-
-        address expectedProxy_ = IFactory(_deploymentData.factory).computeProxyAddress(_deployer, salt_);
-        address expectedInitializable_ = vm.computeCreateAddress(expectedProxy_, 1);
-
-        console.log("Verifying Factory deployment...");
-        console.log("Expected Implementation: %s", expectedImplementation_);
-        console.log("Expected Proxy:          %s", expectedProxy_);
-        console.log("Expected Initializable:  %s", expectedInitializable_);
-
-        if (expectedProxy_.code.length == 0) {
-            console.log("FAIL: No code at expected proxy address. Factory not deployed.");
+        if (factory_.code.length == 0) {
+            console.log("FAIL: No code at factory address.");
             return;
         }
 
-        if (expectedImplementation_.code.length == 0) {
-            console.log("FAIL: No code at expected implementation address.");
-            return;
-        }
-
-        IFactory newFactory_ = IFactory(expectedProxy_);
+        IFactory newFactory_ = IFactory(factory_);
 
         console.log("");
         console.log("On-chain state:");
-        console.log("  contractName:              %s", newFactory_.contractName());
-        console.log("  version:                   %s", newFactory_.version());
-        console.log("  parameterRegistry:         %s", newFactory_.parameterRegistry());
-        console.log("  initializableImplementation: %s", newFactory_.initializableImplementation());
-        console.log("  paused:                    %s", newFactory_.paused() ? "true" : "false");
+        console.log("  contractName:                 %s", newFactory_.contractName());
+        console.log("  version:                      %s", newFactory_.version());
+        console.log("  parameterRegistry:            %s", newFactory_.parameterRegistry());
+        console.log("  initializableImplementation:  %s", newFactory_.initializableImplementation());
+        console.log("  paused:                       %s", newFactory_.paused() ? "true" : "false");
 
         bool allGood_ = true;
 
         if (newFactory_.parameterRegistry() != _deploymentData.parameterRegistryProxy) {
             console.log("FAIL: parameterRegistry mismatch");
-            allGood_ = false;
-        }
-
-        if (newFactory_.initializableImplementation() != expectedInitializable_) {
-            console.log("FAIL: initializableImplementation mismatch");
             allGood_ = false;
         }
 
@@ -214,6 +98,23 @@ contract DeployFactoryScript is DeployScripts {
             console.log("");
             console.log("All checks passed.");
         }
+    }
+
+    function _readFactoryFromEnvironment() internal view returns (address factory_) {
+        string memory filePath_ = string.concat("environments/", _environment, ".json");
+        string memory json_ = vm.readFile(filePath_);
+
+        string memory key_;
+        if (block.chainid == _deploymentData.settlementChainId) {
+            key_ = ".settlementChainFactory";
+        } else if (block.chainid == _deploymentData.appChainId) {
+            key_ = ".appChainFactory";
+        } else {
+            revert ChainNotRecognized();
+        }
+
+        factory_ = stdJson.readAddress(json_, key_);
+        if (factory_ == address(0)) revert FactoryNotDeployed();
     }
 
     function _writeFactoryToEnvironment(address newFactory_) internal {
