@@ -15,7 +15,7 @@
   "payerReportManager": "0x68F76B099B017CBC65EF5c4c99614843d82DaCAD",
   "rateRegistry": "0x89C6Aa3e03224F43290823471E8ed725C35bAcCE",
   "settlementChainDeploymentBlock": 28677681,
-  "settlementChainFactory": "0x9492Ea65F5f20B01Ed5eBe1b49f77208123585a1",
+  "settlementChainFactory": "0x26C038FD62E77bcf03609Eb7d5921A28a67D1832",
   "settlementChainGateway": "0xB64D5bF62F30512Bd130C0D7c80DB7ac1e6801a3",
   "settlementChainId": 84532,
   "settlementChainParameterRegistry": "0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D",
