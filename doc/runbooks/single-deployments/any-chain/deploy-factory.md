@@ -85,10 +85,10 @@ Verify both the Factory implementation and the Proxy on the block explorer. Repl
 
 ```bash
 forge verify-contract \
-  --chain-id 84532 \
+  --chain-id <chain-id> \
   --watch \
-  --constructor-args $(cast abi-encode "constructor(address)" 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D) \
-  0xAb8bE5d1177b1E1f9Da930E5C5cA09F5bE15F4C5 \
+  --constructor-args $(cast abi-encode "constructor(address)" <parameter-registry-address>) \
+  <factory-implementation-address> \
   src/any-chain/Factory.sol:Factory
 ```
 
@@ -96,10 +96,10 @@ forge verify-contract \
 
 ```bash
 forge verify-contract \
-  --chain-id 84532 \
+  --chain-id <chain-id> \
   --watch \
-  --constructor-args $(cast abi-encode "constructor(address)" 0xB2EA84901BC8c2b18Da7a51db1e1Ca2aAeDf844D) \
-  0x2bF1F1b5A3c53B8abD3578146148aD1dfBC8491C \
+  --constructor-args $(cast abi-encode "constructor(address)" <parameter-registry-address>) \
+  <proxy-implementation-address> \
   src/any-chain/Proxy.sol:Proxy
 ```
 
