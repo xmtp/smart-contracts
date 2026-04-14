@@ -148,7 +148,10 @@ abstract contract BaseSettlementChainUpgrader is Script {
 
         // Output migrator address and Fireblocks note for step 2
         // Always output these, even if not using Fireblocks for Step 1, since user might use Fireblocks for Step 2
-        string memory fireblocksNote = _getFireblocksNote("setMigrator");
+        // Use generateNote (not getNote) to always produce a fresh note from the current contract,
+        // avoiding stale FIREBLOCKS_NOTE env vars left over from a previous operation.
+        string memory contractName = _getContractName();
+        string memory fireblocksNote = FireblocksNote.generateNote(_environment, "setMigrator", contractName);
         console.log("==========================================");
         console.log("MIGRATOR_ADDRESS_FOR_STEP_2: %s", migrator);
         console.log("FIREBLOCKS_NOTE_FOR_STEP_2: %s", fireblocksNote);

@@ -31,7 +31,24 @@ library FireblocksNote {
             }
         } catch {}
 
-        // Generate default note: "<operation> <ContractName> on <Environment>"
+        return generateNote(environment_, operation_, contractName_);
+    }
+
+    /**
+     * @notice Always generates a fresh Fireblocks note from parameters, ignoring env vars
+     * @param environment_ The environment name (e.g., "testnet-staging")
+     * @param operation_ The operation being performed (e.g., "upgrade", "prepare", "bridge")
+     * @param contractName_ The contract name (e.g., "NodeRegistry")
+     * @return note_ The generated Fireblocks note
+     * @dev Use this instead of getNote() when the note must reflect the current contract,
+     *      e.g. in DeployImplementationAndMigrator where a stale FIREBLOCKS_NOTE env var
+     *      from a previous operation would produce the wrong note.
+     */
+    function generateNote(
+        string memory environment_,
+        string memory operation_,
+        string memory contractName_
+    ) internal pure returns (string memory note_) {
         return string.concat(operation_, " ", contractName_, " on ", environment_);
     }
 
