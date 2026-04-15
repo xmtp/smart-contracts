@@ -4,7 +4,7 @@
   "appChainParameterRegistryImplementation": "0x6e2e157cEfbc122DAd6d3EB904480f645352f905",
   "deployer": "0xD0d217d895372793900898183D18d10d3261984F",
   "depositSplitter": "0xf2346DC89311c636E3Cd6B6341aA5060CCc308e6",
-  "distributionManagerImplementation": "0xC19819B705b7e131d7ddB4663a6948b5ce7703b7",
+  "distributionManagerImplementation": "0xe2C4EC56bbFa07c2C250527b5706E571Ea866458",
   "distributionManagerProxy": "0xcc66BB4c08F3aB6DCa12F8F866bd6301c07849f7",
   "distributionManagerProxySalt": "DistributionManager_0",
   "factory": "0xD7Ec545A625B263EC9db9742cFC9933A0B1840d9",
@@ -29,7 +29,7 @@
   "payerRegistryImplementation": "0x567908B5c23e1fF2FF17BEA2ecca1e7337a1280B",
   "payerRegistryProxy": "0xd1c78Dee5d58eCCF1cF1CAABbfc9837215f1B82B",
   "payerRegistryProxySalt": "PayerRegistry_0",
-  "payerReportManagerImplementation": "0xF8E0c480BF36dDB128D83cAe8d049bC4cee5c1f4",
+  "payerReportManagerImplementation": "0xAf7Edf1d7D97bD5B9351b9a6097A63010672EebD",
   "payerReportManagerProxy": "0xEf3E4F3606A297eE0E7D2346A3b0EcfA69eDb457",
   "payerReportManagerProxySalt": "PayerReportManager_0",
   "rateRegistryImplementation": "0xC5205D8Ff4515FDf927De62922AaC7010e3ebEE5",
@@ -37,8 +37,8 @@
   "rateRegistryProxySalt": "RateRegistry_0",
   "settlementChainGatewayImplementation": "0xd2fD6db8c36483046dedBA8e7CAa18CB69aFfcbd",
   "settlementChainId": "8453",
-  "settlementChainParameterRegistryAdmin1": "0x25943B130E3871273D389545178151878e3cac3e",
-  "settlementChainParameterRegistryAdmin2": "0x0000000000000000000000000000000000000000",
+  "settlementChainParameterRegistryAdmin1": "0x0bb1dE335cf9c23723ca22c1fdFa64e51C1BEd67",
+  "settlementChainParameterRegistryAdmin2": "0xd66a39a62a2938776022e0ca55c1b838b5604080",
   "settlementChainParameterRegistryAdmin3": "0x0000000000000000000000000000000000000000",
   "settlementChainParameterRegistryImplementation": "0xA7B0cC3E2F94E921EC7F93ee1055a60EBa4EcB93",
   "startingParameters": {
@@ -49,7 +49,7 @@
         }
       },
       "nodeRegistry": {
-        "admin": "0x25943B130E3871273D389545178151878e3cac3e",
+        "admin": "0xC3B4D9F4Bd0D308E672d01A826DA743bD806BCf5",
         "maxCanonicalNodes": "100"
       },
       "payerRegistry": {
